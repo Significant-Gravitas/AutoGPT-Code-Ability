@@ -1,0 +1,11 @@
+version: "3"
+services:
+  postgres:
+    image: ankane/pgvector:latest
+    environment:
+      POSTGRES_USER: agpt_live
+      POSTGRES_PASSWORD: bnfaHGGSDF134345
+      POSTGRES_DB: agpt_product
+    ports:
+      - "5432:5432"
+      

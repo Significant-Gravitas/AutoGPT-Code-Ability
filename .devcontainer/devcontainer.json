@@ -1,0 +1,78 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/python
+{
+	"name": "Python 3",
+	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+	"image": "mcr.microsoft.com/devcontainers/python:1-3.11-bookworm",
+
+	// Features to add to the dev container. More info: https://containers.dev/features.
+
+	"features": {
+		"ghcr.io/devcontainers-contrib/features/poetry:2": {},
+		"ghcr.io/dhoeric/features/google-cloud-cli:1": {},
+		"ghcr.io/robbert229/devcontainer-features/postgresql-client:1": {},
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+	},
+
+	// "features": {},
+
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [],
+
+	// Use 'postCreateCommand' to run commands after the container is created.
+	"postCreateCommand": "poetry install",
+
+	// Configure tool-specific properties.
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "terminal.integrated.shell.linux": "/bin/bash",
+                "[python]": { // python section  
+                    "editor.rulers": [
+                        88
+                    ],
+                    "editor.formatOnSave": true,
+                    "editor.codeActionsOnSave": {
+                        "source.organizeImports": true
+                    },
+                    "editor.formatOnType": true
+                },
+                "python.linting.enabled": true,
+                "python.formatting.provider": "black",
+                "python.sortImports.args": [
+                    "--profile",
+                    "black"
+                ],
+                "python.analysis.typeCheckingMode": "strict",
+                "python.analysis.autoSearchPaths": true,
+                "python.languageServer": "Default",
+                "python.linting.pylintEnabled": true,
+                "python.linting.flake8Enabled": true,
+                "python.linting.flake8Args": [
+                    // Match what black does.
+                    "--max-line-length=88"
+                ]
+            },
+            "extensions": [
+                "ms-python.python",
+                "ms-python.black-formatter",
+                "ms-python.vscode-pylance",
+                "ms-python.flake8",
+                "ms-python.isort",
+                "github.copilot",
+                "VisualStudioExptTeam.vscodeintellicode",
+                "kevinrose.vsc-python-indent",
+                "njpwerner.autodocstring",
+                "wholroyd.jinja",
+                "eamodio.gitlens",
+            
+            ]
+        },
+        }
+
+
+	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+	// "remoteUser": "root"
+
+
+}
