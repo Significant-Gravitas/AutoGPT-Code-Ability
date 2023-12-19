@@ -8,6 +8,9 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.11"
 openai = "^1.5.0"
+sqlmodel = "^0.0.14"
+pgvector = "^0.2.4"
+psycopg2 = "^2.9.9"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -16,6 +19,7 @@ isort = "^5.13.2"
 flake8 = "^6.1.0"
 pytest = "^7.4.3"
 pre-commit = "^3.6.0"
+ipython = "^8.18.1"
 
 [build-system]
 requires = ["poetry-core"]
