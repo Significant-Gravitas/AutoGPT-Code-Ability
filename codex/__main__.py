@@ -1,102 +1,5 @@
 import networkx as nx
-from pydantic import BaseModel
-from typing import List, Dict, Tuple
-import uuid
-
-
-class Parameter(BaseModel):
-    prama_type: str
-    name: str
-    description: str
-
-    def __str__(self):
-        return f"{self.name}: {self.prama_type} - {self.description}"
-
-
-class Node(BaseModel):
-    description: str
-    name: str
-    input_pramas: List[Parameter] | None
-    output_pramas: List[Parameter] | None
-    package_requirements: List[str] | None
-
-    def __str__(self) -> str:
-        out = f"def {self.name}("
-        if self.input_pramas:
-            for param in self.input_pramas:
-                out += f"{param.name}: {param.prama_type}, "
-            out = out[:-2]
-        out += ")"
-        if self.output_pramas:
-            out += " -> ("
-            for param in self.output_pramas:
-                out += f"{param.name}: {param.prama_type}, "
-            out = out[:-2]
-            out += ")"
-        out += ":"
-        out += f"\n  {self.description}"
-        if self.input_pramas:
-            out += "\n  Input Parameters:"
-            for param in self.input_pramas:
-                out += f"\n    {param}"
-        if self.output_pramas:
-            out += "\n  Output Parameters:"
-            for param in self.output_pramas:
-                out += f"\n    {param}"
-        return out
-
-    def to_code(self, input_names_map: Dict[str, str]) -> Tuple[str, Dict[str, str]]:
-        unique_output_names_map: Dict[str, str] = {}
-        out = "    "
-        if self.output_pramas:
-            for output_param in self.output_pramas:
-                unique_chars = uuid.uuid4().hex[:4]
-                out += f"{output_param.name}_{unique_chars}, "
-                unique_output_names_map[
-                    output_param.name
-                ] = f"{output_param.name}_{unique_chars}"
-
-            out = out[:-2]
-            out += " = "
-        out += f"{self.name}("
-        if self.input_pramas:
-            for input_param in self.input_pramas:
-                in_name = (
-                    input_names_map[input_param.name]
-                    if input_param.name in input_names_map.keys()
-                    else input_param.name
-                )
-                out += f"{in_name}, "
-            out = out[:-2]
-        out += ")"
-        return (out, unique_output_names_map)
-    
-    def request_to_code(self) -> str:
-        out = "def request("
-        if self.output_pramas:
-            for param in self.output_pramas:
-                out += f"{param.name}: {param.prama_type}, "
-            out = out[:-2]
-        out += "):\n"
-        return out
-    
-    def response_to_code(self, input_names_map: Dict[str, str]) -> str:
-        out = ""
-        if self.input_pramas:
-            if len(self.input_pramas) == 1:
-                out += f"    return {input_names_map[self.input_pramas[0].name]}"
-            else:
-                out += "    return ("
-                for param in self.input_pramas:
-                    out += f"{input_names_map[param.name]}, "
-                out = out[:-2]
-                out += ")"
-        return out
-class Connection(BaseModel):
-    from_params: List[Parameter]
-    to_params: List[Parameter]
-
-
+from .model import Node, Parameter
 # Create a directed graph
 G = nx.DiGraph()
 
@@ -113,6 +16,7 @@ request_node = Node(
             description="the format to convert the webpage too",
         ),
     ],
+    package_requirements=[],  # Add the missing argument for "package_requirements"
 )
 
 verify_url = Node(
@@ -128,6 +32,7 @@ verify_url = Node(
             description="The url of the website if it is valid",
         )
     ],
+    package_requirements=[],
 )
 
 download_page = Node(
@@ -147,6 +52,7 @@ download_page = Node(
             description="The html of the webpage",
         )
     ],
+    package_requirements=[],
 )
 
 convert_page = Node(
@@ -171,6 +77,7 @@ convert_page = Node(
             description="The converted webpage",
         )
     ],
+    package_requirements=[],
 )
 
 response_node = Node(
@@ -183,7 +90,8 @@ response_node = Node(
             description="The converted webpage",
         )
     ],
-    output_pramas=None,
+    output_pramas=[],
+    package_requirements=[],
 )
 
 G.add_node("request_node", node=request_node)
