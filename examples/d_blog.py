@@ -1,8 +1,6 @@
 from codex.model import Node, Parameter
 
-# Execution Path 1: User Registration
-
-execution_path_1 = [
+registration_path = [
     # Node for requesting user registration details
     Node(
         description="Takes in user details for registration",
@@ -69,9 +67,7 @@ execution_path_1 = [
     ),
 ]
 
-# Execution Path 2: User Login
-
-execution_path_2 = [
+login_path = [
     # Node for requesting login details
     Node(
         description="Takes in user login details",
@@ -124,9 +120,7 @@ execution_path_2 = [
     ),
 ]
 
-# Execution Path 3: Create Post
-
-execution_path_3 = [
+create_post_path = [
     # Node for requesting post creation details
     Node(
         description="Takes in details for creating a new post",
@@ -175,9 +169,7 @@ execution_path_3 = [
     ),
 ]
 
-# Execution Path 4: Edit Post
-
-execution_path_4 = [
+edit_post_path = [
     # Node for requesting post editing details
     Node(
         description="Takes in details for editing an existing post",
@@ -244,9 +236,7 @@ execution_path_4 = [
     ),
 ]
 
-# Execution Path 5: Delete Post
-
-execution_path_5 = [
+delete_post_path = [
     # Node for requesting post deletion
     Node(
         description="Takes in details for deleting an existing post",

@@ -2,7 +2,7 @@ from codex.model import Node, Parameter
 
 # Execution Path 1: Adding Inventory Items
 
-execution_path_1 = [
+add_inventory_items_path = [
     Node(
         description="Takes in details of a new inventory item",
         name="request_node_add",
@@ -64,7 +64,7 @@ execution_path_1 = [
 
 # Execution Path 2: Updating Inventory Items
 
-execution_path_2 = [
+update_inventory_items_path = [
     Node(
         description="Takes in details for updating an inventory item",
         name="request_node_update",
@@ -134,7 +134,7 @@ execution_path_2 = [
 
 # Execution Path 3: Deleting Inventory Items
 
-execution_path_3 = [
+delete_inventory_items_path = [
     Node(
         description="Takes in the ID of the inventory item to be deleted",
         name="request_node_delete",
@@ -180,7 +180,7 @@ execution_path_3 = [
 
 # Execution Path 4: Tracking Stock Levels
 
-execution_path_4 = [
+track_stock_levels_path = [
     Node(
         description="Requests the tracking of inventory stock levels",
         name="request_node_track",
