@@ -1,5 +1,5 @@
 import uuid
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from pydantic import BaseModel
 
@@ -31,9 +31,9 @@ class Node(BaseModel):
 
     description: str
     name: str
-    input_pramas: List[Parameter] | None
-    output_pramas: List[Parameter] | None
-    package_requirements: List[str] | None
+    input_pramas: Optional[List[Parameter]]
+    output_pramas: Optional[List[Parameter]]
+    package_requirements: Optional[List[str]]
 
     def __str__(self) -> str:
         out = f"def {self.name}("
