@@ -12,6 +12,7 @@ class Parameter(BaseModel):
     prama_type: str
     name: str
     description: str
+    optional: bool = False
 
     def __str__(self):
         return f"{self.name}: {self.prama_type} - {self.description}"
