@@ -7,8 +7,8 @@ from .model import Node
 
 def add_node(graph: nx.DiGraph, node_name: str, node: Node):
     # Check if node's input parameters are satisfied by the existing nodes in the graph
-    if node.input_pramas:
-        input_params_needed = {(p.name, p.prama_type): p for p in node.input_pramas}
+    if node.input_params:
+        input_params_needed = {(p.name, p.prama_type): p for p in node.input_params}
     else:
         input_params_needed = {}
 
@@ -17,8 +17,8 @@ def add_node(graph: nx.DiGraph, node_name: str, node: Node):
     for n in graph.nodes:
         existing_node: Node = graph.nodes[n]["node"]
         assert isinstance(existing_node, Node)
-        if existing_node.output_pramas:
-            for output_param in existing_node.output_pramas:
+        if existing_node.output_params:
+            for output_param in existing_node.output_params:
                 param_key = (output_param.name, output_param.prama_type)
                 if param_key in input_params_needed:
                     providers[param_key] = n

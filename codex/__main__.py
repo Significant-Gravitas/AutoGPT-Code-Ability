@@ -9,8 +9,8 @@ G = nx.DiGraph()
 request_node = Node(
     description="Takes in the url of a website",
     name="request_node",
-    input_pramas=None,
-    output_pramas=[
+    input_params=None,
+    output_params=[
         Parameter(prama_type="str", name="url", description="The url of the website"),
         Parameter(
             prama_type="str",
@@ -24,10 +24,10 @@ request_node = Node(
 verify_url = Node(
     description="Verifies that the url is valid",
     name="verify_url",
-    input_pramas=[
+    input_params=[
         Parameter(prama_type="str", name="url", description="The url of the website")
     ],
-    output_pramas=[
+    output_params=[
         Parameter(
             prama_type="str",
             name="valid_url",
@@ -40,14 +40,14 @@ verify_url = Node(
 download_page = Node(
     description="Downloads the webpage",
     name="download_page",
-    input_pramas=[
+    input_params=[
         Parameter(
             prama_type="str",
             name="valid_url",
             description="The url of the website if it is valid",
         )
     ],
-    output_pramas=[
+    output_params=[
         Parameter(
             prama_type="str",
             name="html",
@@ -60,7 +60,7 @@ download_page = Node(
 convert_page = Node(
     description="Converts the webpage to the desired format",
     name="convert_page",
-    input_pramas=[
+    input_params=[
         Parameter(
             prama_type="str",
             name="html",
@@ -72,7 +72,7 @@ convert_page = Node(
             description="the format to convert the webpage too",
         ),
     ],
-    output_pramas=[
+    output_params=[
         Parameter(
             prama_type="str",
             name="converted_page",
@@ -85,14 +85,14 @@ convert_page = Node(
 response_node = Node(
     name="response_node",
     description="Returns the converted webpage",
-    input_pramas=[
+    input_params=[
         Parameter(
             prama_type="str",
             name="converted_page",
             description="The converted webpage",
         )
     ],
-    output_pramas=[],
+    output_params=[],
     package_requirements=[],
 )
 
