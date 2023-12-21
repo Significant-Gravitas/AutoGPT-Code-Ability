@@ -11,6 +11,8 @@ openai = "^1.5.0"
 sqlmodel = "^0.0.14"
 pgvector = "^0.2.4"
 psycopg2 = "^2.9.9"
+networkx = "^3.2.1"
+matplotlib = "^3.8.2"
 
 
 [tool.poetry.group.dev.dependencies]

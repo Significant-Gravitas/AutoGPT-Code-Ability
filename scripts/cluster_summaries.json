@@ -1,0 +1,52 @@
+[
+    {
+        "cluster": "Cluster 7",
+        "size": 203,
+        "summary": "Task Type: Development of AI-Integrated Web Applications\nExample Task: Create a web-based tool using Python that integrates OpenAI's GPT-4 to conduct text-based interviews for job candidates. This tool should collect applicant information, manage the flow of conversation based on predefined prompts, and send summaries of the interactions to the hiring manager. Implement secure storage for logs, an automated email system, and ensure the tool features basic error handling, reliability, performance, and data security. Document and test the tool before the set deadline."
+    },
+    {
+        "cluster": "Cluster 4",
+        "size": 154,
+        "summary": "Task Type: Web Scraping and Data Automation Solutions\nExample Task: Create an automated tool that takes a list of company names as input, searches LinkedIn and ZoomInfo to scrape and compile structured information such as company details and contact information into a CSV file. The scraper should regularly update the information to reflect any changes. The tool should be operable through a command-line interface and store data within an SQLite database."
+    },
+    {
+        "cluster": "Cluster 3",
+        "size": 136,
+        "summary": "Task Type: Software Configuration and Deployment Tasks\nExample Task: I have a NuxtJS application developed on my local machine that relies on several environment variables for API keys and database connections. I would like to deploy this app to Vercel, but I'm not sure how to securely add the environment variables needed for the production build. The task would include setting up the Vercel project, configuring the environment variables in a secure manner, and ensuring the application runs successfully on Vercel as it does locally."
+    },
+    {
+        "cluster": "Cluster 6",
+        "size": 112,
+        "summary": "Task Type: Frontend and UI/UX Development\nExample Task: Develop a user-friendly frontend for a web application that integrates with GitHub, GitLab, Sentry, Slack, and Notion APIs. The interface must facilitate user login, profile management, and configuration of data source integrations. Implement OAuth flows, webhook endpoints, and handle asynchronous tasks with background workers for seamless synchronization between the backend and the customer applications. Ensure a secure storage solution for API tokens and provide a responsive design for an optimal user experience."
+    },
+    {
+        "cluster": "Cluster 1",
+        "size": 102,
+        "summary": "Task Type: Project Planning and Tracking\nExample Task: Develop a project plan for a new mobile app that includes a clear problem description, outlines the acceptance criteria, provides technical details, and sets forth a timeline with specific milestones. Additionally, a live document link for project tracking should be included."
+    },
+    {
+        "cluster": "Cluster 2",
+        "size": 87,
+        "summary": "Task Type: Software Development and Integration Assistance\nExample Task: I am looking to build a new feature into my existing mobile application that enables users to track their daily water intake. This feature should allow users to input the amount of water they've consumed and visually display their progress throughout the day. Users should get reminders to drink water if they haven't logged any consumption for a substantial amount of time. The developer should be patient and able to work within my current understanding of app development. Ideally, the developer should be based in the Eastern Time Zone for better communication. Technical knowledge in mobile app development for iOS using Swift and integration of local notifications is required. Prior experience with health or habit-tracking apps would be a plus."
+    },
+    {
+        "cluster": "Cluster 8",
+        "size": 82,
+        "summary": "Task Type: Web Design and Development\nExample Task: I require a skilled web developer to construct a portfolio website for my photography business. The website should have a modern aesthetic with five main pages: Home, Portfolio, About, Blog, and Contact. The Home page should feature an eye-catching slider with my latest work, while the Portfolio page showcases my photography categories with interactive galleries. Additional requirements include a responsive design for mobile and tablet compatibility, integration of my social media feeds, and a simple contact form with fields for a visitor's name, email, and message. The site should also include smooth transitions and subtle animations for a polished look. I would like the website to be built using HTML, CSS, and JavaScript, and I expect it to be ready for launch within three weeks. Hosting and domain setup assistance is also required, as I want to ensure the website is live and functioning smoothly for visitors. Optionally, if you can provide basic SEO optimization, it would be a significant advantage. Please include a portfolio of your previous work when applying."
+    },
+    {
+        "cluster": "Cluster 10",
+        "size": 80,
+        "summary": "Task Type: Frontend Web Development\nExample Task: Develop a responsive web page in Next.js using provided API endpoints for dynamically generating the content, ensure the page is styled using TailwindCSS, and include a sidebar with interactive elements such as modals. The page should adhere strictly to the given design specifics, and must be properly internationalized (i18n). A template repository with basic setup and tests will be provided, and the task should be completed within 1-3 days."
+    },
+    {
+        "cluster": "Cluster 5",
+        "size": 57,
+        "summary": "Task Type: Digital Content Creation and Web Development\nExample Task: Create an interactive pixel art drawing platform similar to r/place, featuring an infinite grid with hover-over coordinate display, and the ability to use the seven main rainbow colors for the pixel art. Ensure that once a pixel is placed, it cannot be altered or removed to preserve the artwork permanently. Incorporate a user interface capable of navigating the infinite canvas through right-click dragging."
+    },
+    {
+        "cluster": "Cluster 9",
+        "size": 47,
+        "summary": "Task Type: Ongoing project continuation and specific user assignments\nExample Task: Continue development on Project X, specifically focusing on implementing the new authentication system as discussed with Developer Y, who has already agreed to this task."
+    }
+]
