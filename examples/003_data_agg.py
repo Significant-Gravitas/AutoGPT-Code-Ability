@@ -1,7 +1,8 @@
 from codex.model import Node, Parameter
 
 request_node = Node(
-    description="Initiates data aggregation process, collects information about data sources and output format",
+    description="Initiates data aggregation process, "
+    "collects information about data sources and output format",
     name="request_node",
     input_params=[],
     output_params=[
