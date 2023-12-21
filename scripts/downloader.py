@@ -1,6 +1,7 @@
-import requests
-import json
 import gzip
+import json
+
+import requests
 
 
 def fetch_bounties(after_cursor=None):
@@ -19,7 +20,7 @@ def fetch_bounties(after_cursor=None):
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
         "x-client-version": "c6ef787e",
         "x-forwarded-host": "replit.com",
-        "x-requested-with": "XMLHttpRequest"
+        "x-requested-with": "XMLHttpRequest",
     }
     query = """
     query BountiesPageSearch($input: BountySearchInput!) {
@@ -66,17 +67,19 @@ def fetch_bounties(after_cursor=None):
             "searchQuery": "",
             "statuses": ["completed"],
             "order": "creationDateDescending",
-            "listingState": "listed"
+            "listingState": "listed",
         }
     }
-    response = requests.post(url, headers=headers, json={"query": query, "variables": variables})
+    response = requests.post(
+        url, headers=headers, json={"query": query, "variables": variables}
+    )
 
     try:
         response.raise_for_status()  # Check if the response status code is 200
         return response.json()
     except requests.exceptions.HTTPError as e:
         print(f"HTTP error occurred: {e}")  # HTTP error
-    
+
     except requests.exceptions.JSONDecodeError as e:
         print(f"JSON decode error: {e}")
         print("Raw response:", response.text)  # Print raw response text
@@ -85,6 +88,7 @@ def fetch_bounties(after_cursor=None):
 
     return None
 
+
 def download_bounties():
     all_bounties = []
     next_cursor = None
@@ -92,11 +96,11 @@ def download_bounties():
         while True:
             print("Fetching bounties")
             data = fetch_bounties(after_cursor=next_cursor)
-            bounties = data['data']['bountySearch']['items']
+            bounties = data["data"]["bountySearch"]["items"]
             all_bounties.extend(bounties)
-            page_info = data['data']['bountySearch']['pageInfo']
-            if page_info['hasNextPage']:
-                next_cursor = page_info['nextCursor']
+            page_info = data["data"]["bountySearch"]["pageInfo"]
+            if page_info["hasNextPage"]:
+                next_cursor = page_info["nextCursor"]
             else:
                 break
     except Exception as e:
@@ -105,31 +109,35 @@ def download_bounties():
         return
     finally:
         # Save the data
-        with open('bounties.json', 'w') as file:
+        with open("bounties.json", "w") as file:
             json.dump(all_bounties, file, indent=4)
 
+
 if __name__ == "__main__":
-    with open('bounties.json', 'r') as file:
+    with open("bounties.json", "r") as file:
         data = json.load(file)
         print(len(data))
     total = 0
     cycles_total = 0
     for bounty in data:
-        total += bounty['solverPayout']
-        cycles_total += bounty['cycles']
-        
+        total += bounty["solverPayout"]
+        cycles_total += bounty["cycles"]
+
     print((cycles_total - total) * 0.01)
-        
-        
-    from sklearn.feature_extraction.text import TfidfVectorizer
-    from sklearn.cluster import KMeans
+
     import numpy as np
+    from sklearn.cluster import KMeans
+    from sklearn.feature_extraction.text import TfidfVectorizer
 
     # Extracting the 'descriptionPreview' field
-    descriptions = [bounty['descriptionPreview'] for bounty in data if 'descriptionPreview' in bounty]
+    descriptions = [
+        bounty["descriptionPreview"]
+        for bounty in data
+        if "descriptionPreview" in bounty
+    ]
 
     # Using TF-IDF to vectorize the descriptions
-    vectorizer = TfidfVectorizer(stop_words='english')
+    vectorizer = TfidfVectorizer(stop_words="english")
     X = vectorizer.fit_transform(descriptions)
 
     # Perform KMeans clustering with 3 clusters
@@ -152,11 +160,6 @@ if __name__ == "__main__":
 
     closest_descriptions
 
-
-        
     print(total * 0.01)
-    
 
-        
-    
     # download_bounties()

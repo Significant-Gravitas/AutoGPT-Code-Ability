@@ -1,9 +1,10 @@
 from openai import OpenAI
 
 client = OpenAI(api_key="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")
+import json
+
 import numpy as np
 from sklearn.cluster import KMeans
-import json
 
 # Set your OpenAI API key
 
@@ -74,16 +75,20 @@ for ii, cluster in enumerate(closest_descriptions.keys()):
         model="gpt-4-1106-preview",
         messages=[{"role": "user", "content": request}],
     )
-    
+
     # Append a dictionary with cluster data to the list of clusters
-    clusters.append({
-        'cluster': cluster, 
-        'size': int(counts[ii]), 
-        'summary': response.choices[0].message.content
-    })
+    clusters.append(
+        {
+            "cluster": cluster,
+            "size": int(counts[ii]),
+            "summary": response.choices[0].message.content,
+        }
+    )
 
 # Sort the clusters by size
-clusters = sorted(clusters, key=lambda x: x['size'], reverse=True)
+clusters = sorted(clusters, key=lambda x: x["size"], reverse=True)
 with open("cluster_summaries.json", "w") as file:
-    import IPython; IPython.embed()
+    import IPython
+
+    IPython.embed()
     json.dump(clusters, file, indent=4)

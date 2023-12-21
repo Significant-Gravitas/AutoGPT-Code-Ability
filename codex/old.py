@@ -1,5 +1,5 @@
-from sqlmodel import SQLModel, Field, Relationship, create_engine
 from sqlalchemy.orm import RelationshipProperty
+from sqlmodel import Field, Relationship, SQLModel, create_engine
 
 
 def create_db_and_tables():
@@ -94,7 +94,6 @@ from sqlmodel import Session
 def build_dag_from_nodes_and_edges(nodes, edges):
     dag = DAG()
 
-
     for node in nodes:
         dag.add_node(node)
 
@@ -106,7 +105,6 @@ def build_dag_from_nodes_and_edges(nodes, edges):
             dag.add_edge(edge.source_node_id, edge.target_node_id)
 
     return dag
-
 
 
 def add_node(session: Session, node: Node) -> Node:
@@ -123,15 +121,10 @@ def add_edge(session: Session, edge: Edge) -> Edge:
     return edge
 
 
-from sqlalchemy import select, alias, and_
+from sqlalchemy import alias, and_, or_, select
+from sqlalchemy.orm import selectinload
 from sqlmodel import Session
 
-
-from sqlalchemy import select
-
-from sqlalchemy import select, or_
-
-from sqlalchemy.orm import selectinload
 
 def load_dag(session: Session, start_node_id: int):
     # Fetch all nodes using recursive CTE
@@ -159,12 +152,10 @@ def load_dag(session: Session, start_node_id: int):
         .options(selectinload(Node.outgoing_edges), selectinload(Node.incoming_edges))
         .where(Node.id.in_(node_ids))
     ).all()
-    
+
     nodes = [node[0] for node in nodes]
 
     return nodes
-
-
 
 
 # Create the database and tables
@@ -185,19 +176,20 @@ with Session(
     BC = Edge(id=2233, source_node_id=B.id, target_node_id=C.id)
     CD = Edge(id=3344, source_node_id=C.id, target_node_id=D.id)
     AC = Edge(id=1133, source_node_id=A.id, target_node_id=C.id)
-    
+
     A.outgoing_edges.append(AB)
     A.outgoing_edges.append(AC)
     B.outgoing_edges.append(BC)
     C.outgoing_edges.append(CD)
-    
+
     B.incoming_edges.append(AB)
     C.incoming_edges.append(BC)
     D.incoming_edges.append(CD)
-    
-    import IPython; IPython.embed()
-    
-    
+
+    import IPython
+
+    IPython.embed()
+
     for node in [A, B, C, D]:
         n = add_node(session, node)
         print(n)
@@ -206,8 +198,10 @@ with Session(
         add_edge(session, edge)
     # Load the DAG starting from a specific node
     node_ids, edges = load_dag(session, start_node_id=A.id)
-    import IPython; IPython.embed()
+    import IPython
+
+    IPython.embed()
 
     dag_object = build_dag_from_nodes_and_edges(node_ids, edges)
-    
+
     print(dag_object)

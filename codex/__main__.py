@@ -1,5 +1,7 @@
 import networkx as nx
+
 from .model import Node, Parameter
+
 # Create a directed graph
 G = nx.DiGraph()
 
@@ -100,6 +102,7 @@ print(request_node)
 print("\n")
 print(convert_page)
 print("\n")
+
 
 def add_node(graph, node_name, node):
     # Check if node's input parameters are satisfied by the existing nodes in the graph
@@ -212,23 +215,25 @@ def create_runner(graph: nx.DiGraph):
     if not nx.is_directed_acyclic_graph(G):
         raise nx.NetworkXError("Graph is not a Directed Acyclic Graph (DAG)")
 
-
     output_name_map: Dict[str, str] = {}
 
     script = ""
     for node_name in nx.topological_sort(G):
-        
-        node: Node = G.nodes[node_name]['node']
+        node: Node = G.nodes[node_name]["node"]
         if node_name == "request_node":
             script += node.request_to_code()
         elif node_name == "response_node":
             script += node.response_to_code(output_name_map)
         else:
             code, unique_output_names_map = node.to_code(output_name_map)
-            output_name_map: Dict[str, str] = {**output_name_map, **unique_output_names_map}
+            output_name_map: Dict[str, str] = {
+                **output_name_map,
+                **unique_output_names_map,
+            }
             script += f"{code}\n"
     return script
-    
-print('\n```\n')
+
+
+print("\n```\n")
 print(create_runner(G))
-print('```')
+print("```")

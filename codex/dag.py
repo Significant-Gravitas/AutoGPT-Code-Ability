@@ -1,6 +1,8 @@
-import networkx as nx
-from .model import Node
 from typing import Dict, Tuple
+
+import networkx as nx
+
+from .model import Node
 
 
 def add_node(graph: nx.DiGraph, node_name: str, node: Node):
