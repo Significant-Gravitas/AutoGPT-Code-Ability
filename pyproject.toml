@@ -13,6 +13,7 @@ pgvector = "^0.2.4"
 psycopg2 = "^2.9.9"
 networkx = "^3.2.1"
 matplotlib = "^3.8.2"
+sentence-transformers = "^2.2.2"
 
 
 [tool.poetry.group.dev.dependencies]

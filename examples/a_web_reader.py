@@ -1,16 +1,15 @@
-from codex.model import Node, Parameter
+from codex.model import InputParameter, Node, OutputParameter
 
 nodes = [
     Node(
         description="Takes in the url of a website",
         name="request_node",
-        input_params=None,
         output_params=[
-            Parameter(
-                prama_type="str", name="url", description="The url of the website"
+            OutputParameter(
+                param_type="str", name="url", description="The url of the website"
             ),
-            Parameter(
-                prama_type="str",
+            OutputParameter(
+                param_type="str",
                 name="format",
                 description="the format to convert the webpage too",
             ),
@@ -21,13 +20,13 @@ nodes = [
         description="Verifies that the url is valid",
         name="verify_url",
         input_params=[
-            Parameter(
-                prama_type="str", name="url", description="The url of the website"
+            InputParameter(
+                param_type="str", name="url", description="The url of the website"
             )
         ],
         output_params=[
-            Parameter(
-                prama_type="str",
+            OutputParameter(
+                param_type="str",
                 name="valid_url",
                 description="The url of the website if it is valid",
             )
@@ -38,15 +37,15 @@ nodes = [
         description="Downloads the webpage",
         name="download_page",
         input_params=[
-            Parameter(
-                prama_type="str",
+            InputParameter(
+                param_type="str",
                 name="valid_url",
                 description="The url of the website if it is valid",
             )
         ],
         output_params=[
-            Parameter(
-                prama_type="str",
+            OutputParameter(
+                param_type="str",
                 name="html",
                 description="The html of the webpage",
             )
@@ -57,20 +56,20 @@ nodes = [
         description="Converts the webpage to the desired format",
         name="convert_page",
         input_params=[
-            Parameter(
-                prama_type="str",
+            InputParameter(
+                param_type="str",
                 name="html",
                 description="The html of the webpage",
             ),
-            Parameter(
-                prama_type="str",
+            InputParameter(
+                param_type="str",
                 name="format",
                 description="the format to convert the webpage too",
             ),
         ],
         output_params=[
-            Parameter(
-                prama_type="str",
+            OutputParameter(
+                param_type="str",
                 name="converted_page",
                 description="The converted webpage",
             )
@@ -81,13 +80,12 @@ nodes = [
         name="response_node",
         description="Returns the converted webpage",
         input_params=[
-            Parameter(
-                prama_type="str",
+            InputParameter(
+                param_type="str",
                 name="converted_page",
                 description="The converted webpage",
             )
         ],
-        output_params=[],
         package_requirements=[],
     ),
 ]

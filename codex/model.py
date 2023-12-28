@@ -1,40 +1,76 @@
 import uuid
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 
-from pydantic import BaseModel
+from pgvector.sqlalchemy import Vector
+from sentence_transformers import SentenceTransformer
+from sqlmodel import Column, Field, Relationship, SQLModel, String
 
 
-class Parameter(BaseModel):
+class OutputParameter(SQLModel, table=True):
     """
     Represents a parameter with its type, name, and description.
     """
 
-    prama_type: str
+    id: Optional[int] = Field(default=None, primary_key=True)
+    param_type: str
     name: str
     description: str
     optional: bool = False
 
+    node_id: Optional[int] = Field(default=None, foreign_key="node.id")
+    node: Optional["Node"] = Relationship(back_populates="output_params")
+
     def __str__(self):
-        return f"{self.name}: {self.prama_type} - {self.description}"
+        return f"{self.name}: {self.param_type} - {self.description}"
 
 
-class Node(BaseModel):
+class InputParameter(SQLModel, table=True):
+    """
+    Represents a parameter with its type, name, and description.
+    """
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    param_type: str
+    name: str
+    description: str
+    optional: bool = False
+
+    node_id: Optional[int] = Field(default=None, foreign_key="node.id")
+    node: Optional["Node"] = Relationship(back_populates="input_params")
+
+    def __str__(self):
+        return f"{self.name}: {self.param_type} - {self.description}"
+
+
+class Node(SQLModel, table=True):
     """
     Represents a node in the system.
 
     Attributes:
         description (str): The description of the node.
         name (str): The name of the node.
-        input_pramas (List[Parameter] | None): The input params of the node.
-        output_pramas (List[Parameter] | None): The output params of the node.
+        input_params (List[Parameter] | None): The input params of the node.
+        output_params (List[Parameter] | None): The output params of the node.
         package_requirements (List[str] | None): package requirements.
+        embedding (Vector): The embedding field for pg vector.
     """
 
+    id: Optional[int] = Field(default=None, primary_key=True)
     description: str
     name: str
-    input_params: Optional[List[Parameter]]
-    output_params: Optional[List[Parameter]]
-    package_requirements: Optional[List[str]]
+    package_requirements: Optional[str] = Field(sa_column=Column(String))
+    # Assuming Vector is the correct type for your embedding
+    embedding: Optional[List[float]] = Field(sa_column=Column(Vector(384)))
+
+    # Relationship definitions
+    input_params: Optional[List[InputParameter]] = Relationship(back_populates="node")
+    output_params: Optional[List[OutputParameter]] = Relationship(back_populates="node")
+
+    def model_post_init(self, __context: Any) -> None:
+        embedder = SentenceTransformer("all-MiniLM-L6-v2")
+        self.embedding = embedder.encode(
+            self.description, normalize_embeddings=True, convert_to_numpy=True
+        )
 
     def __str__(self) -> str:
         out = f"def {self.name}("
