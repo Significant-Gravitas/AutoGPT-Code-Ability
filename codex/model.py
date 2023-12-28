@@ -132,7 +132,7 @@ class Node(BaseModel):
             else:
                 out += "    return ("
                 for param in self.input_params:
-                    out += f"{input_names_map[param.name]}, "
+                    out += f"{input_names_map[param.name] if param.name in input_names_map.keys() else param.name}, "
                 out = out[:-2]
                 out += ")"
         return out
