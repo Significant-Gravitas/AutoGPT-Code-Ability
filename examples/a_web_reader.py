@@ -1,7 +1,7 @@
 from codex.model import InputParameter, Node, OutputParameter
 
 nodes = [
-    Node(
+    Node(  # type: ignore
         description="Takes in the url of a website",
         name="request_node",
         output_params=[
@@ -14,9 +14,8 @@ nodes = [
                 description="the format to convert the webpage too",
             ),
         ],
-        package_requirements=[],
     ),
-    Node(
+    Node(  # type: ignore
         description="Verifies that the url is valid",
         name="verify_url",
         input_params=[
@@ -33,7 +32,7 @@ nodes = [
         ],
         package_requirements=[],
     ),
-    Node(
+    Node(  # type: ignore
         description="Downloads the webpage",
         name="download_page",
         input_params=[
@@ -52,7 +51,7 @@ nodes = [
         ],
         package_requirements=[],
     ),
-    Node(
+    Node(  # type: ignore
         description="Converts the webpage to the desired format",
         name="convert_page",
         input_params=[
@@ -76,7 +75,7 @@ nodes = [
         ],
         package_requirements=[],
     ),
-    Node(
+    Node(  # type: ignore
         name="response_node",
         description="Returns the converted webpage",
         input_params=[
