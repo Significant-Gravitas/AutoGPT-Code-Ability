@@ -1,5 +1,5 @@
 import uuid
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any, Dict, List, Optional, Tuple
 
 from pgvector.sqlalchemy import Vector
 from sentence_transformers import SentenceTransformer
@@ -42,6 +42,19 @@ class InputParameter(SQLModel, table=True):
         return f"{self.name}: {self.param_type} - {self.description}"
 
 
+class RequiredPackage(SQLModel, table=True):
+    """
+    Represents a required package.
+    """
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    package_name: str
+    version: str
+
+    node_id: Optional[int] = Field(default=None, foreign_key="node.id")
+    node: Optional["Node"] = Relationship(back_populates="required_packages")
+
+
 class Node(SQLModel, table=True):
     """
     Represents a node in the system.
@@ -58,16 +71,19 @@ class Node(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     description: str
     name: str
-    package_requirements: Optional[str] = Field(sa_column=Column(String))
-    # Assuming Vector is the correct type for your embedding
-    embedding: Optional[List[float]] = Field(sa_column=Column(Vector(384)))
+
+    required_packages: Optional[List[RequiredPackage]] = Relationship(
+        back_populates="node"
+    )
+
+    embedding: Optional[List[float]] = Field(sa_column=Column(Vector(768)))
 
     # Relationship definitions
     input_params: Optional[List[InputParameter]] = Relationship(back_populates="node")
     output_params: Optional[List[OutputParameter]] = Relationship(back_populates="node")
 
     def model_post_init(self, __context: Any) -> None:
-        embedder = SentenceTransformer("all-MiniLM-L6-v2")
+        embedder = SentenceTransformer("all-mpnet-base-v2")
         self.embedding = embedder.encode(
             self.description, normalize_embeddings=True, convert_to_numpy=True
         )
