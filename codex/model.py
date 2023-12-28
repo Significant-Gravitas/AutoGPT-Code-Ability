@@ -1,9 +1,9 @@
 import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
-from pgvector.sqlalchemy import Vector
+from pgvector.sqlalchemy import Vector  # type: ignore
 from sentence_transformers import SentenceTransformer
-from sqlmodel import Column, Field, Relationship, SQLModel, String
+from sqlmodel import Column, Field, Relationship, SQLModel  # type: ignore
 
 
 class OutputParameter(SQLModel, table=True):
@@ -84,7 +84,7 @@ class Node(SQLModel, table=True):
 
     def model_post_init(self, __context: Any) -> None:
         embedder = SentenceTransformer("all-mpnet-base-v2")
-        self.embedding = embedder.encode(
+        self.embedding = embedder.encode(  # type: ignore
             self.description, normalize_embeddings=True, convert_to_numpy=True
         )
 
@@ -92,13 +92,13 @@ class Node(SQLModel, table=True):
         out = f"def {self.name}("
         if self.input_params:
             for param in self.input_params:
-                out += f"{param.name}: {param.prama_type}, "
+                out += f"{param.name}: {param.param_type}, "
             out = out[:-2]
         out += ")"
         if self.output_params:
             out += " -> ("
             for param in self.output_params:
-                out += f"{param.name}: {param.prama_type}, "
+                out += f"{param.name}: {param.param_type}, "
             out = out[:-2]
             out += ")"
         out += ":"
@@ -161,7 +161,7 @@ class Node(SQLModel, table=True):
         out = "def request("
         if self.output_params:
             for param in self.output_params:
-                out += f"{param.name}: {param.prama_type}, "
+                out += f"{param.name}: {param.param_type}, "
             out = out[:-2]
         out += "):\n"
         return out
