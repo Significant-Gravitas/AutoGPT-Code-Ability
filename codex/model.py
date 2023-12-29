@@ -76,7 +76,9 @@ class Node(SQLModel, table=True):
         back_populates="node"
     )
 
-    embedding: Optional[List[float]] = Field(sa_column=Column(Vector(768)))
+    embedding: Optional[List[float]] = Field(
+        default=None, sa_column=Column(Vector(768))
+    )
 
     # Relationship definitions
     input_params: Optional[List[InputParameter]] = Relationship(
@@ -86,11 +88,11 @@ class Node(SQLModel, table=True):
         back_populates="node"
     )
 
-    def model_post_init(self, __context: Any) -> None:
-        embedder = SentenceTransformer("all-mpnet-base-v2")
-        self.embedding = embedder.encode(  # type: ignore
-            self.description, normalize_embeddings=True, convert_to_numpy=True
-        )
+    # def model_post_init(self, __context: Any) -> None:
+    #     embedder = SentenceTransformer("all-mpnet-base-v2")
+    #     self.embedding = embedder.encode(  # type: ignore
+    #         self.description, normalize_embeddings=True, convert_to_numpy=True
+    #     )
 
     def __str__(self) -> str:
         out = f"def {self.name}("

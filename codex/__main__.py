@@ -14,7 +14,9 @@ from requests.auth import HTTPBasicAuth
     prompt=True,
     help="Runner type",
 )
-@click.option("--username", default="admin", help="Username for authentication")
+@click.option(
+    "--username", default="admin", help="Username for authentication"
+)
 @click.option(
     "--password",
     default="asd453jnsdof9384rjnsdf",
@@ -34,7 +36,7 @@ def send_request(
     password: str,
     output: str,
 ) -> None:
-    url = "http://127.0.0.1:8000/code" 
+    url = "http://127.0.0.1:8000/code"
     data = {"description": description, "user_id": user_id, "runner": runner}
 
     try:

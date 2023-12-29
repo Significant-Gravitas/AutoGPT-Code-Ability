@@ -5,7 +5,7 @@ import networkx as nx
 from .model import Node
 
 
-def add_node(graph: nx.DiGraph, node_name: str, node: Node):
+def add_node(graph: nx.DiGraph, node_name: str, node: Node) -> bool:
     if graph.number_of_nodes() == 0:
         graph.add_node(node_name, node=node)
         return
@@ -30,9 +30,7 @@ def add_node(graph: nx.DiGraph, node_name: str, node: Node):
 
     # Check if all input parameters are available
     if len(input_params_needed) != len(providers):
-        raise ValueError(
-            "Not all input parameters can be satisfied by the current graph."
-        )
+        return False
 
     # Add the new node
     graph.add_node(node_name, node=node)
@@ -40,6 +38,8 @@ def add_node(graph: nx.DiGraph, node_name: str, node: Node):
     # Connect the new node to its parameter providers
     for param_key, provider_node in providers.items():
         graph.add_edge(provider_node, node_name, connection_type=param_key[0])
+
+    return True
 
 
 def create_runner(graph: nx.DiGraph):
