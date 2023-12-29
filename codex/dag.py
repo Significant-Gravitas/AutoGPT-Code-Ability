@@ -11,7 +11,9 @@ def add_node(graph: nx.DiGraph, node_name: str, node: Node):
         return
     # Check if node's input parameters are satisfied by the existing nodes in the graph
     if node.input_params:
-        input_params_needed = {(p.name, p.prama_type): p for p in node.input_params}
+        input_params_needed = {
+            (p.name, p.prama_type): p for p in node.input_params
+        }
     else:
         input_params_needed = {}
 

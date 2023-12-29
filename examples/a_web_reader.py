@@ -6,7 +6,9 @@ nodes = [
         name="request_node",
         output_params=[
             OutputParameter(
-                param_type="str", name="url", description="The url of the website"
+                param_type="str",
+                name="url",
+                description="The url of the website",
             ),
             OutputParameter(
                 param_type="str",
@@ -20,7 +22,9 @@ nodes = [
         name="verify_url",
         input_params=[
             InputParameter(
-                param_type="str", name="url", description="The url of the website"
+                param_type="str",
+                name="url",
+                description="The url of the website",
             )
         ],
         output_params=[

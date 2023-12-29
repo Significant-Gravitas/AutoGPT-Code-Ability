@@ -19,7 +19,9 @@ add_inventory_items_path = [
                 description="Quantity of the item",
             ),
             OutputParameter(
-                parameter_type="float", name="price", description="Price of the item"
+                parameter_type="float",
+                name="price",
+                description="Price of the item",
             ),
         ],
         package_requirements=[],
@@ -39,7 +41,9 @@ add_inventory_items_path = [
                 description="Quantity of the item",
             ),
             InputParameter(
-                parameter_type="float", name="price", description="Price of the item"
+                parameter_type="float",
+                name="price",
+                description="Price of the item",
             ),
         ],
         output_params=[

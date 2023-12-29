@@ -6,10 +6,14 @@ nodes = [
         name="input_node",
         output_params=[
             OutputParameter(
-                param_type="float", name="number1", description="The first number"
+                param_type="float",
+                name="number1",
+                description="The first number",
             ),
             OutputParameter(
-                param_type="float", name="number2", description="The second number"
+                param_type="float",
+                name="number2",
+                description="The second number",
             ),
             OutputParameter(
                 param_type="str",
@@ -23,10 +27,14 @@ nodes = [
         name="validation_node",
         input_params=[
             InputParameter(
-                param_type="float", name="number1", description="The first number"
+                param_type="float",
+                name="number1",
+                description="The first number",
             ),
             InputParameter(
-                param_type="float", name="number2", description="The second number"
+                param_type="float",
+                name="number2",
+                description="The second number",
             ),
             InputParameter(
                 param_type="str",
@@ -47,10 +55,14 @@ nodes = [
         name="calculation_node",
         input_params=[
             InputParameter(
-                param_type="float", name="number1", description="The first number"
+                param_type="float",
+                name="number1",
+                description="The first number",
             ),
             InputParameter(
-                param_type="float", name="number2", description="The second number"
+                param_type="float",
+                name="number2",
+                description="The second number",
             ),
             InputParameter(
                 param_type="str",

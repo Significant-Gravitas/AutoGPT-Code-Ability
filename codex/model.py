@@ -79,8 +79,12 @@ class Node(SQLModel, table=True):
     embedding: Optional[List[float]] = Field(sa_column=Column(Vector(768)))
 
     # Relationship definitions
-    input_params: Optional[List[InputParameter]] = Relationship(back_populates="node")
-    output_params: Optional[List[OutputParameter]] = Relationship(back_populates="node")
+    input_params: Optional[List[InputParameter]] = Relationship(
+        back_populates="node"
+    )
+    output_params: Optional[List[OutputParameter]] = Relationship(
+        back_populates="node"
+    )
 
     def model_post_init(self, __context: Any) -> None:
         embedder = SentenceTransformer("all-mpnet-base-v2")
@@ -113,7 +117,9 @@ class Node(SQLModel, table=True):
                 out += f"\n    {param}"
         return out
 
-    def to_code(self, input_names_map: Dict[str, str]) -> Tuple[str, Dict[str, str]]:
+    def to_code(
+        self, input_names_map: Dict[str, str]
+    ) -> Tuple[str, Dict[str, str]]:
         """
         Converts the Node object to Python code.
 
@@ -180,7 +186,9 @@ class Node(SQLModel, table=True):
         out = ""
         if self.input_params:
             if len(self.input_params) == 1:
-                out += f"    return {input_names_map[self.input_params[0].name]}"
+                out += (
+                    f"    return {input_names_map[self.input_params[0].name]}"
+                )
             else:
                 out += "    return ("
                 for param in self.input_params:

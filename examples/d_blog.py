@@ -18,10 +18,11 @@ registration_path = [
                 description="Password for the new user",
             ),
             OutputParameter(
-                param_type="str", name="email", description="Email of the new user"
+                param_type="str",
+                name="email",
+                description="Email of the new user",
             ),
         ],
-        package_requirements=[],
     ),
     # Node for registering a new user
     Node(  # type: ignore
@@ -39,7 +40,9 @@ registration_path = [
                 description="Password for the new user",
             ),
             InputParameter(
-                param_type="str", name="email", description="Email of the new user"
+                param_type="str",
+                name="email",
+                description="Email of the new user",
             ),
         ],
         output_params=[
@@ -49,7 +52,6 @@ registration_path = [
                 description="Indicates if the registration was successful",
             ),
         ],
-        package_requirements=[],
     ),
     # Node for sending response after registration
     Node(  # type: ignore
@@ -75,10 +77,14 @@ login_path = [
         input_params=None,
         output_params=[
             OutputParameter(
-                param_type="str", name="username", description="Username of the user"
+                param_type="str",
+                name="username",
+                description="Username of the user",
             ),
             OutputParameter(
-                param_type="str", name="password", description="Password of the user"
+                param_type="str",
+                name="password",
+                description="Password of the user",
             ),
         ],
         package_requirements=[],
@@ -89,10 +95,14 @@ login_path = [
         name="authenticate_user",
         input_params=[
             InputParameter(
-                param_type="str", name="username", description="Username of the user"
+                param_type="str",
+                name="username",
+                description="Username of the user",
             ),
             InputParameter(
-                param_type="str", name="password", description="Password of the user"
+                param_type="str",
+                name="password",
+                description="Password of the user",
             ),
         ],
         output_params=[
@@ -131,7 +141,9 @@ create_post_path = [
                 param_type="str", name="title", description="Title of the post"
             ),
             OutputParameter(
-                param_type="str", name="content", description="Content of the post"
+                param_type="str",
+                name="content",
+                description="Content of the post",
             ),
         ],
         package_requirements=[],
@@ -145,7 +157,9 @@ create_post_path = [
                 param_type="str", name="title", description="Title of the post"
             ),
             InputParameter(
-                param_type="str", name="content", description="Content of the post"
+                param_type="str",
+                name="content",
+                description="Content of the post",
             ),
         ],
         output_params=[
@@ -181,7 +195,9 @@ edit_post_path = [
         input_params=None,
         output_params=[
             OutputParameter(
-                param_type="int", name="post_id", description="ID of the post to edit"
+                param_type="int",
+                name="post_id",
+                description="ID of the post to edit",
             ),
             OutputParameter(
                 param_type="str",
@@ -202,7 +218,9 @@ edit_post_path = [
         name="edit_post",
         input_params=[
             InputParameter(
-                param_type="int", name="post_id", description="ID of the post to edit"
+                param_type="int",
+                name="post_id",
+                description="ID of the post to edit",
             ),
             InputParameter(
                 param_type="str",
@@ -248,7 +266,9 @@ delete_post_path = [
         input_params=None,
         output_params=[
             OutputParameter(
-                param_type="int", name="post_id", description="ID of the post to delete"
+                param_type="int",
+                name="post_id",
+                description="ID of the post to delete",
             ),
         ],
         package_requirements=[],
@@ -259,7 +279,9 @@ delete_post_path = [
         name="delete_post",
         input_params=[
             InputParameter(
-                param_type="int", name="post_id", description="ID of the post to delete"
+                param_type="int",
+                name="post_id",
+                description="ID of the post to delete",
             ),
         ],
         output_params=[
