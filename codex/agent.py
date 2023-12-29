@@ -145,7 +145,7 @@ def generate_execution_graphs(
     # return results
 
 
-def build_graph(graph: NodeGraph):
+def build_graph(desc: str, graph: NodeGraph):
     """
     Takes in a graph and returns a boolean indicating whether the graph is valid.
     """
@@ -153,9 +153,31 @@ def build_graph(graph: NodeGraph):
     for node in graph:
         added_node = add_node(dag, node.name, node)
         if added_node and (
-            "response" not in node.name or "request" not in node.name
+            "response" not in node.name.lower() or "request" not in node.name.lower()
         ):
-            pass
+            is_complex = check_node_complexity(desc, node)
+            out = "Node is too Complex" if not is_complex else "Node is simple"
+            print(f"{out}\n\nAdded node: {node}\n\n")
+
+
+def check_node_complexity(context: str, node: Node) -> bool:
+    response = client.chat.completions.create(
+        model="gpt-4-1106-preview",
+        messages=[
+            {
+                "role": "system",
+                "content": "Reply in json format: \n{'ans': 'y' or 'n'}\nThinking carefully step by step. Output if it is easily possible to write this function in less than 30 lines of python code without missing any implementation details ",
+            },
+            {"role": "user", "content": f"Application Context: '{context}'\n"},
+            {"role": "user", "content": f"Function to implement:\n{node}"},
+        ],
+        response_format={"type": "json_object"},
+    )
+
+    if json.loads(response.choices[0].message.content)["ans"] == "y":
+        return True
+    else:
+        return False
 
 
 def lookup_node(node: Node) -> List[Node]:
@@ -197,6 +219,7 @@ if __name__ == "__main__":
     )
     print(paths)
     node_graphs = generate_execution_graphs(paths.execution_paths)
+    build_graph(node_graphs[0].description, node_graphs[0].nodes)
     import IPython
 
     IPython.embed()
