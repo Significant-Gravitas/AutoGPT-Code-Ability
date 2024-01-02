@@ -120,3 +120,21 @@ prompt_select_node = ChatPromptTemplate.from_messages(
 chain_select_from_possible_nodes = (
     prompt_select_node | model | parser_select_node
 )
+
+
+parser_check_node_complexity = JsonOutputParser(
+    pydantic_object=CheckComplexity
+)
+
+prompt_check_node_complexity = ChatPromptTemplate.from_messages(
+    [
+        ("system", "You are an expert software engineer specialised in breaking down a problem into a series of steps that can be developed by a junior developer.\nReply in json format:\n{format_instructions}\nNote: reply y or n"),
+        ("human", "Thinking carefully step by step. Output if it is easily possible to write this function in less than 30 lines of python code without missing any implementation details. Node:\n{node}"),
+    ]
+).partial(
+    format_instructions=parser_check_node_complexity.get_format_instructions()
+)
+
+chain_check_node_complexity = (
+    prompt_check_node_complexity | model | parser_check_node_complexity
+)
