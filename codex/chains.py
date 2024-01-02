@@ -106,6 +106,9 @@ print(
     )
 )
 
+######################
+# Select node        #
+######################
 
 parser_select_node = JsonOutputParser(pydantic_object=SelectNode)
 prompt_select_node = ChatPromptTemplate.from_messages(
@@ -121,6 +124,9 @@ chain_select_from_possible_nodes = (
     prompt_select_node | model | parser_select_node
 )
 
+##########################
+# Check node complexity  #
+##########################
 
 parser_check_node_complexity = JsonOutputParser(
     pydantic_object=CheckComplexity
@@ -137,4 +143,24 @@ prompt_check_node_complexity = ChatPromptTemplate.from_messages(
 
 chain_check_node_complexity = (
     prompt_check_node_complexity | model | parser_check_node_complexity
+)
+
+
+######################
+# Decompose Node     #
+######################
+
+parser_decompose_node = JsonOutputParser(
+    pydantic_object=NodeGraph
+)
+prompt_decompose_node = ChatPromptTemplate.from_messages([
+    ("system", "You are an expert software engineer specialised in breaking down a problem into a series of steps that can be developed by a junior developer. Each step is designed to be as generic as possible. The first step is a `request` node with `request` in the name it represents a request object and only has output params. The last step is a `response` node with `response` in the name it represents aresposne object and only has input parameters.\nReply in json format:\n{format_instructions}\n Note: param_type are primitive type avaliable in typing lib as in str, int List[str] etc.\n node names are in python function name format"),
+    ("human", "The application being developed is: \n{application_context}"),
+    ("human", "Thinking carefully step by step. Decompose this complex node into a series of simpliar steps, creating a new node graph. The new graph's request is the inputs for this node and response is the outputs of this node. Output the nodes needed to implement this complex node:\n{node}"),
+]
+).partial(
+    format_instructions=parser_decompose_node.get_format_instructions()
+)
+chain_decompose_node = (
+    prompt_decompose_node | model | parser_decompose_node
 )
