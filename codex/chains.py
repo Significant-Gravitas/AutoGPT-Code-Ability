@@ -1,8 +1,9 @@
 from typing import List, Optional
+
 from langchain.chat_models import ChatOpenAI
-from langchain.prompts import PromptTemplate, ChatPromptTemplate
+from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
-from langchain_core.pydantic_v1 import BaseModel, Field
+from langchain_core.pydantic_v1 import BaseModel
 
 
 class ExecutionPath(BaseModel):
@@ -22,27 +23,32 @@ class CheckComplexity(BaseModel):
 class SelectNode(BaseModel):
     node_id: str
 
+
 class InputParameter(BaseModel):
     param_type: str
     name: str
     description: str
     optional: bool
 
+
 class OutputParameter(BaseModel):
     param_type: str
     name: str
     description: str
     optional: bool
-    
+
+
 class NodeDefinition(BaseModel):
     name: str
     description: str
     input_params: Optional[List[InputParameter]]
     output_params: Optional[List[OutputParameter]]
     required_packages: List[str]
-    
+
+
 class NodeGraph(BaseModel):
     nodes: List[NodeDefinition]
+
 
 model = ChatOpenAI(
     temperature=0,
@@ -81,14 +87,22 @@ print(
 # Generate graph     #
 ######################
 
-parser_generate_execution_graph = JsonOutputParser(
-    pydantic_object=NodeGraph
-)
-prompt_generate_execution_graph = ChatPromptTemplate.from_messages([
-    ("system", "You are an expert software engineer specialised in breaking down a problem into a series of steps that can be developed by a junior developer. Each step is designed to be as generic as possible. The first step is a `request` node with `request` in the name it represents a request object and only has output params. The last step is a `response` node with `response` in the name it represents aresposne object and only has input parameters.\nReply in json format:\n{format_instructions}\n Note: param_type are primitive type avaliable in typing lib as in str, int List[str] etc.\n node names are in python function name format"),
-    ("human", "The application being developed is: \n{application_context}"),
-    ("human", "Thinking carefully step by step. Ouput the steps as nodes for the api route:\n{api_route}"),
-]
+parser_generate_execution_graph = JsonOutputParser(pydantic_object=NodeGraph)
+prompt_generate_execution_graph = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "You are an expert software engineer specialised in breaking down a problem into a series of steps that can be developed by a junior developer. Each step is designed to be as generic as possible. The first step is a `request` node with `request` in the name it represents a request object and only has output params. The last step is a `response` node with `response` in the name it represents aresposne object and only has input parameters.\nReply in json format:\n{format_instructions}\n Note: param_type are primitive type avaliable in typing lib as in str, int List[str] etc.\n node names are in python function name format",
+        ),
+        (
+            "human",
+            "The application being developed is: \n{application_context}",
+        ),
+        (
+            "human",
+            "Thinking carefully step by step. Ouput the steps as nodes for the api route:\n{api_route}",
+        ),
+    ]
 ).partial(
     format_instructions=parser_generate_execution_graph.get_format_instructions()
 )
@@ -100,7 +114,7 @@ print(
         chain_generate_execution_graph.invoke(
             {
                 "application_context": "Develop a small script that takes a URL as input and downloads the webpage and ouptus it in Markdown format",
-                "api_route": "Download the webpage and output it in Markdown format"
+                "api_route": "Download the webpage and output it in Markdown format",
             }
         )
     )
@@ -113,13 +127,16 @@ print(
 parser_select_node = JsonOutputParser(pydantic_object=SelectNode)
 prompt_select_node = ChatPromptTemplate.from_messages(
     [
-        ("system", "Your are an expect at node selection. You are to decide if one of the nodes presented to you fits the requirement.\nReply in json format: {format_instructions}\n Note: if no node matches the requirement reply with no as the node_id."),
-        ("human", "Thinking carefully step by step. Select a node if it meets the requirement.\n# Nodes\n{ndoes}\n# Requirement\n{requirement}"),
-
+        (
+            "system",
+            "Your are an expect at node selection. You are to decide if one of the nodes presented to you fits the requirement.\nReply in json format: {format_instructions}\n Note: if no node matches the requirement reply with no as the node_id.",
+        ),
+        (
+            "human",
+            "Thinking carefully step by step. Select a node if it meets the requirement.\n# Nodes\n{ndoes}\n# Requirement\n{requirement}",
+        ),
     ]
-).partial(
-    format_instructions=parser_select_node.get_format_instructions()
-)
+).partial(format_instructions=parser_select_node.get_format_instructions())
 chain_select_from_possible_nodes = (
     prompt_select_node | model | parser_select_node
 )
@@ -134,8 +151,14 @@ parser_check_node_complexity = JsonOutputParser(
 
 prompt_check_node_complexity = ChatPromptTemplate.from_messages(
     [
-        ("system", "You are an expert software engineer specialised in breaking down a problem into a series of steps that can be developed by a junior developer.\nReply in json format:\n{format_instructions}\nNote: reply y or n"),
-        ("human", "Thinking carefully step by step. Output if it is easily possible to write this function in less than 30 lines of python code without missing any implementation details. Node:\n{node}"),
+        (
+            "system",
+            "You are an expert software engineer specialised in breaking down a problem into a series of steps that can be developed by a junior developer.\nReply in json format:\n{format_instructions}\nNote: reply y or n",
+        ),
+        (
+            "human",
+            "Thinking carefully step by step. Output if it is easily possible to write this function in less than 30 lines of python code without missing any implementation details. Node:\n{node}",
+        ),
     ]
 ).partial(
     format_instructions=parser_check_node_complexity.get_format_instructions()
@@ -150,17 +173,48 @@ chain_check_node_complexity = (
 # Decompose Node     #
 ######################
 
-parser_decompose_node = JsonOutputParser(
-    pydantic_object=NodeGraph
+parser_decompose_node = JsonOutputParser(pydantic_object=NodeGraph)
+prompt_decompose_node = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "You are an expert software engineer specialised in breaking down a problem into a series of steps that can be developed by a junior developer. Each step is designed to be as generic as possible. The first step is a `request` node with `request` in the name it represents a request object and only has output params. The last step is a `response` node with `response` in the name it represents aresposne object and only has input parameters.\nReply in json format:\n{format_instructions}\n Note: param_type are primitive type avaliable in typing lib as in str, int List[str] etc.\n node names are in python function name format",
+        ),
+        (
+            "human",
+            "The application being developed is: \n{application_context}",
+        ),
+        (
+            "human",
+            "Thinking carefully step by step. Decompose this complex node into a series of simpliar steps, creating a new node graph. The new graph's request is the inputs for this node and response is the outputs of this node. Output the nodes needed to implement this complex node:\n{node}",
+        ),
+    ]
+).partial(format_instructions=parser_decompose_node.get_format_instructions())
+chain_decompose_node = prompt_decompose_node | model | parser_decompose_node
+
+######################
+# Write Node         #
+######################
+
+
+def _sanitize_output(text: str):
+    _, after = text.split("```python")
+    return after.split("```")[0]
+
+
+template = """You are an expect python developer. Write the python code to implement the node.
+Included error handling, comments and type hints.
+
+Return only python code in Markdown format, e.g.:
+
+```python
+....
+```"""
+
+parser_write_node = StrOutputParser()
+prompt_write_node = ChatPromptTemplate.from_messages(
+    [("system", template), ("human", "{input}")]
 )
-prompt_decompose_node = ChatPromptTemplate.from_messages([
-    ("system", "You are an expert software engineer specialised in breaking down a problem into a series of steps that can be developed by a junior developer. Each step is designed to be as generic as possible. The first step is a `request` node with `request` in the name it represents a request object and only has output params. The last step is a `response` node with `response` in the name it represents aresposne object and only has input parameters.\nReply in json format:\n{format_instructions}\n Note: param_type are primitive type avaliable in typing lib as in str, int List[str] etc.\n node names are in python function name format"),
-    ("human", "The application being developed is: \n{application_context}"),
-    ("human", "Thinking carefully step by step. Decompose this complex node into a series of simpliar steps, creating a new node graph. The new graph's request is the inputs for this node and response is the outputs of this node. Output the nodes needed to implement this complex node:\n{node}"),
-]
-).partial(
-    format_instructions=parser_decompose_node.get_format_instructions()
-)
-chain_decompose_node = (
-    prompt_decompose_node | model | parser_decompose_node
+chain_write_node = (
+    prompt_write_node | model | parser_write_node | _sanitize_output
 )
