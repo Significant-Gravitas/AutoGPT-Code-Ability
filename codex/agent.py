@@ -1,14 +1,15 @@
-from typing import List, Optional
-from codex.model import Node, InputParameter, OutputParameter
-from codex.database import search_nodes_by_params
-import logging
-from openai import OpenAI
+import concurrent.futures
 import json
+import logging
+from typing import List, Optional
+
+import networkx as nx
 from openai import OpenAI
 from pydantic import BaseModel
-import networkx as nx
-import concurrent.futures
+
 from codex.dag import add_node
+from codex.database import search_nodes_by_params
+from codex.model import InputParameter, Node, OutputParameter
 
 
 class ExecutionPath(BaseModel):
@@ -153,7 +154,8 @@ def build_graph(desc: str, graph: NodeGraph):
     for node in graph:
         added_node = add_node(dag, node.name, node)
         if added_node and (
-            "response" not in node.name.lower() or "request" not in node.name.lower()
+            "response" not in node.name.lower()
+            or "request" not in node.name.lower()
         ):
             is_complex = check_node_complexity(desc, node)
             out = "Node is too Complex" if not is_complex else "Node is simple"

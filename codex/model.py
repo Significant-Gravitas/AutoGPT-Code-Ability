@@ -1,11 +1,12 @@
 import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
+import networkx as nx
 from pgvector.sqlalchemy import Vector  # type: ignore
+from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
 from sqlmodel import Column, Field, Relationship, SQLModel  # type: ignore
-from pydantic import BaseModel
-import networkx as nx
+
 
 class OutputParameter(SQLModel, table=True):
     """
@@ -88,11 +89,10 @@ class Node(SQLModel, table=True):
     output_params: Optional[List[OutputParameter]] = Relationship(
         back_populates="node"
     )
-    
+
     code: Optional[str] = Field(default=None)
-    
+
     quality: Optional[float] = Field(default=None)
-    
 
     # def model_post_init(self, __context: Any) -> None:
     #     embedder = SentenceTransformer("all-mpnet-base-v2")
@@ -209,7 +209,7 @@ class Node(SQLModel, table=True):
 class Task(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     description: str
-    
+
 
 class ExecutionPath(BaseModel):
     name: str
@@ -230,7 +230,7 @@ class NodeGraph(BaseModel):
 class ExecutatbleNode(BaseModel):
     order: int
     node: Node
-    
+
 
 class ExecutableGraph:
     name: str

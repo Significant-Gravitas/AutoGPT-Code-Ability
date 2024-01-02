@@ -1,13 +1,14 @@
-from fastapi import FastAPI, HTTPException, Depends
-from fastapi.responses import FileResponse
-from pydantic import BaseModel
-from enum import Enum
 import logging
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
-import zipfile
 import os
+import zipfile
 from contextlib import asynccontextmanager
-from sqlmodel import SQLModel, create_engine, Session  # type: ignore
+from enum import Enum
+
+from fastapi import Depends, FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from pydantic import BaseModel
+from sqlmodel import Session, SQLModel, create_engine  # type: ignore
 
 DATABASE_URL = "sqlite:///./test.db"
 engine = create_engine(DATABASE_URL)
