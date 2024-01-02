@@ -93,7 +93,7 @@ def generate_execution_graph(execution_path: ExecutionPath) -> NodeGraph:
         messages=[
             {
                 "role": "system",
-                "content": 'Reply in json format: \n{ "nodes": [\n { "name": "node name",\n    "description", "node description",\n     "input_params": [ { "param_type": "type as in str, int List[str] etc",\n"name": "param name",\n"description": "what this param represents",\n"optional": bool\n}, ... ],\n"output_params": [ { "param_type": "primitive type avaliable in typing lib as in str, int List[str] etc",\n"name": "param name",\n"description": "what this param represents",\n"optional": bool\n}, ... ] \n},\n...\n]}\n\nThinking carefully step by step. Output the nodes needed for the execution path the user specifies. Ensuring each node is can be easily coded up by a junior developer.  The first node needs to be a request node with only output params and the last node is a response node with only input parameters specified which is what will be returned to the user\n',
+                "content": 'Reply in json format: \n{ "nodes": [\n { "name": "node name in style of a python function name",\n    "description", "node description",\n     "input_params": [ { "param_type": "type as in str, int List[str] etc",\n"name": "param name",\n"description": "what this param represents",\n"optional": bool\n}, ... ],\n"output_params": [ { "param_type": "primitive type avaliable in typing lib as in str, int List[str] etc",\n"name": "param name",\n"description": "what this param represents",\n"optional": bool\n}, ... ] \n},\n...\n]}\n\nThinking carefully step by step. Output the nodes needed for the execution path the user specifies. Ensuring each node is can be easily coded up by a junior developer.  The first node needs to be a request node with only output params and the last node is a response node with only input parameters specified which is what will be returned to the user\n',
             }
         ],
         temperature=1,
@@ -175,9 +175,9 @@ def check_node_complexity(context: str, node: Node) -> bool:
     )
 
     if json.loads(response.choices[0].message.content)["ans"] == "y":
-        return True
+        return False  # Is not too complex
     else:
-        return False
+        return True  # Is too complex
 
 
 def lookup_node(node: Node) -> List[Node]:

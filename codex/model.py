@@ -4,7 +4,8 @@ from typing import Any, Dict, List, Optional, Tuple
 from pgvector.sqlalchemy import Vector  # type: ignore
 from sentence_transformers import SentenceTransformer
 from sqlmodel import Column, Field, Relationship, SQLModel  # type: ignore
-
+from pydantic import BaseModel
+import networkx as nx
 
 class OutputParameter(SQLModel, table=True):
     """
@@ -87,6 +88,11 @@ class Node(SQLModel, table=True):
     output_params: Optional[List[OutputParameter]] = Relationship(
         back_populates="node"
     )
+    
+    code: Optional[str] = Field(default=None)
+    
+    quality: Optional[float] = Field(default=None)
+    
 
     # def model_post_init(self, __context: Any) -> None:
     #     embedder = SentenceTransformer("all-mpnet-base-v2")
@@ -198,3 +204,42 @@ class Node(SQLModel, table=True):
                 out = out[:-2]
                 out += ")"
         return out
+
+
+class Task(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    description: str
+    
+
+class ExecutionPath(BaseModel):
+    name: str
+    description: str
+
+
+class ApplicationPaths(BaseModel):
+    execution_paths: List[ExecutionPath]
+    application_context: str
+
+
+class NodeGraph(BaseModel):
+    name: str
+    description: str
+    nodes: List[Node]
+
+
+class ExecutatbleNode(BaseModel):
+    order: int
+    node: Node
+    
+
+class ExecutableGraph:
+    name: str
+    description: str
+    graph: nx.DiGraph = nx.DiGraph()
+    nodes: List[ExecutatbleNode]
+    execution_path: ExecutionPath
+
+
+class Application(BaseModel):
+    application_context: str
+    execution_paths: List[NodeGraph]
