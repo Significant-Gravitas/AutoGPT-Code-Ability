@@ -106,3 +106,17 @@ print(
     )
 )
 
+
+parser_select_node = JsonOutputParser(pydantic_object=SelectNode)
+prompt_select_node = ChatPromptTemplate.from_messages(
+    [
+        ("system", "Your are an expect at node selection. You are to decide if one of the nodes presented to you fits the requirement.\nReply in json format: {format_instructions}\n Note: if no node matches the requirement reply with no as the node_id."),
+        ("human", "Thinking carefully step by step. Select a node if it meets the requirement.\n# Nodes\n{ndoes}\n# Requirement\n{requirement}"),
+
+    ]
+).partial(
+    format_instructions=parser_select_node.get_format_instructions()
+)
+chain_select_from_possible_nodes = (
+    prompt_select_node | model | parser_select_node
+)
