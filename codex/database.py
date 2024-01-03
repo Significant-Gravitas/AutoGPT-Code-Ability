@@ -1,19 +1,59 @@
-from typing import List, Tuple
+from typing import List, Optional
 
 from sqlalchemy import func
 from sqlmodel import Session, SQLModel, create_engine, select
 
 from .model import InputParameter, Node, OutputParameter
 
+from sentence_transformers import SentenceTransformer
+
+
+def select_node_by_id(session: Session, node_id: int) -> Optional[Node]:
+    """
+    Selects a single node by its ID.
+
+    Parameters:
+    session (Session): The database session.
+    node_id (int): The ID of the node to retrieve.
+
+    Returns:
+    Optional[Node]: The node if found, otherwise None.
+    """
+    statement = select(Node).where(Node.id == node_id)
+    results = session.exec(statement)
+    node = results.first()
+    return node
+
+
+def search_for_similar_node(session: Session, node: Node) -> List[Node]:
+    input_param_types = None
+    output_param_types = None
+    if node.input_params:
+        input_param_types = [param.param_type for param in node.input_params]
+    if node.output_params:
+        output_param_types = [param.param_type for param in node.output_params]
+
+    embedder = SentenceTransformer("all-mpnet-base-v2")
+    query = embedder.encode(  # type: ignore
+        node.description, normalize_embeddings=True, convert_to_numpy=True
+    )
+    return search_nodes_by_params(
+        session=session,
+        query=query,
+        input_param_types=input_param_types,
+        output_param_types=output_param_types,
+        similarity_threshold=0.2,
+    )
+
 
 def search_nodes_by_params(
     session: Session,
     query: List[float],
-    input_param_types: List[str],
-    output_param_types: List[str],
+    input_param_types: List[str] | None = None,
+    output_param_types: List[str] | None = None,
     similarity_threshold: float = 0.5,
     limit: int = 5,
-) -> List[Tuple[Node, float]]:
+) -> List[Node]:
     """
     Search for nodes based on input and output parameter types,
     ordering by similarity to the query embedding.
@@ -31,9 +71,6 @@ def search_nodes_by_params(
     # Base query for Node, including cosine distance
     query = select(  # type: ignore
         Node,
-        Node.embedding.cosine_distance(query_embedding).label(  # type: ignore
-            "cosine_distance"
-        ),  # type: ignore
     ).where(
         Node.embedding.cosine_distance(query) <= similarity_threshold  # type: ignore
     )
