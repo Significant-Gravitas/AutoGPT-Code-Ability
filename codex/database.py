@@ -1,11 +1,10 @@
 from typing import List, Optional
 
+from sentence_transformers import SentenceTransformer
 from sqlalchemy import func
 from sqlmodel import Session, SQLModel, create_engine, select
 
 from .model import InputParameter, Node, OutputParameter
-
-from sentence_transformers import SentenceTransformer
 
 
 def select_node_by_id(session: Session, node_id: int) -> Optional[Node]:
