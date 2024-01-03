@@ -100,19 +100,20 @@ def process_node(
 
         if not possible_nodes:
             logger.warning(f"No similar nodes found for: {node.name}")
+            selected_node = SelectNode(node_id="new")
+        else:
+            nodes_str = ""
+            for i, n in enumerate(possible_nodes):
+                nodes_str += f"Node ID: {i}\n{n}\n"
 
-        nodes_str = ""
-        for i, n in enumerate(possible_nodes):
-            nodes_str += f"Node ID: {i}\n{n}\n"
-
-        logger.info(
-            f"✅ Found similar nodes, selecting the appropriate one for: {node.name}"
-        )
-        selected_node = SelectNode.parse_obj(
-            chain_select_from_possible_nodes.invoke(
-                {"nodes": nodes_str, "requirement": node}
+            logger.info(
+                f"✅ Found similar nodes, selecting the appropriate one for: {node.name}"
             )
-        )
+            selected_node = SelectNode.parse_obj(
+                chain_select_from_possible_nodes.invoke(
+                    {"nodes": nodes_str, "requirement": node}
+                )
+            )
 
         if selected_node.node_id == "new":
             logger.info(f"🆕 Processing new node: {node.name}")
@@ -183,7 +184,7 @@ def run(task_description: str):
     with Session(engine) as session:
         for path_index, path in enumerate(ap.execution_paths, start=1):
             logger.info(
-                f"🔄 Processing path {path_index}/{len(ap.execution_paths)}"
+                f"🔄 Processing path {path_index}/{len(ap.execution_paths)} - {path.name}: {path.description}"
             )
 
             dag = nx.DiGraph()
