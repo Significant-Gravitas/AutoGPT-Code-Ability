@@ -38,7 +38,7 @@ def search_for_similar_node(session: Session, node: Node) -> List[Node]:
     )
     return search_nodes_by_params(
         session=session,
-        query=query,
+        description=query,
         input_param_types=input_param_types,
         output_param_types=output_param_types,
         similarity_threshold=0.2,
@@ -47,7 +47,7 @@ def search_for_similar_node(session: Session, node: Node) -> List[Node]:
 
 def search_nodes_by_params(
     session: Session,
-    query: List[float],
+    description: List[float],
     input_param_types: List[str] | None = None,
     output_param_types: List[str] | None = None,
     similarity_threshold: float = 0.5,
@@ -68,10 +68,10 @@ def search_nodes_by_params(
              its corresponding cosine distance.
     """
     # Base query for Node, including cosine distance
-    query = select(  # type: ignore
+    description = select(  # type: ignore
         Node,
     ).where(
-        Node.embedding.cosine_distance(query) <= similarity_threshold  # type: ignore
+        Node.embedding.cosine_distance(description) <= similarity_threshold  # type: ignore
     )
 
     # Adding conditions for input parameters
@@ -85,7 +85,7 @@ def search_nodes_by_params(
                 )
                 .as_scalar()
             )
-            query = query.where(  # type: ignore
+            description = description.where(  # type: ignore
                 subquery == input_param_types.count(param_type)
             )
 
@@ -100,17 +100,17 @@ def search_nodes_by_params(
                 )
                 .as_scalar()
             )
-            query = query.where(  # type: ignore
+            description = description.where(  # type: ignore
                 subquery == output_param_types.count(param_type)
             )
 
     # Add ordering and limit
-    query = query.order_by(  # type: ignore
-        Node.embedding.cosine_distance(query_embedding)  # type: ignore
+    description = description.order_by(  # type: ignore
+        Node.embedding.cosine_distance(description)  # type: ignore
     ).limit(limit)
 
     # Execute the query and fetch results
-    return session.exec(query).fetchall()  # type: ignore
+    return session.exec(description).fetchall()  # type: ignore
 
 
 if __name__ == "__main__":

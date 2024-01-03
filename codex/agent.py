@@ -214,6 +214,8 @@ def run(task_description: str):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+
     run(
         "Develop a small script that takes a URL as input and returns the webpage in Markdown format. Focus on converting basic HTML tags like headings, paragraphs, and lists."
     )
