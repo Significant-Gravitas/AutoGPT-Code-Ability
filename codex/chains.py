@@ -73,15 +73,6 @@ prompt_decompose_task = ChatPromptTemplate.from_messages(
     ]
 ).partial(format_instructions=parser_decode_task.get_format_instructions())
 chain_decompose_task = prompt_decompose_task | model | parser_decode_task
-print(
-    ApplicationPaths.parse_obj(
-        chain_decompose_task.invoke(
-            {
-                "task": "Develop a small script that takes a URL as input and downloads the webpage and ouptus it in Markdown format."
-            }
-        )
-    )
-)
 
 ######################
 # Generate graph     #
@@ -109,16 +100,6 @@ prompt_generate_execution_graph = ChatPromptTemplate.from_messages(
 chain_generate_execution_graph = (
     prompt_generate_execution_graph | model | parser_generate_execution_graph
 )
-print(
-    NodeGraph.parse_obj(
-        chain_generate_execution_graph.invoke(
-            {
-                "application_context": "Develop a small script that takes a URL as input and downloads the webpage and ouptus it in Markdown format",
-                "api_route": "Download the webpage and output it in Markdown format",
-            }
-        )
-    )
-)
 
 ######################
 # Select node        #
@@ -129,7 +110,7 @@ prompt_select_node = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "Your are an expect at node selection. You are to decide if one of the nodes presented to you fits the requirement.\nReply in json format: {format_instructions}\n Note: if no node matches the requirement reply with no as the node_id.",
+            "Your are an expect at node selection. You are to decide if one of the nodes presented to you fits the requirement.\nReply in json format: {format_instructions}\n Note: if no node matches the requirement reply with `new` as the node_id.",
         ),
         (
             "human",
@@ -213,7 +194,10 @@ Return only python code in Markdown format, e.g.:
 
 parser_write_node = StrOutputParser()
 prompt_write_node = ChatPromptTemplate.from_messages(
-    [("system", template), ("human", "{input}")]
+    [
+        ("system", template),
+        ("human", "Write the code for the following node {node}"),
+    ]
 )
 chain_write_node = (
     prompt_write_node | model | parser_write_node | _sanitize_output
