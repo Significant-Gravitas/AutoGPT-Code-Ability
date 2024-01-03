@@ -179,15 +179,34 @@ chain_decompose_node = prompt_decompose_node | model | parser_decompose_node
 
 
 def _sanitize_output(text: str):
-    _, after = text.split("```python")
-    return after.split("```")[0]
+    # Split the text into sections based on triple backticks
+    sections = text.split("```")
+
+    # Initialize variables to store requirements and code
+    requirements = ""
+    code = ""
+
+    # Iterate through the sections to find and assign the requirements and code
+    for i in range(len(sections)):
+        if "requirements" in sections[i]:
+            requirements = sections[i + 1].strip()
+        elif "python" in sections[i]:
+            code = sections[i + 1].strip()
+
+    return requirements, code
 
 
 template = """You are an expect python developer. Write the python code to implement the node.
 Included error handling, comments and type hints.
 
-Return only python code in Markdown format, e.g.:
+Return only the requreirments and python code in Markdown format, e.g.:
 
+The requirements.txt
+```requirements
+
+```
+
+The code.py
 ```python
 ....
 ```"""

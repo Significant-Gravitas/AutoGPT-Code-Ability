@@ -12,17 +12,19 @@ from sqlmodel import Session, SQLModel, create_engine
 from codex.chains import (
     ApplicationPaths,
     CheckComplexity,
+    NodeDefinition,
     NodeGraph,
     SelectNode,
     chain_check_node_complexity,
+    chain_decompose_node,
     chain_decompose_task,
     chain_generate_execution_graph,
     chain_select_from_possible_nodes,
     chain_write_node,
 )
-from codex.dag import add_node
+from codex.dag import add_node, create_runner
 from codex.database import search_for_similar_node
-from codex.model import InputParameter, Node, OutputParameter, RequiredPackage, Task
+from codex.model import InputParameter, Node, OutputParameter, RequiredPackage
 
 database_url = (
     "postgresql://agpt_live:bnfaHGGSDF134345@0.0.0.0:5432/agpt_product"
@@ -30,6 +32,97 @@ database_url = (
 
 engine = create_engine(database_url)
 embedder = SentenceTransformer("all-mpnet-base-v2")
+
+
+def parse_requirements(requirements_str: str) -> List[RequiredPackage]:
+    packages = []
+    version_specifiers = ["==", ">=", "<=", ">", "<", "~=", "!="]
+
+    for line in requirements_str.splitlines():
+        if line:
+            # Remove comments and whitespace
+            line = line.split("#")[0].strip()
+            if not line:
+                continue
+
+            package_name, version, specifier = line, None, None
+
+            # Try to split by each version specifier
+            for spec in version_specifiers:
+                if spec in line:
+                    parts = line.split(spec)
+                    package_name = parts[0].strip()
+                    version = parts[1].strip() if len(parts) > 1 else None
+                    specifier = spec
+                    break
+
+            package = RequiredPackage(
+                package_name=package_name, version=version, specifier=specifier
+            )
+            packages.append(package)
+
+    return packages
+
+
+def process_node(
+    session: Session,
+    node: NodeDefinition,
+    ap: ApplicationPaths,
+    dag: nx.DiGraph,
+    embedder: SentenceTransformer,
+):
+    if "request" in node.name.lower() or "response" in node.name.lower():
+        add_node(dag, node.name, node)
+    else:
+        possible_nodes = search_for_similar_node(session, node)
+        nodes_str = ""
+        for i, node in enumerate(possible_nodes):
+            nodes_str += f"Node ID: {i}\n{node}\n"
+
+        selected_node = SelectNode.parse_obj(
+            chain_select_from_possible_nodes.invoke(
+                {"nodes": nodes_str, "requirement": node}
+            )
+        )
+        if selected_node.node_id == "new":
+            complexity = CheckComplexity.parse_obj(
+                chain_check_node_complexity.invoke({"node": node})
+            )
+            if not complexity.is_complex:
+                requirements, code = chain_write_node.invoke({"node": node})
+                required_packages = parse_requirements(requirements)
+                new_node = Node(
+                    name=node.name,
+                    description=node.description,
+                    input_params=node.input_params,
+                    output_params=node.output_params,
+                    required_packages=required_packages,
+                    code=code,
+                )
+                new_node.embedding = embedder.encode(
+                    node.description,
+                    normalize_embeddings=True,
+                    convert_to_numpy=True,
+                )
+                session.add(new_node)
+                session.commit()
+            else:
+                sub_graph = NodeGraph.parse_obj(
+                    chain_decompose_node.invoke(
+                        {
+                            "application_context": ap.application_context,
+                            "node": node,
+                        }
+                    )
+                )
+                # Recursively process the nodes in the subgraph
+                for sub_node in sub_graph.nodes:
+                    process_node(session, sub_node, ap, dag, embedder)
+        else:
+            node_id = int(selected_node.node_id)
+            assert node_id < len(possible_nodes), "Invalid node id"
+            node = possible_nodes[node_id]
+            add_node(dag, node.name, node)
 
 
 def run(task_description: str):
@@ -46,49 +139,9 @@ def run(task_description: str):
                 }
             )
             for node in ng.nodes:
-                if (
-                    "request" in node.name.lower()
-                    or "response" in node.name.lower()
-                ):
-                    add_node(dag, node.name, node)
-                else:
-                    possible_nodes = search_for_similar_node(session, node)
-                    nodes_str = ""
-                    for i, node in enumerate(possible_nodes):
-                        nodes_str += f"Node ID: {i}\n{node}\n"
-
-                    selected_node = SelectNode.parse_obj(
-                        chain_select_from_possible_nodes.invoke(
-                            {"nodes": nodes_str, "requirement": node}
-                        )
-                    )
-                    if selected_node.node_id == "new":
-                        compexity = CheckComplexity.parse_obj(
-                            chain_check_node_complexity.invoke({"node": node})
-                        )
-                        if not compexity.is_complex:
-                            code = chain_write_node.invoke({"node": node})
-
-                            new_node = Node(
-                                name=node.name,
-                                description=node.description,
-                                input_params=node.input_params,
-                                output_params=node.output_params,
-                                required_packages=node.required_packages,
-                                code=code,
-                            )
-                            new_node.embedding = embedder.encode(  # type: ignore
-                                node.description,
-                                normalize_embeddings=True,
-                                convert_to_numpy=True,
-                            )
-                            session.add(new_node)
-                            session.commit()
-                    else:
-                        node_id = int(selected_node.node_id)
-                        assert node_id < len(possible_nodes), "Invalid node id"
-                        node = possible_nodes[node_id]
-                        add_node(dag, node.name, node)
+                process_node(session, node, ap, dag, embedder)
+            code = create_runner(dag)
+    return code
 
 
 class ExecutionPath(BaseModel):

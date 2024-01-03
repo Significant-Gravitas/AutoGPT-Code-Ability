@@ -51,7 +51,8 @@ class RequiredPackage(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     package_name: str
-    version: str
+    version: Optional[str] = Field(default=None)
+    specifier: Optional[str] = Field(default=None)
 
     node_id: Optional[int] = Field(default=None, foreign_key="node.id")
     node: Optional["Node"] = Relationship(back_populates="required_packages")
