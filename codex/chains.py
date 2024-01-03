@@ -113,7 +113,7 @@ prompt_select_node = ChatPromptTemplate.from_messages(
         ),
         (
             "human",
-            "Thinking carefully step by step. Select a node if it meets the requirement.\n# Nodes\n{ndoes}\n# Requirement\n{requirement}",
+            "Thinking carefully step by step. Select a node if it meets the requirement.\n# Nodes\n{nodes}\n# Requirement\n{requirement}",
         ),
     ]
 ).partial(format_instructions=parser_select_node.get_format_instructions())
@@ -178,20 +178,9 @@ chain_decompose_node = prompt_decompose_node | model | parser_decompose_node
 
 
 def _sanitize_output(text: str):
-    # Split the text into sections based on triple backticks
-    sections = text.split("```")
-
     # Initialize variables to store requirements and code
-    requirements = ""
-    code = ""
-
-    # Iterate through the sections to find and assign the requirements and code
-    for i in range(len(sections)):
-        if "requirements" in sections[i]:
-            requirements = sections[i + 1].strip()
-        elif "python" in sections[i]:
-            code = sections[i + 1].strip()
-
+    requirements = text.split("```requirements")[1].split("```")[0]
+    code = text.split("```python")[1].split("```")[0]
     return requirements, code
 
 

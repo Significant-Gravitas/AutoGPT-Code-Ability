@@ -43,7 +43,7 @@ def search_for_similar_node(
         description=query,
         input_param_types=input_param_types,
         output_param_types=output_param_types,
-        similarity_threshold=0.2,
+        similarity_threshold=0.5,
     )
 
 

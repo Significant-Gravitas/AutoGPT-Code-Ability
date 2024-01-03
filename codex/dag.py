@@ -21,7 +21,9 @@ def add_node(graph: nx.DiGraph, node_name: str, node: Node) -> bool:
     providers: Dict[Tuple[str, str], Node] = {}
     for n in graph.nodes:
         existing_node: Node = graph.nodes[n]["node"]
-        assert isinstance(existing_node, Node)
+        assert isinstance(
+            existing_node, Node
+        ), f"Node {n} is not a Node object {type(existing_node)}"
         if existing_node.output_params:
             for output_param in existing_node.output_params:
                 param_key = (output_param.name, output_param.param_type)

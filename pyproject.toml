@@ -19,6 +19,7 @@ google-cloud-storage = "^2.14.0"
 uvicorn = "^0.25.0"
 click = "^8.1.7"
 langchain = "^0.0.353"
+colorama = "^0.4.6"
 
 
 [tool.poetry.group.dev.dependencies]

@@ -93,7 +93,23 @@ def process_node(
 
     if "request" in node.name.lower() or "response" in node.name.lower():
         logger.info(f"🔗 Adding request/response node: {node.name}")
-        add_node(dag, node.name, node)
+        input_params = (
+            [InputParameter(**p.dict()) for p in node.input_params]
+            if node.input_params
+            else []
+        )
+        output_params = (
+            [OutputParameter(**p.dict()) for p in node.output_params]
+            if node.output_params
+            else []
+        )
+        req_resp_node = Node(
+            name=node.name,
+            description=node.description,
+            input_params=input_params,
+            output_params=output_params,
+        )
+        add_node(dag, node.name, req_resp_node)
     else:
         logger.info(f"🔍 Searching for similar nodes for: {node.name}")
         possible_nodes = search_for_similar_node(session, node)
@@ -122,15 +138,17 @@ def process_node(
             )
 
             if not complexity.is_complex:
-                logger.info(f"✍️ Writing new node code for: {node.name}")
+                logger.info(f"📝 Writing new node code for: {node.name}")
                 requirements, code = chain_write_node.invoke({"node": node})
                 required_packages = parse_requirements(requirements)
 
                 logger.info(f"📦 Adding new node to the database: {node.name}")
 
-                input_params = [InputParameter(**p) for p in node.input_params]
+                input_params = [
+                    InputParameter(**p.dict()) for p in node.input_params
+                ]
                 output_params = [
-                    OutputParameter(**p) for p in node.output_params
+                    OutputParameter(**p.dict()) for p in node.output_params
                 ]
                 new_node = Node(
                     name=node.name,
@@ -220,7 +238,41 @@ def run(task_description: str):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    from colorama import Fore, Style, init
+
+    init()
+
+    class CustomFormatter(logging.Formatter):
+        """Logging Formatter to add colors and count warning / errors"""
+
+        FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+        FORMATS = {
+            logging.DEBUG: Fore.CYAN + FORMAT + Style.RESET_ALL,
+            logging.INFO: Fore.GREEN + FORMAT + Style.RESET_ALL,
+            logging.WARNING: Fore.YELLOW + FORMAT + Style.RESET_ALL,
+            logging.ERROR: Fore.RED + FORMAT + Style.RESET_ALL,
+            logging.CRITICAL: Fore.RED + FORMAT + Style.RESET_ALL,
+        }
+
+        def format(self, record):
+            log_fmt = self.FORMATS.get(record.levelno)
+            formatter = logging.Formatter(log_fmt)
+            return formatter.format(record)
+
+    # Create logger
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+
+    # Create console handler with a higher log level
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+
+    # Create formatter and add it to the handlers
+    ch.setFormatter(CustomFormatter())
+
+    # Add the handlers to the logger
+    logger.addHandler(ch)
 
     run(
         "Develop a small script that takes a URL as input and returns the webpage in Markdown format. Focus on converting basic HTML tags like headings, paragraphs, and lists."
