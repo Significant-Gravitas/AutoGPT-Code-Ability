@@ -6,10 +6,89 @@ from typing import List, Optional
 import networkx as nx
 from openai import OpenAI
 from pydantic import BaseModel
+from sentence_transformers import SentenceTransformer
+from sqlmodel import Session, SQLModel, create_engine
 
+from codex.chains import (
+    ApplicationPaths,
+    CheckComplexity,
+    NodeGraph,
+    SelectNode,
+    chain_check_node_complexity,
+    chain_decompose_task,
+    chain_generate_execution_graph,
+    chain_select_from_possible_nodes,
+    chain_write_node,
+)
 from codex.dag import add_node
-from codex.database import search_nodes_by_params
-from codex.model import InputParameter, Node, OutputParameter
+from codex.database import search_for_similar_node
+from codex.model import InputParameter, Node, OutputParameter, RequiredPackage, Task
+
+database_url = (
+    "postgresql://agpt_live:bnfaHGGSDF134345@0.0.0.0:5432/agpt_product"
+)
+
+engine = create_engine(database_url)
+embedder = SentenceTransformer("all-mpnet-base-v2")
+
+
+def run(task_description: str):
+    ap = ApplicationPaths.parse_obj(
+        chain_decompose_task.invoke({"task": task_description})
+    )
+    with Session(engine) as session:
+        for path in ap.execution_paths:
+            dag = nx.DiGraph()
+            ng = chain_generate_execution_graph.invoke(
+                {
+                    "application_context": ap.application_context,
+                    "api_route": path,
+                }
+            )
+            for node in ng.nodes:
+                if (
+                    "request" in node.name.lower()
+                    or "response" in node.name.lower()
+                ):
+                    add_node(dag, node.name, node)
+                else:
+                    possible_nodes = search_for_similar_node(session, node)
+                    nodes_str = ""
+                    for i, node in enumerate(possible_nodes):
+                        nodes_str += f"Node ID: {i}\n{node}\n"
+
+                    selected_node = SelectNode.parse_obj(
+                        chain_select_from_possible_nodes.invoke(
+                            {"nodes": nodes_str, "requirement": node}
+                        )
+                    )
+                    if selected_node.node_id == "new":
+                        compexity = CheckComplexity.parse_obj(
+                            chain_check_node_complexity.invoke({"node": node})
+                        )
+                        if not compexity.is_complex:
+                            code = chain_write_node.invoke({"node": node})
+
+                            new_node = Node(
+                                name=node.name,
+                                description=node.description,
+                                input_params=node.input_params,
+                                output_params=node.output_params,
+                                required_packages=node.required_packages,
+                                code=code,
+                            )
+                            new_node.embedding = embedder.encode(  # type: ignore
+                                node.description,
+                                normalize_embeddings=True,
+                                convert_to_numpy=True,
+                            )
+                            session.add(new_node)
+                            session.commit()
+                    else:
+                        node_id = int(selected_node.node_id)
+                        assert node_id < len(possible_nodes), "Invalid node id"
+                        node = possible_nodes[node_id]
+                        add_node(dag, node.name, node)
 
 
 class ExecutionPath(BaseModel):
