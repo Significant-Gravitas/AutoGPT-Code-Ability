@@ -159,7 +159,7 @@ prompt_decompose_node = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "You are an expert software engineer specialised in breaking down a problem into a series of steps that can be developed by a junior developer. Each step is designed to be as generic as possible. The first step is a `request` node with `request` in the name it represents a request object and only has output params. The last step is a `response` node with `response` in the name it represents aresposne object and only has input parameters.\nReply in json format:\n{format_instructions}\n Note: param_type are primitive type avaliable in typing lib as in str, int List[str] etc.\n node names are in python function name format",
+            "You are an expert software engineer specialised in breaking down a problem into a series of steps that can be developed by a junior developer. Each step is designed to be as generic as possible. The first step is a `request` node with `request` in the name it represents a request object and only has output params. The last step is a `response` node with `response` in the name it represents a resposne object and only has input parameters.\nReply in json format:\n{format_instructions}\n Note: param_type are primitive type avaliable in typing lib as in str, int List[str] etc.\n node names are in python function name format",
         ),
         (
             "human",
