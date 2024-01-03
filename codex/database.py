@@ -24,7 +24,9 @@ def select_node_by_id(session: Session, node_id: int) -> Optional[Node]:
     return node
 
 
-def search_for_similar_node(session: Session, node: Node) -> Optional[List[Node]]:
+def search_for_similar_node(
+    session: Session, node: Node
+) -> Optional[List[Node]]:
     input_param_types = None
     output_param_types = None
     if node.input_params:
@@ -87,7 +89,9 @@ def search_nodes_by_params(
                     )
                     .as_scalar()
                 )
-                query = query.where(subquery == input_param_types.count(param_type))
+                query = query.where(
+                    subquery == input_param_types.count(param_type)
+                )
 
         # Adding conditions for output parameters
         if output_param_types:
@@ -100,10 +104,14 @@ def search_nodes_by_params(
                     )
                     .as_scalar()
                 )
-                query = query.where(subquery == output_param_types.count(param_type))
+                query = query.where(
+                    subquery == output_param_types.count(param_type)
+                )
 
         # Add ordering and limit
-        query = query.order_by(Node.embedding.cosine_distance(description)).limit(limit)
+        query = query.order_by(
+            Node.embedding.cosine_distance(description)
+        ).limit(limit)
 
         # Execute the query and fetch results
         return session.exec(query).fetchall()

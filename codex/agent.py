@@ -127,11 +127,16 @@ def process_node(
                 required_packages = parse_requirements(requirements)
 
                 logger.info(f"📦 Adding new node to the database: {node.name}")
+
+                input_params = [InputParameter(**p) for p in node.input_params]
+                output_params = [
+                    OutputParameter(**p) for p in node.output_params
+                ]
                 new_node = Node(
                     name=node.name,
                     description=node.description,
-                    input_params=node.input_params,
-                    output_params=node.output_params,
+                    input_params=input_params,
+                    output_params=output_params,
                     required_packages=required_packages,
                     code=code,
                 )

@@ -24,14 +24,14 @@ class SelectNode(BaseModel):
     node_id: str
 
 
-class InputParameter(BaseModel):
+class InputParameterDef(BaseModel):
     param_type: str
     name: str
     description: str
     optional: bool
 
 
-class OutputParameter(BaseModel):
+class OutputParameterDef(BaseModel):
     param_type: str
     name: str
     description: str
@@ -41,9 +41,8 @@ class OutputParameter(BaseModel):
 class NodeDefinition(BaseModel):
     name: str
     description: str
-    input_params: Optional[List[InputParameter]]
-    output_params: Optional[List[OutputParameter]]
-    required_packages: List[str]
+    input_params: Optional[List[InputParameterDef]]
+    output_params: Optional[List[OutputParameterDef]]
 
 
 class NodeGraph(BaseModel):
