@@ -1,7 +1,8 @@
+import logging
 from typing import Dict, Tuple
 
 import networkx as nx
-import logging
+
 from .model import Node
 
 logger = logging.getLogger(__name__)
