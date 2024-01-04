@@ -173,7 +173,7 @@ class Node(SQLModel, table=True):
         Returns:
             str: The generated code for the request function.
         """
-        out = "def request("
+        out = f"def {self.name}("
         if self.output_params:
             for param in self.output_params:
                 out += f"{param.name}: {param.param_type}, "
