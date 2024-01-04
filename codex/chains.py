@@ -1,9 +1,12 @@
-from typing import List, Optional
+import logging
+from typing import Dict, List, Optional
 
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
 from langchain_core.pydantic_v1 import BaseModel
+
+logger = logging.getLogger(__name__)
 
 
 class ExecutionPath(BaseModel):
@@ -22,6 +25,8 @@ class CheckComplexity(BaseModel):
 
 class SelectNode(BaseModel):
     node_id: str
+    input_map: Optional[Dict[str, str]]
+    output_map: Optional[Dict[str, str]]
 
 
 class InputParameterDef(BaseModel):
@@ -50,8 +55,16 @@ class NodeGraph(BaseModel):
 
 
 model = ChatOpenAI(
-    temperature=0,
+    temperature=1,
     model="gpt-4-1106-preview",
+    max_tokens=4095,
+    model_kwargs={"top_p": 1, "frequency_penalty": 0, "presence_penalty": 0},
+).bind(**{"response_format": {"type": "json_object"}})
+
+code_model = ChatOpenAI(
+    temperature=1,
+    model="gpt-4-1106-preview",
+    max_tokens=4095,
 )
 
 ######################
@@ -82,7 +95,7 @@ prompt_generate_execution_graph = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "You are an expert software engineer specialised in breaking down a problem into a series of steps that can be developed by a junior developer. Each step is designed to be as generic as possible. The first step is a `request` node with `request` in the name it represents a request object and only has output params. The last step is a `response` node with `response` in the name it represents aresposne object and only has input parameters.\nReply in json format:\n{format_instructions}\n Note: param_type are primitive type avaliable in typing lib as in str, int List[str] etc.\n node names are in python function name format",
+            "You are an expert software engineer specialised in breaking down a problem into a series of steps that can be developed by a junior developer. Each step is designed to be as generic as possible. The first step is a `request` node with `request` in the name it represents a request object and only has output params. The last step is a `response` node with `response` in the name it represents aresposne object and only has input parameters.\nReply in json format:\n{format_instructions}\n\n# Important:\n for param_type use only these primitive types - bool, int, float, complex, str, bytes, tuple, list, dict, set, frozenset.\n node names are in python function name format",
         ),
         (
             "human",
@@ -90,7 +103,7 @@ prompt_generate_execution_graph = ChatPromptTemplate.from_messages(
         ),
         (
             "human",
-            "Thinking carefully step by step. Ouput the steps as nodes for the api route:\n{api_route}",
+            "Thinking carefully step by step. Ouput the steps as nodes for the api route ensuring output paraameter names of a node match the input parameter names needed by following nodes:\n{api_route}",
         ),
     ]
 ).partial(
@@ -113,7 +126,21 @@ prompt_select_node = ChatPromptTemplate.from_messages(
         ),
         (
             "human",
-            "Thinking carefully step by step. Select a node if it meets the requirement.\n# Nodes\n{nodes}\n# Requirement\n{requirement}",
+            """
+Thinking carefully step by step. Select a node if it meets the requirement and provide a mapping between the selected nodes input and outputs and node specified in the requirements.
+
+# Possible Nodes
+{nodes}
+
+# Requirement
+{requirement}
+
+# Avaliable Input Params
+{avaliable_params}
+
+# Required Output Params
+{required_output_params}
+""",
         ),
     ]
 ).partial(format_instructions=parser_select_node.get_format_instructions())
@@ -158,7 +185,7 @@ prompt_decompose_node = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "You are an expert software engineer specialised in breaking down a problem into a series of steps that can be developed by a junior developer. Each step is designed to be as generic as possible. The first step is a `request` node with `request` in the name it represents a request object and only has output params. The last step is a `response` node with `response` in the name it represents a resposne object and only has input parameters.\nReply in json format:\n{format_instructions}\n Note: param_type are primitive type avaliable in typing lib as in str, int List[str] etc.\n node names are in python function name format",
+            "You are an expert software engineer specialised in breaking down a problem into a series of steps that can be developed by a junior developer. Each step is designed to be as generic as possible. The first step is a `request` node with `request` in the name it represents a request object and only has output params. The last step is a `response` node with `response` in the name it represents a resposne object and only has input parameters.\nReply in json format:\n{format_instructions}\n",
         ),
         (
             "human",
@@ -166,12 +193,11 @@ prompt_decompose_node = ChatPromptTemplate.from_messages(
         ),
         (
             "human",
-            "Thinking carefully step by step. Decompose this complex node into a series of simpliar steps, creating a new node graph. The new graph's request is the inputs for this node and response is the outputs of this node. Output the nodes needed to implement this complex node:\n{node}",
+            "Thinking carefully step by step. Decompose this complex node into a series of simpliar steps, creating a new node graph. The new graph's request is the inputs for this node and response is the outputs of this node. Output the nodes needed to implement this complex node:\n{node}\n Note:  for param_type use only primitive type avaliable in typing lib - bool, int, float, complex, str, bytes, tuple, list, dict, set, frozenset.\n node names are in python function name format.\n\n#Important\nDo not use the Any Type!",
         ),
     ]
 ).partial(format_instructions=parser_decompose_node.get_format_instructions())
 chain_decompose_node = prompt_decompose_node | model | parser_decompose_node
-
 ######################
 # Write Node         #
 ######################
@@ -179,15 +205,21 @@ chain_decompose_node = prompt_decompose_node | model | parser_decompose_node
 
 def _sanitize_output(text: str):
     # Initialize variables to store requirements and code
-    requirements = text.split("```requirements")[1].split("```")[0]
+    requirements = text.split("```requirements")
+    if len(requirements) > 1:
+        requirements = text.split("```requirements")[1].split("```")[0]
+    else:
+        requirements = ""
     code = text.split("```python")[1].split("```")[0]
+    logger.info(f"Requirements: {requirements}")
+    logger.info(f"Code: {code}")
     return requirements, code
 
 
 template = """You are an expect python developer. Write the python code to implement the node.
 Included error handling, comments and type hints.
 
-Return only the requreirments and python code in Markdown format, e.g.:
+Return only the requreirments and python imports and function in Markdown format, e.g.:
 
 The requirements.txt
 ```requirements
@@ -197,15 +229,20 @@ The requirements.txt
 The code.py
 ```python
 ....
+
+Include only the function in the code.py file.
+Do not include Example usage, Example response, or any other text.
+Do not include InputParameterDef or OutputParameterDef
+Validation failures should raise a ValueError with a helpful message.
 ```"""
 
 parser_write_node = StrOutputParser()
 prompt_write_node = ChatPromptTemplate.from_messages(
     [
         ("system", template),
-        ("human", "Write the code for the following node {node}"),
+        ("human", "Write the function for the following node {node}"),
     ]
 )
 chain_write_node = (
-    prompt_write_node | model | parser_write_node | _sanitize_output
+    prompt_write_node | code_model | parser_write_node | _sanitize_output
 )
