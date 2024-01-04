@@ -38,13 +38,9 @@ def add_node(graph: nx.DiGraph, node_name: str, node: Node) -> bool:
 
     # Check if all input parameters are available
     if len(input_params_needed) != len(providers):
-        logger.warning(
+        raise ValueError(
             f"Node {node_name} is missing input parameters: {input_params_needed}"
         )
-        import IPython
-
-        IPython.embed()
-        return False
 
     # Add the new node
     graph.add_node(node_name, node=node)
