@@ -187,7 +187,7 @@ def process_node(
                 add_node(dag, new_node.name, new_node)
                 return new_node
             else:
-                logger.info(f"🔄 Node is complex, decomposing: {node.name}")
+                logger.warning(f"🔄 Node is complex, decomposing: {node.name}")
                 sub_graph = NodeGraph.parse_obj(
                     chain_decompose_node.invoke(
                         {
@@ -197,7 +197,7 @@ def process_node(
                     )
                 )
                 for sub_node in sub_graph.nodes:
-                    process_node(session, sub_node, ap, dag, embedder)
+                    process_node(session, sub_node, processed_nodes, ap, dag, embedder)
         else:
             node_id = int(selected_node.node_id)
             assert node_id < len(possible_nodes), "Invalid node id"
@@ -269,7 +269,7 @@ def run(task_description: str):
                 processed_nodes.append(processed_node)
 
             logger.info("🔗 All nodes processed, creating runner")
-            code = compile_graph(dag)
+            code = compile_graph(dag, path)
             logger.info("🏃 Runner created successfully")
 
     logger.info("🎉 Task processing completed")
