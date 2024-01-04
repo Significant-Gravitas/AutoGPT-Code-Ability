@@ -99,7 +99,7 @@ prompt_generate_execution_graph = ChatPromptTemplate.from_messages(
         ),
         (
             "human",
-            "The application being developed is: \n{application_context}",
+            "The application being developed is: \n{application_context}. Do not call any nodes with the same name as the endpoint: {graph_name}",
         ),
         (
             "human",
@@ -128,6 +128,8 @@ prompt_select_node = ChatPromptTemplate.from_messages(
             "human",
             """
 Thinking carefully step by step. Select a node if it meets the requirement and provide a mapping between the selected nodes input and outputs and node specified in the requirements.
+
+If there are no possible nodes that have all the Avaliable Input Params then reply with `new` as the node_id.
 
 # Possible Nodes
 {nodes}

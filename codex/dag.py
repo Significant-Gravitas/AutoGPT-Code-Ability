@@ -1,12 +1,13 @@
 import logging
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
+from collections import defaultdict
 
 import black
 import isort
 import networkx as nx
 
 from .chains import ExecutionPath
-from .model import Node
+from .model import Node, RequiredPackage
 
 logger = logging.getLogger(__name__)
 
@@ -101,6 +102,29 @@ def format_and_sort_code(file_content: str) -> str:
     return formatted_content
 
 
+def generate_requirements_txt(packages: List[RequiredPackage]) -> str:
+    resolved_packages = defaultdict(list)
+
+    # Aggregate versions and specifiers for each package
+    for package in packages:
+        resolved_packages[package.package_name].append((package.version, package.specifier))
+
+    requirements = []
+    for package, versions_specifiers in resolved_packages.items():
+        # Handle different cases of version and specifier here
+        # For simplicity, we just pick the first version and specifier encountered
+        # More complex logic might be needed depending on the requirement
+        version, specifier = versions_specifiers[0] 
+        if version and specifier:
+            requirement = f"{package}{specifier}{version}"
+        elif version:
+            requirement = f"{package}=={version}"
+        else:
+            requirement = package
+        requirements.append(requirement)
+
+    return "\n".join(requirements)
+
 def compile_graph(graph: nx.DiGraph, ep: ExecutionPath):
     # Check if the graph is a DAG
     if not nx.is_directed_acyclic_graph(graph):
@@ -108,8 +132,10 @@ def compile_graph(graph: nx.DiGraph, ep: ExecutionPath):
     output_name_map: Dict[str, str] = {}
     python_file = ""
     graph_script = ""
+    requirements = []
     for node_name in nx.topological_sort(graph):
         node: Node = graph.nodes[node_name]["node"]
+        requirements.extend(node.required_packages)
         if "request" in node_name:
             node.name = (
                 ep.name.replace(" ", "_")
@@ -129,4 +155,5 @@ def compile_graph(graph: nx.DiGraph, ep: ExecutionPath):
             }
             graph_script += f"{code}\n"
     python_file += f"\n{graph_script}"
-    return format_and_sort_code(refactor_imports(python_file))
+    requirements_txt = generate_requirements_txt(requirements)
+    return requirements_txt, format_and_sort_code(refactor_imports(python_file))
