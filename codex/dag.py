@@ -4,6 +4,10 @@ from typing import Dict, Tuple
 import networkx as nx
 
 from .model import Node
+from .chains import ExecutionPath
+import black
+import isort
+
 
 logger = logging.getLogger(__name__)
 
@@ -53,18 +57,61 @@ def add_node(graph: nx.DiGraph, node_name: str, node: Node) -> bool:
     return True
 
 
-def compile_graph(graph: nx.DiGraph):
+def refactor_imports(file_content: str) -> str:
+    from_imports = {}
+    import_lines = set()
+    other_lines = []
+
+    for line in file_content.split('\n'):
+        # Check if the line is a 'from' import.
+        if line.startswith('from '):
+            module, imported = line.split(' import ')
+            if module in from_imports:
+                from_imports[module].add(imported)
+            else:
+                from_imports[module] = {imported}
+        elif line.startswith('import '):
+            import_lines.add(line)
+        else:
+            other_lines.append(line)
+
+    # Consolidate 'from' imports.
+    consolidated_from_imports = [
+        f"{module} import {', '.join(sorted(items))}" 
+        for module, items in from_imports.items()
+    ]
+
+    # Sort all import statements.
+    all_imports = sorted(list(import_lines) + consolidated_from_imports)
+
+    # Combine imports with the rest of the file.
+    sorted_imports = '\n'.join(all_imports)
+    rest_of_file = '\n'.join(other_lines)
+    refactored_file = f"{sorted_imports}\n\n{rest_of_file}"
+
+    return refactored_file
+
+def format_and_sort_code(file_content: str) -> str:
+    # First, sort the imports using isort
+    sorted_content = isort.code(file_content)
+
+    # Then, format the code using black
+    formatted_content = black.format_str(sorted_content, mode=black.FileMode())
+
+    return formatted_content
+
+def compile_graph(graph: nx.DiGraph, ep: ExecutionPath):
     # Check if the graph is a DAG
     if not nx.is_directed_acyclic_graph(graph):
         raise nx.NetworkXError("Graph is not a Directed Acyclic Graph (DAG)")
-
+    execution_name = ep.name.lower().replace(" ", "_")
     output_name_map: Dict[str, str] = {}
-
     python_file = ""
     graph_script = ""
     for node_name in nx.topological_sort(graph):
         node: Node = graph.nodes[node_name]["node"]
         if "request" in node_name:
+            node.name = execution_name
             graph_script += node.request_to_code()
         elif "response" in node_name:
             graph_script += node.response_to_code(output_name_map)
@@ -77,4 +124,4 @@ def compile_graph(graph: nx.DiGraph):
             }
             graph_script += f"{code}\n"
     python_file += f"\n{graph_script}"
-    return python_file
+    return format_and_sort_code(refactor_imports(python_file))
