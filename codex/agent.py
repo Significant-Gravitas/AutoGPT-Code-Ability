@@ -18,7 +18,7 @@ from codex.chains import (
     chain_select_from_possible_nodes,
     chain_write_node,
 )
-from codex.dag import add_node, create_runner
+from codex.dag import add_node, compile_graph
 from codex.database import search_for_similar_node
 from codex.model import *
 
@@ -45,7 +45,8 @@ def parse_requirements(requirements_str: str) -> List[RequiredPackage]:
     logger.info("🔍 Parsing requirements...")
     packages = []
     version_specifiers = ["==", ">=", "<=", ">", "<", "~=", "!="]
-
+    if requirements_str == "":
+        return packages
     for line in requirements_str.splitlines():
         if line:
             # Remove comments and whitespace
@@ -75,6 +76,7 @@ def parse_requirements(requirements_str: str) -> List[RequiredPackage]:
 def process_node(
     session: Session,
     node: NodeDefinition,
+    processed_nodes: List[Node],
     ap: ApplicationPaths,
     dag: nx.DiGraph,
     embedder: SentenceTransformer,
@@ -110,13 +112,16 @@ def process_node(
             output_params=output_params,
         )
         add_node(dag, node.name, req_resp_node)
+        return req_resp_node
     else:
         logger.info(f"🔍 Searching for similar nodes for: {node.name}")
         possible_nodes = search_for_similar_node(session, node)
+        logger.debug(f"Possible nodes: {possible_nodes}")
 
         if not possible_nodes:
             logger.warning(f"No similar nodes found for: {node.name}")
             selected_node = SelectNode(node_id="new")
+            logger.debug(f"Selected node: {selected_node}")
         else:
             nodes_str = ""
             for i, n in enumerate(possible_nodes):
@@ -125,17 +130,29 @@ def process_node(
             logger.info(
                 f"✅ Found similar nodes, selecting the appropriate one for: {node.name}"
             )
+            available_outputs = []
+            for n in processed_nodes:
+                available_outputs.extend(n.output_params)
+
+            output_params = node.output_params
+
             selected_node = SelectNode.parse_obj(
                 chain_select_from_possible_nodes.invoke(
-                    {"nodes": nodes_str, "requirement": node}
+                    {
+                        "nodes": nodes_str,
+                        "requirement": node,
+                        "avaliable_params": available_outputs,
+                        "required_output_params": output_params,
+                    }
                 )
             )
-
+            logger.debug(f"Selected node: {selected_node}")
         if selected_node.node_id == "new":
             logger.info(f"🆕 Processing new node: {node.name}")
             complexity = CheckComplexity.parse_obj(
                 chain_check_node_complexity.invoke({"node": node})
             )
+            logger.debug(f"Node complexity: {complexity}")
 
             if not complexity.is_complex:
                 logger.info(f"📝 Writing new node code for: {node.name}")
@@ -166,6 +183,9 @@ def process_node(
                 session.add(new_node)
                 session.commit()
                 logger.info(f"✅ New node added: {node.name}")
+                logger.info(f"🔗 Adding new node to the DAG: {node.name}")
+                add_node(dag, new_node.name, new_node)
+                return new_node
             else:
                 logger.info(f"🔄 Node is complex, decomposing: {node.name}")
                 sub_graph = NodeGraph.parse_obj(
@@ -181,9 +201,24 @@ def process_node(
         else:
             node_id = int(selected_node.node_id)
             assert node_id < len(possible_nodes), "Invalid node id"
-            node = possible_nodes[node_id]
+            node: Node = possible_nodes[node_id]
+
+            # Map I/O params
+            if selected_node.input_map:
+                logger.info(f"🔗 Mapping input params for: {node.name}")
+                for param in node.input_params:
+                    if param.name in selected_node.input_map:
+                        param.name = selected_node.input_map[param.name]
+
+            if selected_node.output_map:
+                logger.info(f"🔗 Mapping output params for: {node.name}")
+                for param in node.output_params:
+                    if param.name in selected_node.output_map:
+                        param.name = selected_node.output_map[param.name]
+
             logger.info(f"🔗 Adding existing node to the DAG: {node.name}")
             add_node(dag, node.name, node)
+            return node
 
 
 def run(task_description: str):
@@ -203,7 +238,7 @@ def run(task_description: str):
         chain_decompose_task.invoke({"task": task_description})
     )
     logger.info(f"✅ Task decomposed into application paths")
-
+    logger.debug(f"Application paths: {ap}")
     with Session(engine) as session:
         for path_index, path in enumerate(ap.execution_paths, start=1):
             logger.info(
@@ -222,18 +257,26 @@ def run(task_description: str):
                 )
             )
             logger.info("🌐 Execution graph generated")
-
+            logger.debug(f"Execution graph: {ng}")
+            processed_nodes = []
             for node_index, node in enumerate(ng.nodes, start=1):
                 logger.info(
                     f"🔨 Processing node {node_index}/{len(ng.nodes)}: {node.name}"
                 )
-                process_node(session, node, ap, dag, embedder)
+                processed_node = process_node(
+                    session, node, processed_nodes, ap, dag, embedder
+                )
+                processed_nodes.append(processed_node)
 
             logger.info("🔗 All nodes processed, creating runner")
-            code = create_runner(dag)
+            code = compile_graph(dag)
             logger.info("🏃 Runner created successfully")
 
     logger.info("🎉 Task processing completed")
+    print(code)
+    import IPython
+
+    IPython.embed()
     return code
 
 
@@ -274,9 +317,6 @@ if __name__ == "__main__":
     # Add the handlers to the logger
     logger.addHandler(ch)
 
-    run(
+    code = run(
         "Develop a small script that takes a URL as input and returns the webpage in Markdown format. Focus on converting basic HTML tags like headings, paragraphs, and lists."
     )
-    import IPython
-
-    IPython.embed()
