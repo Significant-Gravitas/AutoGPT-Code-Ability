@@ -4,6 +4,7 @@ import tempfile
 from contextlib import asynccontextmanager
 from enum import Enum
 
+import coloredlogs
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
@@ -12,7 +13,6 @@ from sqlmodel import SQLModel, create_engine  # type: ignore
 from starlette.background import BackgroundTask
 
 from .agent import run
-from .model import *
 
 DATABASE_URL = "postgresql://agpt_live:bnfaHGGSDF134345@0.0.0.0:5432/agpt_product"
 engine = create_engine(DATABASE_URL)
@@ -53,16 +53,36 @@ def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
 # FastAPI app
 app = FastAPI()
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+
+def setup_logging():
+    # Define the log format
+    log_format = "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
+
+    # Set up basic configuration with standard output
+    logging.basicConfig(level=logging.INFO, format=log_format)
+    coloredlogs.install(level="INFO", fmt=log_format)
+
+    # Create a file handler for error messages
+    file_handler = logging.FileHandler("error_logs.log")
+    file_handler.setLevel(logging.ERROR)
+    file_handler.setFormatter(logging.Formatter(log_format))
+
+    # Add the file handler to the root logger
+    logging.getLogger().addHandler(file_handler)
+
+
+setup_logging()
 logger = logging.getLogger(__name__)
 
 
 @app.post("/code")
 def handle_code_request(request: CodeRequest, user: str = Depends(authenticate)):
     logger.info(f"Received code request from user: {user}")
-    zip_bytes = run(request.description, engine)
-
+    try:
+        zip_bytes = run(request.description, engine)
+    except Exception as e:
+        logger.exception(e)
+        raise HTTPException(status_code=500, detail="Internal server error")
     # Create a temporary file
     temp_file, temp_file_path = tempfile.mkstemp(suffix=".zip")
     os.close(temp_file)

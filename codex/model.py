@@ -195,7 +195,7 @@ class Node(SQLModel, table=True):
         out = ""
         if self.input_params:
             if len(self.input_params) == 1:
-                out += f"    return {input_names_map[self.input_params[0].name]}"
+                out += f"    return {input_names_map[self.input_params[0].name] if input_names_map[self.input_params[0].name] else self.input_params[0].name}"
             else:
                 out += "    return ("
                 for param in self.input_params:

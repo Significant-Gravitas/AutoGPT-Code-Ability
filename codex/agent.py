@@ -4,6 +4,7 @@ from typing import List
 import networkx as nx
 from sentence_transformers import SentenceTransformer
 from sqlmodel import Session
+
 from codex.chains import (
     ApplicationPaths,
     CheckComplexity,
@@ -21,7 +22,6 @@ from codex.code_gen import create_fastapi_server
 from codex.dag import add_node, compile_graph
 from codex.database import search_for_similar_node
 from codex.model import InputParameter, Node, OutputParameter, RequiredPackage
-
 
 EMBEDDER = SentenceTransformer("all-mpnet-base-v2")
 
@@ -129,7 +129,8 @@ def process_node(
             )
             available_outputs = []
             for n in processed_nodes:
-                available_outputs.extend(n.output_params)
+                if n.output_params:
+                    available_outputs.extend(n.output_params)
 
             output_params = node.output_params
 
@@ -234,58 +235,70 @@ def run(task_description: str, engine):
     Returns:
     The generated code for the task.
     """
-    logger.info(f"🏁 Running task: {task_description}")
+    try:
+        logger.info(f"🏁 Running task: {task_description}")
 
-    # Decompose task into application paths
-    ap = ApplicationPaths.parse_obj(
-        chain_decompose_task.invoke({"task": task_description})
-    )
-    logger.info("✅ Task decomposed into application paths")
-    logger.debug(f"Application paths: {ap}")
-    generated_data = []
-    with Session(engine) as session:
-        for path_index, path in enumerate(ap.execution_paths, start=1):
-            logger.info(
-                f"🔄 Processing path {path_index}/{len(ap.execution_paths)} - {path.name}: {path.description}"
-            )
+        # Decompose task into application paths
+        ap = ApplicationPaths.parse_obj(
+            chain_decompose_task.invoke({"task": task_description})
+        )
+        logger.info("✅ Task decomposed into application paths")
+        logger.debug(f"Application paths: {ap}")
+        generated_data = []
+        with Session(engine) as session:
+            for path_index, path in enumerate(ap.execution_paths, start=1):
+                try:
+                    logger.info(
+                        f"🔄 Processing path {path_index}/{len(ap.execution_paths)} - {path.name}: {path.description}"
+                    )
 
-            dag = nx.DiGraph()
-            logger.info("📈 Generating execution graph")
+                    dag = nx.DiGraph()
+                    logger.info("📈 Generating execution graph")
 
-            ng = NodeGraph.parse_obj(
-                chain_generate_execution_graph.invoke(
-                    {
-                        "application_context": ap.application_context,
-                        "api_route": path,
-                        "graph_name": path.name,
-                    }
-                )
-            )
-            logger.info("🌐 Execution graph generated")
-            logger.debug(f"Execution graph: {ng}")
-            processed_nodes = []
-            for node_index, node in enumerate(ng.nodes, start=1):
-                logger.info(
-                    f"🔨 Processing node {node_index}/{len(ng.nodes)}: {node.name}"
-                )
-                processed_node = process_node(
-                    session, node, processed_nodes, ap, dag, EMBEDDER, engine
-                )
-                processed_nodes.append(processed_node)
+                    ng = NodeGraph.parse_obj(
+                        chain_generate_execution_graph.invoke(
+                            {
+                                "application_context": ap.application_context,
+                                "api_route": path,
+                                "graph_name": path.name,
+                            }
+                        )
+                    )
+                    logger.info("🌐 Execution graph generated")
+                    logger.debug(f"Execution graph: {ng}")
+                    processed_nodes = []
+                    for node_index, node in enumerate(ng.nodes, start=1):
+                        logger.info(
+                            f"🔨 Processing node {node_index}/{len(ng.nodes)}: {node.name}"
+                        )
+                        processed_node = process_node(
+                            session, node, processed_nodes, ap, dag, EMBEDDER, engine
+                        )
+                        processed_nodes.append(processed_node)
 
-            logger.info("🔗 All nodes processed, creating runner")
-            data = compile_graph(dag, path)
-            generated_data.append(data)
-            logger.info("🏃 Runner created successfully")
+                    logger.info("🔗 All nodes processed, creating runner")
+                    data = compile_graph(dag, path)
+                    generated_data.append(data)
+                except Exception as e:
+                    logger.error(f"❌ Path processing failed: {e}\n\nDetails:\n{ng}")
+                    raise e
 
-    logger.info("🎉 Task processing completed")
-    return create_fastapi_server(generated_data)
+        logger.info("🏃 Runner created successfully")
+        runner = create_fastapi_server(generated_data)
+        logger.info("🎉 Task processing completed")
+        return runner
+    except Exception as e:
+        logger.error(f"❌ Task processing failed: {e}\n\nDetails:\n{ap}")
+        raise e
 
 
 if __name__ == "__main__":
     from colorama import Fore, Style, init
+    from sqlalchemy import create_engine
 
     init()
+    DATABASE_URL = "postgresql://agpt_live:bnfaHGGSDF134345@0.0.0.0:5432/agpt_product"
+    engine = create_engine(DATABASE_URL)
 
     class CustomFormatter(logging.Formatter):
         """Logging Formatter to add colors and count warning / errors"""
@@ -320,5 +333,6 @@ if __name__ == "__main__":
     logger.addHandler(ch)
 
     code = run(
-        "Develop a small script that takes a URL as input and returns the webpage in Markdown format. Focus on converting basic HTML tags like headings, paragraphs, and lists."
+        "Develop a small script that takes a URL as input and returns the webpage in Markdown format. Focus on converting basic HTML tags like headings, paragraphs, and lists.",
+        engine,
     )

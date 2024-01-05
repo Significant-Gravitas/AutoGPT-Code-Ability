@@ -42,7 +42,7 @@ def add_node(graph: nx.DiGraph, node_name: str, node: Node) -> bool:
     # Check if all input parameters are available
     if len(input_params_needed) != len(providers):
         raise ValueError(
-            f"Node {node_name} is missing input parameters: {input_params_needed}"
+            f"Node {node_name} is missing input parameters: {input_params_needed}. Details:\n\tNode: {node}\n\tProviders: {providers}"
         )
 
     # Add the new node
