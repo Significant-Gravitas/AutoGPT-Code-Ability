@@ -1,6 +1,6 @@
 import logging
-from typing import Dict, Tuple, List
 from collections import defaultdict
+from typing import Dict, List, Tuple
 
 import black
 import isort
@@ -19,9 +19,7 @@ def add_node(graph: nx.DiGraph, node_name: str, node: Node) -> bool:
 
     # Check if node's input parameters are satisfied by the existing nodes in the graph
     if node.input_params:
-        input_params_needed = [
-            f"{p.name}: {p.param_type}" for p in node.input_params
-        ]
+        input_params_needed = [f"{p.name}: {p.param_type}" for p in node.input_params]
     else:
         input_params_needed = {}
 
@@ -107,14 +105,16 @@ def generate_requirements_txt(packages: List[RequiredPackage]) -> str:
 
     # Aggregate versions and specifiers for each package
     for package in packages:
-        resolved_packages[package.package_name].append((package.version, package.specifier))
+        resolved_packages[package.package_name].append(
+            (package.version, package.specifier)
+        )
 
     requirements = []
     for package, versions_specifiers in resolved_packages.items():
         # Handle different cases of version and specifier here
         # For simplicity, we just pick the first version and specifier encountered
         # More complex logic might be needed depending on the requirement
-        version, specifier = versions_specifiers[0] 
+        version, specifier = versions_specifiers[0]
         if version and specifier:
             requirement = f"{package}{specifier}{version}"
         elif version:
@@ -124,6 +124,7 @@ def generate_requirements_txt(packages: List[RequiredPackage]) -> str:
         requirements.append(requirement)
 
     return "\n".join(requirements)
+
 
 def compile_graph(graph: nx.DiGraph, ep: ExecutionPath):
     # Check if the graph is a DAG
@@ -138,10 +139,7 @@ def compile_graph(graph: nx.DiGraph, ep: ExecutionPath):
         requirements.extend(node.required_packages)
         if "request" in node_name:
             node.name = (
-                ep.name.replace(" ", "_")
-                .replace("-", "_")
-                .replace("/", "")
-                .strip()
+                ep.name.replace(" ", "_").replace("-", "_").replace("/", "").strip()
             )
             graph_script += node.request_to_code()
         elif "response" in node_name:

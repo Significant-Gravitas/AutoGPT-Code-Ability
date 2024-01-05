@@ -33,17 +33,13 @@ class Edge(SQLModel, table=True):
     source_node_id: int = Field(default=None, foreign_key="node.id")
     source_node: Node = Relationship(
         back_populates="outgoing_edges",
-        sa_relationship=RelationshipProperty(
-            foreign_keys="[Edge.source_node_id]"
-        ),
+        sa_relationship=RelationshipProperty(foreign_keys="[Edge.source_node_id]"),
     )
 
     target_node_id: int = Field(default=None, foreign_key="node.id")
     target_node: Node = Relationship(
         back_populates="incoming_edges",
-        sa_relationship=RelationshipProperty(
-            foreign_keys="[Edge.target_node_id]"
-        ),
+        sa_relationship=RelationshipProperty(foreign_keys="[Edge.target_node_id]"),
     )
 
     def __str__(self) -> str:

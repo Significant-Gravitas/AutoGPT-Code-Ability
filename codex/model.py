@@ -84,12 +84,8 @@ class Node(SQLModel, table=True):
     )
 
     # Relationship definitions
-    input_params: Optional[List[InputParameter]] = Relationship(
-        back_populates="node"
-    )
-    output_params: Optional[List[OutputParameter]] = Relationship(
-        back_populates="node"
-    )
+    input_params: Optional[List[InputParameter]] = Relationship(back_populates="node")
+    output_params: Optional[List[OutputParameter]] = Relationship(back_populates="node")
 
     code: Optional[str] = Field(default=None)
 
@@ -126,9 +122,7 @@ class Node(SQLModel, table=True):
                 out += f"\n    {param}"
         return out
 
-    def to_code(
-        self, input_names_map: Dict[str, str]
-    ) -> Tuple[str, Dict[str, str]]:
+    def to_code(self, input_names_map: Dict[str, str]) -> Tuple[str, Dict[str, str]]:
         """
         Converts the Node object to Python code.
 
@@ -173,7 +167,7 @@ class Node(SQLModel, table=True):
         Returns:
             str: The generated code for the request function.
         """
-        out = f"def {self.name}_request("
+        out = f"def {self.name.lower()}_request("
         if self.output_params:
             for param in self.output_params:
                 out += f"{param.name}: {param.param_type}, "
@@ -195,9 +189,7 @@ class Node(SQLModel, table=True):
         out = ""
         if self.input_params:
             if len(self.input_params) == 1:
-                out += (
-                    f"    return {input_names_map[self.input_params[0].name]}"
-                )
+                out += f"    return {input_names_map[self.input_params[0].name]}"
             else:
                 out += "    return ("
                 for param in self.input_params:

@@ -22,9 +22,7 @@ from codex.dag import add_node, compile_graph
 from codex.database import search_for_similar_node
 from codex.model import *
 
-database_url = (
-    "postgresql://agpt_live:bnfaHGGSDF134345@0.0.0.0:5432/agpt_product"
-)
+database_url = "postgresql://agpt_live:bnfaHGGSDF134345@0.0.0.0:5432/agpt_product"
 
 engine = create_engine(database_url)
 SQLModel.metadata.create_all(engine)
@@ -161,9 +159,7 @@ def process_node(
 
                 logger.info(f"📦 Adding new node to the database: {node.name}")
 
-                input_params = [
-                    InputParameter(**p.dict()) for p in node.input_params
-                ]
+                input_params = [InputParameter(**p.dict()) for p in node.input_params]
                 output_params = [
                     OutputParameter(**p.dict()) for p in node.output_params
                 ]
@@ -197,9 +193,7 @@ def process_node(
                     )
                 )
                 for sub_node in sub_graph.nodes:
-                    process_node(
-                        session, sub_node, processed_nodes, ap, dag, embedder
-                    )
+                    process_node(session, sub_node, processed_nodes, ap, dag, embedder)
         else:
             node_id = int(selected_node.node_id)
             assert node_id < len(possible_nodes), "Invalid node id"
@@ -210,15 +204,18 @@ def process_node(
                 logger.info(f"🔗 Mapping input params for: {node.name}")
                 for param in node.input_params:
                     if param.name in selected_node.input_map:
-                        logger.warning(f"Mapping input param: {param.name} to {selected_node.input_map[param.name]}")
+                        logger.warning(
+                            f"Mapping input param: {param.name} to {selected_node.input_map[param.name]}"
+                        )
                         param.name = selected_node.input_map[param.name]
-
 
             if selected_node.output_map:
                 logger.info(f"🔗 Mapping output params for: {node.name}")
                 for param in node.output_params:
                     if param.name in selected_node.output_map:
-                        logger.warning(f"Mapping input param: {param.name} to {selected_node.output_map[param.name]}")
+                        logger.warning(
+                            f"Mapping input param: {param.name} to {selected_node.output_map[param.name]}"
+                        )
                         param.name = selected_node.output_map[param.name]
 
             logger.info(f"🔗 Adding existing node to the DAG: {node.name}")

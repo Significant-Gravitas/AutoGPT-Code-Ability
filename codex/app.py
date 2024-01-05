@@ -75,9 +75,7 @@ def create_dummy_zip():
 
 
 @app.post("/code")
-def handle_code_request(
-    request: CodeRequest, user: str = Depends(authenticate)
-):
+def handle_code_request(request: CodeRequest, user: str = Depends(authenticate)):
     logger.info(f"Received code request from user: {user}")
     code = run(request.description)
     # Create a dummy zip file

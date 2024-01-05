@@ -4,9 +4,7 @@ from requests.auth import HTTPBasicAuth
 
 
 @click.command()
-@click.option(
-    "--description", prompt=True, help="Description of the code request"
-)
+@click.option("--description", prompt=True, help="Description of the code request")
 @click.option("--user_id", default=1234, type=int, help="User ID")
 @click.option(
     "--runner",
@@ -14,9 +12,7 @@ from requests.auth import HTTPBasicAuth
     prompt=True,
     help="Runner type",
 )
-@click.option(
-    "--username", default="admin", help="Username for authentication"
-)
+@click.option("--username", default="admin", help="Username for authentication")
 @click.option(
     "--password",
     default="asd453jnsdof9384rjnsdf",
@@ -40,18 +36,14 @@ def send_request(
     data = {"description": description, "user_id": user_id, "runner": runner}
 
     try:
-        response = requests.post(
-            url, json=data, auth=HTTPBasicAuth(username, password)
-        )
+        response = requests.post(url, json=data, auth=HTTPBasicAuth(username, password))
 
         if response.status_code == 200:
             with open(output, "wb") as f:
                 f.write(response.content)
             click.echo(f"File downloaded successfully: {output}")
         else:
-            click.echo(
-                f"Failed to download file. Status Code: {response.status_code}"
-            )
+            click.echo(f"Failed to download file. Status Code: {response.status_code}")
     except requests.exceptions.RequestException as e:
         click.echo(f"Error: {e}")
 

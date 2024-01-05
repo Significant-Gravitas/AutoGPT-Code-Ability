@@ -106,9 +106,7 @@ prompt_generate_execution_graph = ChatPromptTemplate.from_messages(
             "Thinking carefully step by step. Ouput the steps as nodes for the api route ensuring output paraameter names of a node match the input parameter names needed by following nodes:\n{api_route}",
         ),
     ]
-).partial(
-    format_instructions=parser_generate_execution_graph.get_format_instructions()
-)
+).partial(format_instructions=parser_generate_execution_graph.get_format_instructions())
 chain_generate_execution_graph = (
     prompt_generate_execution_graph | model | parser_generate_execution_graph
 )
@@ -146,17 +144,13 @@ If there are no possible nodes that have all the Avaliable Input Params then rep
         ),
     ]
 ).partial(format_instructions=parser_select_node.get_format_instructions())
-chain_select_from_possible_nodes = (
-    prompt_select_node | model | parser_select_node
-)
+chain_select_from_possible_nodes = prompt_select_node | model | parser_select_node
 
 ##########################
 # Check node complexity  #
 ##########################
 
-parser_check_node_complexity = JsonOutputParser(
-    pydantic_object=CheckComplexity
-)
+parser_check_node_complexity = JsonOutputParser(pydantic_object=CheckComplexity)
 
 prompt_check_node_complexity = ChatPromptTemplate.from_messages(
     [
@@ -169,9 +163,7 @@ prompt_check_node_complexity = ChatPromptTemplate.from_messages(
             "Thinking carefully step by step. Output if it is easily possible to write this function in less than 30 lines of python code without missing any implementation details. Node:\n{node}",
         ),
     ]
-).partial(
-    format_instructions=parser_check_node_complexity.get_format_instructions()
-)
+).partial(format_instructions=parser_check_node_complexity.get_format_instructions())
 
 chain_check_node_complexity = (
     prompt_check_node_complexity | model | parser_check_node_complexity
@@ -245,6 +237,4 @@ prompt_write_node = ChatPromptTemplate.from_messages(
         ("human", "Write the function for the following node {node}"),
     ]
 )
-chain_write_node = (
-    prompt_write_node | code_model | parser_write_node | _sanitize_output
-)
+chain_write_node = prompt_write_node | code_model | parser_write_node | _sanitize_output
