@@ -69,6 +69,40 @@ def parse_requirements(requirements_str: str) -> List[RequiredPackage]:
     return packages
 
 
+def validate_selected_node(
+    selected_node: SelectNode, node_details: Node, available_outputs, output_params
+):
+    logger.info(
+        f"🔍 Validating selected node: {node_details.name}\nSelectedNode:\n {selected_node}\nNodeDetails:\n {node_details}\navailable_outputs:\n {available_outputs}\noutput_params:\n {output_params}"
+    )
+    return selected_node
+
+
+def process_request_response_node(
+    node: NodeDefinition,
+    dag: nx.DiGraph,
+):
+    logger.info(f"🔗 Adding request/response node: {node.name}")
+    input_params = (
+        [InputParameter(**p.dict()) for p in node.input_params]
+        if node.input_params
+        else []
+    )
+    output_params = (
+        [OutputParameter(**p.dict()) for p in node.output_params]
+        if node.output_params
+        else []
+    )
+    req_resp_node = Node(
+        name=node.name,
+        description=node.description,
+        input_params=input_params,
+        output_params=output_params,
+    )
+    add_node(dag, node.name, req_resp_node)
+    return req_resp_node
+
+
 def process_node(
     session: Session,
     node: NodeDefinition,
@@ -91,25 +125,7 @@ def process_node(
     logger.info(f"🚀 Processing node: {node.name}")
 
     if "request" in node.name.lower() or "response" in node.name.lower():
-        logger.info(f"🔗 Adding request/response node: {node.name}")
-        input_params = (
-            [InputParameter(**p.dict()) for p in node.input_params]
-            if node.input_params
-            else []
-        )
-        output_params = (
-            [OutputParameter(**p.dict()) for p in node.output_params]
-            if node.output_params
-            else []
-        )
-        req_resp_node = Node(
-            name=node.name,
-            description=node.description,
-            input_params=input_params,
-            output_params=output_params,
-        )
-        add_node(dag, node.name, req_resp_node)
-        return req_resp_node
+        return process_request_response_node(node, dag)
     else:
         logger.info(f"🔍 Searching for similar nodes for: {node.name}")
         possible_nodes = search_for_similar_node(session, node, embedder)
@@ -127,10 +143,10 @@ def process_node(
             logger.info(
                 f"✅ Found similar nodes, selecting the appropriate one for: {node.name}"
             )
-            available_outputs = []
+            avaliable_params = []
             for n in processed_nodes:
                 if n.output_params:
-                    available_outputs.extend(n.output_params)
+                    avaliable_params.extend(n.output_params)
 
             output_params = node.output_params
 
@@ -139,12 +155,18 @@ def process_node(
                     {
                         "nodes": nodes_str,
                         "requirement": node,
-                        "avaliable_params": available_outputs,
+                        "avaliable_params": avaliable_params,
                         "required_output_params": output_params,
                     }
                 )
             )
+        if selected_node.node_id != "new":
+            node_details: Node = possible_nodes[selected_node.node_id]
+            selected_node = validate_selected_node(
+                selected_node, node_details, avaliable_params, output_params
+            )
             logger.debug(f"Selected node: {selected_node}")
+
         if selected_node.node_id == "new":
             logger.info(f"🆕 Processing new node: {node.name}")
             complexity = CheckComplexity.parse_obj(
@@ -226,6 +248,28 @@ def process_node(
             return node
 
 
+def create_node_graph(application_context, path, path_name, attempt=0):
+    if attempt > 5:
+        raise Exception("Unable to create valid node graph")
+    if attempt > 0:
+        logger.warning(f"⚠️ Unable to create valid node graph, attempt {attempt}/5")
+
+    ng = NodeGraph.parse_obj(
+        chain_generate_execution_graph.invoke(
+            {
+                "application_context": application_context,
+                "api_route": path,
+                "graph_name": path_name,
+            }
+        )
+    )
+    if "request" not in ng.nodes[0].name.lower():
+        ng = create_node_graph(application_context, path, path_name, attempt + 1)
+    if "response" not in ng.nodes[-1].name.lower():
+        ng = create_node_graph(application_context, path, path_name, attempt + 1)
+    return ng
+
+
 def run(task_description: str, engine):
     """
     Runs the task processing pipeline.
@@ -256,21 +300,8 @@ def run(task_description: str, engine):
                     dag = nx.DiGraph()
                     logger.info("📈 Generating execution graph")
 
-                    ng = NodeGraph.parse_obj(
-                        chain_generate_execution_graph.invoke(
-                            {
-                                "application_context": ap.application_context,
-                                "api_route": path,
-                                "graph_name": path.name,
-                            }
-                        )
-                    )
-                    assert (
-                        "request" in ng.nodes[0].name.lower()
-                    ), "Invalid graph, request node not found: {ng}}"
-                    assert (
-                        "response" in ng.nodes[-1].name.lower()
-                    ), "Invalid graph, response node not found: {ng}"
+                    ng = create_node_graph(ap.application_context, path, path.name)
+
                     logger.info("🌐 Execution graph generated")
                     logger.debug(f"Execution graph: {ng}")
                     processed_nodes = []
