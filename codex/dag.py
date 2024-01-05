@@ -135,7 +135,7 @@ def compile_graph(graph: nx.DiGraph, ep: ExecutionPath):
     graph_script = ""
     requirements = []
     function_name = (
-        ep.name.replace(" ", "_").replace("-", "_").replace("/", "").strip()
+        ep.name.replace(" ", "_").replace("-", "_").replace("/", "").strip().lower()
         + "_request"
     )
     for node_name in nx.topological_sort(graph):

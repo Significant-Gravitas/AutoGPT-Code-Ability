@@ -64,7 +64,7 @@ def setup_logging():
 
     # Create a file handler for error messages
     file_handler = logging.FileHandler("error_logs.log")
-    file_handler.setLevel(logging.ERROR)
+    file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(logging.Formatter(log_format))
 
     # Add the file handler to the root logger

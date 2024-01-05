@@ -200,7 +200,7 @@ def process_node(
             node_id = int(selected_node.node_id)
             assert node_id < len(possible_nodes), "Invalid node id"
             node: Node = possible_nodes[node_id]
-
+            logger.info(f"✅ Node selected: {node}")
             # Map I/O params
             if selected_node.input_map:
                 logger.info(f"🔗 Mapping input params for: {node.name}")
@@ -283,8 +283,8 @@ def run(task_description: str, engine):
                     logger.error(f"❌ Path processing failed: {e}\n\nDetails:\n{ng}")
                     raise e
 
-        logger.info("🏃 Runner created successfully")
         runner = create_fastapi_server(generated_data)
+        logger.info("🏃 Runner created successfully")
         logger.info("🎉 Task processing completed")
         return runner
     except Exception as e:

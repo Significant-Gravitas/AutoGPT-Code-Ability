@@ -1,4 +1,5 @@
 import ast
+import logging
 import os
 import re
 import tempfile
@@ -6,6 +7,8 @@ import zipfile
 from typing import List
 
 from .model import FunctionData
+
+logger = logging.getLogger(__name__)
 
 
 def analyze_function_signature(code: str, function_name: str):
@@ -45,6 +48,13 @@ def create_fastapi_server(functions_data: List[FunctionData]) -> bytes:
             params, return_type = analyze_function_signature(
                 function_data.code, function_data.function_name
             )
+            if not params:
+                logger.error(
+                    f"Function {function_data.function_name} has no parameters: Details:\n {function_data.code}"
+                )
+                raise ValueError(
+                    f"Function {function_data.function_name} has no parameters"
+                )
 
             # Sanitize the endpoint name
             sanitized_endpoint_name = re.sub(
@@ -61,8 +71,9 @@ def create_fastapi_server(functions_data: List[FunctionData]) -> bytes:
             import_statements += (
                 f"from service_{idx} import {function_data.function_name}\n"
             )
+
             # Generate Pydantic models and endpoint
-            if params and len(params) > 1:
+            if len(params) > 1:
                 # Create Pydantic model for request
                 request_model = f"class RequestModel{idx}(BaseModel):\n"
                 request_model += "\n".join([f"    {param}: str" for param in params])

@@ -141,6 +141,10 @@ If there are no possible nodes that have all the Avaliable Input Params then rep
 
 # Required Output Params
 {required_output_params}
+
+## IMPORTANT!
+The selected node all node inputs must be mapped to avaliable input params. If there are missing input params then the node is not a match.
+The node must have all required output params. If there are missing output params then the node is not a match.
 """,
         ),
     ]
