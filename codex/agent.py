@@ -265,8 +265,12 @@ def run(task_description: str, engine):
                             }
                         )
                     )
-                    assert "request" in ng.nodes[0].name.lower(), "Invalid graph, request node not found: {ng}}"
-                    assert "response" in ng.nodes[-1].name.lower(), "Invalid graph, response node not found: {ng}"
+                    assert (
+                        "request" in ng.nodes[0].name.lower()
+                    ), "Invalid graph, request node not found: {ng}}"
+                    assert (
+                        "response" in ng.nodes[-1].name.lower()
+                    ), "Invalid graph, response node not found: {ng}"
                     logger.info("🌐 Execution graph generated")
                     logger.debug(f"Execution graph: {ng}")
                     processed_nodes = []
