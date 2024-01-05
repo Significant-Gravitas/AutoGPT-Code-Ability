@@ -38,26 +38,14 @@
                     "editor.formatOnType": true
                 },
                 "python.linting.enabled": true,
-                "python.formatting.provider": "black",
-                "python.sortImports.args": [
-                    "--profile",
-                    "black"
-                ],
                 "python.analysis.typeCheckingMode": "strict",
                 "python.analysis.autoSearchPaths": true,
                 "python.languageServer": "Default",
                 "python.linting.pylintEnabled": true,
-                "python.linting.flake8Enabled": true,
-                "python.linting.flake8Args": [
-                    // Match what black does.
-                    "--max-line-length=88"
-                ]
             },
             "extensions": [
                 "ms-python.python",
-                "ms-python.black-formatter",
-                "ms-python.vscode-pylance",
-                "ms-python.flake8",
+                "charliermarsh.ruff",
                 "ms-python.isort",
                 "github.copilot",
                 "VisualStudioExptTeam.vscodeintellicode",
@@ -65,7 +53,6 @@
                 "njpwerner.autodocstring",
                 "wholroyd.jinja",
                 "eamodio.gitlens",
-            
             ]
         },
         }
