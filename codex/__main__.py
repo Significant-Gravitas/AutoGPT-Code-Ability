@@ -1,6 +1,19 @@
+import concurrent.futures
+
 import click
 import requests
 from requests.auth import HTTPBasicAuth
+
+
+def worker(zip_file, description):
+    click.echo(f"Testing: {description}")
+    send_request_cmd(
+        description=description,
+        user_id=1234,
+        username="admin",
+        password="asd453jnsdof9384rjnsdf",
+        output=zip_file,
+    )
 
 
 def send_request_cmd(
@@ -101,20 +114,15 @@ def run_tests():
         ),
     ]
 
-    for zip_file, description in test_descriptions:
-        click.echo(f"Testing: {description}")
-        send_request_cmd(
-            description=description,
-            user_id=1234,
-            username="admin",
-            password="asd453jnsdof9384rjnsdf",
-            output=zip_file,
-        )
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = [
+            executor.submit(worker, zip_file, description)
+            for zip_file, description in test_descriptions
+        ]
+
+        for future in concurrent.futures.as_completed(futures):
+            future.result()  # You can handle exceptions here if needed
 
 
 if __name__ == "__main__":
     cli()
-
-
-if __name__ == "__main__":
-    send_request()
