@@ -32,9 +32,7 @@ descriptions = [
     if "descriptionPreview" in bounty
 ]
 full_desc = [
-    bounty["description"]
-    for bounty in bounties_data
-    if "description" in bounty
+    bounty["description"] for bounty in bounties_data if "description" in bounty
 ]
 # # Get OpenAI embeddings
 # embeddings = get_openai_embeddings(descriptions)
@@ -59,9 +57,7 @@ for i in range(10):
     center_vec = kmeans.cluster_centers_[i]
     distances = np.linalg.norm(np.array(embeddings) - center_vec, axis=1)
     closest_indices = np.argsort(distances)[:5]
-    closest_descriptions[f"Cluster {i+1}"] = [
-        full_desc[idx] for idx in closest_indices
-    ]
+    closest_descriptions[f"Cluster {i+1}"] = [full_desc[idx] for idx in closest_indices]
 
 # Output the closest descriptions
 print(json.dumps(closest_descriptions, indent=4))
