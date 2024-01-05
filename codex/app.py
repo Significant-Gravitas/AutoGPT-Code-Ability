@@ -27,7 +27,6 @@ class RunnerEnum(str, Enum):
 class CodeRequest(BaseModel):
     description: str
     user_id: int
-    runner: RunnerEnum
 
 
 # Basic authentication

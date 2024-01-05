@@ -6,12 +6,6 @@ from requests.auth import HTTPBasicAuth
 @click.command()
 @click.option("--description", prompt=True, help="Description of the code request")
 @click.option("--user_id", default=1234, type=int, help="User ID")
-@click.option(
-    "--runner",
-    type=click.Choice(["Server", "CLI"], case_sensitive=False),
-    prompt=True,
-    help="Runner type",
-)
 @click.option("--username", default="admin", help="Username for authentication")
 @click.option(
     "--password",
@@ -21,19 +15,18 @@ from requests.auth import HTTPBasicAuth
 )
 @click.option(
     "--output",
-    default="downloaded_file.zip",
+    default="code_output.zip",
     help="Output file path (default: downloaded_file.zip)",
 )
 def send_request(
     description: str,
     user_id: int,
-    runner: str,
     username: str,
     password: str,
     output: str,
 ) -> None:
     url = "http://127.0.0.1:8000/code"
-    data = {"description": description, "user_id": user_id, "runner": runner}
+    data = {"description": description, "user_id": user_id}
 
     try:
         response = requests.post(url, json=data, auth=HTTPBasicAuth(username, password))
