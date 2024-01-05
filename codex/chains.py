@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 class ExecutionPath(BaseModel):
     name: str
+    endpoint_name: str
     description: str
 
 

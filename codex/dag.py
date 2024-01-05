@@ -160,5 +160,5 @@ def compile_graph(graph: nx.DiGraph, ep: ExecutionPath):
         function_name=function_name,
         code=format_and_sort_code(refactor_imports(python_file)),
         requirements_txt=requirements_txt,
-        endpoint_name=ep.name,
+        endpoint_name=ep.endpoint_name,
     )

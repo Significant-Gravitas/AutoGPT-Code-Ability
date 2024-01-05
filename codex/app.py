@@ -12,8 +12,9 @@ from sqlmodel import SQLModel, create_engine  # type: ignore
 from starlette.background import BackgroundTask
 
 from .agent import run
+from .model import *
 
-DATABASE_URL = "sqlite:///./test.db"
+DATABASE_URL = "postgresql://agpt_live:bnfaHGGSDF134345@0.0.0.0:5432/agpt_product"
 engine = create_engine(DATABASE_URL)
 
 
@@ -60,7 +61,7 @@ logger = logging.getLogger(__name__)
 @app.post("/code")
 def handle_code_request(request: CodeRequest, user: str = Depends(authenticate)):
     logger.info(f"Received code request from user: {user}")
-    zip_bytes = run(request.description)
+    zip_bytes = run(request.description, engine)
 
     # Create a temporary file
     temp_file, temp_file_path = tempfile.mkstemp(suffix=".zip")

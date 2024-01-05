@@ -3,8 +3,7 @@ from typing import List
 
 import networkx as nx
 from sentence_transformers import SentenceTransformer
-from sqlmodel import Session, SQLModel, create_engine
-
+from sqlmodel import Session
 from codex.chains import (
     ApplicationPaths,
     CheckComplexity,
@@ -23,11 +22,9 @@ from codex.dag import add_node, compile_graph
 from codex.database import search_for_similar_node
 from codex.model import InputParameter, Node, OutputParameter, RequiredPackage
 
-database_url = "postgresql://agpt_live:bnfaHGGSDF134345@0.0.0.0:5432/agpt_product"
 
-engine = create_engine(database_url)
-SQLModel.metadata.create_all(engine)
-embedder = SentenceTransformer("all-mpnet-base-v2")
+EMBEDDER = SentenceTransformer("all-mpnet-base-v2")
+
 logger = logging.getLogger(__name__)
 
 
@@ -79,6 +76,7 @@ def process_node(
     ap: ApplicationPaths,
     dag: nx.DiGraph,
     embedder: SentenceTransformer,
+    engine,
 ):
     """
     Processes a single node in the DAG.
@@ -114,7 +112,7 @@ def process_node(
         return req_resp_node
     else:
         logger.info(f"🔍 Searching for similar nodes for: {node.name}")
-        possible_nodes = search_for_similar_node(session, node)
+        possible_nodes = search_for_similar_node(session, node, embedder)
         logger.debug(f"Possible nodes: {possible_nodes}")
 
         if not possible_nodes:
@@ -194,7 +192,9 @@ def process_node(
                     )
                 )
                 for sub_node in sub_graph.nodes:
-                    process_node(session, sub_node, processed_nodes, ap, dag, embedder)
+                    process_node(
+                        session, sub_node, processed_nodes, ap, dag, EMBEDDER, engine
+                    )
         else:
             node_id = int(selected_node.node_id)
             assert node_id < len(possible_nodes), "Invalid node id"
@@ -224,7 +224,7 @@ def process_node(
             return node
 
 
-def run(task_description: str):
+def run(task_description: str, engine):
     """
     Runs the task processing pipeline.
 
@@ -269,7 +269,7 @@ def run(task_description: str):
                     f"🔨 Processing node {node_index}/{len(ng.nodes)}: {node.name}"
                 )
                 processed_node = process_node(
-                    session, node, processed_nodes, ap, dag, embedder
+                    session, node, processed_nodes, ap, dag, EMBEDDER, engine
                 )
                 processed_nodes.append(processed_node)
 

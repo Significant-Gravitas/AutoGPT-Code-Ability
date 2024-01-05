@@ -62,7 +62,7 @@ def create_fastapi_server(functions_data: List[FunctionData]) -> bytes:
                 f"from service_{idx} import {function_data.function_name}\n"
             )
             # Generate Pydantic models and endpoint
-            if len(params) > 1:
+            if params and len(params) > 1:
                 # Create Pydantic model for request
                 request_model = f"class RequestModel{idx}(BaseModel):\n"
                 request_model += "\n".join([f"    {param}: str" for param in params])

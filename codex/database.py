@@ -24,7 +24,9 @@ def select_node_by_id(session: Session, node_id: int) -> Optional[Node]:
     return node
 
 
-def search_for_similar_node(session: Session, node: Node) -> Optional[List[Node]]:
+def search_for_similar_node(
+    session: Session, node: Node, embedder: SentenceTransformer
+) -> Optional[List[Node]]:
     input_param_types = None
     output_param_types = None
     if node.input_params:
@@ -32,7 +34,6 @@ def search_for_similar_node(session: Session, node: Node) -> Optional[List[Node]
     if node.output_params:
         output_param_types = [param.param_type for param in node.output_params]
 
-    embedder = SentenceTransformer("all-mpnet-base-v2")
     query = embedder.encode(  # type: ignore
         node.description, normalize_embeddings=True, convert_to_numpy=True
     )
