@@ -19,7 +19,7 @@ from codex.chains import (
     chain_write_node,
 )
 from codex.code_gen import create_fastapi_server
-from codex.dag import add_node, compile_graph
+from codex.dag import add_node, compile_graph, format_and_sort_code
 from codex.database import search_for_similar_node
 from codex.model import InputParameter, Node, OutputParameter, RequiredPackage
 
@@ -155,6 +155,7 @@ def process_node(
             if not complexity.is_complex:
                 logger.info(f"📝 Writing new node code for: {node.name}")
                 requirements, code = chain_write_node.invoke({"node": node})
+                code = format_and_sort_code(code)
                 required_packages = parse_requirements(requirements)
 
                 logger.info(f"📦 Adding new node to the database: {node.name}")
