@@ -1,10 +1,8 @@
 import uuid
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
-import networkx as nx
 from pgvector.sqlalchemy import Vector  # type: ignore
 from pydantic import BaseModel
-from sentence_transformers import SentenceTransformer
 from sqlmodel import Column, Field, Relationship, SQLModel  # type: ignore
 
 

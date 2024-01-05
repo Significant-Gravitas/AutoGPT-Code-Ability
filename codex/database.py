@@ -116,8 +116,6 @@ def search_nodes_by_params(
 if __name__ == "__main__":
     import os
 
-    from sentence_transformers import SentenceTransformer  # type: ignore
-
     from examples.a_web_reader import nodes as web_reader_nodes
 
     DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./codex.db")

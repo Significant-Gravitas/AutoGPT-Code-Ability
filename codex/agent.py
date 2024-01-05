@@ -21,7 +21,7 @@ from codex.chains import (
 from codex.code_gen import create_fastapi_server
 from codex.dag import add_node, compile_graph
 from codex.database import search_for_similar_node
-from codex.model import *
+from codex.model import InputParameter, Node, OutputParameter, RequiredPackage
 
 database_url = "postgresql://agpt_live:bnfaHGGSDF134345@0.0.0.0:5432/agpt_product"
 
@@ -240,7 +240,7 @@ def run(task_description: str):
     ap = ApplicationPaths.parse_obj(
         chain_decompose_task.invoke({"task": task_description})
     )
-    logger.info(f"✅ Task decomposed into application paths")
+    logger.info("✅ Task decomposed into application paths")
     logger.debug(f"Application paths: {ap}")
     generated_data = []
     with Session(engine) as session:

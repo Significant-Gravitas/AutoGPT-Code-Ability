@@ -1,10 +1,10 @@
-from openai import OpenAI
-
-client = OpenAI(api_key="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")
 import json
 
 import numpy as np
+from openai import OpenAI
 from sklearn.cluster import KMeans
+
+client = OpenAI(api_key="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")
 
 # Set your OpenAI API key
 
