@@ -18,6 +18,7 @@ from codex.chains import (
     chain_select_from_possible_nodes,
     chain_write_node,
 )
+from codex.code_gen import create_fastapi_server
 from codex.dag import add_node, compile_graph
 from codex.database import search_for_similar_node
 from codex.model import *
@@ -241,6 +242,7 @@ def run(task_description: str):
     )
     logger.info(f"✅ Task decomposed into application paths")
     logger.debug(f"Application paths: {ap}")
+    generated_data = []
     with Session(engine) as session:
         for path_index, path in enumerate(ap.execution_paths, start=1):
             logger.info(
@@ -272,16 +274,12 @@ def run(task_description: str):
                 processed_nodes.append(processed_node)
 
             logger.info("🔗 All nodes processed, creating runner")
-            requirements_txt, code = compile_graph(dag, path)
+            data = compile_graph(dag, path)
+            generated_data.append(data)
             logger.info("🏃 Runner created successfully")
 
     logger.info("🎉 Task processing completed")
-    print(requirements_txt)
-    print(code)
-    import IPython
-
-    IPython.embed()
-    return requirements_txt, code
+    return create_fastapi_server(generated_data)
 
 
 if __name__ == "__main__":

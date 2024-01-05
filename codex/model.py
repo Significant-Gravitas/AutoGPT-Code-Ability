@@ -8,6 +8,14 @@ from sentence_transformers import SentenceTransformer
 from sqlmodel import Column, Field, Relationship, SQLModel  # type: ignore
 
 
+# Define the Pydantic model for function data
+class FunctionData(BaseModel):
+    function_name: str
+    code: str
+    requirements_txt: str
+    endpoint_name: str
+
+
 class OutputParameter(SQLModel, table=True):
     """
     Represents a parameter with its type, name, and description.
@@ -167,7 +175,7 @@ class Node(SQLModel, table=True):
         Returns:
             str: The generated code for the request function.
         """
-        out = f"def {self.name.lower()}_request("
+        out = f"def {self.name.lower()}("
         if self.output_params:
             for param in self.output_params:
                 out += f"{param.name}: {param.param_type}, "

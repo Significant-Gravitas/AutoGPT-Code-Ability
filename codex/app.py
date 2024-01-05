@@ -1,6 +1,6 @@
 import logging
 import os
-import zipfile
+import tempfile
 from contextlib import asynccontextmanager
 from enum import Enum
 
@@ -8,7 +8,8 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
-from sqlmodel import Session, SQLModel, create_engine  # type: ignore
+from sqlmodel import SQLModel, create_engine  # type: ignore
+from starlette.background import BackgroundTask
 
 from .agent import run
 
@@ -57,33 +58,25 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-# Function to create a dummy zip file
-def create_dummy_zip():
-    zip_file_path = "dummy_file.zip"
-    with zipfile.ZipFile(zip_file_path, "w") as zipf:
-        # Add a dummy file to the zip
-        dummy_file_name = "dummy.txt"
-        with open(dummy_file_name, "w") as file:
-            file.write("This is a dummy file.")
-
-        zipf.write(dummy_file_name)
-
-        # Cleanup the dummy file
-        os.remove(dummy_file_name)
-
-    return zip_file_path
-
-
 @app.post("/code")
 def handle_code_request(request: CodeRequest, user: str = Depends(authenticate)):
     logger.info(f"Received code request from user: {user}")
-    code = run(request.description)
-    # Create a dummy zip file
-    zip_file_path = create_dummy_zip()
+    zip_bytes = run(request.description)
+
+    # Create a temporary file
+    temp_file, temp_file_path = tempfile.mkstemp(suffix=".zip")
+    os.close(temp_file)
+
+    # Write zip_bytes to the temporary file
+    with open(temp_file_path, "wb") as file:
+        file.write(zip_bytes)
 
     logger.info("Returning zip file response")
     return FileResponse(
-        zip_file_path, media_type="application/zip", filename="dummy_file.zip"
+        temp_file_path,
+        media_type="application/zip",
+        filename="code_output.zip",
+        background=BackgroundTask(lambda: os.unlink(temp_file_path)),
     )
 
 

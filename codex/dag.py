@@ -7,7 +7,7 @@ import isort
 import networkx as nx
 
 from .chains import ExecutionPath
-from .model import Node, RequiredPackage
+from .model import FunctionData, Node, RequiredPackage
 
 logger = logging.getLogger(__name__)
 
@@ -134,13 +134,15 @@ def compile_graph(graph: nx.DiGraph, ep: ExecutionPath):
     python_file = ""
     graph_script = ""
     requirements = []
+    function_name = (
+        ep.name.replace(" ", "_").replace("-", "_").replace("/", "").strip()
+        + "_request"
+    )
     for node_name in nx.topological_sort(graph):
         node: Node = graph.nodes[node_name]["node"]
         requirements.extend(node.required_packages)
         if "request" in node_name:
-            node.name = (
-                ep.name.replace(" ", "_").replace("-", "_").replace("/", "").strip()
-            )
+            node.name = function_name
             graph_script += node.request_to_code()
         elif "response" in node_name:
             graph_script += node.response_to_code(output_name_map)
@@ -154,4 +156,9 @@ def compile_graph(graph: nx.DiGraph, ep: ExecutionPath):
             graph_script += f"{code}\n"
     python_file += f"\n{graph_script}"
     requirements_txt = generate_requirements_txt(requirements)
-    return requirements_txt, format_and_sort_code(refactor_imports(python_file))
+    return FunctionData(
+        function_name=function_name,
+        code=format_and_sort_code(refactor_imports(python_file)),
+        requirements_txt=requirements_txt,
+        endpoint_name=ep.name,
+    )
