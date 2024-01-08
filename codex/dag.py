@@ -143,23 +143,16 @@ def compile_graph(graph: nx.DiGraph, ep: ExecutionPath):
         ep.name.strip().replace(" ", "_").replace("-", "_").replace("/", "").lower()
         + "_request"
     )
-    request_added = False
-    response_added = False
 
-    for node_name in nx.topological_sort(graph):
+    sorted_nodes = list(nx.topological_sort(graph))
+
+    for node_name in sorted_nodes:
         node: Node = graph.nodes[node_name]["node"]
         requirements.extend(node.required_packages)
-        if "request" in node_name and not request_added:
+        if node_name == sorted_nodes[0]:
             node.name = function_name
             graph_script += node.request_to_code()
-            request_added = True
-        elif "response" in node_name:
-            if response_added:
-                logger.error("Response node already added")
-                import IPython
-
-                IPython.embed()()
-            response_added = True
+        elif node_name == sorted_nodes[-1]:
             graph_script += node.response_to_code(output_name_map)
         else:
             python_file += f"\n{node.code}\n"
@@ -171,14 +164,6 @@ def compile_graph(graph: nx.DiGraph, ep: ExecutionPath):
             graph_script += f"{code}\n"
     python_file += f"\n{graph_script}"
     requirements_txt = generate_requirements_txt(requirements)
-    if not (request_added and response_added):
-        logger.error(
-            f"Request and response nodes must be present in the graph. Request: {request_added}, Response: {response_added}"
-        )
-        import IPython
-
-        IPython.embed()
-
     return FunctionData(
         function_name=function_name,
         code=format_and_sort_code(python_file),
