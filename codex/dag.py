@@ -17,6 +17,9 @@ def add_node(graph: nx.DiGraph, node_name: str, node: Node) -> bool:
         graph.add_node(node_name, node=node)
         return True
 
+    if not node.output_params:
+        logger.error(f"Node {node_name} has no output parameters\n {node}")
+
     # Check if node's input parameters are satisfied by the existing nodes in the graph
     if node.input_params:
         input_params_needed = [f"{p.name}: {p.param_type}" for p in node.input_params]
@@ -28,10 +31,6 @@ def add_node(graph: nx.DiGraph, node_name: str, node: Node) -> bool:
     providers: Dict[Tuple[str, str], Node] = {}
     for n in graph.nodes:
         existing_node: Node = graph.nodes[n]["node"]
-
-        assert isinstance(
-            existing_node, Node
-        ), f"Node {n} is not a Node object {type(existing_node)}"
 
         if existing_node.output_params:
             for output_param in existing_node.output_params:

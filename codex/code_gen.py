@@ -69,7 +69,7 @@ def create_fastapi_server(functions_data: List[FunctionData]) -> bytes:
 
             # Import statement for the function
             import_statements += (
-                f"from service_{idx} import {function_data.function_name}\n"
+                f"from .service_{idx} import {function_data.function_name}\n"
             )
 
             # Generate Pydantic models and endpoint
@@ -78,20 +78,14 @@ def create_fastapi_server(functions_data: List[FunctionData]) -> bytes:
                 request_model = f"class RequestModel{idx}(BaseModel):\n"
                 request_model += "\n".join([f"    {param}: str" for param in params])
 
-                # Create Pydantic model for response if return type is provided
-                response_model = ""
-                if return_type:
-                    response_model = f"\nclass ResponseModel{idx}(BaseModel):\n    result: {return_type}\n"
-
                 # Add to endpoint functions
                 endpoint_functions += f"""
 {request_model}
-{response_model}
 
-@app.post("/{sanitized_endpoint_name}", response_model=ResponseModel{idx} if '{response_model}' else None)
+@app.post("/{sanitized_endpoint_name}")
 def endpoint_{idx}(request: RequestModel{idx}):
     result = {function_data.function_name}(**request.dict())
-    return {{'result': result}} if '{response_model}' else result
+    return result
 """
             else:
                 # Generate endpoint without Pydantic models

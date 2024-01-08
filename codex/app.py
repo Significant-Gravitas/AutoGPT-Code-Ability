@@ -63,12 +63,18 @@ def setup_logging():
     coloredlogs.install(level="INFO", fmt=log_format)
 
     # Create a file handler for error messages
-    file_handler = logging.FileHandler("error_logs.log")
+    file_handler = logging.FileHandler("codex_logs.log")
     file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(logging.Formatter(log_format))
 
+    # Create a file handler for error messages
+    err_file_handler = logging.FileHandler("error_logs.log")
+    err_file_handler.setLevel(logging.ERROR)
+    err_file_handler.setFormatter(logging.Formatter(log_format))
+
     # Add the file handler to the root logger
     logging.getLogger().addHandler(file_handler)
+    logging.getLogger().addHandler(err_file_handler)
 
 
 setup_logging()

@@ -70,12 +70,43 @@ def parse_requirements(requirements_str: str) -> List[RequiredPackage]:
 
 
 def validate_selected_node(
-    selected_node: SelectNode, node_details: Node, available_outputs, output_params
-):
-    logger.info(
-        f"🔍 Validating selected node: {node_details.name}\nSelectedNode:\n {selected_node}\nNodeDetails:\n {node_details}\navailable_outputs:\n {available_outputs}\noutput_params:\n {output_params}"
-    )
-    return selected_node
+    selected_node: SelectNode,
+    node_details: Node,
+    node_def: NodeDefinition,
+    available_outputs,
+    output_params,
+) -> bool:
+    # First check if the node_details and node_def have matching number of input and output params
+    if len(node_details.input_params) != len(node_def.input_params):
+        logger.error(
+            f"🚫 Node details and node def have different number of input params: {node_details.name}"
+        )
+        return False
+
+    if len(node_details.output_params) != len(node_def.output_params):
+        logger.error(
+            f"🚫 Node details and node def have different number of output params: {node_details.name}"
+        )
+        return False
+
+    # Next check the validity of the input map:
+    for key, value in selected_node.input_map.items():
+        if key not in node_details.input_params:
+            logger.error(f"🚫 Input map contains invalid key: {key}")
+            return False
+        if value not in node_def.input_params:
+            logger.error(f"🚫 Input map contains invalid value: {value}")
+            return False
+    # Next check if the output map is valid:
+    for key, value in selected_node.output_map.items():
+        if key not in node_details.output_params:
+            logger.error(f"🚫 Output map contains invalid key: {key}")
+            return False
+        if value not in node_def.output_params:
+            logger.error(f"🚫 Output map contains invalid value: {value}")
+            return False
+
+    return True
 
 
 def process_request_response_node(
@@ -161,11 +192,12 @@ def process_node(
                 )
             )
         if selected_node.node_id != "new":
-            node_details: Node = possible_nodes[selected_node.node_id]
-            selected_node = validate_selected_node(
-                selected_node, node_details, avaliable_params, output_params
+            node_id = int(selected_node.node_id)
+            node_details: Node = possible_nodes[node_id]
+            is_valid = validate_selected_node(
+                selected_node, node_details, node, avaliable_params, output_params
             )
-            logger.debug(f"Selected node: {selected_node}")
+            selected_node.node_id = "new" if not is_valid else selected_node.node_id
 
         if selected_node.node_id == "new":
             logger.info(f"🆕 Processing new node: {node.name}")
@@ -264,10 +296,29 @@ def create_node_graph(application_context, path, path_name, attempt=0):
         )
     )
     if "request" not in ng.nodes[0].name.lower():
+        logger.warning("⚠️ Node graph does not start with a request node")
         ng = create_node_graph(application_context, path, path_name, attempt + 1)
     if "response" not in ng.nodes[-1].name.lower():
+        logger.warning("⚠️ Node graph does not end with a response node")
+        ng = create_node_graph(application_context, path, path_name, attempt + 1)
+    if not validate_generated_node_graph(ng):
+        logger.warning("⚠️ Node graph is not valid")
         ng = create_node_graph(application_context, path, path_name, attempt + 1)
     return ng
+
+
+def validate_generated_node_graph(ng):
+    is_valid = True
+    graph = nx.DiGraph()
+    try:
+        for node in ng.nodes:
+            add_node(graph, node.name, node)
+    except Exception as e:
+        logger.error(f"❌ Node graph validation failed: {e}\n\nDetails:\n{ng}")
+        is_valid = False
+    if not nx.is_directed_acyclic_graph(graph):
+        is_valid = False
+    return is_valid
 
 
 def run(task_description: str, engine):
