@@ -57,14 +57,14 @@ class NodeGraph(BaseModel):
 
 model = ChatOpenAI(
     temperature=1,
-    model="gpt-4-1106-preview",
+    model_name="gpt-4-1106-preview",
     max_tokens=4095,
     model_kwargs={"top_p": 1, "frequency_penalty": 0, "presence_penalty": 0},
 ).bind(**{"response_format": {"type": "json_object"}})
 
 code_model = ChatOpenAI(
     temperature=1,
-    model="gpt-4-1106-preview",
+    model_name="gpt-4-1106-preview",
     max_tokens=4095,
 )
 
@@ -96,7 +96,7 @@ prompt_generate_execution_graph = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "You are an expert software engineer specialised in breaking down a problem into a series of steps that can be developed by a junior developer. Each step is designed to be as generic as possible. The first step is a `request` node with `request` in the name it represents a request object and only has output params. The last step is a `response` node with `response` in the name it represents aresposne object and only has input parameters.\nReply in json format:\n{format_instructions}\n\n# Important:\n for param_type use only these primitive types - bool, int, float, complex, str, bytes, tuple, list, dict, set, frozenset.\n node names are in python function name format",
+            "You are an expert software engineer specialised in breaking down a problem into a series of steps that can be developed by a junior developer. Each step is designed to be as generic as possible. The first step is a `request` node with `request` in the name it represents a request object and only has output params. The last step is a `response` node with `response` in the name it represents aresposne object and only has input parameters.\nReply in json format:\n{format_instructions}\n\n# Important:\n for param_type use only these primitive types - bool, int, float, complex, str, bytes, tuple, list, dict, set, frozenset.\n node names are in python function name format\n There must be only 1 node with request in the name and 1 node with response in the name",
         ),
         (
             "human",
@@ -215,7 +215,7 @@ def _sanitize_output(text: str):
     return requirements, code
 
 
-template = """You are an expect python developer. Write the python code to implement the node.
+template = """You are an expect python developer. Write the python code to implement the node. Do not skip any implementation details.
 Included error handling, comments and type hints.
 
 Return only the requreirments and python imports and function in Markdown format, e.g.:
