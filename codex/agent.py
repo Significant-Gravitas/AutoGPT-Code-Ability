@@ -85,7 +85,7 @@ def select_node_from_possible_nodes(
 
     avaliable_inpurt_params = []
     for n in processed_nodes:
-        if n.output_params:
+        if n and n.output_params:
             avaliable_inpurt_params.extend(n.output_params)
 
     select_node_request = {
@@ -270,7 +270,7 @@ def process_node(
                         "request" in sub_node.name.lower()
                         or "response" in sub_node.name.lower()
                     ):
-                        process_node(
+                        pnode = process_node(
                             session,
                             sub_node,
                             processed_nodes,
@@ -279,6 +279,10 @@ def process_node(
                             EMBEDDER,
                             engine,
                         )
+                        # TODO This maybe causing a bug where the node is not added to the
+                        # processed nodes list as processed nodes is not returning a node
+                        if pnode:
+                            processed_nodes.append(pnode)
 
         else:
             node_id = int(selected_node.node_id)
@@ -404,7 +408,8 @@ def run(task_description: str, engine):
                         processed_node = process_node(
                             session, node, processed_nodes, ap, dag, EMBEDDER, engine
                         )
-                        processed_nodes.append(processed_node)
+                        if process_node:
+                            processed_nodes.append(processed_node)
 
                     logger.info("🔗 All nodes processed, creating runner")
                     data = compile_graph(dag, path)
