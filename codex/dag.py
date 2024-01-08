@@ -90,11 +90,17 @@ def refactor_imports(file_content: str) -> str:
 
 
 def format_and_sort_code(file_content: str) -> str:
-    # First, sort the imports using isort
-    sorted_content = isort.code(file_content)
+    try:
+        # First, sort the imports using isort
+        sorted_content = isort.code(file_content)
 
-    # Then, format the code using black
-    formatted_content = black.format_str(sorted_content, mode=black.FileMode())
+        # Then, format the code using black
+        formatted_content = black.format_str(sorted_content, mode=black.FileMode())
+    except Exception as e:
+        logger.error(f"Error formatting code: {e}")
+        import IPython
+
+        IPython.embed()
 
     return formatted_content
 
@@ -143,19 +149,19 @@ def compile_graph(graph: nx.DiGraph, ep: ExecutionPath):
     for node_name in nx.topological_sort(graph):
         node: Node = graph.nodes[node_name]["node"]
         requirements.extend(node.required_packages)
-        if "request" in node_name:
+        if "request" in node_name and not request_added:
             node.name = function_name
             graph_script += node.request_to_code()
             request_added = True
         elif "response" in node_name:
+            if response_added:
+                logger.error("Response node already added")
+                import IPython
+
+                IPython.embed()()
             response_added = True
             graph_script += node.response_to_code(output_name_map)
         else:
-            if not request_added:
-                import IPython
-
-                IPython.embed()
-
             python_file += f"\n{node.code}\n"
             code, unique_output_names_map = node.to_code(output_name_map)
             output_name_map: Dict[str, str] = {
@@ -166,13 +172,16 @@ def compile_graph(graph: nx.DiGraph, ep: ExecutionPath):
     python_file += f"\n{graph_script}"
     requirements_txt = generate_requirements_txt(requirements)
     if not (request_added and response_added):
+        logger.error(
+            f"Request and response nodes must be present in the graph. Request: {request_added}, Response: {response_added}"
+        )
         import IPython
 
         IPython.embed()
 
     return FunctionData(
         function_name=function_name,
-        code=format_and_sort_code(refactor_imports(python_file)),
+        code=format_and_sort_code(python_file),
         requirements_txt=requirements_txt,
         endpoint_name=ep.endpoint_name,
     )

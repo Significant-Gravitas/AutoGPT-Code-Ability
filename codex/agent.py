@@ -95,7 +95,7 @@ def select_node_from_possible_nodes(
         "required_output_params": node.output_params,
     }
 
-    if attempts > 3:
+    if attempts > 2:
         logger.error(
             f"❌ Unable to select node, attempt {attempts}/3\nDetails:\n{select_node_request}"
         )
@@ -115,7 +115,7 @@ def select_node_from_possible_nodes(
             avaliable_inpurt_params,
             node.output_params,
         ):
-            return select_node(
+            return select_node_from_possible_nodes(
                 possible_nodes, processed_nodes, node, embedder, attempts + 1
             )
 
@@ -256,7 +256,7 @@ def process_node(
                 return new_node
             else:
                 logger.warning(f"🔄 Node is complex, decomposing: {node.name}")
-                sub_graph = NodeGraph.parse_obj(
+                sub_graph_nodes = NodeGraph.parse_obj(
                     chain_decompose_node.invoke(
                         {
                             "application_context": ap.application_context,
@@ -264,10 +264,22 @@ def process_node(
                         }
                     )
                 )
-                for sub_node in sub_graph.nodes:
-                    process_node(
-                        session, sub_node, processed_nodes, ap, dag, EMBEDDER, engine
-                    )
+                # TODO: vaidate sub_graph_nodes
+                for sub_node in sub_graph_nodes.nodes:
+                    if not (
+                        "request" in sub_node.name.lower()
+                        or "response" in sub_node.name.lower()
+                    ):
+                        process_node(
+                            session,
+                            sub_node,
+                            processed_nodes,
+                            ap,
+                            dag,
+                            EMBEDDER,
+                            engine,
+                        )
+
         else:
             node_id = int(selected_node.node_id)
             assert node_id < len(possible_nodes), "Invalid node id"
