@@ -69,47 +69,56 @@ def parse_requirements(requirements_str: str) -> List[RequiredPackage]:
     return packages
 
 
-def select_node_from_possible_nodes(possible_nodes, processed_nodes, node, embedder, attempts=0) -> SelectNode:
+def select_node_from_possible_nodes(
+    possible_nodes, processed_nodes, node, embedder, attempts=0
+) -> SelectNode:
     if not possible_nodes:
         logger.warning(f"No similar nodes found for: {node.name}")
         return SelectNode(node_id="new")
-        
+
     if attempts > 0:
         logger.warning(f"⚠️ Unable to select node, attempt {attempts}/3")
     # Create the node list for the prompt
     nodes_str = ""
     for i, n in enumerate(possible_nodes):
         nodes_str += f"Node ID: {i}\n{n}\n"
-    
+
     avaliable_inpurt_params = []
     for n in processed_nodes:
         if n.output_params:
             avaliable_inpurt_params.extend(n.output_params)
 
     select_node_request = {
-                "nodes": nodes_str,
-                "requirement": node,
-                "avaliable_params": avaliable_inpurt_params,
-                "required_output_params": node.output_params,
-            }
+        "nodes": nodes_str,
+        "requirement": node,
+        "avaliable_params": avaliable_inpurt_params,
+        "required_output_params": node.output_params,
+    }
 
     if attempts > 3:
-        logger.error(f"❌ Unable to select node, attempt {attempts}/3\nDetails:\n{select_node_request}")
-        return SelectNode(node_id="new")
-    
-    selected_node = SelectNode.parse_obj(
-        chain_select_from_possible_nodes.invoke(
-            select_node_request
+        logger.error(
+            f"❌ Unable to select node, attempt {attempts}/3\nDetails:\n{select_node_request}"
         )
+        return SelectNode(node_id="new")
+
+    selected_node = SelectNode.parse_obj(
+        chain_select_from_possible_nodes.invoke(select_node_request)
     )
     if selected_node.node_id == "new":
         return selected_node
     else:
         node_details: Node = possible_nodes[int(selected_node.node_id)]
         if not validate_selected_node(
-            selected_node, node_details, node, avaliable_inpurt_params, node.output_params
+            selected_node,
+            node_details,
+            node,
+            avaliable_inpurt_params,
+            node.output_params,
         ):
-            return select_node(possible_nodes, processed_nodes, node, embedder, attempts + 1)
+            return select_node(
+                possible_nodes, processed_nodes, node, embedder, attempts + 1
+            )
+
 
 def validate_selected_node(
     selected_node: SelectNode,
@@ -203,8 +212,10 @@ def process_node(
         logger.info(f"🔍 Searching for similar nodes for: {node.name}")
         possible_nodes = search_for_similar_node(session, node, embedder)
 
-        selected_node = select_node_from_possible_nodes(possible_nodes, processed_nodes, node, embedder)
-        
+        selected_node = select_node_from_possible_nodes(
+            possible_nodes, processed_nodes, node, embedder
+        )
+
         if selected_node.node_id == "new":
             logger.info(f"🆕 Processing new node: {node.name}")
             complexity = CheckComplexity.parse_obj(
