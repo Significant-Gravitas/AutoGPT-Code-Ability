@@ -11,7 +11,6 @@ from codex.chains import (
     NodeDefinition,
     NodeGraph,
     SelectNode,
-    chain_check_node_complexity,
     chain_decompose_node,
     chain_decompose_task,
     chain_generate_execution_graph,
@@ -218,9 +217,10 @@ def process_node(
 
         if selected_node.node_id == "new":
             logger.info(f"🆕 Processing new node: {node.name}")
-            complexity = CheckComplexity.parse_obj(
-                chain_check_node_complexity.invoke({"node": node})
-            )
+            # complexity = CheckComplexity.parse_obj(
+            #     chain_check_node_complexity.invoke({"node": node})
+            # )
+            complexity = CheckComplexity(is_complex=False)
             logger.debug(f"Node complexity: {complexity}")
 
             if not complexity.is_complex:
