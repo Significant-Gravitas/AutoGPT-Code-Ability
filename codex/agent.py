@@ -304,8 +304,20 @@ def create_node_graph(application_context, path, path_name, attempt=0):
     if "request" not in ng.nodes[0].name.lower():
         logger.warning("⚠️ Node graph does not start with a request node")
         ng = create_node_graph(application_context, path, path_name, attempt + 1)
+    elif len(ng.nodes[0].output_params) == 0:
+        logger.warning("⚠️ Request node does not have output parameters")
+        ng = create_node_graph(application_context, path, path_name, attempt + 1)
+    elif len(ng.nodes[0].input_params) > 0:
+        logger.warning("⚠️ Request node has input parameters")
+        ng = create_node_graph(application_context, path, path_name, attempt + 1)
     if "response" not in ng.nodes[-1].name.lower():
         logger.warning("⚠️ Node graph does not end with a response node")
+        ng = create_node_graph(application_context, path, path_name, attempt + 1)
+    elif len(ng.nodes[-1].input_params) == 0:
+        logger.warning("⚠️ Response node does not have input parameters")
+        ng = create_node_graph(application_context, path, path_name, attempt + 1)
+    elif len(ng.nodes[-1].output_params) > 0:
+        logger.warning("⚠️ Response node has output parameters")
         ng = create_node_graph(application_context, path, path_name, attempt + 1)
     if not validate_generated_node_graph(ng):
         logger.warning("⚠️ Node graph is not valid")
