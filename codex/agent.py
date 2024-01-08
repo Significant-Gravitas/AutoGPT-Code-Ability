@@ -69,6 +69,48 @@ def parse_requirements(requirements_str: str) -> List[RequiredPackage]:
     return packages
 
 
+def select_node_from_possible_nodes(possible_nodes, processed_nodes, node, embedder, attempts=0) -> SelectNode:
+    if not possible_nodes:
+        logger.warning(f"No similar nodes found for: {node.name}")
+        return SelectNode(node_id="new")
+        
+    if attempts > 0:
+        logger.warning(f"⚠️ Unable to select node, attempt {attempts}/3")
+    # Create the node list for the prompt
+    nodes_str = ""
+    for i, n in enumerate(possible_nodes):
+        nodes_str += f"Node ID: {i}\n{n}\n"
+    
+    avaliable_inpurt_params = []
+    for n in processed_nodes:
+        if n.output_params:
+            avaliable_inpurt_params.extend(n.output_params)
+
+    select_node_request = {
+                "nodes": nodes_str,
+                "requirement": node,
+                "avaliable_params": avaliable_inpurt_params,
+                "required_output_params": node.output_params,
+            }
+
+    if attempts > 3:
+        logger.error(f"❌ Unable to select node, attempt {attempts}/3\nDetails:\n{select_node_request}")
+        return SelectNode(node_id="new")
+    
+    selected_node = SelectNode.parse_obj(
+        chain_select_from_possible_nodes.invoke(
+            select_node_request
+        )
+    )
+    if selected_node.node_id == "new":
+        return selected_node
+    else:
+        node_details: Node = possible_nodes[int(selected_node.node_id)]
+        if not validate_selected_node(
+            selected_node, node_details, node, avaliable_inpurt_params, node.output_params
+        ):
+            return select_node(possible_nodes, processed_nodes, node, embedder, attempts + 1)
+
 def validate_selected_node(
     selected_node: SelectNode,
     node_details: Node,
@@ -160,45 +202,9 @@ def process_node(
     else:
         logger.info(f"🔍 Searching for similar nodes for: {node.name}")
         possible_nodes = search_for_similar_node(session, node, embedder)
-        logger.debug(f"Possible nodes: {possible_nodes}")
 
-        if not possible_nodes:
-            logger.warning(f"No similar nodes found for: {node.name}")
-            selected_node = SelectNode(node_id="new")
-            logger.debug(f"Selected node: {selected_node}")
-        else:
-            nodes_str = ""
-            for i, n in enumerate(possible_nodes):
-                nodes_str += f"Node ID: {i}\n{n}\n"
-
-            logger.info(
-                f"✅ Found similar nodes, selecting the appropriate one for: {node.name}"
-            )
-            avaliable_params = []
-            for n in processed_nodes:
-                if n.output_params:
-                    avaliable_params.extend(n.output_params)
-
-            output_params = node.output_params
-
-            selected_node = SelectNode.parse_obj(
-                chain_select_from_possible_nodes.invoke(
-                    {
-                        "nodes": nodes_str,
-                        "requirement": node,
-                        "avaliable_params": avaliable_params,
-                        "required_output_params": output_params,
-                    }
-                )
-            )
-        if selected_node.node_id != "new":
-            node_id = int(selected_node.node_id)
-            node_details: Node = possible_nodes[node_id]
-            is_valid = validate_selected_node(
-                selected_node, node_details, node, avaliable_params, output_params
-            )
-            selected_node.node_id = "new" if not is_valid else selected_node.node_id
-
+        selected_node = select_node_from_possible_nodes(possible_nodes, processed_nodes, node, embedder)
+        
         if selected_node.node_id == "new":
             logger.info(f"🆕 Processing new node: {node.name}")
             complexity = CheckComplexity.parse_obj(
@@ -422,6 +428,6 @@ if __name__ == "__main__":
     logger.addHandler(ch)
 
     code = run(
-        "Develop a small script that takes a URL as input and returns the webpage in Markdown format. Focus on converting basic HTML tags like headings, paragraphs, and lists.",
+        "Create a system to manage inventory for a small business. Features should include adding, updating, and deleting inventory items, as well as tracking stock levels.",
         engine,
     )

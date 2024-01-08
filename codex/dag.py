@@ -17,7 +17,7 @@ def add_node(graph: nx.DiGraph, node_name: str, node: Node) -> bool:
         graph.add_node(node_name, node=node)
         return True
 
-    if not node.output_params:
+    if not node.output_params and "response" not in node_name:
         logger.error(f"Node {node_name} has no output parameters\n {node}")
 
     # Check if node's input parameters are satisfied by the existing nodes in the graph
@@ -134,18 +134,28 @@ def compile_graph(graph: nx.DiGraph, ep: ExecutionPath):
     graph_script = ""
     requirements = []
     function_name = (
-        ep.name.replace(" ", "_").replace("-", "_").replace("/", "").strip().lower()
+        ep.name.strip().replace(" ", "_").replace("-", "_").replace("/", "").lower()
         + "_request"
     )
+    request_added = False
+    response_added = False
+
     for node_name in nx.topological_sort(graph):
         node: Node = graph.nodes[node_name]["node"]
         requirements.extend(node.required_packages)
         if "request" in node_name:
             node.name = function_name
             graph_script += node.request_to_code()
+            request_added = True
         elif "response" in node_name:
+            response_added = True
             graph_script += node.response_to_code(output_name_map)
         else:
+            if not request_added:
+                import IPython
+
+                IPython.embed()
+
             python_file += f"\n{node.code}\n"
             code, unique_output_names_map = node.to_code(output_name_map)
             output_name_map: Dict[str, str] = {
@@ -155,6 +165,11 @@ def compile_graph(graph: nx.DiGraph, ep: ExecutionPath):
             graph_script += f"{code}\n"
     python_file += f"\n{graph_script}"
     requirements_txt = generate_requirements_txt(requirements)
+    if not (request_added and response_added):
+        import IPython
+
+        IPython.embed()
+
     return FunctionData(
         function_name=function_name,
         code=format_and_sort_code(refactor_imports(python_file)),
