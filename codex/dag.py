@@ -17,7 +17,7 @@ def add_node(graph: nx.DiGraph, node_name: str, node: Node) -> bool:
         graph.add_node(node_name, node=node)
         return True
 
-    if not node.output_params and "response" not in node_name:
+    if "response" not in node_name and not node.output_params:
         logger.error(f"Node {node_name} has no output parameters\n {node}")
 
     # Check if node's input parameters are satisfied by the existing nodes in the graph
