@@ -37,7 +37,7 @@ def parse_requirements(requirements_str: str) -> List[RequiredPackage]:
     Returns:
     List[RequiredPackage]: A list of RequiredPackage objects.
     """
-    logger.info("🔍 Parsing requirements...")
+    logger.debug("🔍 Parsing requirements...")
     packages = []
     version_specifiers = ["==", ">=", "<=", ">", "<", "~=", "!="]
     if requirements_str == "":
@@ -163,7 +163,7 @@ def process_request_response_node(
     node: NodeDefinition,
     dag: nx.DiGraph,
 ):
-    logger.info(f"🔗 Adding request/response node: {node.name}")
+    logger.debug(f"🔗 Adding request/response node: {node.name}")
     input_params = (
         [InputParameter(**p.dict()) for p in node.input_params]
         if node.input_params
@@ -203,12 +203,12 @@ def process_node(
     dag (nx.DiGraph): The directed acyclic graph of nodes.
     embedder (SentenceTransformer): The sentence transformer for embedding.
     """
-    logger.info(f"🚀 Processing node: {node.name}")
+    logger.debug(f"🚀 Processing node: {node.name}")
 
     if "request" in node.name.lower() or "response" in node.name.lower():
         return process_request_response_node(node, dag)
     else:
-        logger.info(f"🔍 Searching for similar nodes for: {node.name}")
+        logger.debug(f"🔍 Searching for similar nodes for: {node.name}")
         possible_nodes = search_for_similar_node(session, node, embedder)
 
         selected_node = select_node_from_possible_nodes(
@@ -216,20 +216,20 @@ def process_node(
         )
 
         if selected_node.node_id == "new":
-            logger.info(f"🆕 Processing new node: {node.name}")
+            logger.debug(f"🆕 Processing new node: {node.name}")
             # complexity = CheckComplexity.parse_obj(
-            #     chain_check_node_complexity.invoke({"node": node})
+            #     chain_check_noxde_complexity.invoke({"node": node})
             # )
             complexity = CheckComplexity(is_complex=False)
             logger.debug(f"Node complexity: {complexity}")
 
             if not complexity.is_complex:
-                logger.info(f"📝 Writing new node code for: {node.name}")
+                logger.debug(f"📝 Writing new node code for: {node.name}")
                 requirements, code = chain_write_node.invoke({"node": node})
                 code = format_and_sort_code(code)
                 required_packages = parse_requirements(requirements)
 
-                logger.info(f"📦 Adding new node to the database: {node.name}")
+                logger.debug(f"📦 Adding new node to the database: {node.name}")
 
                 input_params = [InputParameter(**p.dict()) for p in node.input_params]
                 output_params = [
@@ -250,8 +250,8 @@ def process_node(
                 )
                 session.add(new_node)
                 session.commit()
-                logger.info(f"✅ New node added: {node.name}")
-                logger.info(f"🔗 Adding new node to the DAG: {node.name}")
+                logger.debug(f"✅ New node added: {node.name}")
+                logger.debug(f"🔗 Adding new node to the DAG: {node.name}")
                 add_node(dag, new_node.name, new_node)
                 return new_node
             else:
@@ -288,10 +288,10 @@ def process_node(
             node_id = int(selected_node.node_id)
             assert node_id < len(possible_nodes), "Invalid node id"
             node: Node = possible_nodes[node_id]
-            logger.info(f"✅ Node selected: {node}")
+            logger.debug(f"✅ Node selected: {node}")
             # Map I/O params
             if selected_node.input_map:
-                logger.info(f"🔗 Mapping input params for: {node.name}")
+                logger.debug(f"🔗 Mapping input params for: {node.name}")
                 for param in node.input_params:
                     if param.name in selected_node.input_map:
                         logger.warning(
@@ -300,7 +300,7 @@ def process_node(
                         param.name = selected_node.input_map[param.name]
 
             if selected_node.output_map:
-                logger.info(f"🔗 Mapping output params for: {node.name}")
+                logger.debug(f"🔗 Mapping output params for: {node.name}")
                 for param in node.output_params:
                     if param.name in selected_node.output_map:
                         logger.warning(
@@ -308,7 +308,7 @@ def process_node(
                         )
                         param.name = selected_node.output_map[param.name]
 
-            logger.info(f"🔗 Adding existing node to the DAG: {node.name}")
+            logger.debug(f"🔗 Adding existing node to the DAG: {node.name}")
             add_node(dag, node.name, node)
             return node
 
@@ -383,7 +383,7 @@ def run(task_description: str, engine):
         ap = ApplicationPaths.parse_obj(
             chain_decompose_task.invoke({"task": task_description})
         )
-        logger.info("✅ Task decomposed into application paths")
+        logger.debug("✅ Task decomposed into application paths")
         logger.debug(f"Application paths: {ap}")
         generated_data = []
         with Session(engine) as session:
@@ -394,11 +394,11 @@ def run(task_description: str, engine):
                     )
 
                     dag = nx.DiGraph()
-                    logger.info("📈 Generating execution graph")
+                    logger.debug("📈 Generating execution graph")
 
                     ng = create_node_graph(ap.application_context, path, path.name)
 
-                    logger.info("🌐 Execution graph generated")
+                    logger.debug("🌐 Execution graph generated")
                     logger.debug(f"Execution graph: {ng}")
                     processed_nodes = []
                     for node_index, node in enumerate(ng.nodes, start=1):
@@ -411,7 +411,7 @@ def run(task_description: str, engine):
                         if process_node:
                             processed_nodes.append(processed_node)
 
-                    logger.info("🔗 All nodes processed, creating runner")
+                    logger.info("🔗 All nodes processed, compiling graph")
                     data = compile_graph(dag, path)
                     generated_data.append(data)
                 except Exception as e:
@@ -419,7 +419,6 @@ def run(task_description: str, engine):
                     raise e
 
         runner = create_fastapi_server(generated_data)
-        logger.info("🏃 Runner created successfully")
         logger.info("🎉 Task processing completed")
         return runner
     except Exception as e:
