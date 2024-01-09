@@ -98,10 +98,6 @@ def format_and_sort_code(file_content: str) -> str:
         formatted_content = black.format_str(sorted_content, mode=black.FileMode())
     except Exception as e:
         logger.error(f"Error formatting code: {e}")
-        import IPython
-
-        IPython.embed()
-
     return formatted_content
 
 
