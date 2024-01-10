@@ -78,7 +78,6 @@ class CodeOutputParser(StrOutputParser):
     @staticmethod
     def validate_code(code: str) -> bool:
         try:
-            
             sorted_content = isort.code(code)
             formatted_code = black.format_str(sorted_content, mode=black.FileMode())
             # We parse the code here to make sure it is valid

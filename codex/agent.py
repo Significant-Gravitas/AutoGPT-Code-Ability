@@ -139,7 +139,7 @@ def validate_selected_node(
         if value not in [n.name for n in node_def.input_params]:
             logger.error(f"🚫 Input map contains invalid value: {value}")
             return False
-            
+
     # Next check if the output map is valid:
     for key, value in selected_node.output_map.items():
         if key not in [n.name for n in node_details.output_params]:
