@@ -172,18 +172,18 @@ def validate_selected_node(
 
     # Next check the validity of the input map:
     for key, value in selected_node.input_map.items():
-        if key not in node_details.input_params:
+        if key not in node_details.input_params.keys():
             logger.error(f"🚫 Input map contains invalid key: {key}")
             return False
-        if value not in node_def.input_params:
+        if value not in node_def.input_params.values():
             logger.error(f"🚫 Input map contains invalid value: {value}")
             return False
     # Next check if the output map is valid:
     for key, value in selected_node.output_map.items():
-        if key not in node_details.output_params:
+        if key not in node_details.output_params.keys():
             logger.error(f"🚫 Output map contains invalid key: {key}")
             return False
-        if value not in node_def.output_params:
+        if value not in node_def.output_params.values():
             logger.error(f"🚫 Output map contains invalid value: {value}")
             return False
 
