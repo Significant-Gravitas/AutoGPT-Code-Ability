@@ -166,9 +166,9 @@ def validate_selected_node(
         )
         return False
 
-    if len(node_details.output_params) != len(node_def.output_params):
+    if len(node_details.output_params) < len(node_def.output_params):
         logger.error(
-            f"🚫 Node details and node def have different number of output params: {node_details.name}"
+            f"🚫 The Selected Node has less output params than required: {node_details.name}"
         )
         return False
 
