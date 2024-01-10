@@ -29,6 +29,18 @@ class SelectNode(BaseModel):
     input_map: Optional[Dict[str, str]]
     output_map: Optional[Dict[str, str]]
 
+    def __str__(self) -> str:
+        out = "Node ID: " + self.node_id + "\n"
+        if self.input_map:
+            out += "Input Map:\n"
+            for k, v in self.input_map.items():
+                out += f"\t{k} -> {v}\n"
+        if self.output_map:
+            out += "Output Map:\n"
+            for k, v in self.output_map.items():
+                out += f"\t{k} -> {v}\n"
+        return out
+
 
 class InputParameterDef(BaseModel):
     param_type: str

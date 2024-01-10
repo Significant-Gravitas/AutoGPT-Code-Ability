@@ -94,9 +94,39 @@ def select_node_from_possible_nodes(
         "required_output_params": node.output_params,
     }
 
+    ipstr = ""
+    if avaliable_inpurt_params:
+        for i, p in enumerate(avaliable_inpurt_params):
+            ipstr += f"Input Param ID: {i}\n{p}\n"
+
+    opstr = ""
+    if node.output_params:
+        for i, p in enumerate(node.output_params):
+            opstr += f"Output Param ID: {i}\n{p}\n"
+
     if attempts > 2:
         logger.error(
-            f"❌ Unable to select node, attempt {attempts}/3\nDetails:\n{select_node_request}"
+            f"""❌ Unable to select node, attempt {attempts}/3
+            
+Details:
+    
+    Possible Nodes:
+
+    {nodes_str}
+    
+    Requested Node:
+    
+    {node}
+    
+    Avaliable Input Params:
+    
+    {ipstr}
+    
+    Required Output Params:
+    
+    {opstr}
+
+"""
         )
         return SelectNode(node_id="new")
 
@@ -114,6 +144,7 @@ def select_node_from_possible_nodes(
             avaliable_inpurt_params,
             node.output_params,
         ):
+            logger.error(f"Failed to validate selected node:\n{selected_node}")
             return select_node_from_possible_nodes(
                 possible_nodes, processed_nodes, node, embedder, attempts + 1
             )
