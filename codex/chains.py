@@ -141,6 +141,7 @@ prompt_select_node = ChatPromptTemplate.from_messages(
 Thinking carefully step by step. Select a node if it meets the requirement and provide a mapping between the selected nodes input and outputs and node specified in the requirements.
 
 If there are no possible nodes that have all the Avaliable Input Params then reply with `new` as the node_id.
+If the input parameter or output parameter is to remain the same there is no need to add it to the map.
 
 # Possible Nodes
 {nodes}
@@ -209,49 +210,3 @@ prompt_decompose_node = ChatPromptTemplate.from_messages(
     ]
 ).partial(format_instructions=parser_decompose_node.get_format_instructions())
 chain_decompose_node = prompt_decompose_node | model | parser_decompose_node
-######################
-# Write Node         #
-######################
-
-
-def _sanitize_output(text: str):
-    # Initialize variables to store requirements and code
-    requirements = text.split("```requirements")
-    if len(requirements) > 1:
-        requirements = text.split("```requirements")[1].split("```")[0]
-    else:
-        requirements = ""
-    code = text.split("```python")[1].split("```")[0]
-    logger.info(f"Requirements: {requirements}")
-    logger.info(f"Code: {code}")
-    return requirements, code
-
-
-template = """You are an expect python developer. Write the python code to implement the node. Do not skip any implementation details.
-Included error handling, comments and type hints.
-
-Return only the requreirments and python imports and function in Markdown format, e.g.:
-
-The requirements.txt
-```requirements
-
-```
-
-The code.py
-```python
-....
-
-Include only the function in the code.py file.
-Do not include Example usage, Example response, or any other text.
-Do not include InputParameterDef or OutputParameterDef
-Validation failures should raise a ValueError with a helpful message.
-```"""
-
-parser_write_node = StrOutputParser()
-prompt_write_node = ChatPromptTemplate.from_messages(
-    [
-        ("system", template),
-        ("human", "Write the function for the following node {node}"),
-    ]
-)
-chain_write_node = prompt_write_node | code_model | parser_write_node | _sanitize_output

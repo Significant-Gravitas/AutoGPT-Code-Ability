@@ -15,8 +15,8 @@ from codex.chains import (
     chain_decompose_task,
     chain_generate_execution_graph,
     chain_select_from_possible_nodes,
-    chain_write_node,
 )
+from codex.chains.write_node import chain_write_node
 from codex.code_gen import create_fastapi_server
 from codex.dag import add_node, compile_graph, format_and_sort_code
 from codex.database import search_for_similar_node
@@ -25,47 +25,6 @@ from codex.model import InputParameter, Node, OutputParameter, RequiredPackage
 EMBEDDER = SentenceTransformer("all-mpnet-base-v2")
 
 logger = logging.getLogger(__name__)
-
-
-def parse_requirements(requirements_str: str) -> List[RequiredPackage]:
-    """
-    Parses a string of requirements and creates a list of RequiredPackage objects.
-
-    Args:
-    requirements_str (str): A string containing package requirements.
-
-    Returns:
-    List[RequiredPackage]: A list of RequiredPackage objects.
-    """
-    logger.debug("🔍 Parsing requirements...")
-    packages = []
-    version_specifiers = ["==", ">=", "<=", ">", "<", "~=", "!="]
-    if requirements_str == "":
-        return packages
-    for line in requirements_str.splitlines():
-        if line:
-            # Remove comments and whitespace
-            line = line.split("#")[0].strip()
-            if not line:
-                continue
-
-            package_name, version, specifier = line, None, None
-
-            # Try to split by each version specifier
-            for spec in version_specifiers:
-                if spec in line:
-                    parts = line.split(spec)
-                    package_name = parts[0].strip()
-                    version = parts[1].strip() if len(parts) > 1 else None
-                    specifier = spec
-                    break
-
-            package = RequiredPackage(
-                package_name=package_name, version=version, specifier=specifier
-            )
-            packages.append(package)
-
-    return packages
 
 
 def select_node_from_possible_nodes(
@@ -77,7 +36,7 @@ def select_node_from_possible_nodes(
 
     if attempts > 0:
         logger.warning(f"⚠️ Unable to select node, attempt {attempts}/3")
-        
+
     # Create the node list for the prompt
     nodes_str = ""
     for i, n in enumerate(possible_nodes):
@@ -177,15 +136,15 @@ def validate_selected_node(
         if key not in [n.name for n in node_details.input_params]:
             logger.error(f"🚫 Input map contains invalid key: {key}")
             return False
-        if value not in [n.name for n  in node_def.input_params]:
+        if value not in [n.name for n in node_def.input_params]:
             logger.error(f"🚫 Input map contains invalid value: {value}")
             return False
     # Next check if the output map is valid:
     for key, value in selected_node.output_map.items():
-        if key not in [n.name for n  in node_details.output_params]:
+        if key not in [n.name for n in node_details.output_params]:
             logger.error(f"🚫 Output map contains invalid key: {key}")
             return False
-        if value not in [n.name for n  in node_def.output_params]:
+        if value not in [n.name for n in node_def.output_params]:
             logger.error(f"🚫 Output map contains invalid value: {value}")
             return False
 
@@ -258,8 +217,7 @@ def process_node(
 
             if not complexity.is_complex:
                 logger.debug(f"📝 Writing new node code for: {node.name}")
-                requirements, code = chain_write_node.invoke({"node": node})
-                code = format_and_sort_code(code)
+                requirements, code = chain_write_node(invoke_params={"node": node})
                 required_packages = parse_requirements(requirements)
 
                 logger.debug(f"📦 Adding new node to the database: {node.name}")
