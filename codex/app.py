@@ -75,7 +75,7 @@ def setup_logging():
     # Add the file handler to the root logger
     logging.getLogger().addHandler(file_handler)
     logging.getLogger().addHandler(err_file_handler)
-
+    logging.getLogger('httpx').setLevel(logging.WARNING)
 
 setup_logging()
 logger = logging.getLogger(__name__)
