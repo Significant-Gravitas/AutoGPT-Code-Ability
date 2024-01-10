@@ -77,6 +77,7 @@ def select_node_from_possible_nodes(
 
     if attempts > 0:
         logger.warning(f"⚠️ Unable to select node, attempt {attempts}/3")
+        
     # Create the node list for the prompt
     nodes_str = ""
     for i, n in enumerate(possible_nodes):
@@ -148,6 +149,7 @@ Details:
             return select_node_from_possible_nodes(
                 possible_nodes, processed_nodes, node, embedder, attempts + 1
             )
+    return selected_node
 
 
 def validate_selected_node(
@@ -172,18 +174,18 @@ def validate_selected_node(
 
     # Next check the validity of the input map:
     for key, value in selected_node.input_map.items():
-        if key not in node_details.input_params.keys():
+        if key not in [n.name for n in node_details.input_params]:
             logger.error(f"🚫 Input map contains invalid key: {key}")
             return False
-        if value not in node_def.input_params.values():
+        if value not in [n.name for n  in node_def.input_params]:
             logger.error(f"🚫 Input map contains invalid value: {value}")
             return False
     # Next check if the output map is valid:
     for key, value in selected_node.output_map.items():
-        if key not in node_details.output_params.keys():
+        if key not in [n.name for n  in node_details.output_params]:
             logger.error(f"🚫 Output map contains invalid key: {key}")
             return False
-        if value not in node_def.output_params.values():
+        if value not in [n.name for n  in node_def.output_params]:
             logger.error(f"🚫 Output map contains invalid value: {value}")
             return False
 
