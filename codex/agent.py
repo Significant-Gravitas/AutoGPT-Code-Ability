@@ -5,7 +5,7 @@ import networkx as nx
 from sentence_transformers import SentenceTransformer
 from sqlmodel import Session
 
-from codex.chains import (
+from codex.lchains import (
     ApplicationPaths,
     CheckComplexity,
     NodeDefinition,
@@ -16,7 +16,7 @@ from codex.chains import (
     chain_generate_execution_graph,
     chain_select_from_possible_nodes,
 )
-from codex.chains.write_node import chain_write_node
+from codex.chains.write_node import write_code_chain
 from codex.code_gen import create_fastapi_server
 from codex.dag import add_node, compile_graph, format_and_sort_code
 from codex.database import search_for_similar_node
@@ -132,21 +132,24 @@ def validate_selected_node(
         return False
 
     # Next check the validity of the input map:
-    for key, value in selected_node.input_map.items():
-        if key not in [n.name for n in node_details.input_params]:
-            logger.error(f"🚫 Input map contains invalid key: {key}")
-            return False
-        if value not in [n.name for n in node_def.input_params]:
-            logger.error(f"🚫 Input map contains invalid value: {value}")
-            return False
+    if selected_node.input_map:
+        for key, value in selected_node.input_map.items():
+            if key not in [n.name for n in node_details.input_params]:
+                logger.error(f"🚫 Input map contains invalid key: {key}")
+                return False
+            if value not in [n.name for n in node_def.input_params]:
+                logger.error(f"🚫 Input map contains invalid value: {value}")
+                return False
+            
     # Next check if the output map is valid:
-    for key, value in selected_node.output_map.items():
-        if key not in [n.name for n in node_details.output_params]:
-            logger.error(f"🚫 Output map contains invalid key: {key}")
-            return False
-        if value not in [n.name for n in node_def.output_params]:
-            logger.error(f"🚫 Output map contains invalid value: {value}")
-            return False
+    if selected_node.output_map:
+        for key, value in selected_node.output_map.items():
+            if key not in [n.name for n in node_details.output_params]:
+                logger.error(f"🚫 Output map contains invalid key: {key}")
+                return False
+            if value not in [n.name for n in node_def.output_params]:
+                logger.error(f"🚫 Output map contains invalid value: {value}")
+                return False
 
     return True
 
@@ -217,8 +220,7 @@ def process_node(
 
             if not complexity.is_complex:
                 logger.debug(f"📝 Writing new node code for: {node.name}")
-                requirements, code = chain_write_node(invoke_params={"node": node})
-                required_packages = parse_requirements(requirements)
+                required_packages, code = write_code_chain(invoke_params={"node": node})
 
                 logger.debug(f"📦 Adding new node to the database: {node.name}")
 

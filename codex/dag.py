@@ -6,7 +6,7 @@ import black
 import isort
 import networkx as nx
 
-from .chains import ExecutionPath
+from .lchains import ExecutionPath
 from .model import FunctionData, Node, RequiredPackage
 
 logger = logging.getLogger(__name__)

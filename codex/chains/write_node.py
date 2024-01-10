@@ -5,7 +5,7 @@ import black
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from codex.models import RequiredPackage
+from codex.model import RequiredPackage
 import isort
 
 logger = logging.getLogger(__name__)
@@ -86,7 +86,7 @@ class CodeOutputParser(StrOutputParser):
         """Returns the input text with no changes."""
         requirements, code = CodeOutputParser._sanitize_output(text)
         code = CodeOutputParser.validate_code(code)
-        return requirements, code
+        return parse_requirements(requirements), code
 
 
 template = """You are an expect python developer. Write the python code to implement the node. Do not skip any implementation details.
