@@ -141,7 +141,6 @@ prompt_select_node = ChatPromptTemplate.from_messages(
 Thinking carefully step by step. Select a node if it meets the requirement and provide a mapping between the selected nodes input and outputs and node specified in the requirements.
 
 If there are no possible nodes that have all the Avaliable Input Params then reply with `new` as the node_id.
-If the input parameter or output parameter is to remain the same there is no need to add it to the map.
 
 # Possible Nodes
 {nodes}
