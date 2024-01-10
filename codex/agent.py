@@ -132,24 +132,22 @@ def validate_selected_node(
         return False
 
     # Next check the validity of the input map:
-    if selected_node.input_map:
-        for key, value in selected_node.input_map.items():
-            if key not in [n.name for n in node_details.input_params]:
-                logger.error(f"🚫 Input map contains invalid key: {key}")
-                return False
-            if value not in [n.name for n in node_def.input_params]:
-                logger.error(f"🚫 Input map contains invalid value: {value}")
-                return False
+    for key, value in selected_node.input_map.items():
+        if key not in [n.name for n in node_details.input_params]:
+            logger.error(f"🚫 Input map contains invalid key: {key}")
+            return False
+        if value not in [n.name for n in node_def.input_params]:
+            logger.error(f"🚫 Input map contains invalid value: {value}")
+            return False
             
     # Next check if the output map is valid:
-    if selected_node.output_map:
-        for key, value in selected_node.output_map.items():
-            if key not in [n.name for n in node_details.output_params]:
-                logger.error(f"🚫 Output map contains invalid key: {key}")
-                return False
-            if value not in [n.name for n in node_def.output_params]:
-                logger.error(f"🚫 Output map contains invalid value: {value}")
-                return False
+    for key, value in selected_node.output_map.items():
+        if key not in [n.name for n in node_details.output_params]:
+            logger.error(f"🚫 Output map contains invalid key: {key}")
+            return False
+        if value not in [n.name for n in node_def.output_params]:
+            logger.error(f"🚫 Output map contains invalid value: {value}")
+            return False
 
     return True
 
