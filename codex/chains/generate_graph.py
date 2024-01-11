@@ -142,3 +142,22 @@ prompt_generate_execution_graph = ChatPromptTemplate.from_messages(
 chain_generate_execution_graph = (
     prompt_generate_execution_graph | model | parser_generate_execution_graph
 )
+
+parser_decompose_node = PydanticOutputParser(pydantic_object=NodeGraph)
+prompt_decompose_node = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "You are an expert software engineer specialised in breaking down a problem into a series of steps that can be developed by a junior developer. Each step is designed to be as generic as possible. The first step is a `request` node with `request` in the name it represents a request object and only has output params. The last step is a `response` node with `response` in the name it represents a resposne object and only has input parameters.\nReply in json format:\n{format_instructions}\n",
+        ),
+        (
+            "human",
+            "The application being developed is: \n{application_context}",
+        ),
+        (
+            "human",
+            "Thinking carefully step by step. Decompose this complex node into a series of simpliar steps, creating a new node graph. The new graph's request is the inputs for this node and response is the outputs of this node. Output the nodes needed to implement this complex node:\n{node}\n Note:  for param_type use only primitive type avaliable in typing lib - bool, int, float, complex, str, bytes, tuple, list, dict, set, frozenset.\n node names are in python function name format.\n\n#Important\nDo not use the Any Type!",
+        ),
+    ]
+).partial(format_instructions=parser_decompose_node.get_format_instructions())
+chain_decompose_node = prompt_decompose_node | model | parser_decompose_node
