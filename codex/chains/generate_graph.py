@@ -1,5 +1,3 @@
-
-
 import logging
 from typing import List, Optional, Dict, Tuple
 from langchain_openai import ChatOpenAI
@@ -7,6 +5,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from langchain.pydantic_v1 import BaseModel, validator
 import networkx as nx
+from tenacity import retry, stop_after_attempt, wait_none
 
 logger = logging.getLogger(__name__)
 
@@ -23,23 +22,36 @@ class Param(BaseModel):
     name: str
     description: str
     optional: bool
-        
-    @validator('param_type')
+
+    @validator("param_type")
     def check_param_type(cls, v):
-        basic_types = {'bool', 'int', 'float', 'complex', 'str', 'bytes', 
-                       'tuple', 'list', 'dict', 'set', 'frozenset'}
+        basic_types = {
+            "bool",
+            "int",
+            "float",
+            "complex",
+            "str",
+            "bytes",
+            "tuple",
+            "list",
+            "dict",
+            "set",
+            "frozenset",
+        }
 
         # Check if it's a basic type
         if v in basic_types:
             return v
 
         # Check for container types like list[int]
-        if v.startswith('list[') or v.startswith('set[') or v.startswith('tuple['):
-            contained_type = v.split('[')[1].rstrip(']')
+        if v.startswith("list[") or v.startswith("set[") or v.startswith("tuple["):
+            contained_type = v.split("[")[1].rstrip("]")
             if contained_type in basic_types:
                 return v
 
-        raise ValueError(f'param_type must be one of {basic_types}, or a container of these types')
+        raise ValueError(
+            f"param_type must be one of {basic_types}, or a container of these types"
+        )
 
 
 class NodeDefinition(BaseModel):
@@ -51,7 +63,7 @@ class NodeDefinition(BaseModel):
 
 class NodeGraph(BaseModel):
     nodes: List[NodeDefinition]
-    
+
     def add_node(graph: nx.DiGraph, node_name: str, node: NodeDefinition) -> bool:
         if graph.number_of_nodes() == 0:
             graph.add_node(node_name, node=node)
@@ -62,7 +74,9 @@ class NodeGraph(BaseModel):
 
         # Check if node's input parameters are satisfied by the existing nodes in the graph
         if node.input_params:
-            input_params_needed = [f"{p.name}: {p.param_type}" for p in node.input_params]
+            input_params_needed = [
+                f"{p.name}: {p.param_type}" for p in node.input_params
+            ]
         else:
             input_params_needed = {}
 
@@ -92,8 +106,8 @@ class NodeGraph(BaseModel):
             graph.add_edge(provider_node, node_name, connection_type=param_key[0])
 
         return True
-    
-    @validator('nodes')
+
+    @validator("nodes")
     def check_nodes(cls, v):
         if len(v) == 0:
             raise ValueError("Node graph is empty")
@@ -113,7 +127,7 @@ class NodeGraph(BaseModel):
             raise ValueError("Response node does not have input parameters")
         if len(v[-1].output_params) > 0:
             raise ValueError("Response node has output parameters")
-        
+
         # Check if all nodes are connected
         dag = nx.DiGraph()
         for node in v:
@@ -139,9 +153,19 @@ prompt_generate_execution_graph = ChatPromptTemplate.from_messages(
         ),
     ]
 ).partial(format_instructions=parser_generate_execution_graph.get_format_instructions())
-chain_generate_execution_graph = (
-    prompt_generate_execution_graph | model | parser_generate_execution_graph
-)
+
+
+@retry(wait=wait_none(), stop=stop_after_attempt(3))
+def chain_generate_execution_graph(application_context, path, path_name):
+    chain = prompt_generate_execution_graph | model | parser_generate_execution_graph
+    return chain.invoke(
+        {
+            "application_context": application_context,
+            "api_route": path,
+            "graph_name": path_name,
+        }
+    )
+
 
 parser_decompose_node = PydanticOutputParser(pydantic_object=NodeGraph)
 prompt_decompose_node = ChatPromptTemplate.from_messages(
@@ -160,4 +184,14 @@ prompt_decompose_node = ChatPromptTemplate.from_messages(
         ),
     ]
 ).partial(format_instructions=parser_decompose_node.get_format_instructions())
-chain_decompose_node = prompt_decompose_node | model | parser_decompose_node
+
+
+@retry(wait=wait_none(), stop=stop_after_attempt(3))
+def chain_decompose_node(application_context, path):
+    chain = prompt_decompose_node | model | parser_decompose_node
+    return chain.invoke(
+        {
+            "application_context": application_context,
+            "node": path,
+        }
+    )
