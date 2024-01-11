@@ -5,6 +5,7 @@ from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from langchain.pydantic_v1 import BaseModel
+from tenacity import retry, stop_after_attempt, wait_none
 
 class ExecutionPath(BaseModel):
     name: str
@@ -37,4 +38,10 @@ prompt_decompose_task = ChatPromptTemplate.from_messages(
         ),
     ]
 ).partial(format_instructions=parser_decode_task.get_format_instructions())
-chain_decompose_task = prompt_decompose_task | model | parser_decode_task
+
+
+@retry(wait=wait_none(), stop=stop_after_attempt(3))
+def chain_decompose_task(task: str) -> ApplicationPaths:
+    chain_decompose_task = prompt_decompose_task | model | parser_decode_task
+    return chain_decompose_task.invoke({"task": task})
+
