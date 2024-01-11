@@ -6,7 +6,7 @@ import black
 import isort
 import networkx as nx
 
-from .lchains import ExecutionPath
+from codex.chains.decompose_task import ExecutionPath
 from .model import FunctionData, Node, RequiredPackage
 
 logger = logging.getLogger(__name__)
@@ -98,6 +98,7 @@ def format_and_sort_code(file_content: str) -> str:
         formatted_content = black.format_str(sorted_content, mode=black.FileMode())
     except Exception as e:
         logger.error(f"Error formatting code: {e}")
+        logger.error(f"Code:\n {file_content}")
     return formatted_content
 
 
