@@ -7,6 +7,7 @@ from langchain.output_parsers import PydanticOutputParser
 from langchain.pydantic_v1 import BaseModel
 from codex.chains.generate_graph import NodeDefinition
 from codex.model import Node
+from tenacity import retry, stop_after_attempt, wait_none
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,6 @@ model = ChatOpenAI(
     max_tokens=4095,
     model_kwargs={"top_p": 1, "frequency_penalty": 0, "presence_penalty": 0},
 ).bind(**{"response_format": {"type": "json_object"}})
-
 
 
 class SelectNode(BaseModel):
@@ -36,27 +36,31 @@ class SelectNode(BaseModel):
                 out += f"\t{k} -> {v}\n"
         return out
     
-    
+
+
 T = TypeVar("T", bound=BaseModel)
 
 
 class ValidatingPydanticOutputParser(PydanticOutputParser[T]):
     """Parse an output using a pydantic model."""
+
     pydantic_object: Type[T]
     possible_nodes: List[Node]
     requested_node: NodeDefinition
+
+    class Config:
+        arbitrary_types_allowed = True
 
     def validate_selected_node(
         cls,
         select_node: SelectNode,
     ) -> bool:
-        
         selected_node = None
         if select_node.node_id == "new":
             return True
         else:
-           selected_node = cls.possible_nodes[int(select_node.node_id)]
-        
+            selected_node = cls.possible_nodes[int(select_node.node_id)]
+
         # First check if the node_details and node_def have matching number of input and output params
         if len(selected_node.input_params) != len(cls.requested_node.input_params):
             logger.error(
@@ -95,13 +99,20 @@ class ValidatingPydanticOutputParser(PydanticOutputParser[T]):
         if not self.validate_selected_node(obj):
             raise ValueError("Invalid node selected")
         return obj
-        
 
 
-
-def chain_select_from_possible_nodes(possible_nodes: List[Node], requested_node: NodeDefinition):
-
-    parser_select_node = PydanticOutputParser(pydantic_object=SelectNode, possible_nodes=possible_nodes, requested_node=requested_node)
+@retry(wait=wait_none(), stop=stop_after_attempt(3))
+def chain_select_from_possible_nodes(
+    nodes_str: str,
+    requested_node: NodeDefinition,
+    avaliable_inpurt_params: str,
+    possible_nodes: List[Node],
+):
+    parser_select_node = PydanticOutputParser(
+        pydantic_object=SelectNode,
+        possible_nodes=possible_nodes,
+        requested_node=requested_node,
+    )
     prompt_select_node = ChatPromptTemplate.from_messages(
         [
             (
@@ -134,4 +145,14 @@ def chain_select_from_possible_nodes(possible_nodes: List[Node], requested_node:
             ),
         ]
     ).partial(format_instructions=parser_select_node.get_format_instructions())
-    return prompt_select_node | model | parser_select_node
+    chain = prompt_select_node | model | parser_select_node
+    
+    
+    return chain.invoke(
+        {
+            "nodes": nodes_str,
+            "requirement": requested_node,
+            "avaliable_params": avaliable_inpurt_params,
+            "required_output_params": requested_node.output_params,
+        }
+    )
