@@ -25,6 +25,7 @@ isort = "^5.13.2"
 coloredlogs = "^15.0.1"
 langchain-community = "^0.0.11"
 langchain-openai = "^0.0.2"
+tenacity = "^8.2.3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.3"
