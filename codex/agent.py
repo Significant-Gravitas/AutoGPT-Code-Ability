@@ -5,22 +5,15 @@ import networkx as nx
 from sentence_transformers import SentenceTransformer
 from sqlmodel import Session
 
-from codex.lchains import (
-    ApplicationPaths,
-    CheckComplexity,
-    NodeDefinition,
-    NodeGraph,
-    SelectNode,
-    chain_decompose_node,
-    chain_decompose_task,
-    chain_generate_execution_graph,
-    chain_select_from_possible_nodes,
-)
 from codex.chains.write_node import write_code_chain
 from codex.code_gen import create_fastapi_server
-from codex.dag import add_node, compile_graph, format_and_sort_code
+from codex.dag import add_node, compile_graph
 from codex.database import search_for_similar_node
-from codex.model import InputParameter, Node, OutputParameter, RequiredPackage
+from codex.model import InputParameter, Node, OutputParameter
+from codex.chains.decompose_task import chain_decompose_task, ApplicationPaths
+from codex.chains.generate_graph import chain_generate_execution_graph, NodeDefinition, NodeGraph, chain_decompose_node
+from codex.chains.select_node import chain_select_from_possible_nodes, SelectNode
+from codex.chains.check_node_complexity import CheckComplexity
 
 EMBEDDER = SentenceTransformer("all-mpnet-base-v2")
 
@@ -28,14 +21,16 @@ logger = logging.getLogger(__name__)
 
 
 def select_node_from_possible_nodes(
-    possible_nodes, processed_nodes, node, embedder, attempts=0
+    possible_nodes, processed_nodes, node
 ) -> SelectNode:
     if not possible_nodes:
         logger.warning(f"No similar nodes found for: {node.name}")
         return SelectNode(node_id="new")
-
-    if attempts > 0:
-        logger.warning(f"⚠️ Unable to select node, attempt {attempts}/3")
+    
+    correct_possible_nodes = []
+    for n in possible_nodes:
+        if len(n.input_params) == len(node.input_params) and len(n.output_params) <= len(node.output_params):
+            correct_possible_nodes.append(n)
 
     # Create the node list for the prompt
     nodes_str = ""
@@ -47,109 +42,13 @@ def select_node_from_possible_nodes(
         if n and n.output_params:
             avaliable_inpurt_params.extend(n.output_params)
 
-    select_node_request = {
-        "nodes": nodes_str,
-        "requirement": node,
-        "avaliable_params": avaliable_inpurt_params,
-        "required_output_params": node.output_params,
-    }
-
-    ipstr = ""
-    if avaliable_inpurt_params:
-        for i, p in enumerate(avaliable_inpurt_params):
-            ipstr += f"Input Param ID: {i}\n{p}\n"
-
-    opstr = ""
-    if node.output_params:
-        for i, p in enumerate(node.output_params):
-            opstr += f"Output Param ID: {i}\n{p}\n"
-
-    if attempts > 2:
-        logger.error(
-            f"""❌ Unable to select node, attempt {attempts}/3
-            
-Details:
-    
-    Possible Nodes:
-
-    {nodes_str}
-    
-    Requested Node:
-    
-    {node}
-    
-    Avaliable Input Params:
-    
-    {ipstr}
-    
-    Required Output Params:
-    
-    {opstr}
-
-"""
-        )
-        return SelectNode(node_id="new")
-
-    selected_node = SelectNode.parse_obj(
-        chain_select_from_possible_nodes.invoke(select_node_request)
+    return chain_select_from_possible_nodes(
+        nodes_str=nodes_str,
+        requested_node=node,
+        avaliable_inpurt_params=avaliable_inpurt_params,
+        possible_nodes=correct_possible_nodes,
     )
-    if selected_node.node_id == "new":
-        return selected_node
-    else:
-        node_details: Node = possible_nodes[int(selected_node.node_id)]
-        if not validate_selected_node(
-            selected_node,
-            node_details,
-            node,
-            avaliable_inpurt_params,
-            node.output_params,
-        ):
-            logger.error(f"Failed to validate selected node:\n{selected_node}")
-            return select_node_from_possible_nodes(
-                possible_nodes, processed_nodes, node, embedder, attempts + 1
-            )
-    return selected_node
 
-
-def validate_selected_node(
-    selected_node: SelectNode,
-    node_details: Node,
-    node_def: NodeDefinition,
-    available_outputs,
-    output_params,
-) -> bool:
-    # First check if the node_details and node_def have matching number of input and output params
-    if len(node_details.input_params) != len(node_def.input_params):
-        logger.error(
-            f"🚫 Node details and node def have different number of input params: {node_details.name}"
-        )
-        return False
-
-    if len(node_details.output_params) < len(node_def.output_params):
-        logger.error(
-            f"🚫 The Selected Node has less output params than required: {node_details.name}"
-        )
-        return False
-
-    # Next check the validity of the input map:
-    for key, value in selected_node.input_map.items():
-        if key not in [n.name for n in node_details.input_params]:
-            logger.error(f"🚫 Input map contains invalid key: {key}")
-            return False
-        if value not in [n.name for n in node_def.input_params]:
-            logger.error(f"🚫 Input map contains invalid value: {value}")
-            return False
-
-    # Next check if the output map is valid:
-    for key, value in selected_node.output_map.items():
-        if key not in [n.name for n in node_details.output_params]:
-            logger.error(f"🚫 Output map contains invalid key: {key}")
-            return False
-        if value not in [n.name for n in node_def.output_params]:
-            logger.error(f"🚫 Output map contains invalid value: {value}")
-            return False
-
-    return True
 
 
 def process_request_response_node(
@@ -205,7 +104,7 @@ def process_node(
         possible_nodes = search_for_similar_node(session, node, embedder)
 
         selected_node = select_node_from_possible_nodes(
-            possible_nodes, processed_nodes, node, embedder
+            possible_nodes, processed_nodes, node
         )
 
         if selected_node.node_id == "new":
@@ -247,14 +146,10 @@ def process_node(
                 return new_node
             else:
                 logger.warning(f"🔄 Node is complex, decomposing: {node.name}")
-                sub_graph_nodes = NodeGraph.parse_obj(
-                    chain_decompose_node.invoke(
-                        {
-                            "application_context": ap.application_context,
-                            "node": node,
-                        }
-                    )
-                )
+                sub_graph_nodes = chain_decompose_node(
+                            application_context= ap.application_context,
+                            node=node,
+                        )
                 # TODO: vaidate sub_graph_nodes
                 for sub_node in sub_graph_nodes.nodes:
                     if not (
@@ -304,58 +199,6 @@ def process_node(
             return node
 
 
-def create_node_graph(application_context, path, path_name, attempt=0):
-    if attempt > 5:
-        raise Exception("Unable to create valid node graph")
-    if attempt > 0:
-        logger.warning(f"⚠️ Unable to create valid node graph, attempt {attempt}/5")
-
-    ng = NodeGraph.parse_obj(
-        chain_generate_execution_graph.invoke(
-            {
-                "application_context": application_context,
-                "api_route": path,
-                "graph_name": path_name,
-            }
-        )
-    )
-    if "request" not in ng.nodes[0].name.lower():
-        logger.warning("⚠️ Node graph does not start with a request node")
-        ng = create_node_graph(application_context, path, path_name, attempt + 1)
-    elif len(ng.nodes[0].output_params) == 0:
-        logger.warning("⚠️ Request node does not have output parameters")
-        ng = create_node_graph(application_context, path, path_name, attempt + 1)
-    elif len(ng.nodes[0].input_params) > 0:
-        logger.warning("⚠️ Request node has input parameters")
-        ng = create_node_graph(application_context, path, path_name, attempt + 1)
-    if "response" not in ng.nodes[-1].name.lower():
-        logger.warning("⚠️ Node graph does not end with a response node")
-        ng = create_node_graph(application_context, path, path_name, attempt + 1)
-    elif len(ng.nodes[-1].input_params) == 0:
-        logger.warning("⚠️ Response node does not have input parameters")
-        ng = create_node_graph(application_context, path, path_name, attempt + 1)
-    elif len(ng.nodes[-1].output_params) > 0:
-        logger.warning("⚠️ Response node has output parameters")
-        ng = create_node_graph(application_context, path, path_name, attempt + 1)
-    if not validate_generated_node_graph(ng):
-        logger.warning("⚠️ Node graph is not valid")
-        ng = create_node_graph(application_context, path, path_name, attempt + 1)
-    return ng
-
-
-def validate_generated_node_graph(ng):
-    is_valid = True
-    graph = nx.DiGraph()
-    try:
-        for node in ng.nodes:
-            add_node(graph, node.name, node)
-    except Exception as e:
-        logger.error(f"❌ Node graph validation failed: {e}\n\nDetails:\n{ng}")
-        is_valid = False
-    if not nx.is_directed_acyclic_graph(graph):
-        is_valid = False
-    return is_valid
-
 
 def run(task_description: str, engine):
     """
@@ -371,9 +214,8 @@ def run(task_description: str, engine):
         logger.info(f"🏁 Running task: {task_description}")
 
         # Decompose task into application paths
-        ap = ApplicationPaths.parse_obj(
-            chain_decompose_task.invoke({"task": task_description})
-        )
+        ap = chain_decompose_task(task_description)
+        
         logger.debug("✅ Task decomposed into application paths")
         logger.debug(f"Application paths: {ap}")
         generated_data = []
@@ -387,7 +229,7 @@ def run(task_description: str, engine):
                     dag = nx.DiGraph()
                     logger.debug("📈 Generating execution graph")
 
-                    ng = create_node_graph(ap.application_context, path, path.name)
+                    ng = chain_generate_execution_graph(ap.application_context, path, path.name)
 
                     logger.debug("🌐 Execution graph generated")
                     logger.debug(f"Execution graph: {ng}")
