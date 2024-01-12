@@ -148,6 +148,36 @@ class NodeDef(BaseModel):
 class NodeGraph(BaseModel):
     nodes: List[NodeDef]
 
+    @validator("nodes")
+    def validate_nodes(cls, v):
+        ids = []
+        
+        for node in v:
+            if node.next_node_id and node.next_node_id not in ids:
+                raise ValueError(
+                    f"Node {node.id} has a next_node_id that does not exist: {node.next_node_id}"
+                )
+            if node.true_next_node_id and node.true_next_node_id not in ids:
+                raise ValueError(
+                    f"Node {node.id} has a true_next_node_id that does not exist: {node.true_next_node_id}"
+                )
+            if node.false_next_node_id and node.false_next_node_id not in ids:
+                raise ValueError(
+                    f"Node {node.id} has a false_next_node_id that does not exist: {node.false_next_node_id}"
+                )
+            if node.for_each_next_node_id and node.for_each_next_node_id not in ids:
+                raise ValueError(
+                    f"Node {node.id} has a for_each_next_node_id that does not exist: {node.for_each_next_node_id}"
+                )
+            if node.elifs:
+                for elif_ in node.elifs:
+                    if elif_.true_next_node_id and elif_.true_next_node_id not in ids:
+                        raise ValueError(
+                            f"Node {node.id} has an elif with a true_next_node_id that does not exist: {elif_.true_next_node_id}"
+                        )
+            return v
+
+
 
 parser_generate_execution_graph = PydanticOutputParser(pydantic_object=NodeGraph)
 prompt_generate_execution_graph = ChatPromptTemplate.from_messages(
