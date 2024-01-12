@@ -6,6 +6,7 @@ from langchain.output_parsers import PydanticOutputParser
 from langchain.prompts import ChatPromptTemplate
 from langchain.pydantic_v1 import BaseModel, validator
 from langchain_openai import ChatOpenAI
+from tenacity import before_sleep_log, retry, stop_after_attempt, wait_none
 
 logger = logging.getLogger(__name__)
 
@@ -311,7 +312,11 @@ prompt_generate_execution_graph = ChatPromptTemplate.from_messages(
 ).partial(format_instructions=parser_generate_execution_graph.get_format_instructions())
 
 
-# @retry(wait=wait_none(), stop=stop_after_attempt(3))
+@retry(
+    wait=wait_none(),
+    stop=stop_after_attempt(3),
+    before_sleep=before_sleep_log(logger, logging.DEBUG),
+)
 def chain_generate_execution_graph(application_context, path, path_name):
     chain = prompt_generate_execution_graph | model | parser_generate_execution_graph
     return chain.invoke(
@@ -322,6 +327,75 @@ def chain_generate_execution_graph(application_context, path, path_name):
             "example_nodes": example_nodes,
         }
     )
+
+
+parser_decompose_node = PydanticOutputParser(pydantic_object=NodeGraph)
+prompt_decompose_node = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "You are an expert software engineer specialised in breaking down a problem into a series of steps that can be developed by a junior developer. Each step is designed to be as generic as possible. The first step is a `start` node with `request` in the name it represents a request object and only has output params. The last step is a `end` node with `response` in the name it represents aresposne object and only has input parameters.\nReply in json format:\n{format_instructions}\n\n# Important:\n for param_type use only these primitive types - bool, int, float, complex, str, bytes, tuple, list, dict, set, frozenset.\n node names are in python function name format\n There must be only 1 start node and 1 end node.\n\n# Example Nodes\n{example_nodes}",
+        ),
+        (
+            "human",
+            "The application being developed is: \n{application_context}",
+        ),
+        (
+            "human",
+            "Thinking carefully step by step. Decompose this complex node into a series of simpliar steps, creating a new node graph. The new graph's request is the inputs for this node and response is the outputs of this node. Output the nodes needed to implement this complex node:\n{node}\n # Important:\n The the node definitions for all node_id's used must be in the graph\n\n ## THE OUTPUTS OF THE START NODE MUST MATCH THE IMPUTS OF THE COMPLEX NODE\n\n ## THE INPUTS OF THE END NODE MUST MATCH THE OUTPUTS OF THE COMPLEX NODE ",
+        ),
+    ]
+).partial(format_instructions=parser_decompose_node.get_format_instructions())
+
+
+@retry(
+    wait=wait_none(),
+    stop=stop_after_attempt(3),
+    before_sleep=before_sleep_log(logger, logging.DEBUG),
+)
+def chain_decompose_node(application_context, node):
+    chain = prompt_decompose_node | model | parser_decompose_node
+    output = chain.invoke(
+        {
+            "application_context": application_context,
+            "node": node,
+        }
+    )
+
+    # Additional validation for Node decomposition
+    start_node_outputs = set()
+    end_node_inputs = set()
+
+    for node in output.nodes:
+        if node.node_type == NodeTypeEnum.START.value:
+            for node_output in node.outputs:
+                start_node_outputs.append(
+                    f"{node_output.name}: {node_output.param_type}"
+                )
+        if node.node_type == NodeTypeEnum.END.value:
+            for node_input in node.inputs:
+                end_node_inputs.append(f"{node_input.name}: {node_input.param_type}")
+
+    requirement_node_inputs = set()
+    requirement_node_outputs = set()
+    for input_param in node.inputs:
+        requirement_node_inputs.append(f"{input_param.name}: {input_param.param_type}")
+    for output_param in node.outputs:
+        requirement_node_outputs.append(
+            f"{output_param.name}: {output_param.param_type}"
+        )
+
+    if requirement_node_inputs != start_node_outputs:
+        raise ValueError(
+            f"Start node outputs do not match requirement node inputs: {requirement_node_inputs} != {start_node_outputs}"
+        )
+
+    if requirement_node_outputs != end_node_inputs:
+        raise ValueError(
+            f"End node inputs do not match requirement node outputs: {requirement_node_outputs} != {end_node_inputs}"
+        )
+
+    return output
 
 
 if __name__ == "__main__":
