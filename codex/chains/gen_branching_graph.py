@@ -135,6 +135,11 @@ class NodeDef(BaseModel):
             raise ValueError("Only IF node can have elifs")
         return v
 
+    @validator("for_each_collection_param_name", "for_each_next_node_id", always=True)
+    def validate_for_each_node(cls, v, values, **kwargs):
+        if values.get("node_type") == NodeTypeEnum.FOREACH.value and not v:
+            raise ValueError("FOR EACH node must have a collection param name")
+        return v
 
     class Config:
         use_enum_values = True
