@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Dict, Tuple, Type, TypeVar
+from typing import List, Optional, Dict, Type, TypeVar
 
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
@@ -35,7 +35,6 @@ class SelectNode(BaseModel):
             for k, v in self.output_map.items():
                 out += f"\t{k} -> {v}\n"
         return out
-    
 
 
 T = TypeVar("T", bound=BaseModel)
@@ -146,8 +145,7 @@ def chain_select_from_possible_nodes(
         ]
     ).partial(format_instructions=parser_select_node.get_format_instructions())
     chain = prompt_select_node | model | parser_select_node
-    
-    
+
     return chain.invoke(
         {
             "nodes": nodes_str,
