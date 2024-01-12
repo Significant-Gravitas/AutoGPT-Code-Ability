@@ -83,6 +83,18 @@ class NodeDef(BaseModel):
     for_each_collection_param_name: Optional[str] = None
     for_each_next_node_id: Optional[str] = None
 
+    @validator("next_node_id", always=True)
+    def validate_next_node_id(cls, v, values, **kwargs):
+        if (
+            values.get("node_type")
+            in [NodeTypeEnum.START, NodeTypeEnum.ACTION, NodeTypeEnum.FOREACH]
+            and not v
+        ):
+            raise ValueError(f'{values["node_type"]} node must have a next_node_id')
+        if values.get("node_type") in [NodeTypeEnum.END, NodeTypeEnum.IF] and v:
+            raise ValueError(f'{values["node_type"]} node must not have a next_node_id')
+        return v
+
     class Config:
         use_enum_values = True
 
