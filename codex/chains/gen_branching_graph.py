@@ -322,3 +322,27 @@ def chain_generate_execution_graph(application_context, path, path_name):
             "example_nodes": example_nodes,
         }
     )
+
+
+if __name__ == "__main__":
+    from codex.chains.decompose_task import ApplicationPaths, ExecutionPath
+
+    application_context = ApplicationPaths(
+        application_context="Develop a small script that takes a URL as input and returns the webpage in Markdown, RST or html format. Focus on converting basic HTML tags like headings, paragraphs, and lists",
+        execution_paths=[
+            ExecutionPath(
+                name="convert_web_page",
+                endpoint_name="convert_web_page",
+                description="Convert a webpage to markdown, rst or html format, using the if node to select the correct conversion function.",
+                example_nodes=example_nodes,
+            )
+        ],
+    )
+
+    output = chain_generate_execution_graph(
+        application_context, "/convert_web_page", "convert_web_page"
+    )
+
+    import IPython
+
+    IPython.embed()
