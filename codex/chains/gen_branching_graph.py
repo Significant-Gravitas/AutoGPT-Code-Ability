@@ -101,6 +101,22 @@ class NodeDef(BaseModel):
             raise ValueError(f'{values["node_type"]} must have input parameters')
         return v
 
+    @validator("outputs", always=True)
+    def validate_outputs(cls, v, values, **kwargs):
+        if values.get("node_type") == NodeTypeEnum.END.value and v:
+            raise ValueError("End node must not have output parameters")
+        if (
+            values.get("node_type")
+            in [
+                NodeTypeEnum.ACTION.value,
+                NodeTypeEnum.FOREACH.value,
+                NodeTypeEnum.START.value,
+            ]
+            and not v
+        ):
+            raise ValueError(f'{values["node_type"]} must have output parameters')
+        return v
+
     class Config:
         use_enum_values = True
 
