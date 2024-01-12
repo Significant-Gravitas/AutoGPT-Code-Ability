@@ -8,6 +8,7 @@ from langchain.pydantic_v1 import BaseModel
 
 logger = logging.getLogger(__name__)
 
+
 class CheckComplexity(BaseModel):
     is_complex: bool
 
