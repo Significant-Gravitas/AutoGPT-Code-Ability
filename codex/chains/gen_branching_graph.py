@@ -117,6 +117,25 @@ class NodeDef(BaseModel):
             raise ValueError(f'{values["node_type"]} must have output parameters')
         return v
 
+    @validator("true_next_node_id", "false_next_node_id", always=True)
+    def validate_if_node(cls, v, values, **kwargs):
+        if values.get("node_type") == NodeTypeEnum.IF.value and not v:
+            raise ValueError(
+                "IF node must have if condition and true/false next node ids"
+            )
+        if values.get("node_type") != NodeTypeEnum.IF.value and v:
+            raise ValueError(
+                "Only IF node can have if condition and true/false next node ids"
+            )
+        return v
+
+    @validator("elifs", always=True)
+    def validate_elif(cls, v, values, **kwargs):
+        if values.get("node_type") != NodeTypeEnum.IF.value and v:
+            raise ValueError("Only IF node can have elifs")
+        return v
+
+
     class Config:
         use_enum_values = True
 
