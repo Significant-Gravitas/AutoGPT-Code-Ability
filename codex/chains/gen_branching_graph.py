@@ -95,6 +95,12 @@ class NodeDef(BaseModel):
             raise ValueError(f'{values["node_type"]} node must not have a next_node_id')
         return v
 
+    @validator("inputs", always=True)
+    def validate_inputs(cls, v, values, **kwargs):
+        if values.get("node_type") != NodeTypeEnum.START.value and not v:
+            raise ValueError(f'{values["node_type"]} must have input parameters')
+        return v
+
     class Config:
         use_enum_values = True
 
