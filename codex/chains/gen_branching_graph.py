@@ -197,14 +197,107 @@ class NodeGraph(BaseModel):
             return v
 
 
-
+example_nodes = """
+Eample nodes:
+# Start Node (type start):
+    {
+        "id": "startNode1",
+        "node_type": "start",
+        "description": "Start of the process",
+        "outputs": [
+            {
+                "param_type": "str",
+                "name": "outputParam",
+                "description": "Output parameter of start node",
+            }
+        ],
+        "next_node_id": "actionNode1",
+    }
+    
+# Action Node (type action):
+    {
+        "id": "actionNode1",
+        "node_type": "action",
+        "description": "Perform an action",
+        "inputs": [
+            {
+                "param_type": "int",
+                "name": "actionValue",
+                "description": "An integer input for the action",
+            }
+        ],
+        "outputs": [
+            {
+                "param_type": "str",
+                "name": "inputParam",
+                "description": "The result of the action",
+            }
+        ],
+        "next_node_id": "ifNode1", # Not needed if it is the last node in a for each loop
+    },
+# If Node (type if):
+    {
+        "id": "ifNode1",
+        "node_type": "if",
+        "description": "Conditional execution",
+        "inputs": [
+            {
+                "param_type": "int",
+                "name": "inputParam",
+                "description": "Input parameter for condition check",
+            }
+        ],
+        "python_if_condition": "inputParam > 10",
+        "true_next_node_id": "actionNode2",
+        "elifs": [
+            {"python_condition": "inputParam == 5", "true_next_node_id": "actionNode3"}
+        ],
+        "false_next_node_id": "endNode2",
+    },
+# For Each Node (type forEach):
+    {
+        "id": "forEachNode1",
+        "node_type": "forEach",
+        "description": "Iterate over a collection",
+        "inputs": [
+            {
+                "param_type": "list[str]",
+                "name": "inputList",
+                "description": "A list of strings to iterate",
+            }
+        ],
+        "outputs": [
+            {
+                "param_type": "list[str]",
+                "name": "outputList",
+                "description": "Output list of processed items",
+            }
+        ],
+        "for_each_collection_param_name": "inputList",
+        "for_each_next_node_id": "forEachNode1",
+        "next_node_id": "someNextNodeId",
+    },
+# End Node (type end):
+    {
+        "id": "endNode1",
+        "node_type": "end",
+        "description": "End of the process",
+        "inputs": [
+            {
+                "param_type": "str",
+                "name": "finalValue",
+                "description": "Final input value for the end node",
+            }
+        ],
+    },
+"""
 
 parser_generate_execution_graph = PydanticOutputParser(pydantic_object=NodeGraph)
 prompt_generate_execution_graph = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "You are an expert software engineer specialised in breaking down a problem into a series of steps that can be developed by a junior developer. Each step is designed to be as generic as possible. The first step is a `start` node with `request` in the name it represents a request object and only has output params. The last step is a `end` node with `response` in the name it represents aresposne object and only has input parameters.\nReply in json format:\n{format_instructions}\n\n# Important:\n for param_type use only these primitive types - bool, int, float, complex, str, bytes, tuple, list, dict, set, frozenset.\n node names are in python function name format\n There must be only 1 start node and 1 end node.",
+            "You are an expert software engineer specialised in breaking down a problem into a series of steps that can be developed by a junior developer. Each step is designed to be as generic as possible. The first step is a `start` node with `request` in the name it represents a request object and only has output params. The last step is a `end` node with `response` in the name it represents aresposne object and only has input parameters.\nReply in json format:\n{format_instructions}\n\n# Important:\n for param_type use only these primitive types - bool, int, float, complex, str, bytes, tuple, list, dict, set, frozenset.\n node names are in python function name format\n There must be only 1 start node and 1 end node.\n\n# Example Nodes\n{example_nodes}",
         ),
         (
             "human",
@@ -226,5 +319,6 @@ def chain_generate_execution_graph(application_context, path, path_name):
             "application_context": application_context,
             "api_route": path,
             "graph_name": path_name,
+            "example_nodes": example_nodes,
         }
     )
