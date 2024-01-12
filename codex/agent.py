@@ -11,7 +11,11 @@ from codex.dag import add_node, compile_graph
 from codex.database import search_for_similar_node
 from codex.model import InputParameter, Node, OutputParameter
 from codex.chains.decompose_task import chain_decompose_task, ApplicationPaths
-from codex.chains.generate_graph import chain_generate_execution_graph, NodeDefinition, NodeGraph, chain_decompose_node
+from codex.chains.generate_graph import (
+    chain_generate_execution_graph,
+    NodeDefinition,
+    chain_decompose_node,
+)
 from codex.chains.select_node import chain_select_from_possible_nodes, SelectNode
 from codex.chains.check_node_complexity import CheckComplexity
 
@@ -26,10 +30,12 @@ def select_node_from_possible_nodes(
     if not possible_nodes:
         logger.warning(f"No similar nodes found for: {node.name}")
         return SelectNode(node_id="new")
-    
+
     correct_possible_nodes = []
     for n in possible_nodes:
-        if len(n.input_params) == len(node.input_params) and len(n.output_params) <= len(node.output_params):
+        if len(n.input_params) == len(node.input_params) and len(
+            n.output_params
+        ) <= len(node.output_params):
             correct_possible_nodes.append(n)
 
     # Create the node list for the prompt
@@ -48,7 +54,6 @@ def select_node_from_possible_nodes(
         avaliable_inpurt_params=avaliable_inpurt_params,
         possible_nodes=correct_possible_nodes,
     )
-
 
 
 def process_request_response_node(
@@ -96,7 +101,7 @@ def process_node(
     embedder (SentenceTransformer): The sentence transformer for embedding.
     """
     logger.debug(f"🚀 Processing node: {node.name}")
-
+    requested_node = node
     if "request" in node.name.lower() or "response" in node.name.lower():
         return process_request_response_node(node, dag)
     else:
@@ -142,14 +147,33 @@ def process_node(
                 session.commit()
                 logger.debug(f"✅ New node added: {node.name}")
                 logger.debug(f"🔗 Adding new node to the DAG: {node.name}")
-                add_node(dag, new_node.name, new_node)
+                try:
+                    add_node(dag, new_node.name, new_node)
+                except Exception as e:
+                    logger.error(
+                        f"""❌ Failed to add newly written node to the DAG: {e}
+
+Select Node:
+
+{selected_node}    
+                        
+Selected node:
+
+{node}
+
+Reuested node:
+
+{requested_node}
+                             """
+                    )
+                    raise e
                 return new_node
             else:
                 logger.warning(f"🔄 Node is complex, decomposing: {node.name}")
                 sub_graph_nodes = chain_decompose_node(
-                            application_context= ap.application_context,
-                            node=node,
-                        )
+                    application_context=ap.application_context,
+                    node=node,
+                )
                 # TODO: vaidate sub_graph_nodes
                 for sub_node in sub_graph_nodes.nodes:
                     if not (
@@ -195,9 +219,27 @@ def process_node(
                         param.name = selected_node.output_map[param.name]
 
             logger.debug(f"🔗 Adding existing node to the DAG: {node.name}")
-            add_node(dag, node.name, node)
-            return node
+            try:
+                add_node(dag, node.name, node)
+            except Exception as e:
+                logger.error(
+                    f"""❌ Failed to add node loaded from the database to DAG: {e}
 
+Select Node:
+
+{selected_node}    
+                        
+Selected node:
+
+{node}
+
+Reuested node:
+
+{requested_node}
+                             """
+                )
+                raise e
+            return node
 
 
 def run(task_description: str, engine):
@@ -215,7 +257,7 @@ def run(task_description: str, engine):
 
         # Decompose task into application paths
         ap = chain_decompose_task(task_description)
-        
+
         logger.debug("✅ Task decomposed into application paths")
         logger.debug(f"Application paths: {ap}")
         generated_data = []
@@ -229,7 +271,9 @@ def run(task_description: str, engine):
                     dag = nx.DiGraph()
                     logger.debug("📈 Generating execution graph")
 
-                    ng = chain_generate_execution_graph(ap.application_context, path, path.name)
+                    ng = chain_generate_execution_graph(
+                        ap.application_context, path, path.name
+                    )
 
                     logger.debug("🌐 Execution graph generated")
                     logger.debug(f"Execution graph: {ng}")
