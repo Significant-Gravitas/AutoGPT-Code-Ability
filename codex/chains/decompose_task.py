@@ -7,14 +7,17 @@ from langchain.output_parsers import PydanticOutputParser
 from langchain.pydantic_v1 import BaseModel
 from tenacity import retry, stop_after_attempt, wait_none
 
+
 class ExecutionPath(BaseModel):
     name: str
     endpoint_name: str
     description: str
 
+
 class ApplicationPaths(BaseModel):
     execution_paths: List[ExecutionPath]
     application_context: str
+
 
 logger = logging.getLogger(__name__)
 
@@ -44,4 +47,3 @@ prompt_decompose_task = ChatPromptTemplate.from_messages(
 def chain_decompose_task(task: str) -> ApplicationPaths:
     chain_decompose_task = prompt_decompose_task | model | parser_decode_task
     return chain_decompose_task.invoke({"task": task})
-
