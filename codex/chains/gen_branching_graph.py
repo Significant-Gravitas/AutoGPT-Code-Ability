@@ -151,7 +151,26 @@ class NodeGraph(BaseModel):
     @validator("nodes")
     def validate_nodes(cls, v):
         ids = []
-        
+        output_params = []
+        # TODO: This may need improvement
+        for node in v:
+            ids.append(node.id)
+            if node.outputs:
+                for node_output in node.outputs:
+                    output_params.append(
+                        f"{node_output.name}: {node_output.param_type}"
+                    )
+
+            if node.inputs:
+                for input_param in node.inputs:
+                    if (
+                        f"{input_param.name}: {input_param.param_type}"
+                        not in output_params
+                    ):
+                        raise ValueError(
+                            f"Node {node.id} has an input parameter that is not an output parameter of a previous nodes: {input_param.name}: {input_param.param_type}\n {output_params}"
+                        )
+
         for node in v:
             if node.next_node_id and node.next_node_id not in ids:
                 raise ValueError(
@@ -176,6 +195,7 @@ class NodeGraph(BaseModel):
                             f"Node {node.id} has an elif with a true_next_node_id that does not exist: {elif_.true_next_node_id}"
                         )
             return v
+
 
 
 
