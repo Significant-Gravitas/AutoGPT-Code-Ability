@@ -7,6 +7,8 @@ import isort
 import networkx as nx
 
 from codex.chains.decompose_task import ExecutionPath
+
+from .code_gen import convert_graph_to_code
 from .model import FunctionData, Node, RequiredPackage
 
 logger = logging.getLogger(__name__)
@@ -132,33 +134,14 @@ def compile_graph(graph: nx.DiGraph, ep: ExecutionPath):
     # Check if the graph is a DAG
     if not nx.is_directed_acyclic_graph(graph):
         raise nx.NetworkXError("Graph is not a Directed Acyclic Graph (DAG)")
-    output_name_map: Dict[str, str] = {}
     python_file = ""
-    graph_script = ""
     requirements = []
     function_name = (
         ep.name.strip().replace(" ", "_").replace("-", "_").replace("/", "").lower()
         + "_request"
     )
+    graph_script = convert_graph_to_code(graph, function_name)
 
-    sorted_nodes = list(nx.topological_sort(graph))
-
-    for node_name in sorted_nodes:
-        node: Node = graph.nodes[node_name]["node"]
-        requirements.extend(node.required_packages)
-        if node_name == sorted_nodes[0]:
-            node.name = function_name
-            graph_script += node.request_to_code()
-        elif node_name == sorted_nodes[-1]:
-            graph_script += node.response_to_code(output_name_map)
-        else:
-            python_file += f"\n{node.code}\n"
-            code, unique_output_names_map = node.to_code(output_name_map)
-            output_name_map: Dict[str, str] = {
-                **output_name_map,
-                **unique_output_names_map,
-            }
-            graph_script += f"{code}\n"
     python_file += f"\n{graph_script}"
     requirements_txt = generate_requirements_txt(requirements)
     return FunctionData(

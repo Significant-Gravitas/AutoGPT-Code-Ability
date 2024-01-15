@@ -5,19 +5,19 @@ import networkx as nx
 from sentence_transformers import SentenceTransformer
 from sqlmodel import Session
 
+from codex.chains.check_node_complexity import CheckComplexity
+from codex.chains.decompose_task import ApplicationPaths, chain_decompose_task
+from codex.chains.gen_branching_graph import (
+    NodeDef,
+    chain_decompose_node,
+    chain_generate_execution_graph,
+)
+from codex.chains.select_node import SelectNode, chain_select_from_possible_nodes
 from codex.chains.write_node import write_code_chain
 from codex.code_gen import create_fastapi_server
 from codex.dag import add_node, compile_graph
 from codex.database import search_for_similar_node
 from codex.model import InputParameter, Node, OutputParameter
-from codex.chains.decompose_task import chain_decompose_task, ApplicationPaths
-from codex.chains.generate_graph import (
-    chain_generate_execution_graph,
-    NodeDefinition,
-    chain_decompose_node,
-)
-from codex.chains.select_node import chain_select_from_possible_nodes, SelectNode
-from codex.chains.check_node_complexity import CheckComplexity
 
 EMBEDDER = SentenceTransformer("all-mpnet-base-v2")
 
@@ -57,7 +57,7 @@ def select_node_from_possible_nodes(
 
 
 def process_request_response_node(
-    node: NodeDefinition,
+    node: NodeDef,
     dag: nx.DiGraph,
 ):
     logger.debug(f"🔗 Adding request/response node: {node.name}")
@@ -83,7 +83,7 @@ def process_request_response_node(
 
 def process_node(
     session: Session,
-    node: NodeDefinition,
+    node: NodeDef,
     processed_nodes: List[Node],
     ap: ApplicationPaths,
     dag: nx.DiGraph,
@@ -95,7 +95,7 @@ def process_node(
 
     Args:
     session (Session): Database session.
-    node (NodeDefinition): The current node to process.
+    node (NodeDef): The current node to process.
     ap (ApplicationPaths): Application paths context.
     dag (nx.DiGraph): The directed acyclic graph of nodes.
     embedder (SentenceTransformer): The sentence transformer for embedding.

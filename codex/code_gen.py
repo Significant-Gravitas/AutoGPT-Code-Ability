@@ -7,6 +7,7 @@ import zipfile
 from enum import Enum
 from typing import List
 
+import networkx as nx
 from langchain.pydantic_v1 import BaseModel
 
 from .chains.gen_branching_graph import ElseIf, NodeDef, NodeGraph, NodeTypeEnum
@@ -37,8 +38,8 @@ class CodeableNode(BaseModel):
     def __str__(self):
         if self.node_type == CodeableNodeTypeEnum.START.value:
             out = f"def {self.node.id}("
-            if self.node.outputs:
-                for param in self.node.outputs:
+            if self.node.output_params:
+                for param in self.node.output_params:
                     out += f"{param.name}: {param.param_type}, "
                 out = out[:-2]
             out += "):"
@@ -51,26 +52,26 @@ class CodeableNode(BaseModel):
             return "else:"
         elif self.node_type == CodeableNodeTypeEnum.ACTION.value:
             out = ""
-            if self.node.outputs:
-                for output_param in self.node.outputs:
+            if self.node.output_params:
+                for output_param in self.node.output_params:
                     out += f"{output_param.name}, "
                 out = out[:-2]
                 out += " = "
             out += f"{self.node.id}("
-            if self.node.inputs:
-                for input_param in self.node.inputs:
+            if self.node.input_params:
+                for input_param in self.node.input_params:
                     out += f"{input_param.name}, "
                 out = out[:-2]
             out += ")"
             return out
         elif self.node_type == CodeableNodeTypeEnum.END.value:
             out = ""
-            if self.node.inputs:
-                if len(self.node.inputs) == 1:
-                    out += f"return {self.node.inputs[0].name}"
+            if self.node.input_params:
+                if len(self.node.input_params) == 1:
+                    out += f"return {self.node.input_params[0].name}"
                 else:
                     out += "return ("
-                    for param in self.node.inputs:
+                    for param in self.node.input_params:
                         out += f"{param.name}, "
                     out = out[:-2]
                     out += ")"
@@ -79,9 +80,10 @@ class CodeableNode(BaseModel):
             raise ValueError(f"Invalid node type: {self.node_type}")
 
 
-def convert_graph_to_code(node_graph: NodeGraph) -> str:
-    codeable_nodes = pre_process_nodes(node_graph)
-    return graph_to_code(codeable_nodes)
+def convert_graph_to_code(node_graph: nx.DiGraph, function_name: str) -> str:
+    ng = NodeGraph.from_networkx(node_graph)
+    codeable_nodes = pre_process_nodes(ng)
+    return graph_to_code(codeable_nodes, function_name)
 
 
 def pre_process_nodes(node_graph: NodeGraph) -> List[CodeableNode]:
@@ -174,11 +176,16 @@ def pre_process_nodes(node_graph: NodeGraph) -> List[CodeableNode]:
     return codeable_nodes
 
 
-def graph_to_code(codeable_nodes: List[CodeableNode]) -> str:
+def graph_to_code(codeable_nodes: List[CodeableNode], function_name: str) -> str:
     code = ""
     indent_str = "    "
     for node in codeable_nodes:
-        code += indent_str * node.indent_level + str(node) + "\n"
+        if node.node_type == CodeableNodeTypeEnum.START.value:
+            node_code = str(node)
+            node_code = node_code.replace(node.node.id, function_name)
+            code += indent_str * node.indent_level + node_code + "\n"
+        else:
+            code += indent_str * node.indent_level + str(node) + "\n"
     return code
 
 

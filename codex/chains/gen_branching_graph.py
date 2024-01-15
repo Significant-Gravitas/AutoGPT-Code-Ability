@@ -2,6 +2,7 @@ import logging
 from enum import Enum
 from typing import List, Optional
 
+import networkx as nx
 from langchain.output_parsers import PydanticOutputParser
 from langchain.prompts import ChatPromptTemplate
 from langchain.pydantic_v1 import BaseModel, validator
@@ -56,7 +57,6 @@ class Param(BaseModel):
 
 class NodeTypeEnum(Enum):
     START = "start"
-    FOREACH = "forEach"
     IF = "if"
     ACTION = "action"
     END = "end"
@@ -71,8 +71,8 @@ class NodeDef(BaseModel):
     id: str
     node_type: NodeTypeEnum
     description: str
-    inputs: Optional[List[Param]]
-    outputs: Optional[List[Param]]
+    input_params: Optional[List[Param]]
+    output_params: Optional[List[Param]]
     # Unique fields for different node types with string references
     next_node_id: Optional[str] = None
 
@@ -81,14 +81,10 @@ class NodeDef(BaseModel):
     elifs: Optional[List[ElseIf]] = None
     false_next_node_id: Optional[str] = None
 
-    for_each_collection_param_name: Optional[str] = None
-    for_each_next_node_id: Optional[str] = None
-
     @validator("next_node_id", always=True)
     def validate_next_node_id(cls, v, values, **kwargs):
         if (
-            values.get("node_type")
-            in [NodeTypeEnum.START, NodeTypeEnum.ACTION, NodeTypeEnum.FOREACH]
+            values.get("node_type") in [NodeTypeEnum.START, NodeTypeEnum.ACTION]
             and not v
         ):
             raise ValueError(f'{values["node_type"]} node must have a next_node_id')
@@ -96,13 +92,13 @@ class NodeDef(BaseModel):
             raise ValueError(f'{values["node_type"]} node must not have a next_node_id')
         return v
 
-    @validator("inputs", always=True)
+    @validator("input_params", always=True)
     def validate_inputs(cls, v, values, **kwargs):
         if values.get("node_type") != NodeTypeEnum.START.value and not v:
             raise ValueError(f'{values["node_type"]} must have input parameters')
         return v
 
-    @validator("outputs", always=True)
+    @validator("output_params", always=True)
     def validate_outputs(cls, v, values, **kwargs):
         if values.get("node_type") == NodeTypeEnum.END.value and v:
             raise ValueError("End node must not have output parameters")
@@ -110,7 +106,6 @@ class NodeDef(BaseModel):
             values.get("node_type")
             in [
                 NodeTypeEnum.ACTION.value,
-                NodeTypeEnum.FOREACH.value,
                 NodeTypeEnum.START.value,
             ]
             and not v
@@ -136,18 +131,20 @@ class NodeDef(BaseModel):
             raise ValueError("Only IF node can have elifs")
         return v
 
-    @validator("for_each_collection_param_name", "for_each_next_node_id", always=True)
-    def validate_for_each_node(cls, v, values, **kwargs):
-        if values.get("node_type") == NodeTypeEnum.FOREACH.value and not v:
-            raise ValueError("FOR EACH node must have a collection param name")
-        return v
-
     class Config:
         use_enum_values = True
 
 
 class NodeGraph(BaseModel):
     nodes: List[NodeDef]
+
+    @staticmethod
+    def from_networkx(ng: nx.DiGraph):
+        sorted_nodes = list(nx.topological_sort(ng))
+        nodes = []
+        for node in sorted_nodes:
+            nodes.append(ng.nodes[node]["node"])
+        return NodeGraph(nodes=nodes)
 
     @validator("nodes")
     def validate_nodes(cls, v):
@@ -156,14 +153,14 @@ class NodeGraph(BaseModel):
         # TODO: This may need improvement
         for node in v:
             ids.append(node.id)
-            if node.outputs:
-                for node_output in node.outputs:
+            if node.output_params:
+                for node_output in node.output_params:
                     output_params.append(
                         f"{node_output.name}: {node_output.param_type}"
                     )
 
-            if node.inputs:
-                for input_param in node.inputs:
+            if node.input_params:
+                for input_param in node.input_params:
                     if (
                         f"{input_param.name}: {input_param.param_type}"
                         not in output_params
@@ -185,10 +182,6 @@ class NodeGraph(BaseModel):
                 raise ValueError(
                     f"Node {node.id} has a false_next_node_id that does not exist: {node.false_next_node_id}"
                 )
-            if node.for_each_next_node_id and node.for_each_next_node_id not in ids:
-                raise ValueError(
-                    f"Node {node.id} has a for_each_next_node_id that does not exist: {node.for_each_next_node_id}"
-                )
             if node.elifs:
                 for elif_ in node.elifs:
                     if elif_.true_next_node_id and elif_.true_next_node_id not in ids:
@@ -205,7 +198,7 @@ Eample nodes:
         "id": "startNode1",
         "node_type": "start",
         "description": "Start of the process",
-        "outputs": [
+        "output_params": [
             {
                 "param_type": "str",
                 "name": "outputParam",
@@ -220,14 +213,14 @@ Eample nodes:
         "id": "actionNode1",
         "node_type": "action",
         "description": "Perform an action",
-        "inputs": [
+        "input_params": [
             {
                 "param_type": "int",
                 "name": "actionValue",
                 "description": "An integer input for the action",
             }
         ],
-        "outputs": [
+        "output_params": [
             {
                 "param_type": "str",
                 "name": "inputParam",
@@ -241,7 +234,7 @@ Eample nodes:
         "id": "ifNode1",
         "node_type": "if",
         "description": "Conditional execution",
-        "inputs": [
+        "input_params": [
             {
                 "param_type": "int",
                 "name": "inputParam",
@@ -255,35 +248,12 @@ Eample nodes:
         ],
         "false_next_node_id": "endNode2",
     },
-# For Each Node (type forEach):
-    {
-        "id": "forEachNode1",
-        "node_type": "forEach",
-        "description": "Iterate over a collection",
-        "inputs": [
-            {
-                "param_type": "list[str]",
-                "name": "inputList",
-                "description": "A list of strings to iterate",
-            }
-        ],
-        "outputs": [
-            {
-                "param_type": "list[str]",
-                "name": "outputList",
-                "description": "Output list of processed items",
-            }
-        ],
-        "for_each_collection_param_name": "inputList",
-        "for_each_next_node_id": "forEachNode1",
-        "next_node_id": "someNextNodeId",
-    },
 # End Node (type end):
     {
         "id": "endNode1",
         "node_type": "end",
         "description": "End of the process",
-        "inputs": [
+        "input_params": [
             {
                 "param_type": "str",
                 "name": "finalValue",
@@ -342,7 +312,7 @@ prompt_decompose_node = ChatPromptTemplate.from_messages(
         ),
         (
             "human",
-            "Thinking carefully step by step. Decompose this complex node into a series of simpliar steps, creating a new node graph. The new graph's request is the inputs for this node and response is the outputs of this node. Output the nodes needed to implement this complex node:\n{node}\n # Important:\n The the node definitions for all node_id's used must be in the graph\n\n ## THE OUTPUTS OF THE START NODE MUST MATCH THE IMPUTS OF THE COMPLEX NODE\n\n ## THE INPUTS OF THE END NODE MUST MATCH THE OUTPUTS OF THE COMPLEX NODE ",
+            "Thinking carefully step by step. Decompose this complex node into a series of simpliar steps, creating a new node graph. The new graph's request is the input_params for this node and response is the output_params of this node. Output the nodes needed to implement this complex node:\n{node}\n # Important:\n The the node definitions for all node_id's used must be in the graph\n\n ## THE OUTPUTS OF THE START NODE MUST MATCH THE IMPUTS OF THE COMPLEX NODE\n\n ## THE INPUTS OF THE END NODE MUST MATCH THE OUTPUTS OF THE COMPLEX NODE ",
         ),
     ]
 ).partial(format_instructions=parser_decompose_node.get_format_instructions())
@@ -368,54 +338,224 @@ def chain_decompose_node(application_context, node):
 
     for node in output.nodes:
         if node.node_type == NodeTypeEnum.START.value:
-            for node_output in node.outputs:
+            for node_output in node.output_params:
                 start_node_outputs.append(
                     f"{node_output.name}: {node_output.param_type}"
                 )
         if node.node_type == NodeTypeEnum.END.value:
-            for node_input in node.inputs:
+            for node_input in node.input_params:
                 end_node_inputs.append(f"{node_input.name}: {node_input.param_type}")
 
     requirement_node_inputs = set()
     requirement_node_outputs = set()
-    for input_param in node.inputs:
+    for input_param in node.input_params:
         requirement_node_inputs.append(f"{input_param.name}: {input_param.param_type}")
-    for output_param in node.outputs:
+    for output_param in node.output_params:
         requirement_node_outputs.append(
             f"{output_param.name}: {output_param.param_type}"
         )
 
     if requirement_node_inputs != start_node_outputs:
         raise ValueError(
-            f"Start node outputs do not match requirement node inputs: {requirement_node_inputs} != {start_node_outputs}"
+            f"Start node output_params do not match requirement node input_params: {requirement_node_inputs} != {start_node_outputs}"
         )
 
     if requirement_node_outputs != end_node_inputs:
         raise ValueError(
-            f"End node inputs do not match requirement node outputs: {requirement_node_outputs} != {end_node_inputs}"
+            f"End node input_params do not match requirement node output_params: {requirement_node_outputs} != {end_node_inputs}"
         )
 
     return output
 
 
 if __name__ == "__main__":
-    from codex.chains.decompose_task import ApplicationPaths, ExecutionPath
+    from codex.code_gen import pre_process_nodes
 
-    application_context = ApplicationPaths(
-        application_context="Develop a small script that takes a URL as input and returns the webpage in Markdown, RST or html format. Focus on converting basic HTML tags like headings, paragraphs, and lists",
-        execution_paths=[
-            ExecutionPath(
-                name="convert_web_page",
-                endpoint_name="convert_web_page",
-                description="Convert a webpage to markdown, rst or html format, using the if node to select the correct conversion function.",
-                example_nodes=example_nodes,
-            )
-        ],
+    logging.basicConfig(level=logging.INFO)
+
+    # application_context = ApplicationPaths(
+    #     application_context="Develop a small script that takes a URL as input and returns the webpage in Markdown, RST or html format. Focus on converting basic HTML tags like headings, paragraphs, and lists",
+    #     execution_paths=[
+    #         ExecutionPath(
+    #             name="convert_web_page",
+    #             endpoint_name="convert_web_page",
+    #             description="Convert a webpage to markdown, rst or html format, using the if node to select the correct conversion function.",
+    #             example_nodes=example_nodes,
+    #         )
+    #     ],
+    # )
+
+    # output = chain_generate_execution_graph(
+    #     application_context, "convert_web_page", "convert_web_page"
+    # )
+    output = NodeGraph.parse_obj(
+        {
+            "nodes": [
+                {
+                    "id": "start_request",
+                    "node_type": "start",
+                    "description": "Start of the process of converting a webpage to markdown, rst or html format",
+                    "input_params": None,
+                    "output_params": [
+                        {
+                            "param_type": "str",
+                            "name": "urlInput",
+                            "description": "URL of webpage to convert",
+                        },
+                        {
+                            "param_type": "str",
+                            "name": "formatType",
+                            "description": "Format to convert the webpage to",
+                        },
+                    ],
+                    "next_node_id": "fetch_webpage_content",
+                    "python_if_condition": None,
+                    "true_next_node_id": None,
+                    "elifs": None,
+                    "false_next_node_id": None,
+                },
+                {
+                    "id": "fetch_webpage_content",
+                    "node_type": "action",
+                    "description": "Fetch webpage content",
+                    "input_params": [
+                        {
+                            "param_type": "str",
+                            "name": "urlInput",
+                            "description": "URL of webpage to fetch",
+                        }
+                    ],
+                    "output_params": [
+                        {
+                            "param_type": "str",
+                            "name": "htmlContent",
+                            "description": "HTML content of the fetched webpage",
+                        }
+                    ],
+                    "next_node_id": "determine_conversion_path",
+                    "python_if_condition": None,
+                    "true_next_node_id": None,
+                    "elifs": None,
+                    "false_next_node_id": None,
+                },
+                {
+                    "id": "determine_conversion_path",
+                    "node_type": "if",
+                    "description": "Determine conversion path based on format type",
+                    "input_params": [
+                        {
+                            "param_type": "str",
+                            "name": "formatType",
+                            "description": "Format to convert the webpage to",
+                        }
+                    ],
+                    "output_params": None,
+                    "next_node_id": None,
+                    "python_if_condition": "formatType == 'markdown'",
+                    "true_next_node_id": "convert_to_markdown",
+                    "elifs": [
+                        {
+                            "python_condition": "formatType == 'rst'",
+                            "true_next_node_id": "convert_to_rst",
+                        }
+                    ],
+                    "false_next_node_id": "convert_to_html",
+                },
+                {
+                    "id": "convert_to_markdown",
+                    "node_type": "action",
+                    "description": "Convert HTML content to Markdown format",
+                    "input_params": [
+                        {
+                            "param_type": "str",
+                            "name": "htmlContent",
+                            "description": "HTML content to convert",
+                        }
+                    ],
+                    "output_params": [
+                        {
+                            "param_type": "str",
+                            "name": "convertedContent",
+                            "description": "Content converted to Markdown",
+                        }
+                    ],
+                    "next_node_id": "return_response",
+                    "python_if_condition": None,
+                    "true_next_node_id": None,
+                    "elifs": None,
+                    "false_next_node_id": None,
+                },
+                {
+                    "id": "convert_to_rst",
+                    "node_type": "action",
+                    "description": "Convert HTML content to RST format",
+                    "input_params": [
+                        {
+                            "param_type": "str",
+                            "name": "htmlContent",
+                            "description": "HTML content to convert",
+                        }
+                    ],
+                    "output_params": [
+                        {
+                            "param_type": "str",
+                            "name": "convertedContent",
+                            "description": "Content converted to RST",
+                        }
+                    ],
+                    "next_node_id": "return_response",
+                    "python_if_condition": None,
+                    "true_next_node_id": None,
+                    "elifs": None,
+                    "false_next_node_id": None,
+                },
+                {
+                    "id": "convert_to_html",
+                    "node_type": "action",
+                    "description": "Prepare HTML content for return",
+                    "input_params": [
+                        {
+                            "param_type": "str",
+                            "name": "htmlContent",
+                            "description": "HTML content to finalize",
+                        }
+                    ],
+                    "output_params": [
+                        {
+                            "param_type": "str",
+                            "name": "convertedContent",
+                            "description": "HTML content prepared for return",
+                        }
+                    ],
+                    "next_node_id": "return_response",
+                    "python_if_condition": None,
+                    "true_next_node_id": None,
+                    "elifs": None,
+                    "false_next_node_id": None,
+                },
+                {
+                    "id": "return_response",
+                    "node_type": "end",
+                    "description": "End of the process, return the converted content",
+                    "input_params": [
+                        {
+                            "param_type": "str",
+                            "name": "convertedContent",
+                            "description": "Content that has been converted",
+                        }
+                    ],
+                    "output_params": None,
+                    "next_node_id": None,
+                    "python_if_condition": None,
+                    "true_next_node_id": None,
+                    "elifs": None,
+                    "false_next_node_id": None,
+                },
+            ]
+        }
     )
 
-    output = chain_generate_execution_graph(
-        application_context, "/convert_web_page", "convert_web_page"
-    )
+    codeable_nodes = pre_process_nodes(output)
 
     import IPython
 
