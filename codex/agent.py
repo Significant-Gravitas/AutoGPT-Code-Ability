@@ -11,6 +11,7 @@ from codex.chains.gen_branching_graph import (
     NodeDef,
     chain_decompose_node,
     chain_generate_execution_graph,
+    NodeTypeEnum
 )
 from codex.chains.select_node import SelectNode, chain_select_from_possible_nodes
 from codex.chains.write_node import write_code_chain
@@ -57,33 +58,34 @@ def select_node_from_possible_nodes(
 
 
 def process_request_response_node(
-    node: NodeDef,
+    node_def: NodeDef,
     dag: nx.DiGraph,
 ):
-    logger.debug(f"🔗 Adding request/response node: {node.name}")
+    logger.debug(f"🔗 Adding request/response node: {node_def.name}")
     input_params = (
-        [InputParameter(**p.dict()) for p in node.input_params]
-        if node.input_params
+        [InputParameter(**p.dict()) for p in node_def.input_params]
+        if node_def.input_params
         else []
     )
     output_params = (
-        [OutputParameter(**p.dict()) for p in node.output_params]
-        if node.output_params
+        [OutputParameter(**p.dict()) for p in node_def.output_params]
+        if node_def.output_params
         else []
     )
     req_resp_node = Node(
-        name=node.name,
-        description=node.description,
+        name=node_def.name,
+        node_type=node_def.node_type,
+        description=node_def.description,
         input_params=input_params,
         output_params=output_params,
     )
-    add_node(dag, node.name, req_resp_node)
+    add_node(dag, node_def.name, req_resp_node)
     return req_resp_node
 
 
 def process_node(
     session: Session,
-    node: NodeDef,
+    node_def: NodeDef,
     processed_nodes: List[Node],
     ap: ApplicationPaths,
     dag: nx.DiGraph,
@@ -100,20 +102,20 @@ def process_node(
     dag (nx.DiGraph): The directed acyclic graph of nodes.
     embedder (SentenceTransformer): The sentence transformer for embedding.
     """
-    logger.debug(f"🚀 Processing node: {node.name}")
-    requested_node = node
-    if "request" in node.name.lower() or "response" in node.name.lower():
-        return process_request_response_node(node, dag)
+    logger.debug(f"🚀 Processing node: {node_def.name}")
+    requested_node = node_def
+    if node_def.node_type in [NodeTypeEnum.START.value, NodeTypeEnum.END.value]:
+        return process_request_response_node(node_def, dag)
     else:
-        logger.debug(f"🔍 Searching for similar nodes for: {node.name}")
-        possible_nodes = search_for_similar_node(session, node, embedder)
+        logger.debug(f"🔍 Searching for similar nodes for: {node_def.name}")
+        possible_nodes = search_for_similar_node(session, node_def, embedder)
 
         selected_node = select_node_from_possible_nodes(
-            possible_nodes, processed_nodes, node
+            possible_nodes, processed_nodes, node_def
         )
 
         if selected_node.node_id == "new":
-            logger.debug(f"🆕 Processing new node: {node.name}")
+            logger.debug(f"🆕 Processing new node: {node_def.name}")
             # complexity = CheckComplexity.parse_obj(
             #     chain_check_noxde_complexity.invoke({"node": node})
             # )
@@ -121,32 +123,33 @@ def process_node(
             logger.debug(f"Node complexity: {complexity}")
 
             if not complexity.is_complex:
-                logger.debug(f"📝 Writing new node code for: {node.name}")
-                required_packages, code = write_code_chain(invoke_params={"node": node})
+                logger.debug(f"📝 Writing new node code for: {node_def.name}")
+                required_packages, code = write_code_chain(invoke_params={"node": node_def})
 
-                logger.debug(f"📦 Adding new node to the database: {node.name}")
+                logger.debug(f"📦 Adding new node to the database: {node_def.name}")
 
-                input_params = [InputParameter(**p.dict()) for p in node.input_params]
+                input_params = [InputParameter(**p.dict()) for p in node_def.input_params]
                 output_params = [
-                    OutputParameter(**p.dict()) for p in node.output_params
+                    OutputParameter(**p.dict()) for p in node_def.output_params
                 ]
                 new_node = Node(
-                    name=node.name,
-                    description=node.description,
+                    name=node_def.name,
+                    node_type=node_def.node_type,
+                    description=node_def.description,
                     input_params=input_params,
                     output_params=output_params,
                     required_packages=required_packages,
                     code=code,
                 )
                 new_node.embedding = embedder.encode(
-                    node.description,
+                    node_def.description,
                     normalize_embeddings=True,
                     convert_to_numpy=True,
                 )
                 session.add(new_node)
                 session.commit()
-                logger.debug(f"✅ New node added: {node.name}")
-                logger.debug(f"🔗 Adding new node to the DAG: {node.name}")
+                logger.debug(f"✅ New node added: {node_def.name}")
+                logger.debug(f"🔗 Adding new node to the DAG: {node_def.name}")
                 try:
                     add_node(dag, new_node.name, new_node)
                 except Exception as e:
@@ -159,7 +162,7 @@ Select Node:
                         
 Selected node:
 
-{node}
+{node_def}
 
 Reuested node:
 
@@ -169,10 +172,10 @@ Reuested node:
                     raise e
                 return new_node
             else:
-                logger.warning(f"🔄 Node is complex, decomposing: {node.name}")
+                logger.warning(f"🔄 Node is complex, decomposing: {node_def.name}")
                 sub_graph_nodes = chain_decompose_node(
                     application_context=ap.application_context,
-                    node=node,
+                    node=node_def,
                 )
                 # TODO: vaidate sub_graph_nodes
                 for sub_node in sub_graph_nodes.nodes:

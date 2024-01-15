@@ -5,7 +5,7 @@ from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from langchain.pydantic_v1 import BaseModel
-from codex.chains.generate_graph import NodeDefinition
+from codex.chains.gen_branching_graph import NodeDef
 from codex.model import Node
 from tenacity import retry, stop_after_attempt, wait_none
 
@@ -45,7 +45,7 @@ class ValidatingPydanticOutputParser(PydanticOutputParser[T]):
 
     pydantic_object: Type[T]
     possible_nodes: List[Node]
-    requested_node: NodeDefinition
+    requested_node: NodeDef
 
     class Config:
         arbitrary_types_allowed = True
@@ -103,7 +103,7 @@ class ValidatingPydanticOutputParser(PydanticOutputParser[T]):
 @retry(wait=wait_none(), stop=stop_after_attempt(3))
 def chain_select_from_possible_nodes(
     nodes_str: str,
-    requested_node: NodeDefinition,
+    requested_node: NodeDef,
     avaliable_inpurt_params: str,
     possible_nodes: List[Node],
 ):

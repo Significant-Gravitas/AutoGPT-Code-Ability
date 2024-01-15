@@ -68,7 +68,7 @@ class ElseIf(BaseModel):
 
 
 class NodeDef(BaseModel):
-    id: str
+    name: str
     node_type: NodeTypeEnum
     description: str
     input_params: Optional[List[Param]]
@@ -152,7 +152,7 @@ class NodeGraph(BaseModel):
         output_params = []
         # TODO: This may need improvement
         for node in v:
-            ids.append(node.id)
+            ids.append(node.name)
             if node.output_params:
                 for node_output in node.output_params:
                     output_params.append(
@@ -166,27 +166,27 @@ class NodeGraph(BaseModel):
                         not in output_params
                     ):
                         raise ValueError(
-                            f"Node {node.id} has an input parameter that is not an output parameter of a previous nodes: {input_param.name}: {input_param.param_type}\n {output_params}"
+                            f"Node {node.name} has an input parameter that is not an output parameter of a previous nodes: {input_param.name}: {input_param.param_type}\n {output_params}"
                         )
 
         for node in v:
             if node.next_node_id and node.next_node_id not in ids:
                 raise ValueError(
-                    f"Node {node.id} has a next_node_id that does not exist: {node.next_node_id}"
+                    f"Node {node.name} has a next_node_id that does not exist: {node.next_node_id}"
                 )
             if node.true_next_node_id and node.true_next_node_id not in ids:
                 raise ValueError(
-                    f"Node {node.id} has a true_next_node_id that does not exist: {node.true_next_node_id}"
+                    f"Node {node.name} has a true_next_node_id that does not exist: {node.true_next_node_id}"
                 )
             if node.false_next_node_id and node.false_next_node_id not in ids:
                 raise ValueError(
-                    f"Node {node.id} has a false_next_node_id that does not exist: {node.false_next_node_id}"
+                    f"Node {node.name} has a false_next_node_id that does not exist: {node.false_next_node_id}"
                 )
             if node.elifs:
                 for elif_ in node.elifs:
                     if elif_.true_next_node_id and elif_.true_next_node_id not in ids:
                         raise ValueError(
-                            f"Node {node.id} has an elif with a true_next_node_id that does not exist: {elif_.true_next_node_id}"
+                            f"Node {node.name} has an elif with a true_next_node_id that does not exist: {elif_.true_next_node_id}"
                         )
             return v
 
@@ -195,7 +195,7 @@ example_nodes = """
 Eample nodes:
 # Start Node (type start):
     {
-        "id": "startNode1",
+         e": "startNode1",
         "node_type": "start",
         "description": "Start of the process",
         "output_params": [
@@ -210,7 +210,7 @@ Eample nodes:
     
 # Action Node (type action):
     {
-        "id": "actionNode1",
+        "name": "actionNode1",
         "node_type": "action",
         "description": "Perform an action",
         "input_params": [
@@ -231,7 +231,7 @@ Eample nodes:
     },
 # If Node (type if):
     {
-        "id": "ifNode1",
+        "name": "ifNode1",
         "node_type": "if",
         "description": "Conditional execution",
         "input_params": [
@@ -250,7 +250,7 @@ Eample nodes:
     },
 # End Node (type end):
     {
-        "id": "endNode1",
+        "name": "endNode1",
         "node_type": "end",
         "description": "End of the process",
         "input_params": [
@@ -392,7 +392,7 @@ if __name__ == "__main__":
         {
             "nodes": [
                 {
-                    "id": "start_request",
+                    "name": "start_request",
                     "node_type": "start",
                     "description": "Start of the process of converting a webpage to markdown, rst or html format",
                     "input_params": None,
@@ -415,7 +415,7 @@ if __name__ == "__main__":
                     "false_next_node_id": None,
                 },
                 {
-                    "id": "fetch_webpage_content",
+                    "name": "fetch_webpage_content",
                     "node_type": "action",
                     "description": "Fetch webpage content",
                     "input_params": [
@@ -439,7 +439,7 @@ if __name__ == "__main__":
                     "false_next_node_id": None,
                 },
                 {
-                    "id": "determine_conversion_path",
+                    "name": "determine_conversion_path",
                     "node_type": "if",
                     "description": "Determine conversion path based on format type",
                     "input_params": [
@@ -462,7 +462,7 @@ if __name__ == "__main__":
                     "false_next_node_id": "convert_to_html",
                 },
                 {
-                    "id": "convert_to_markdown",
+                    "name": "convert_to_markdown",
                     "node_type": "action",
                     "description": "Convert HTML content to Markdown format",
                     "input_params": [
@@ -486,7 +486,7 @@ if __name__ == "__main__":
                     "false_next_node_id": None,
                 },
                 {
-                    "id": "convert_to_rst",
+                    "name": "convert_to_rst",
                     "node_type": "action",
                     "description": "Convert HTML content to RST format",
                     "input_params": [
@@ -510,7 +510,7 @@ if __name__ == "__main__":
                     "false_next_node_id": None,
                 },
                 {
-                    "id": "convert_to_html",
+                    "name": "convert_to_html",
                     "node_type": "action",
                     "description": "Prepare HTML content for return",
                     "input_params": [
@@ -534,7 +534,7 @@ if __name__ == "__main__":
                     "false_next_node_id": None,
                 },
                 {
-                    "id": "return_response",
+                    "name": "return_response",
                     "node_type": "end",
                     "description": "End of the process, return the converted content",
                     "input_params": [

@@ -1,5 +1,6 @@
 import uuid
 from typing import Dict, List, Optional, Tuple
+from enum import Enum
 
 from pgvector.sqlalchemy import Vector  # type: ignore
 from pydantic import BaseModel
@@ -13,6 +14,11 @@ class FunctionData(BaseModel):
     requirements_txt: str
     endpoint_name: str
 
+class NodeTypeEnum(Enum):
+    START = "start"
+    IF = "if"
+    ACTION = "action"
+    END = "end"
 
 class OutputParameter(SQLModel, table=True):
     """
@@ -64,6 +70,26 @@ class RequiredPackage(SQLModel, table=True):
     node: Optional["Node"] = Relationship(back_populates="required_packages")
 
 
+
+
+# class NodeGraphModel(SQLModel, table=True):
+#     """
+#     Represents a node graph.
+#     """
+
+#     id: Optional[int] = Field(default=None, primary_key=True)
+#     name: str
+#     description: str
+    
+#     node_graph: str
+#     code: str
+    
+#     required_packages: Optional[List[RequiredPackage]] = Relationship(
+#         back_populates="node"
+#     )
+
+#     nodes: Optional[List["Node"]] = Relationship(back_populates="node_graph")
+
 class Node(SQLModel, table=True):
     """
     Represents a node in the system.
@@ -80,6 +106,7 @@ class Node(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     description: str
     name: str
+    node_type: NodeTypeEnum
 
     required_packages: Optional[List[RequiredPackage]] = Relationship(
         back_populates="node"
