@@ -9,7 +9,7 @@ from typing import List
 
 from pydantic import BaseModel
 
-from .chains.gen_branching_graph import ElseIf, NodeDef, NodeGraph
+from .chains.gen_branching_graph import ElseIf, NodeDef, NodeGraph, NodeTypeEnum
 from .model import FunctionData
 
 logger = logging.getLogger(__name__)
@@ -29,6 +29,97 @@ class CodeableNode(BaseModel):
     node_type: CodeablrNodeTypeEnum
     node: NodeDef | None = None
     elseif: ElseIf
+
+
+def pre_process_nodes(node_graph: NodeGraph) -> List[CodeableNode]:
+    codeable_nodes = []
+
+    # Preprocess the node graph to resolve if branching
+    skip_node = []
+    indent_level = 0
+    for i, node in enumerate(node_graph.nodes):
+        if node.id in skip_node:
+            continue
+        if node.node_type == NodeTypeEnum.START:
+            codeable_nodes.append(
+                CodeableNode(
+                    intent_level=indent_level,
+                    node_type=CodeablrNodeTypeEnum.START,
+                    node=node,
+                )
+            )
+            indent_level += 1
+        elif node.node_type == NodeTypeEnum.IF:
+            commonon_descendent = find_common_descendent(node_graph, node, i)
+            codeable_nodes.append(
+                CodeableNode(
+                    intent_level=indent_level,
+                    node_type=CodeablrNodeTypeEnum.IF,
+                    node=node,
+                )
+            )
+            skip, code = process_if_paths(
+                node_graph.nodes,
+                node,
+                node.true_next_node_id,
+                commonon_descendent,
+                indent_level + 1,
+            )
+            skip_node.extend(skip)
+            codeable_nodes.extend(code)
+            for elifs in node.elifs:
+                codeable_nodes.append(
+                    CodeableNode(
+                        intent_level=indent_level,
+                        node_type=CodeablrNodeTypeEnum.ELIF,
+                        node=None,
+                        elseif=elifs,
+                    )
+                )
+                skip, code = process_if_paths(
+                    node_graph.nodes,
+                    node,
+                    elifs.true_next_node_id,
+                    commonon_descendent,
+                    indent_level + 1,
+                )
+                skip_node.extend(skip)
+                codeable_nodes.extend(code)
+            codeable_nodes.append(
+                CodeableNode(
+                    intent_level=indent_level,
+                    node_type=CodeablrNodeTypeEnum.ELSE,
+                    node=node,
+                )
+            )
+            skip, code = process_if_paths(
+                node_graph.nodes,
+                node,
+                node.false_next_node_id,
+                commonon_descendent,
+                indent_level + 1,
+            )
+            skip_node.extend(skip)
+            codeable_nodes.extend(code)
+        elif node.node_type == NodeTypeEnum.ACTION:
+            codeable_nodes.append(
+                CodeableNode(
+                    intent_level=indent_level,
+                    node_type=CodeablrNodeTypeEnum.ACTION,
+                    node=node,
+                )
+            )
+        elif node.node_type == NodeTypeEnum.END:
+            codeable_nodes.append(
+                CodeableNode(
+                    intent_level=indent_level,
+                    node_type=CodeablrNodeTypeEnum.END,
+                    node=node,
+                )
+            )
+            indent_level -= 1
+
+    return codeable_nodes
 
 
 def process_if_paths(
