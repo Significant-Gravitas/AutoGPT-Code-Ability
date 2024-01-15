@@ -1,5 +1,4 @@
 import logging
-import traceback
 from enum import Enum
 from typing import List, Optional
 
@@ -65,7 +64,7 @@ class NodeTypeEnum(Enum):
 
 class ElseIf(BaseModel):
     python_condition: str
-    true_next_node_id: Optional[str]  # Reference to the node's name
+    true_next_node_name: Optional[str]  # Reference to the node's name
 
 
 class NodeDef(BaseModel):
@@ -75,25 +74,25 @@ class NodeDef(BaseModel):
     input_params: Optional[List[Param]]
     output_params: Optional[List[Param]]
     # Unique fields for different node types with string references
-    next_node_id: Optional[str] = None
+    next_node_name: Optional[str] = None
 
     python_if_condition: Optional[str] = None
-    true_next_node_id: Optional[str] = None
+    true_next_node_name: Optional[str] = None
     elifs: Optional[List[ElseIf]] = None
-    false_next_node_id: Optional[str] = None
+    false_next_node_name: Optional[str] = None
 
-    @validator("next_node_id", always=True)
-    def validate_next_node_id(cls, v, values, **kwargs):
+    @validator("next_node_name", always=True)
+    def validate_next_node_name(cls, v, values, **kwargs):
         if (
             values.get("node_type") in [NodeTypeEnum.START, NodeTypeEnum.ACTION]
             and not v
         ):
             raise ValueError(
-                f'Node: {values.get("name")}: node must have a next_node_id'
+                f'Node: {values.get("name")}: node must have a next_node_name'
             )
         if values.get("node_type") in [NodeTypeEnum.END, NodeTypeEnum.IF] and v:
             raise ValueError(
-                f'Node: {values.get("name")}: node must not have a next_node_id'
+                f'Node: {values.get("name")}: node must not have a next_node_name'
             )
         return v
 
@@ -120,7 +119,7 @@ class NodeDef(BaseModel):
             raise ValueError(f'Node: {values.get("name")}: must have output parameters')
         return v
 
-    @validator("true_next_node_id", "false_next_node_id", always=True)
+    @validator("true_next_node_name", "false_next_node_name", always=True)
     def validate_if_node(cls, v, values, **kwargs):
         if values.get("node_type") == NodeTypeEnum.IF.value and not v:
             raise ValueError(
@@ -170,23 +169,26 @@ class NodeGraph(BaseModel):
                         )
 
         for node in v:
-            if node.next_node_id and node.next_node_id not in ids:
+            if node.next_node_name and node.next_node_name not in ids:
                 errors.append(
-                    f"Node {node.name} has a next_node_id that does not exist: {node.next_node_id}"
+                    f"Node {node.name} has a next_node_name that does not exist: {node.next_node_name}"
                 )
-            if node.true_next_node_id and node.true_next_node_id not in ids:
+            if node.true_next_node_name and node.true_next_node_name not in ids:
                 errors.append(
-                    f"Node {node.name} has a true_next_node_id that does not exist: {node.true_next_node_id}"
+                    f"Node {node.name} has a true_next_node_name that does not exist: {node.true_next_node_name}"
                 )
-            if node.false_next_node_id and node.false_next_node_id not in ids:
+            if node.false_next_node_name and node.false_next_node_name not in ids:
                 errors.append(
-                    f"Node {node.name} has a false_next_node_id that does not exist: {node.false_next_node_id}"
+                    f"Node {node.name} has a false_next_node_name that does not exist: {node.false_next_node_name}"
                 )
             if node.elifs:
                 for elif_ in node.elifs:
-                    if elif_.true_next_node_id and elif_.true_next_node_id not in ids:
+                    if (
+                        elif_.true_next_node_name
+                        and elif_.true_next_node_name not in ids
+                    ):
                         errors.append(
-                            f"Node {node.name} has an elif with a true_next_node_id that does not exist: {elif_.true_next_node_id}"
+                            f"Node {node.name} has an elif with a true_next_node_name that does not exist: {elif_.true_next_node_name}"
                         )
             if len(errors) > 0:
                 raise ValueError("\n".join(errors))
@@ -207,7 +209,7 @@ Eample nodes:
                 "description": "Output parameter of start node",
             }
         ],
-        "next_node_id": "actionNode1",
+        "next_node_name": "actionNode1",
     }
     
 # Action Node (type action):
@@ -229,7 +231,7 @@ Eample nodes:
                 "description": "The result of the action",
             }
         ],
-        "next_node_id": "ifNode1", # Not needed if it is the last node in a for each loop
+        "next_node_name": "ifNode1", # Not needed if it is the last node in a for each loop
     },
 # If Node (type if):
     {
@@ -244,11 +246,11 @@ Eample nodes:
             }
         ],
         "python_if_condition": "inputParam > 10",
-        "true_next_node_id": "actionNode2",
+        "true_next_node_name": "actionNode2",
         "elifs": [
-            {"python_condition": "inputParam == 5", "true_next_node_id": "actionNode3"}
+            {"python_condition": "inputParam == 5", "true_next_node_name": "actionNode3"}
         ],
-        "false_next_node_id": "endNode2",
+        "false_next_node_name": "endNode2",
     },
 # End Node (type end):
     {
@@ -340,8 +342,7 @@ def chain_generate_execution_graph(application_context, path, path_name):
         node_graph = NodeGraph.parse_obj(output)
     except Exception as e:
         logger.error(f"Error parsing node graph: {e}")
-        error_messages = traceback.format_exc()
-        return fix_node_graph(output, error_messages)
+        return fix_node_graph(output, str(e))
     return node_graph
 
 
@@ -454,11 +455,11 @@ if __name__ == "__main__":
                             "description": "Format to convert the webpage to",
                         },
                     ],
-                    "next_node_id": "fetch_webpage_content",
+                    "next_node_name": "fetch_webpage_content",
                     "python_if_condition": None,
-                    "true_next_node_id": None,
+                    "true_next_node_name": None,
                     "elifs": None,
-                    "false_next_node_id": None,
+                    "false_next_node_name": None,
                 },
                 {
                     "name": "fetch_webpage_content",
@@ -478,11 +479,11 @@ if __name__ == "__main__":
                             "description": "HTML content of the fetched webpage",
                         }
                     ],
-                    "next_node_id": "determine_conversion_path",
+                    "next_node_name": "determine_conversion_path",
                     "python_if_condition": None,
-                    "true_next_node_id": None,
+                    "true_next_node_name": None,
                     "elifs": None,
-                    "false_next_node_id": None,
+                    "false_next_node_name": None,
                 },
                 {
                     "name": "determine_conversion_path",
@@ -496,16 +497,16 @@ if __name__ == "__main__":
                         }
                     ],
                     "output_params": None,
-                    "next_node_id": None,
+                    "next_node_name": None,
                     "python_if_condition": "formatType == 'markdown'",
-                    "true_next_node_id": "convert_to_markdown",
+                    "true_next_node_name": "convert_to_markdown",
                     "elifs": [
                         {
                             "python_condition": "formatType == 'rst'",
-                            "true_next_node_id": "convert_to_rst",
+                            "true_next_node_name": "convert_to_rst",
                         }
                     ],
-                    "false_next_node_id": "convert_to_html",
+                    "false_next_node_name": "convert_to_html",
                 },
                 {
                     "name": "convert_to_markdown",
@@ -525,11 +526,11 @@ if __name__ == "__main__":
                             "description": "Content converted to Markdown",
                         }
                     ],
-                    "next_node_id": "return_response",
+                    "next_node_name": "return_response",
                     "python_if_condition": None,
-                    "true_next_node_id": None,
+                    "true_next_node_name": None,
                     "elifs": None,
-                    "false_next_node_id": None,
+                    "false_next_node_name": None,
                 },
                 {
                     "name": "convert_to_rst",
@@ -549,11 +550,11 @@ if __name__ == "__main__":
                             "description": "Content converted to RST",
                         }
                     ],
-                    "next_node_id": "return_response",
+                    "next_node_name": "return_response",
                     "python_if_condition": None,
-                    "true_next_node_id": None,
+                    "true_next_node_name": None,
                     "elifs": None,
-                    "false_next_node_id": None,
+                    "false_next_node_name": None,
                 },
                 {
                     "name": "convert_to_html",
@@ -573,11 +574,11 @@ if __name__ == "__main__":
                             "description": "HTML content prepared for return",
                         }
                     ],
-                    "next_node_id": "return_response",
+                    "next_node_name": "return_response",
                     "python_if_condition": None,
-                    "true_next_node_id": None,
+                    "true_next_node_name": None,
                     "elifs": None,
-                    "false_next_node_id": None,
+                    "false_next_node_name": None,
                 },
                 {
                     "name": "return_response",
@@ -591,11 +592,11 @@ if __name__ == "__main__":
                         }
                     ],
                     "output_params": None,
-                    "next_node_id": None,
+                    "next_node_name": None,
                     "python_if_condition": None,
-                    "true_next_node_id": None,
+                    "true_next_node_name": None,
                     "elifs": None,
-                    "false_next_node_id": None,
+                    "false_next_node_name": None,
                 },
             ]
         }

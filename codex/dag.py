@@ -98,10 +98,10 @@ def format_and_sort_code(file_content: str) -> str:
 
         # Then, format the code using black
         formatted_content = black.format_str(sorted_content, mode=black.FileMode())
+        return formatted_content
     except Exception as e:
         logger.error(f"Error formatting code: {e}")
         logger.error(f"Code:\n {file_content}")
-    return formatted_content
 
 
 def generate_requirements_txt(packages: List[RequiredPackage]) -> str:
@@ -144,15 +144,17 @@ def compile_graph(
     graph_script = convert_graph_to_code(graph, function_name)
 
     for node in node_implementations:
-        python_file += f"\n\n{node.code}"
-        requirements.extend(node.required_packages)
+        if node.code:
+            python_file += f"\n\n{node.code}"
+        if node.required_packages:
+            requirements.extend(node.required_packages)
 
     python_file += f"\n\n{graph_script}"
     requirements_txt = generate_requirements_txt(requirements)
 
     return FunctionData(
         function_name=function_name,
-        code=format_and_sort_code(python_file),
+        code=python_file,
         requirements_txt=requirements_txt,
         endpoint_name=ep.endpoint_name,
     )

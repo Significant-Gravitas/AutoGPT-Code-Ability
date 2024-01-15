@@ -114,30 +114,31 @@ def pre_process_nodes(node_graph: NodeGraph) -> List[CodeableNode]:
             skip, code = process_if_paths(
                 node_graph,
                 node,
-                node.true_next_node_id,
+                node.true_next_node_name,
                 commonon_descendent,
                 indent_level + 1,
             )
             skip_node.extend(skip)
             codeable_nodes.extend(code)
-            for elifs in node.elifs:
-                codeable_nodes.append(
-                    CodeableNode(
-                        indent_level=indent_level,
-                        node_type=CodeableNodeTypeEnum.ELIF,
-                        node=None,
-                        elseif=elifs,
+            if node.elifs:
+                for elifs in node.elifs:
+                    codeable_nodes.append(
+                        CodeableNode(
+                            indent_level=indent_level,
+                            node_type=CodeableNodeTypeEnum.ELIF,
+                            node=None,
+                            elseif=elifs,
+                        )
                     )
-                )
-                skip, code = process_if_paths(
-                    node_graph,
-                    node,
-                    elifs.true_next_node_id,
-                    commonon_descendent,
-                    indent_level + 1,
-                )
-                skip_node.extend(skip)
-                codeable_nodes.extend(code)
+                    skip, code = process_if_paths(
+                        node_graph,
+                        node,
+                        elifs.true_next_node_name,
+                        commonon_descendent,
+                        indent_level + 1,
+                    )
+                    skip_node.extend(skip)
+                    codeable_nodes.extend(code)
             codeable_nodes.append(
                 CodeableNode(
                     indent_level=indent_level,
@@ -148,7 +149,7 @@ def pre_process_nodes(node_graph: NodeGraph) -> List[CodeableNode]:
             skip, code = process_if_paths(
                 node_graph,
                 node,
-                node.false_next_node_id,
+                node.false_next_node_name,
                 commonon_descendent,
                 indent_level + 1,
             )
@@ -189,16 +190,16 @@ def graph_to_code(codeable_nodes: List[CodeableNode], function_name: str) -> str
 
 
 def process_if_paths(
-    nodes: List[NodeDef],
+    node_graph: NodeGraph,
     node: NodeDef,
-    next_node_id: str,
+    next_node_name: str,
     commonon_descendent: str,
     indent_level: int,
 ) -> List[CodeableNode]:
     codeable_nodes = []
     skip_nodes = []
-    next_node = next_node_id
-    for subnode in nodes:
+    next_node = next_node_name
+    for subnode in node_graph.nodes:
         if subnode.name != commonon_descendent and subnode.name == next_node:
             codeable_nodes.append(
                 CodeableNode(
@@ -206,7 +207,7 @@ def process_if_paths(
                 )
             )
             skip_nodes.append(subnode.name)
-            next_node = subnode.next_node_id
+            next_node = subnode.next_node_name
     return skip_nodes, codeable_nodes
 
 
@@ -217,7 +218,7 @@ def find_common_descendent(nodes: List[Node], node: NodeDef, i: int) -> str:
         if subnode.name in descendents:
             commonon_descendent = subnode.name
             return commonon_descendent
-        descendents.append(subnode.next_node_id)
+        descendents.append(subnode.next_node_name)
     return commonon_descendent
 
 

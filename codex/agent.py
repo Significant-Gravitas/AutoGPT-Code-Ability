@@ -185,6 +185,8 @@ def process_node(
             assert node_id < len(possible_nodes), "Invalid node id"
             node: Node = possible_nodes[node_id]
             logger.debug(f"✅ Node selected: {node}")
+            # TODO - check this updates by reference
+            node_def.name = node.name
             # Map I/O params
             if selected_node.input_map:
                 logger.debug(f"🔗 Mapping input params for: {node.name}")
@@ -239,7 +241,8 @@ def run(task_description: str, engine):
                         ap.application_context, path, path.name
                     )
 
-                    logger.debug("🌐 Execution graph generated")
+                    assert ng.nodes, "Execution graph is empty"
+                    logger.info("🌐 Execution graph generated")
                     logger.debug(f"Execution graph: {ng}")
                     processed_nodes = []
                     for node_index, node in enumerate(ng.nodes, start=1):
