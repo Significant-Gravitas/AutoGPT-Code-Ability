@@ -39,13 +39,13 @@ class CodeableNode(BaseModel):
                 out = out[:-2]
             out += "):"
             return out
-        if self.node_type == CodeablrNodeTypeEnum.IF:
+        elif self.node_type == CodeablrNodeTypeEnum.IF:
             return f"if {self.node.python_if_condition}:"
-        if self.node_type == CodeablrNodeTypeEnum.ELIF:
+        elif self.node_type == CodeablrNodeTypeEnum.ELIF:
             return f"elif {self.elseif.python_condition}:"
-        if self.node_type == CodeablrNodeTypeEnum.ELSE:
+        elif self.node_type == CodeablrNodeTypeEnum.ELSE:
             return "else:"
-        if self.node_type == CodeablrNodeTypeEnum.ACTION:
+        elif self.node_type == CodeablrNodeTypeEnum.ACTION:
             out = ""
             if self.node.output_params:
                 for output_param in self.node.output_params:
@@ -59,7 +59,7 @@ class CodeableNode(BaseModel):
                 out = out[:-2]
             out += ")"
             return out
-        if self.node_type == CodeablrNodeTypeEnum.END:
+        elif self.node_type == CodeablrNodeTypeEnum.END:
             out = ""
             if self.node.input_params:
                 if len(self.node.input_params) == 1:
@@ -71,6 +71,8 @@ class CodeableNode(BaseModel):
                     out = out[:-2]
                     out += ")"
             return out
+        else:
+            raise ValueError(f"Invalid node type: {self.node_type}")
 
 
 def convert_graph_to_code(node_graph: NodeGraph) -> str:
