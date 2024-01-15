@@ -309,12 +309,15 @@ def fix_node_graph(node_graph, error):
         | model
         | parser_generate_execution_graph_obj
     )
-    output = chain.invoke(
-        {
-            "node_graph": node_graph,
-            "error": error,
-        }
-    )
+    try:
+        output = chain.invoke(
+            {
+                "node_graph": node_graph,
+                "error": error,
+            }
+        )
+    except Exception as e:
+        logger.error(f"Error fixing node graph: {e}\n\n{node_graph}")
     return output
 
 

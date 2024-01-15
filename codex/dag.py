@@ -8,7 +8,7 @@ import networkx as nx
 
 from codex.chains.decompose_task import ExecutionPath
 
-from .code_gen import convert_graph_to_code
+from .code_gen import NodeDef, convert_graph_to_code
 from .model import FunctionData, Node, RequiredPackage
 
 logger = logging.getLogger(__name__)
@@ -130,20 +130,26 @@ def generate_requirements_txt(packages: List[RequiredPackage]) -> str:
     return "\n".join(requirements)
 
 
-def compile_graph(graph: nx.DiGraph, ep: ExecutionPath):
+def compile_graph(
+    graph: List[NodeDef], node_implementations: List[Node], ep: ExecutionPath
+):
     # Check if the graph is a DAG
-    if not nx.is_directed_acyclic_graph(graph):
-        raise nx.NetworkXError("Graph is not a Directed Acyclic Graph (DAG)")
     python_file = ""
     requirements = []
     function_name = (
         ep.name.strip().replace(" ", "_").replace("-", "_").replace("/", "").lower()
         + "_request"
     )
+
     graph_script = convert_graph_to_code(graph, function_name)
 
-    python_file += f"\n{graph_script}"
+    for node in node_implementations:
+        python_file += f"\n\n{node.code}"
+        requirements.extend(node.required_packages)
+
+    python_file += f"\n\n{graph_script}"
     requirements_txt = generate_requirements_txt(requirements)
+
     return FunctionData(
         function_name=function_name,
         code=format_and_sort_code(python_file),

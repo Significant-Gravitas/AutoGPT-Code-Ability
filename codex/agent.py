@@ -205,7 +205,7 @@ def process_node(
                         param.name = selected_node.output_map[param.name]
 
             logger.debug(f"🔗 Adding existing node to the DAG: {node.name}")
-            return node
+            return [node]
 
 
 def run(task_description: str, engine):
@@ -249,14 +249,13 @@ def run(task_description: str, engine):
                         processed_node = process_node(
                             session, node, processed_nodes, ap, EMBEDDER, engine
                         )
+
                         if processed_node:
                             processed_nodes.extend(processed_node)
 
                     logger.info("🔗 All nodes processed, compiling graph")
-                    import IPython
 
-                    IPython.embed()
-                    data = compile_graph(processed_nodes, path)
+                    data = compile_graph(ng, processed_nodes, path)
                     generated_data.append(data)
                 except Exception as e:
                     logger.error(f"❌ Path processing failed: {e}\n\nDetails:\n{ng}")

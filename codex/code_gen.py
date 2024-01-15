@@ -7,10 +7,9 @@ import zipfile
 from enum import Enum
 from typing import List
 
-import networkx as nx
 from langchain.pydantic_v1 import BaseModel
 
-from .chains.gen_branching_graph import ElseIf, NodeDef, NodeTypeEnum
+from .chains.gen_branching_graph import ElseIf, NodeDef, NodeGraph, NodeTypeEnum
 from .model import FunctionData, Node
 
 logger = logging.getLogger(__name__)
@@ -37,7 +36,7 @@ class CodeableNode(BaseModel):
 
     def __str__(self):
         if self.node_type == CodeableNodeTypeEnum.START.value:
-            out = f"def {self.node.id}("
+            out = f"def {self.node.name}("
             if self.node.output_params:
                 for param in self.node.output_params:
                     out += f"{param.name}: {param.param_type}, "
@@ -57,7 +56,7 @@ class CodeableNode(BaseModel):
                     out += f"{output_param.name}, "
                 out = out[:-2]
                 out += " = "
-            out += f"{self.node.id}("
+            out += f"{self.node.name}("
             if self.node.input_params:
                 for input_param in self.node.input_params:
                     out += f"{input_param.name}, "
@@ -80,23 +79,20 @@ class CodeableNode(BaseModel):
             raise ValueError(f"Invalid node type: {self.node_type}")
 
 
-def convert_graph_to_code(node_graph: nx.DiGraph, function_name: str) -> str:
-    sorted_nodes = list(nx.topological_sort(node_graph))
-    nodes = []
-    for node in sorted_nodes:
-        nodes.append(node_graph.nodes[node]["node_def"])
-    codeable_nodes = pre_process_nodes(nodes)
+def convert_graph_to_code(node_graph: NodeGraph, function_name: str) -> str:
+    codeable_nodes = pre_process_nodes(node_graph)
     return graph_to_code(codeable_nodes, function_name)
 
 
-def pre_process_nodes(node_graph: List[Node]) -> List[CodeableNode]:
+def pre_process_nodes(node_graph: NodeGraph) -> List[CodeableNode]:
     codeable_nodes = []
 
     # Preprocess the node graph to resolve if branching
     skip_node = []
     indent_level = 0
-    for i, node in enumerate(node_graph):
-        if node.id in skip_node:
+
+    for i, node in enumerate(node_graph.nodes):
+        if node.name in skip_node:
             continue
         if node.node_type == NodeTypeEnum.START.value:
             cnode = CodeableNode(
@@ -185,7 +181,7 @@ def graph_to_code(codeable_nodes: List[CodeableNode], function_name: str) -> str
     for node in codeable_nodes:
         if node.node_type == CodeableNodeTypeEnum.START.value:
             node_code = str(node)
-            node_code = node_code.replace(node.node.id, function_name)
+            node_code = node_code.replace(node.node.name, function_name)
             code += indent_str * node.indent_level + node_code + "\n"
         else:
             code += indent_str * node.indent_level + str(node) + "\n"
