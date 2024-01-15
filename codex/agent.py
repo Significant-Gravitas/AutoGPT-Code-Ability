@@ -1,7 +1,6 @@
 import logging
 from typing import List
 
-import networkx as nx
 from sentence_transformers import SentenceTransformer
 from sqlmodel import Session
 
@@ -9,14 +8,14 @@ from codex.chains.check_node_complexity import CheckComplexity
 from codex.chains.decompose_task import ApplicationPaths, chain_decompose_task
 from codex.chains.gen_branching_graph import (
     NodeDef,
+    NodeTypeEnum,
     chain_decompose_node,
     chain_generate_execution_graph,
-    NodeTypeEnum
 )
 from codex.chains.select_node import SelectNode, chain_select_from_possible_nodes
 from codex.chains.write_node import write_code_chain
 from codex.code_gen import create_fastapi_server
-from codex.dag import add_node, compile_graph
+from codex.dag import compile_graph
 from codex.database import search_for_similar_node
 from codex.model import InputParameter, Node, OutputParameter
 
@@ -59,7 +58,6 @@ def select_node_from_possible_nodes(
 
 def process_request_response_node(
     node_def: NodeDef,
-    dag: nx.DiGraph,
 ):
     logger.debug(f"🔗 Adding request/response node: {node_def.name}")
     input_params = (
@@ -72,7 +70,7 @@ def process_request_response_node(
         if node_def.output_params
         else []
     )
-    
+
     req_resp_node = Node(
         name=node_def.name,
         node_type=node_def.node_type,
@@ -80,8 +78,7 @@ def process_request_response_node(
         input_params=input_params,
         output_params=output_params,
     )
-    add_node(dag, node_def.name, req_resp_node)
-    return req_resp_node
+    return [req_resp_node]
 
 
 def process_node(
@@ -89,7 +86,6 @@ def process_node(
     node_def: NodeDef,
     processed_nodes: List[Node],
     ap: ApplicationPaths,
-    dag: nx.DiGraph,
     embedder: SentenceTransformer,
     engine,
 ):
@@ -104,10 +100,9 @@ def process_node(
     embedder (SentenceTransformer): The sentence transformer for embedding.
     """
     logger.debug(f"🚀 Processing node: {node_def.name}")
-    requested_node = node_def
     if node_def.node_type in [NodeTypeEnum.START.value, NodeTypeEnum.END.value]:
-        return process_request_response_node(node_def, dag)
-    else:
+        return process_request_response_node(node_def)
+    elif node_def.node_type == NodeTypeEnum.ACTION.value:
         logger.debug(f"🔍 Searching for similar nodes for: {node_def.name}")
         possible_nodes = search_for_similar_node(session, node_def, embedder)
 
@@ -125,11 +120,15 @@ def process_node(
 
             if not complexity.is_complex:
                 logger.debug(f"📝 Writing new node code for: {node_def.name}")
-                required_packages, code = write_code_chain(invoke_params={"node": node_def})
+                required_packages, code = write_code_chain(
+                    invoke_params={"node": node_def}
+                )
 
                 logger.debug(f"📦 Adding new node to the database: {node_def.name}")
 
-                input_params = [InputParameter(**p.dict()) for p in node_def.input_params]
+                input_params = [
+                    InputParameter(**p.dict()) for p in node_def.input_params
+                ]
                 output_params = [
                     OutputParameter(**p.dict()) for p in node_def.output_params
                 ]
@@ -151,27 +150,7 @@ def process_node(
                 session.commit()
                 logger.debug(f"✅ New node added: {node_def.name}")
                 logger.debug(f"🔗 Adding new node to the DAG: {node_def.name}")
-                try:
-                    add_node(dag, new_node.name, new_node)
-                except Exception as e:
-                    logger.error(
-                        f"""❌ Failed to add newly written node to the DAG: {e}
-
-Select Node:
-
-{selected_node}    
-                        
-Selected node:
-
-{node_def}
-
-Reuested node:
-
-{requested_node}
-                             """
-                    )
-                    raise e
-                return new_node
+                return [new_node]
             else:
                 logger.warning(f"🔄 Node is complex, decomposing: {node_def.name}")
                 sub_graph_nodes = chain_decompose_node(
@@ -179,6 +158,7 @@ Reuested node:
                     node=node_def,
                 )
                 # TODO: vaidate sub_graph_nodes
+                sub_nodes = []
                 for sub_node in sub_graph_nodes.nodes:
                     if not (
                         "request" in sub_node.name.lower()
@@ -189,14 +169,16 @@ Reuested node:
                             sub_node,
                             processed_nodes,
                             ap,
-                            dag,
                             EMBEDDER,
                             engine,
                         )
-                        # TODO This maybe causing a bug where the node is not added to the
-                        # processed nodes list as processed nodes is not returning a node
                         if pnode:
-                            processed_nodes.append(pnode)
+                            if pnode.node_type in [
+                                NodeTypeEnum.START.value,
+                                NodeTypeEnum.END.value,
+                            ]:
+                                sub_nodes.extend(pnode)
+                return sub_nodes
 
         else:
             node_id = int(selected_node.node_id)
@@ -223,26 +205,6 @@ Reuested node:
                         param.name = selected_node.output_map[param.name]
 
             logger.debug(f"🔗 Adding existing node to the DAG: {node.name}")
-            try:
-                add_node(dag, node.name, node)
-            except Exception as e:
-                logger.error(
-                    f"""❌ Failed to add node loaded from the database to DAG: {e}
-
-Select Node:
-
-{selected_node}    
-                        
-Selected node:
-
-{node}
-
-Reuested node:
-
-{requested_node}
-                             """
-                )
-                raise e
             return node
 
 
@@ -271,8 +233,6 @@ def run(task_description: str, engine):
                     logger.info(
                         f"🔄 Processing path {path_index}/{len(ap.execution_paths)} - {path.name}: {path.description}"
                     )
-
-                    dag = nx.DiGraph()
                     logger.debug("📈 Generating execution graph")
 
                     ng = chain_generate_execution_graph(
@@ -287,13 +247,16 @@ def run(task_description: str, engine):
                             f"🔨 Processing node {node_index}/{len(ng.nodes)}: {node.name}"
                         )
                         processed_node = process_node(
-                            session, node, processed_nodes, ap, dag, EMBEDDER, engine
+                            session, node, processed_nodes, ap, EMBEDDER, engine
                         )
-                        if process_node:
-                            processed_nodes.append(processed_node)
+                        if processed_node:
+                            processed_nodes.extend(processed_node)
 
                     logger.info("🔗 All nodes processed, compiling graph")
-                    data = compile_graph(dag, path)
+                    import IPython
+
+                    IPython.embed()
+                    data = compile_graph(processed_nodes, path)
                     generated_data.append(data)
                 except Exception as e:
                     logger.error(f"❌ Path processing failed: {e}\n\nDetails:\n{ng}")
@@ -348,6 +311,6 @@ if __name__ == "__main__":
     logger.addHandler(ch)
 
     code = run(
-        "Create a system to manage inventory for a small business. Features should include adding, updating, and deleting inventory items, as well as tracking stock levels.",
+        "Develop a small script that takes a URL and the desired foramt as input and then returns the webpage in Markdown or RST format depending on the desired format param.",
         engine,
     )

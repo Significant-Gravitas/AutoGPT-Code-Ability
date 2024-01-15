@@ -14,7 +14,7 @@ from .model import FunctionData, Node, RequiredPackage
 logger = logging.getLogger(__name__)
 
 
-def add_node(graph: nx.DiGraph, node_name: str, node: Node) -> bool:
+def add_node(graph: nx.DiGraph, node_name: str, node: Node, node_def) -> bool:
     if graph.number_of_nodes() == 0:
         graph.add_node(node_name, node=node)
         return True
@@ -47,7 +47,7 @@ def add_node(graph: nx.DiGraph, node_name: str, node: Node) -> bool:
         )
 
     # Add the new node
-    graph.add_node(node_name, node=node)
+    graph.add_node(node_name, node=node, node_deg=node_def)
 
     # Connect the new node to its parameter providers
     for param_key, provider_node in providers.items():

@@ -1,11 +1,12 @@
 import logging
+import traceback
 from enum import Enum
 from typing import List, Optional
 
-import networkx as nx
 from langchain.output_parsers import PydanticOutputParser
 from langchain.prompts import ChatPromptTemplate
 from langchain.pydantic_v1 import BaseModel, validator
+from langchain_core.output_parsers import JsonOutputParser
 from langchain_openai import ChatOpenAI
 from tenacity import before_sleep_log, retry, stop_after_attempt, wait_none
 
@@ -87,21 +88,27 @@ class NodeDef(BaseModel):
             values.get("node_type") in [NodeTypeEnum.START, NodeTypeEnum.ACTION]
             and not v
         ):
-            raise ValueError(f'{values["node_type"]} node must have a next_node_id')
+            raise ValueError(
+                f'Node: {values.get("name")}: node must have a next_node_id'
+            )
         if values.get("node_type") in [NodeTypeEnum.END, NodeTypeEnum.IF] and v:
-            raise ValueError(f'{values["node_type"]} node must not have a next_node_id')
+            raise ValueError(
+                f'Node: {values.get("name")}: node must not have a next_node_id'
+            )
         return v
 
     @validator("input_params", always=True)
     def validate_inputs(cls, v, values, **kwargs):
         if values.get("node_type") != NodeTypeEnum.START.value and not v:
-            raise ValueError(f'{values["node_type"]} must have input parameters')
+            raise ValueError(f'Node: {values.get("name")}: must have input parameters')
         return v
 
     @validator("output_params", always=True)
     def validate_outputs(cls, v, values, **kwargs):
         if values.get("node_type") == NodeTypeEnum.END.value and v:
-            raise ValueError("End node must not have output parameters")
+            raise ValueError(
+                f'Node: {values.get("name")}: End node must not have output parameters'
+            )
         if (
             values.get("node_type")
             in [
@@ -110,25 +117,25 @@ class NodeDef(BaseModel):
             ]
             and not v
         ):
-            raise ValueError(f'{values["node_type"]} must have output parameters')
+            raise ValueError(f'Node: {values.get("name")}: must have output parameters')
         return v
 
     @validator("true_next_node_id", "false_next_node_id", always=True)
     def validate_if_node(cls, v, values, **kwargs):
         if values.get("node_type") == NodeTypeEnum.IF.value and not v:
             raise ValueError(
-                "IF node must have if condition and true/false next node ids"
+                f'Node: {values.get("name")}:IF node must have if condition and true/false next node ids'
             )
         if values.get("node_type") != NodeTypeEnum.IF.value and v:
             raise ValueError(
-                "Only IF node can have if condition and true/false next node ids"
+                f'Node: {values.get("name")}: Only IF node can have if condition and true/false next node ids'
             )
         return v
 
     @validator("elifs", always=True)
     def validate_elif(cls, v, values, **kwargs):
         if values.get("node_type") != NodeTypeEnum.IF.value and v:
-            raise ValueError("Only IF node can have elifs")
+            raise ValueError(f'Node: {values.get("name")}: Only IF node can have elifs')
         return v
 
     class Config:
@@ -138,18 +145,11 @@ class NodeDef(BaseModel):
 class NodeGraph(BaseModel):
     nodes: List[NodeDef]
 
-    @staticmethod
-    def from_networkx(ng: nx.DiGraph):
-        sorted_nodes = list(nx.topological_sort(ng))
-        nodes = []
-        for node in sorted_nodes:
-            nodes.append(ng.nodes[node]["node"])
-        return NodeGraph(nodes=nodes)
-
     @validator("nodes")
     def validate_nodes(cls, v):
         ids = []
         output_params = []
+        errors = []
         # TODO: This may need improvement
         for node in v:
             ids.append(node.name)
@@ -165,29 +165,31 @@ class NodeGraph(BaseModel):
                         f"{input_param.name}: {input_param.param_type}"
                         not in output_params
                     ):
-                        raise ValueError(
+                        errors.append(
                             f"Node {node.name} has an input parameter that is not an output parameter of a previous nodes: {input_param.name}: {input_param.param_type}\n {output_params}"
                         )
 
         for node in v:
             if node.next_node_id and node.next_node_id not in ids:
-                raise ValueError(
+                errors.append(
                     f"Node {node.name} has a next_node_id that does not exist: {node.next_node_id}"
                 )
             if node.true_next_node_id and node.true_next_node_id not in ids:
-                raise ValueError(
+                errors.append(
                     f"Node {node.name} has a true_next_node_id that does not exist: {node.true_next_node_id}"
                 )
             if node.false_next_node_id and node.false_next_node_id not in ids:
-                raise ValueError(
+                errors.append(
                     f"Node {node.name} has a false_next_node_id that does not exist: {node.false_next_node_id}"
                 )
             if node.elifs:
                 for elif_ in node.elifs:
                     if elif_.true_next_node_id and elif_.true_next_node_id not in ids:
-                        raise ValueError(
+                        errors.append(
                             f"Node {node.name} has an elif with a true_next_node_id that does not exist: {elif_.true_next_node_id}"
                         )
+            if len(errors) > 0:
+                raise ValueError("\n".join(errors))
             return v
 
 
@@ -263,7 +265,20 @@ Eample nodes:
     },
 """
 
-parser_generate_execution_graph = PydanticOutputParser(pydantic_object=NodeGraph)
+parser_generate_execution_graph = JsonOutputParser(pydantic_object=NodeGraph)
+parser_generate_execution_graph_obj = PydanticOutputParser(pydantic_object=NodeGraph)
+prompt_fix_generate_execution_graph = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "Your are an expert at node graph generation. You will be given a node graph with an error in it along with the error message. Your task is to return the complete node graph with all errors fixed.\nReply in json format:\n{format_instructions}",
+        ),
+        (
+            "human",
+            "Node graph with error:\n{node_graph}\nError message:\n{error}",
+        ),
+    ]
+).partial(format_instructions=parser_generate_execution_graph.get_format_instructions())
 prompt_generate_execution_graph = ChatPromptTemplate.from_messages(
     [
         (
@@ -276,7 +291,7 @@ prompt_generate_execution_graph = ChatPromptTemplate.from_messages(
         ),
         (
             "human",
-            "Thinking carefully step by step. Ouput the steps as nodes for the api route ensuring output paraameter names of a node match the input parameter names needed by following nodes:\n{api_route}\n# Important:\n The the node definitions for all node_id's used must be in the graph",
+            "Thinking carefully step by step. Ouput the steps as nodes for the api route ensuring output paraameter names of a node match the input parameter names needed by following nodes:\n{api_route}\n# Important:\n The the node definitions for all node_id's used must be in the graph\nErrors are handled by raising acceptions and are not passed throught the node graph",
         ),
     ]
 ).partial(format_instructions=parser_generate_execution_graph.get_format_instructions())
@@ -287,9 +302,30 @@ prompt_generate_execution_graph = ChatPromptTemplate.from_messages(
     stop=stop_after_attempt(3),
     before_sleep=before_sleep_log(logger, logging.DEBUG),
 )
+def fix_node_graph(node_graph, error):
+    logger.warning(f"Fixing node graph with error: {error}")
+    chain = (
+        prompt_fix_generate_execution_graph
+        | model
+        | parser_generate_execution_graph_obj
+    )
+    output = chain.invoke(
+        {
+            "node_graph": node_graph,
+            "error": error,
+        }
+    )
+    return output
+
+
+@retry(
+    wait=wait_none(),
+    stop=stop_after_attempt(3),
+    before_sleep=before_sleep_log(logger, logging.DEBUG),
+)
 def chain_generate_execution_graph(application_context, path, path_name):
     chain = prompt_generate_execution_graph | model | parser_generate_execution_graph
-    return chain.invoke(
+    output = chain.invoke(
         {
             "application_context": application_context,
             "api_route": path,
@@ -297,6 +333,13 @@ def chain_generate_execution_graph(application_context, path, path_name):
             "example_nodes": example_nodes,
         }
     )
+    try:
+        node_graph = NodeGraph.parse_obj(output)
+    except Exception as e:
+        logger.error(f"Error parsing node graph: {e}")
+        error_messages = traceback.format_exc()
+        return fix_node_graph(output, error_messages)
+    return node_graph
 
 
 parser_decompose_node = PydanticOutputParser(pydantic_object=NodeGraph)

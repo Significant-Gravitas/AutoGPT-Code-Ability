@@ -10,8 +10,8 @@ from typing import List
 import networkx as nx
 from langchain.pydantic_v1 import BaseModel
 
-from .chains.gen_branching_graph import ElseIf, NodeDef, NodeGraph, NodeTypeEnum
-from .model import FunctionData
+from .chains.gen_branching_graph import ElseIf, NodeDef, NodeTypeEnum
+from .model import FunctionData, Node
 
 logger = logging.getLogger(__name__)
 
@@ -81,18 +81,21 @@ class CodeableNode(BaseModel):
 
 
 def convert_graph_to_code(node_graph: nx.DiGraph, function_name: str) -> str:
-    ng = NodeGraph.from_networkx(node_graph)
-    codeable_nodes = pre_process_nodes(ng)
+    sorted_nodes = list(nx.topological_sort(node_graph))
+    nodes = []
+    for node in sorted_nodes:
+        nodes.append(node_graph.nodes[node]["node_def"])
+    codeable_nodes = pre_process_nodes(nodes)
     return graph_to_code(codeable_nodes, function_name)
 
 
-def pre_process_nodes(node_graph: NodeGraph) -> List[CodeableNode]:
+def pre_process_nodes(node_graph: List[Node]) -> List[CodeableNode]:
     codeable_nodes = []
 
     # Preprocess the node graph to resolve if branching
     skip_node = []
     indent_level = 0
-    for i, node in enumerate(node_graph.nodes):
+    for i, node in enumerate(node_graph):
         if node.id in skip_node:
             continue
         if node.node_type == NodeTypeEnum.START.value:
@@ -113,7 +116,7 @@ def pre_process_nodes(node_graph: NodeGraph) -> List[CodeableNode]:
                 )
             )
             skip, code = process_if_paths(
-                node_graph.nodes,
+                node_graph,
                 node,
                 node.true_next_node_id,
                 commonon_descendent,
@@ -131,7 +134,7 @@ def pre_process_nodes(node_graph: NodeGraph) -> List[CodeableNode]:
                     )
                 )
                 skip, code = process_if_paths(
-                    node_graph.nodes,
+                    node_graph,
                     node,
                     elifs.true_next_node_id,
                     commonon_descendent,
@@ -147,7 +150,7 @@ def pre_process_nodes(node_graph: NodeGraph) -> List[CodeableNode]:
                 )
             )
             skip, code = process_if_paths(
-                node_graph.nodes,
+                node_graph,
                 node,
                 node.false_next_node_id,
                 commonon_descendent,
@@ -211,10 +214,10 @@ def process_if_paths(
     return skip_nodes, codeable_nodes
 
 
-def find_common_descendent(node_graph: NodeGraph, node: NodeDef, i: int) -> str:
+def find_common_descendent(nodes: List[Node], node: NodeDef, i: int) -> str:
     commonon_descendent = ""
     descendents = []
-    for subnode in node_graph.nodes[i + 1 :]:
+    for subnode in nodes[i + 1 :]:
         if subnode.id in descendents:
             commonon_descendent = subnode.id
             return commonon_descendent
