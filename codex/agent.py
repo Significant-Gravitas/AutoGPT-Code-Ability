@@ -72,6 +72,7 @@ def process_request_response_node(
         if node_def.output_params
         else []
     )
+    
     req_resp_node = Node(
         name=node_def.name,
         node_type=node_def.node_type,
