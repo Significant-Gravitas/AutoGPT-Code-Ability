@@ -9,7 +9,7 @@ from typing import List
 
 from pydantic import BaseModel
 
-from .chains.gen_branching_graph import ElseIf, NodeDef
+from .chains.gen_branching_graph import ElseIf, NodeDef, NodeGraph
 from .model import FunctionData
 
 logger = logging.getLogger(__name__)
@@ -29,6 +29,15 @@ class CodeableNode(BaseModel):
     node_type: CodeablrNodeTypeEnum
     node: NodeDef | None = None
     elseif: ElseIf
+
+
+def find_common_descendent(node_graph: NodeGraph, node: NodeDef, i: int) -> str:
+    commonon_descendent = ""
+    descendents = []
+    for subnode in node_graph.nodes[i + 1 :]:
+        if subnode.id in descendents and subnode.next_node_id:
+            commonon_descendent = subnode.id
+        commonon_descendent.append(subnode.next_node_id)
 
 
 def analyze_function_signature(code: str, function_name: str):
