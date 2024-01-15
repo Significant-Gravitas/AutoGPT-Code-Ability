@@ -164,6 +164,14 @@ def pre_process_nodes(node_graph: NodeGraph) -> List[CodeableNode]:
     return codeable_nodes
 
 
+def graph_to_code(codeable_nodes: List[CodeableNode]) -> str:
+    code = ""
+    indent_str = "    "
+    for node in codeable_nodes:
+        code += indent_str * node.intent_level + str(node) + "\n"
+    return code
+
+
 def process_if_paths(
     nodes: List[NodeDef],
     node: NodeDef,
