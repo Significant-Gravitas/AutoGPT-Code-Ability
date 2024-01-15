@@ -103,7 +103,7 @@ def pre_process_nodes(node_graph: NodeGraph) -> List[CodeableNode]:
             codeable_nodes.append(cnode)
             indent_level += 1
         elif node.node_type == NodeTypeEnum.IF.value:
-            commonon_descendent = find_common_descendent(node_graph, node, i)
+            commonon_descendent = find_common_descendent(node_graph.nodes, node, i)
             codeable_nodes.append(
                 CodeableNode(
                     indent_level=indent_level,
@@ -199,13 +199,13 @@ def process_if_paths(
     skip_nodes = []
     next_node = next_node_id
     for subnode in nodes:
-        if subnode.id != commonon_descendent and subnode.id == next_node:
+        if subnode.name != commonon_descendent and subnode.name == next_node:
             codeable_nodes.append(
                 CodeableNode(
                     indent_level=indent_level, node_type=subnode.node_type, node=subnode
                 )
             )
-            skip_nodes.append(subnode.id)
+            skip_nodes.append(subnode.name)
             next_node = subnode.next_node_id
     return skip_nodes, codeable_nodes
 
@@ -214,8 +214,8 @@ def find_common_descendent(nodes: List[Node], node: NodeDef, i: int) -> str:
     commonon_descendent = ""
     descendents = []
     for subnode in nodes[i + 1 :]:
-        if subnode.id in descendents:
-            commonon_descendent = subnode.id
+        if subnode.name in descendents:
+            commonon_descendent = subnode.name
             return commonon_descendent
         descendents.append(subnode.next_node_id)
     return commonon_descendent
