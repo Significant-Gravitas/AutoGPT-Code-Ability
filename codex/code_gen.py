@@ -73,6 +73,11 @@ class CodeableNode(BaseModel):
             return out
 
 
+def convert_graph_to_code(node_graph: NodeGraph) -> str:
+    codeable_nodes = pre_process_nodes(node_graph)
+    return graph_to_code(codeable_nodes)
+
+
 def pre_process_nodes(node_graph: NodeGraph) -> List[CodeableNode]:
     codeable_nodes = []
 
