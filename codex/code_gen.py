@@ -249,6 +249,9 @@ def create_fastapi_server(functions_data: List[FunctionData]) -> bytes:
     """
     # Create a temporary directory
     with tempfile.TemporaryDirectory() as temp_dir:
+        app_dir = os.path.join(temp_dir, "project")
+        os.makedirs(app_dir, exist_ok=True)
+        
         combined_requirements = set(["fastapi\n", "uvicorn\n", "pydantic\n"])
         import_statements = "from fastapi import FastAPI, Body\nfrom pydantic import BaseModel\n\napp = FastAPI()\n"
         endpoint_functions = ""
@@ -274,13 +277,13 @@ def create_fastapi_server(functions_data: List[FunctionData]) -> bytes:
 
             # Write the code to a uniquely named service file
             service_file_name = f"service_{idx}.py"
-            service_file_path = os.path.join(temp_dir, service_file_name)
+            service_file_path = os.path.join(app_dir, service_file_name)
             with open(service_file_path, "w") as service_file:
                 service_file.write(function_data.code)
 
             # Import statement for the function
             import_statements += (
-                f"from .service_{idx} import {function_data.function_name}\n"
+                f"from project.service_{idx} import {function_data.function_name}\n"
             )
 
             # Generate Pydantic models and endpoint
@@ -311,17 +314,22 @@ def endpoint_{idx}({params_str}):
             combined_requirements.update(function_data.requirements_txt.splitlines())
 
         # Write server.py with imports at the top
-        server_file_path = os.path.join(temp_dir, "server.py")
+
+        server_file_path = os.path.join(app_dir, "server.py")
         with open(server_file_path, "w") as server_file:
             server_file.write(import_statements + endpoint_functions)
+        
+        init_file_path = os.path.join(app_dir, "__init__.py")
+        with open(init_file_path, 'w') as init_file:
+            pass
 
         # Write combined requirements to requirements.txt
-        requirements_file_path = os.path.join(temp_dir, "requirements.txt")
+        requirements_file_path = os.path.join(app_dir, "requirements.txt")
         with open(requirements_file_path, "w") as requirements_file:
             requirements_file.write("\n".join(combined_requirements))
 
         # Create a zip file of the directory
-        zip_file_path = os.path.join(temp_dir, "server.zip")
+        zip_file_path = os.path.join(app_dir, "server.zip")
         with zipfile.ZipFile(zip_file_path, "w") as zipf:
             for root, dirs, files in os.walk(temp_dir):
                 for file in files:
