@@ -7,7 +7,7 @@ import zipfile
 from enum import Enum
 from typing import List
 
-from pydantic import BaseModel
+from langchain.pydantic_v1 import BaseModel
 
 from .chains.gen_branching_graph import ElseIf, NodeDef, NodeGraph, NodeTypeEnum
 from .model import FunctionData
@@ -15,7 +15,7 @@ from .model import FunctionData
 logger = logging.getLogger(__name__)
 
 
-class CodeablrNodeTypeEnum(Enum):
+class CodeableNodeTypeEnum(Enum):
     START = "start"
     IF = "if"
     ELIF = "elif"
@@ -25,48 +25,52 @@ class CodeablrNodeTypeEnum(Enum):
 
 
 class CodeableNode(BaseModel):
-    intent_level: int
-    node_type: CodeablrNodeTypeEnum
+    indent_level: int
+    node_type: CodeableNodeTypeEnum
     node: NodeDef | None = None
-    elseif: ElseIf
+    elseif: ElseIf | None = None
+
+    class Config:
+        use_enum_values = True
+        arbitrary_types_allowed = True
 
     def __str__(self):
-        if self.node_type == CodeablrNodeTypeEnum.START:
-            out = f"def {self.name}("
-            if self.output_params:
-                for param in self.output_params:
+        if self.node_type == CodeableNodeTypeEnum.START.value:
+            out = f"def {self.node.id}("
+            if self.node.outputs:
+                for param in self.node.outputs:
                     out += f"{param.name}: {param.param_type}, "
                 out = out[:-2]
             out += "):"
             return out
-        elif self.node_type == CodeablrNodeTypeEnum.IF:
+        elif self.node_type == CodeableNodeTypeEnum.IF.value:
             return f"if {self.node.python_if_condition}:"
-        elif self.node_type == CodeablrNodeTypeEnum.ELIF:
+        elif self.node_type == CodeableNodeTypeEnum.ELIF.value:
             return f"elif {self.elseif.python_condition}:"
-        elif self.node_type == CodeablrNodeTypeEnum.ELSE:
+        elif self.node_type == CodeableNodeTypeEnum.ELSE.value:
             return "else:"
-        elif self.node_type == CodeablrNodeTypeEnum.ACTION:
+        elif self.node_type == CodeableNodeTypeEnum.ACTION.value:
             out = ""
-            if self.node.output_params:
-                for output_param in self.node.output_params:
+            if self.node.outputs:
+                for output_param in self.node.outputs:
                     out += f"{output_param.name}, "
                 out = out[:-2]
                 out += " = "
-            out += f"{self.name}("
-            if self.node.input_params:
-                for input_param in self.node.input_params:
+            out += f"{self.node.id}("
+            if self.node.inputs:
+                for input_param in self.node.inputs:
                     out += f"{input_param.name}, "
                 out = out[:-2]
             out += ")"
             return out
-        elif self.node_type == CodeablrNodeTypeEnum.END:
+        elif self.node_type == CodeableNodeTypeEnum.END.value:
             out = ""
-            if self.node.input_params:
-                if len(self.node.input_params) == 1:
-                    out += f"return {self.node.input_params[0].name}"
+            if self.node.inputs:
+                if len(self.node.inputs) == 1:
+                    out += f"return {self.node.inputs[0].name}"
                 else:
                     out += "return ("
-                    for param in self.node.input_params:
+                    for param in self.node.inputs:
                         out += f"{param.name}, "
                     out = out[:-2]
                     out += ")"
@@ -89,21 +93,20 @@ def pre_process_nodes(node_graph: NodeGraph) -> List[CodeableNode]:
     for i, node in enumerate(node_graph.nodes):
         if node.id in skip_node:
             continue
-        if node.node_type == NodeTypeEnum.START:
-            codeable_nodes.append(
-                CodeableNode(
-                    intent_level=indent_level,
-                    node_type=CodeablrNodeTypeEnum.START,
-                    node=node,
-                )
+        if node.node_type == NodeTypeEnum.START.value:
+            cnode = CodeableNode(
+                indent_level=indent_level,
+                node_type=CodeableNodeTypeEnum.START,
+                node=node,
             )
+            codeable_nodes.append(cnode)
             indent_level += 1
-        elif node.node_type == NodeTypeEnum.IF:
+        elif node.node_type == NodeTypeEnum.IF.value:
             commonon_descendent = find_common_descendent(node_graph, node, i)
             codeable_nodes.append(
                 CodeableNode(
-                    intent_level=indent_level,
-                    node_type=CodeablrNodeTypeEnum.IF,
+                    indent_level=indent_level,
+                    node_type=CodeableNodeTypeEnum.IF,
                     node=node,
                 )
             )
@@ -119,8 +122,8 @@ def pre_process_nodes(node_graph: NodeGraph) -> List[CodeableNode]:
             for elifs in node.elifs:
                 codeable_nodes.append(
                     CodeableNode(
-                        intent_level=indent_level,
-                        node_type=CodeablrNodeTypeEnum.ELIF,
+                        indent_level=indent_level,
+                        node_type=CodeableNodeTypeEnum.ELIF,
                         node=None,
                         elseif=elifs,
                     )
@@ -136,8 +139,8 @@ def pre_process_nodes(node_graph: NodeGraph) -> List[CodeableNode]:
                 codeable_nodes.extend(code)
             codeable_nodes.append(
                 CodeableNode(
-                    intent_level=indent_level,
-                    node_type=CodeablrNodeTypeEnum.ELSE,
+                    indent_level=indent_level,
+                    node_type=CodeableNodeTypeEnum.ELSE,
                     node=node,
                 )
             )
@@ -150,19 +153,19 @@ def pre_process_nodes(node_graph: NodeGraph) -> List[CodeableNode]:
             )
             skip_node.extend(skip)
             codeable_nodes.extend(code)
-        elif node.node_type == NodeTypeEnum.ACTION:
+        elif node.node_type == NodeTypeEnum.ACTION.value:
             codeable_nodes.append(
                 CodeableNode(
-                    intent_level=indent_level,
-                    node_type=CodeablrNodeTypeEnum.ACTION,
+                    indent_level=indent_level,
+                    node_type=CodeableNodeTypeEnum.ACTION,
                     node=node,
                 )
             )
-        elif node.node_type == NodeTypeEnum.END:
+        elif node.node_type == NodeTypeEnum.END.value:
             codeable_nodes.append(
                 CodeableNode(
-                    intent_level=indent_level,
-                    node_type=CodeablrNodeTypeEnum.END,
+                    indent_level=indent_level,
+                    node_type=CodeableNodeTypeEnum.END,
                     node=node,
                 )
             )
@@ -175,7 +178,7 @@ def graph_to_code(codeable_nodes: List[CodeableNode]) -> str:
     code = ""
     indent_str = "    "
     for node in codeable_nodes:
-        code += indent_str * node.intent_level + str(node) + "\n"
+        code += indent_str * node.indent_level + str(node) + "\n"
     return code
 
 
@@ -184,17 +187,17 @@ def process_if_paths(
     node: NodeDef,
     next_node_id: str,
     commonon_descendent: str,
-    intent_level: int,
+    indent_level: int,
 ) -> List[CodeableNode]:
     codeable_nodes = []
     skip_nodes = []
-    next_node = node.true_next_node_id
+    next_node = next_node_id
     for subnode in nodes:
-        if subnode.id == commonon_descendent:
-            break
-        if subnode.id == next_node:
+        if subnode.id != commonon_descendent and subnode.id == next_node:
             codeable_nodes.append(
-                CodeableNode(intent_level=2, node_type=subnode.node_type, node=subnode)
+                CodeableNode(
+                    indent_level=indent_level, node_type=subnode.node_type, node=subnode
+                )
             )
             skip_nodes.append(subnode.id)
             next_node = subnode.next_node_id
@@ -205,9 +208,11 @@ def find_common_descendent(node_graph: NodeGraph, node: NodeDef, i: int) -> str:
     commonon_descendent = ""
     descendents = []
     for subnode in node_graph.nodes[i + 1 :]:
-        if subnode.id in descendents and subnode.next_node_id:
+        if subnode.id in descendents:
             commonon_descendent = subnode.id
-        commonon_descendent.append(subnode.next_node_id)
+            return commonon_descendent
+        descendents.append(subnode.next_node_id)
+    return commonon_descendent
 
 
 def analyze_function_signature(code: str, function_name: str):
