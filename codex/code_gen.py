@@ -31,6 +31,28 @@ class CodeableNode(BaseModel):
     elseif: ElseIf
 
 
+def process_if_paths(
+    nodes: List[NodeDef],
+    node: NodeDef,
+    next_node_id: str,
+    commonon_descendent: str,
+    intent_level: int,
+) -> List[CodeableNode]:
+    codeable_nodes = []
+    skip_nodes = []
+    next_node = node.true_next_node_id
+    for subnode in nodes:
+        if subnode.id == commonon_descendent:
+            break
+        if subnode.id == next_node:
+            codeable_nodes.append(
+                CodeableNode(intent_level=2, node_type=subnode.node_type, node=subnode)
+            )
+            skip_nodes.append(subnode.id)
+            next_node = subnode.next_node_id
+    return skip_nodes, codeable_nodes
+
+
 def find_common_descendent(node_graph: NodeGraph, node: NodeDef, i: int) -> str:
     commonon_descendent = ""
     descendents = []
