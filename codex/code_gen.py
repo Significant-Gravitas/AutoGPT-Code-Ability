@@ -30,6 +30,48 @@ class CodeableNode(BaseModel):
     node: NodeDef | None = None
     elseif: ElseIf
 
+    def __str__(self):
+        if self.node_type == CodeablrNodeTypeEnum.START:
+            out = f"def {self.name}("
+            if self.output_params:
+                for param in self.output_params:
+                    out += f"{param.name}: {param.param_type}, "
+                out = out[:-2]
+            out += "):"
+            return out
+        if self.node_type == CodeablrNodeTypeEnum.IF:
+            return f"if {self.node.python_if_condition}:"
+        if self.node_type == CodeablrNodeTypeEnum.ELIF:
+            return f"elif {self.elseif.python_condition}:"
+        if self.node_type == CodeablrNodeTypeEnum.ELSE:
+            return "else:"
+        if self.node_type == CodeablrNodeTypeEnum.ACTION:
+            out = ""
+            if self.node.output_params:
+                for output_param in self.node.output_params:
+                    out += f"{output_param.name}, "
+                out = out[:-2]
+                out += " = "
+            out += f"{self.name}("
+            if self.node.input_params:
+                for input_param in self.node.input_params:
+                    out += f"{input_param.name}, "
+                out = out[:-2]
+            out += ")"
+            return out
+        if self.node_type == CodeablrNodeTypeEnum.END:
+            out = ""
+            if self.node.input_params:
+                if len(self.node.input_params) == 1:
+                    out += f"return {self.node.input_params[0].name}"
+                else:
+                    out += "return ("
+                    for param in self.node.input_params:
+                        out += f"{param.name}, "
+                    out = out[:-2]
+                    out += ")"
+            return out
+
 
 def pre_process_nodes(node_graph: NodeGraph) -> List[CodeableNode]:
     codeable_nodes = []
