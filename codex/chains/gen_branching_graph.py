@@ -150,7 +150,13 @@ class NodeGraph(BaseModel):
         output_params = []
         errors = []
         # TODO: This may need improvement
+        node_types = {}
+
         for node in v:
+            if node.node_type in node_types.keys():
+                node_types[node.node_type] += 1
+            else:
+                node_types[node.node_type] = 1
             ids.append(node.name)
             if node.output_params:
                 for node_output in node.output_params:
@@ -167,6 +173,10 @@ class NodeGraph(BaseModel):
                         errors.append(
                             f"Node {node.name} has an input parameter that is not an output parameter of a previous nodes: {input_param.name}: {input_param.param_type}\n {output_params}"
                         )
+        if len(node_types["start"]) > 1:
+            errors.append("There can only be 1 start node")
+        if len(node_types["end"]) > 1:
+            errors.append("There can only be 1 end node")
 
         for node in v:
             if node.next_node_name and node.next_node_name not in ids:
