@@ -139,22 +139,24 @@ def pre_process_nodes(node_graph: NodeGraph) -> List[CodeableNode]:
                     )
                     skip_node.extend(skip)
                     codeable_nodes.extend(code)
-            codeable_nodes.append(
-                CodeableNode(
-                    indent_level=indent_level,
-                    node_type=CodeableNodeTypeEnum.ELSE,
-                    node=node,
+            
+            if node.false_next_node_name != node_graph.nodes[-1].name:
+                codeable_nodes.append(
+                    CodeableNode(
+                        indent_level=indent_level,
+                        node_type=CodeableNodeTypeEnum.ELSE,
+                        node=node,
+                    )
                 )
-            )
-            skip, code = process_if_paths(
-                node_graph,
-                node,
-                node.false_next_node_name,
-                commonon_descendent,
-                indent_level + 1,
-            )
-            skip_node.extend(skip)
-            codeable_nodes.extend(code)
+                skip, code = process_if_paths(
+                    node_graph,
+                    node,
+                    node.false_next_node_name,
+                    commonon_descendent,
+                    indent_level + 1,
+                )
+                skip_node.extend(skip)
+                codeable_nodes.extend(code)
         elif node.node_type == NodeTypeEnum.ACTION.value:
             codeable_nodes.append(
                 CodeableNode(
