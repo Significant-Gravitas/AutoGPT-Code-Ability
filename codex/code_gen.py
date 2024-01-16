@@ -226,7 +226,12 @@ def find_common_descendent(nodes: List[Node], node: NodeDef, i: int) -> str:
 
 def analyze_function_signature(code: str, function_name: str):
     # Parse the code into an AST (Abstract Syntax Tree)
-    tree = ast.parse(code)
+    try:
+        tree = ast.parse(code)
+    except Exception as e:
+        logger.error(f"Error parsing code: {e}")
+        logger.error(f"Code:\n {code}")
+        raise ValueError("Error parsing code")
 
     # Find the definition of the function
     for node in tree.body:
