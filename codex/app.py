@@ -15,7 +15,7 @@ from starlette.background import BackgroundTask
 from .agent import run
 from .model import InputParameter, OutputParameter, RequiredPackage, Node
 
-DATABASE_URL = "postgresql://agpt_live:bnfaHGGSDF134345@0.0.0.0:5432/agpt_product"
+DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://agpt_live:bnfaHGGSDF134345@0.0.0.0:5432/agpt_product")
 engine = create_engine(DATABASE_URL)
 SQLModel.metadata.create_all(engine)
 
