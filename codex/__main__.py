@@ -34,7 +34,7 @@ def send_request_cmd(
                 f.write(response.content)
             click.echo(f"File downloaded successfully: {output}")
         else:
-            click.echo(f"Failed to download file. Status Code: {response.status_code}")
+            click.echo(f"Failed to download file. Status Code: {response.status_code} - {response.reason}")
     except requests.exceptions.RequestException as e:
         click.echo(f"Error: {e}")
 
