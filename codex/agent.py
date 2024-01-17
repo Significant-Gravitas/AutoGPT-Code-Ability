@@ -23,6 +23,21 @@ from codex.model import InputParameter, Node, OutputParameter
 logger = logging.getLogger(__name__)
 
 
+
+class NodeGraphGenerationError(Exception):
+    simple_msg = "Failed in first phase of code generation."
+
+class NodeDecompositionError(Exception):
+    simple_msg = "Failed in second phase of code generation."
+
+class NodeSeclectionError(Exception):
+    simple_msg = "Failed in third phase of code generation."
+
+class GraphCompliationError(Exception):
+    simple_msg = "Failed in fourth phase of code generation."
+
+class ServerCreationError(Exception):
+    simple_msg = "Failed in fifth phase of code generation."
 def select_node_from_possible_nodes(
     possible_nodes, processed_nodes, node
 ) -> SelectNode:
@@ -103,9 +118,12 @@ def process_node(
         logger.debug(f"🔍 Searching for similar nodes for: {node_def.name}")
         possible_nodes = search_for_similar_node(session, node_def)
 
-        selected_node = select_node_from_possible_nodes(
-            possible_nodes, processed_nodes, node_def
-        )
+        try:
+            selected_node = select_node_from_possible_nodes(
+                possible_nodes, processed_nodes, node_def
+            )
+        except Exception as e:
+            raise NodeSeclectionError(f"Failed to select node: {e}")
 
         if selected_node.node_id == "new":
             logger.debug(f"🆕 Processing new node: {node_def.name}")
@@ -152,31 +170,37 @@ def process_node(
                 return [new_node]
             else:
                 logger.warning(f"🔄 Node is complex, decomposing: {node_def.name}")
-                sub_graph_nodes = chain_decompose_node(
-                    application_context=ap.application_context,
-                    node=node_def,
-                )
-                # TODO: vaidate sub_graph_nodes
-                sub_nodes = []
-                for sub_node in sub_graph_nodes.nodes:
-                    if not (
-                        "request" in sub_node.name.lower()
-                        or "response" in sub_node.name.lower()
-                    ):
-                        pnode = process_node(
-                            session,
-                            sub_node,
-                            processed_nodes,
-                            ap,
-                            engine,
-                        )
-                        if pnode:
-                            if pnode.node_type in [
-                                NodeTypeEnum.START.value,
-                                NodeTypeEnum.END.value,
-                            ]:
-                                sub_nodes.extend(pnode)
-                return sub_nodes
+                try:
+                    sub_graph_nodes = chain_decompose_node(
+                        application_context=ap.application_context,
+                        node=node_def,
+                    )
+                    # TODO: vaidate sub_graph_nodes
+                    sub_nodes = []
+                    for sub_node in sub_graph_nodes.nodes:
+                        if not (
+                            "request" in sub_node.name.lower()
+                            or "response" in sub_node.name.lower()
+                        ):
+                            pnode = process_node(
+                                session,
+                                sub_node,
+                                processed_nodes,
+                                ap,
+                                engine,
+                            )
+                            if pnode:
+                                if pnode.node_type in [
+                                    NodeTypeEnum.START.value,
+                                    NodeTypeEnum.END.value,
+                                ]:
+                                    sub_nodes.extend(pnode)
+                    return sub_nodes
+                except Exception as e:
+                    logger.error(f"❌ Node decomposition failed: {e}")
+                    raise NodeDecompositionError(
+                        f"Failed to decompose node: {node_def.name}"
+                    )
 
         else:
             node_id = int(selected_node.node_id)
@@ -256,7 +280,11 @@ def run(task_description: str, engine):
                         logger.error(f"❌ Path processing failed for {path.name}: {e}")
                         raise e
 
-        runner = create_fastapi_server(generated_data)
+        try:
+            runner = create_fastapi_server(generated_data)
+        except Exception as e:
+            logger.error(f"❌ Failed to create FastAPI server: {e}")
+            raise ServerCreationError(f"Failed to create FastAPI server: {e}")
         logger.info("🎉 Task processing completed")
         return runner
     except Exception as e:
@@ -286,6 +314,10 @@ def process_path(path, session, ap, engine, path_index, total_paths):
         logger.debug("📈 Generating execution graph")
 
         ng = chain_generate_execution_graph(ap.application_context, path, path.name)
+        if not ng:
+            raise NodeGraphGenerationError(
+                f"Failed to generate node graph for path: {path.name}"
+            )
 
         assert ng.nodes, "Execution graph is empty"
         logger.info("🌐 Execution graph generated")
@@ -300,8 +332,12 @@ def process_path(path, session, ap, engine, path_index, total_paths):
                 processed_nodes.extend(processed_node)
 
         logger.info("🔗 All nodes processed, compiling graph")
-
-        return compile_graph(ng, processed_nodes, path)
+        try:
+            compile_graph(ng, processed_nodes, path)
+        except Exception as e:
+            logger.error(f"❌ Path processing failed: {e}\n\nDetails:\n{ng}")
+            raise GraphCompliationError(f"Failed to compile graph: {e}")
+        return compile_graph
     except Exception as e:
         logger.error(f"❌ Path processing failed: {e}\n\nDetails:\n{ng}")
         raise e

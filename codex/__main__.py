@@ -67,6 +67,7 @@ def send_request_cmd(
     password: str,
     output: str,
 ) -> None:
+    import json
     url = "http://127.0.0.1:8000/code"
     data = {"description": description, "user_id": user_id}
 
@@ -78,11 +79,8 @@ def send_request_cmd(
                 f.write(response.content)
             click.echo(f"File downloaded successfully: {output}")
         else:
-            import IPython
-
-            IPython.embed()
             click.echo(
-                f"Failed to download file. Status Code: {response.status_code} - {response.reason}"
+                f"Failed to download file. Status Code: {response.status_code} - {json.loads(response.content)['detail']}"
             )
     except requests.exceptions.RequestException as e:
         click.echo(f"Error: {e}")
