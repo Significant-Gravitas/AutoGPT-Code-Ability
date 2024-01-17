@@ -173,9 +173,9 @@ class NodeGraph(BaseModel):
                         errors.append(
                             f"Node {node.name} has an input parameter that is not an output parameter of a previous nodes: {input_param.name}: {input_param.param_type}\n {output_params}"
                         )
-        if len(node_types["start"]) > 1:
+        if node_types["start"] > 1:
             errors.append("There can only be 1 start node")
-        if len(node_types["end"]) > 1:
+        if node_types["end"] > 1:
             errors.append("There can only be 1 end node")
 
         for node in v:
