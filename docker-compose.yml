@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_USER: agpt_live
       POSTGRES_PASSWORD: bnfaHGGSDF134345
-      POSTGRES_DB: agpt_product
+      POSTGRES_DB: codegen
     ports:
       - "5432:5432"
       
