@@ -25,19 +25,20 @@ logger = logging.getLogger(__name__)
 
 
 class NodeGraphGenerationError(Exception):
-    simple_msg = "Failed in first phase of code generation."
+    simple_msg = "Failed in Sub System 1 first phase of code generation."
 
 class NodeDecompositionError(Exception):
-    simple_msg = "Failed in second phase of code generation."
+    simple_msg = "Failed in Sub System 1 second phase of code generation."
 
 class NodeSeclectionError(Exception):
-    simple_msg = "Failed in third phase of code generation."
+    simple_msg = "Failed in Sub System 2 first phase of code generation."
 
 class GraphCompliationError(Exception):
-    simple_msg = "Failed in fourth phase of code generation."
+    simple_msg = "Failed in Sub System 3 first phase of code generation."
 
 class ServerCreationError(Exception):
-    simple_msg = "Failed in fifth phase of code generation."
+    simple_msg = "Failed in Sub System 3 second phase of code generation."
+
 def select_node_from_possible_nodes(
     possible_nodes, processed_nodes, node
 ) -> SelectNode:
@@ -333,11 +334,10 @@ def process_path(path, session, ap, engine, path_index, total_paths):
 
         logger.info("🔗 All nodes processed, compiling graph")
         try:
-            compile_graph(ng, processed_nodes, path)
+            return compile_graph(ng, processed_nodes, path)
         except Exception as e:
             logger.error(f"❌ Path processing failed: {e}\n\nDetails:\n{ng}")
             raise GraphCompliationError(f"Failed to compile graph: {e}")
-        return compile_graph
     except Exception as e:
         logger.error(f"❌ Path processing failed: {e}\n\nDetails:\n{ng}")
         raise e
