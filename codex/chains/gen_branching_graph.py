@@ -315,7 +315,6 @@ prompt_generate_execution_graph = ChatPromptTemplate.from_messages(
     before_sleep=before_sleep_log(logger, logging.DEBUG),
 )
 def fix_node_graph(node_graph, error):
-    logger.warning(f"Fixing node graph with error: {error}")
     chain = (
         prompt_fix_generate_execution_graph
         | model
@@ -329,7 +328,7 @@ def fix_node_graph(node_graph, error):
             }
         )
     except Exception as e:
-        logger.error(f"Error fixing node graph: {e}\n\n{node_graph}")
+        logger.error(f"Error fixing node graph: {e}\n\n{node_graph}\nValidation error during fixing node graph call")
     return output
 
 
