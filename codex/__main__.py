@@ -3,7 +3,7 @@ import concurrent.futures
 import click
 import requests
 from requests.auth import HTTPBasicAuth
-
+import os
 
 def worker(zip_file, description):
     click.echo(f"Testing: {description}")
@@ -23,13 +23,16 @@ def send_request_cmd(
     password: str,
     output: str,
 ) -> None:
-    url = "http://127.0.0.1:8000/code"
+    url = "https://codegen-xca4qjgx4a-uc.a.run.app/code"
     data = {"description": description, "user_id": user_id}
 
     try:
         response = requests.post(url, json=data, auth=HTTPBasicAuth(username, password))
 
         if response.status_code == 200:
+            workspace_dir = "workspace"
+            if not os.path.exists(workspace_dir):
+                os.makedirs(workspace_dir)
             with open(f"workspace/{output}", "wb") as f:
                 f.write(response.content)
             click.echo(f"File downloaded successfully: {output}")
