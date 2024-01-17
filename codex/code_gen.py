@@ -291,7 +291,7 @@ def create_fastapi_server(functions_data: List[FunctionData]) -> bytes:
             service_node_graph_file_name = f"service_{idx}_node_graph.json"
             service_node_graph_file_path = os.path.join(app_dir, service_node_graph_file_name)
             with open(service_node_graph_file_path, "w") as service_node_graph_file:
-                service_node_graph_file.write(json.dumps(function_data.graph))
+                service_node_graph_file.write(function_data.graph.json())
             
             # Import statement for the function
             import_statements += (

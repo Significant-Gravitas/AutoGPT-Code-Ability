@@ -4,7 +4,7 @@ from typing import List, Optional
 from pgvector.sqlalchemy import Vector  # type: ignore
 from langchain.pydantic_v1 import BaseModel
 from sqlmodel import Column, Field, Relationship, SQLModel  # type: ignore
-from codex.chains.gen_branching_graph import NodeDef
+from codex.chains.gen_branching_graph import NodeGraph
 
 # Define the Pydantic model for function data
 class FunctionData(BaseModel):
@@ -12,7 +12,7 @@ class FunctionData(BaseModel):
     code: str
     requirements_txt: str
     endpoint_name: str
-    graph: List[NodeDef]
+    graph: NodeGraph
     
     class Config:
         arbitrary_types_allowed=True

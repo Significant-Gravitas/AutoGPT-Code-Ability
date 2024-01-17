@@ -8,7 +8,7 @@ import networkx as nx
 
 from codex.chains.decompose_task import ExecutionPath
 
-from .code_gen import NodeDef, convert_graph_to_code
+from .code_gen import NodeGraph, convert_graph_to_code
 from .model import FunctionData, Node, RequiredPackage
 
 logger = logging.getLogger(__name__)
@@ -131,7 +131,7 @@ def generate_requirements_txt(packages: List[RequiredPackage]) -> str:
 
 
 def compile_graph(
-    graph: List[NodeDef], node_implementations: List[Node], ep: ExecutionPath
+    graph: NodeGraph, node_implementations: List[Node], ep: ExecutionPath
 ):
     # Check if the graph is a DAG
     python_file = ""
