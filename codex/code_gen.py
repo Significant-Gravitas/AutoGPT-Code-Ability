@@ -11,7 +11,7 @@ from langchain.pydantic_v1 import BaseModel
 
 from .chains.gen_branching_graph import ElseIf, NodeDef, NodeGraph, NodeTypeEnum
 from .model import FunctionData, Node
-
+import json
 logger = logging.getLogger(__name__)
 
 
@@ -288,6 +288,11 @@ def create_fastapi_server(functions_data: List[FunctionData]) -> bytes:
             with open(service_file_path, "w") as service_file:
                 service_file.write(function_data.code)
 
+            service_node_graph_file_name = f"service_{idx}_node_graph.json"
+            service_node_graph_file_path = os.path.join(app_dir, service_node_graph_file_name)
+            with open(service_node_graph_file_path, "w") as service_node_graph_file:
+                service_node_graph_file.write(json.dumps(function_data.graph))
+            
             # Import statement for the function
             import_statements += (
                 f"from project.service_{idx} import {function_data.function_name}\n"

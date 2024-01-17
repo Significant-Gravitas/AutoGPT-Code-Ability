@@ -19,6 +19,7 @@ from codex.code_gen import create_fastapi_server
 from codex.dag import compile_graph
 from codex.database import search_for_similar_node
 from codex.model import InputParameter, Node, OutputParameter
+import traceback
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +125,7 @@ def process_node(
                 possible_nodes, processed_nodes, node_def
             )
         except Exception as e:
+            logger.error(f"❌ Node selection failed: {e}")
             raise NodeSeclectionError(f"Failed to select node: {e}")
 
         if selected_node.node_id == "new":
@@ -289,7 +291,8 @@ def run(task_description: str, engine):
         logger.info("🎉 Task processing completed")
         return runner
     except Exception as e:
-        logger.error(f"❌ Task processing failed: {e}\n\nDetails:\n{ap}")
+        stacktrace = traceback.format_exc()
+        logger.error(f"❌ Task processing failed: {e}\n\nDetails:\n{ap}\n{stacktrace}")
         raise e
 
 
@@ -316,6 +319,7 @@ def process_path(path, session, ap, engine, path_index, total_paths):
 
         ng = chain_generate_execution_graph(ap.application_context, path, path.name)
         if not ng:
+            logger.error(f"❌ Failed to generate node graph for path: {path.name}")
             raise NodeGraphGenerationError(
                 f"Failed to generate node graph for path: {path.name}"
             )
@@ -336,10 +340,12 @@ def process_path(path, session, ap, engine, path_index, total_paths):
         try:
             return compile_graph(ng, processed_nodes, path)
         except Exception as e:
-            logger.error(f"❌ Path processing failed: {e}\n\nDetails:\n{ng}")
+            errmsg = traceback.format_exc()
+            logger.error(f"❌ Failed to compile the graph: {e}\n\nDetails:\n{ng}\n {errmsg}")
             raise GraphCompliationError(f"Failed to compile graph: {e}")
     except Exception as e:
-        logger.error(f"❌ Path processing failed: {e}\n\nDetails:\n{ng}")
+        errmsg = traceback.format_exc()
+        logger.error(f"❌ Path processing failed: {e}\n\nDetails:\n{ng}\n {errmsg}")
         raise e
 
 

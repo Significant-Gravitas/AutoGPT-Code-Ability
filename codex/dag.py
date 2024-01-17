@@ -157,4 +157,5 @@ def compile_graph(
         code=python_file,
         requirements_txt=requirements_txt,
         endpoint_name=ep.endpoint_name,
+        graph=graph,
     )
