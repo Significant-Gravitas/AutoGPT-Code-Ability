@@ -93,7 +93,7 @@ def handle_code_request(request: CodeRequest, user: str = Depends(authenticate))
         zip_bytes = run(request.description, engine)
     except Exception as e:
         logger.exception(e)
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail=e)
     # Create a temporary file
     temp_file, temp_file_path = tempfile.mkstemp(suffix=".zip")
     os.close(temp_file)
