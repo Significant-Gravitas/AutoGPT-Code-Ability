@@ -113,7 +113,7 @@ class Node(SQLModel, table=True):
     )
 
     embedding: Optional[List[float]] = Field(
-        default=None, sa_column=Column(Vector(768))
+        default=None, sa_column=Column(Vector(1536))
     )
 
     # Relationship definitions

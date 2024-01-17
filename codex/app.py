@@ -11,22 +11,16 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
 from sqlmodel import SQLModel, create_engine  # type: ignore
 from starlette.background import BackgroundTask
-from sqlalchemy.exc import ProgrammingError
 
 from .agent import run
-from .model import InputParameter, OutputParameter, RequiredPackage, Node
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://agpt_live:bnfaHGGSDF134345@0.0.0.0:5432/agpt_product")
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL", "postgresql://agpt_live:bnfaHGGSDF134345@0.0.0.0:5432/agpt_product"
+)
 engine = create_engine(DATABASE_URL)
 
-try:
-    with engine.connect() as connection:
-        connection.execute("CREATE EXTENSION IF NOT EXISTS vector;")
-        logging.info("Extension created successfully.")
-except ProgrammingError as e:
-    logging.error(f"An error occurred: {e}")
-
 SQLModel.metadata.create_all(engine)
+
 
 # Enum for Runner
 class RunnerEnum(str, Enum):

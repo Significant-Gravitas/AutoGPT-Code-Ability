@@ -1,7 +1,7 @@
 import logging
 from typing import List
 
-from sentence_transformers import SentenceTransformer
+from openai import OpenAI
 from sqlmodel import Session
 
 from codex.chains.check_node_complexity import CheckComplexity
@@ -18,8 +18,6 @@ from codex.code_gen import create_fastapi_server
 from codex.dag import compile_graph
 from codex.database import search_for_similar_node
 from codex.model import InputParameter, Node, OutputParameter
-
-EMBEDDER = SentenceTransformer("all-mpnet-base-v2")
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +84,6 @@ def process_node(
     node_def: NodeDef,
     processed_nodes: List[Node],
     ap: ApplicationPaths,
-    embedder: SentenceTransformer,
     engine,
 ):
     """
@@ -97,14 +94,13 @@ def process_node(
     node (NodeDef): The current node to process.
     ap (ApplicationPaths): Application paths context.
     dag (nx.DiGraph): The directed acyclic graph of nodes.
-    embedder (SentenceTransformer): The sentence transformer for embedding.
     """
     logger.debug(f"🚀 Processing node: {node_def.name}")
     if node_def.node_type in [NodeTypeEnum.START.value, NodeTypeEnum.END.value]:
         return process_request_response_node(node_def)
     elif node_def.node_type == NodeTypeEnum.ACTION.value:
         logger.debug(f"🔍 Searching for similar nodes for: {node_def.name}")
-        possible_nodes = search_for_similar_node(session, node_def, embedder)
+        possible_nodes = search_for_similar_node(session, node_def)
 
         selected_node = select_node_from_possible_nodes(
             possible_nodes, processed_nodes, node_def
@@ -125,7 +121,6 @@ def process_node(
                 )
 
                 logger.debug(f"📦 Adding new node to the database: {node_def.name}")
-
                 input_params = [
                     InputParameter(**p.dict()) for p in node_def.input_params
                 ]
@@ -141,11 +136,14 @@ def process_node(
                     required_packages=required_packages,
                     code=code,
                 )
-                new_node.embedding = embedder.encode(
-                    node_def.description,
-                    normalize_embeddings=True,
-                    convert_to_numpy=True,
+                client = OpenAI()
+                oai_response = client.embeddings.create(
+                    model="text-embedding-ada-002",
+                    input=node_def.description,
+                    encoding_format="float",
                 )
+                new_node.embedding = oai_response.data[0].embedding
+
                 session.add(new_node)
                 session.commit()
                 logger.debug(f"✅ New node added: {node_def.name}")
@@ -169,7 +167,6 @@ def process_node(
                             sub_node,
                             processed_nodes,
                             ap,
-                            EMBEDDER,
                             engine,
                         )
                         if pnode:
@@ -250,7 +247,7 @@ def run(task_description: str, engine):
                             f"🔨 Processing node {node_index}/{len(ng.nodes)}: {node.name}"
                         )
                         processed_node = process_node(
-                            session, node, processed_nodes, ap, EMBEDDER, engine
+                            session, node, processed_nodes, ap, engine
                         )
 
                         if processed_node:

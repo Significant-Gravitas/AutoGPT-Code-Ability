@@ -1,8 +1,8 @@
 from typing import List, Optional
 
-from sentence_transformers import SentenceTransformer
+from openai import OpenAI
 from sqlalchemy import func
-from sqlmodel import Session, SQLModel, create_engine, select
+from sqlmodel import Session, select
 
 from .model import InputParameter, Node, OutputParameter
 
@@ -24,9 +24,7 @@ def select_node_by_id(session: Session, node_id: int) -> Optional[Node]:
     return node
 
 
-def search_for_similar_node(
-    session: Session, node: Node, embedder: SentenceTransformer
-) -> Optional[List[Node]]:
+def search_for_similar_node(session: Session, node: Node) -> Optional[List[Node]]:
     input_param_types = None
     output_param_types = None
     if node.input_params:
@@ -34,9 +32,12 @@ def search_for_similar_node(
     if node.output_params:
         output_param_types = [param.param_type for param in node.output_params]
 
-    query = embedder.encode(  # type: ignore
-        node.description, normalize_embeddings=True, convert_to_numpy=True
+    client = OpenAI()
+
+    oai_response = client.embeddings.create(
+        model="text-embedding-ada-002", input=node.description, encoding_format="float"
     )
+    query = oai_response.data[0].embedding
     return search_nodes_by_params(
         session=session,
         description=query,
@@ -112,38 +113,3 @@ def search_nodes_by_params(
         # Log the exception and return an empty list or handle as appropriate
         print(f"An error occurred: {e}")
         return None
-
-
-if __name__ == "__main__":
-    import os
-
-    from examples.a_web_reader import nodes as web_reader_nodes
-
-    DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./codex.db")
-    engine = create_engine(DATABASE_URL)
-
-    SQLModel.metadata.create_all(engine)
-
-    with Session(engine) as session:
-        for node in web_reader_nodes:
-            # Add the node to the session
-            session.add(node)
-            session.commit()
-            session.refresh(node)
-
-    embedder = SentenceTransformer("all-mpnet-base-v2")
-    query_embedding: List[float] = embedder.encode(  # type: ignore
-        "Download page", normalize_embeddings=True, convert_to_numpy=True
-    )
-
-    cosine_similarity_threshold = 0.5
-
-    with Session(engine) as session:
-        input_types = ["str"]
-        output_types = ["str"]
-        ans = search_nodes_by_params(
-            session, query_embedding, input_types, output_types
-        )
-        import IPython
-
-        IPython.embed()  # type: ignore
