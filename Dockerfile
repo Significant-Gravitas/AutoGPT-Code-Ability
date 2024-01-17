@@ -1,5 +1,5 @@
 # Use an official Python runtime as a parent image
-FROM python:3.11-slim-buster as base
+FROM python:3.11-slim-buster as codgegenbase
 
 # Set environment varibles
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -30,13 +30,13 @@ RUN mkdir /app/proxy
 RUN touch /app/proxy/__init__.py
 RUN touch /app/README.md
 
-FROM base as dependencies
+FROM codgegenbase as codegendependencies
 
 # Project initialization:
 RUN poetry install --no-interaction --no-ansi
 
 
-FROM dependencies as codegen
+FROM codegendependencies as codegen
 COPY . /app
 # Set a default value (this can be overridden)
 ENV PORT=8000
