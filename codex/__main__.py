@@ -3,7 +3,51 @@ import concurrent.futures
 import click
 import requests
 from requests.auth import HTTPBasicAuth
-import os
+
+
+test_descriptions = [
+    (
+        "01_webpage_to_markdown.zip",
+        "Develop a small script that takes a URL as input and returns the webpage in Markdown format.",
+    ),
+    (
+        "02_basic_calculator_api.zip",
+        "Create a REST API that performs basic arithmetic operations (add, subtract, multiply, divide). The API should accept two numbers and an operation as input and return the result.",
+    ),
+    (
+        "03_data_aggregation_tool.zip",
+        "Build a tool that reads data from multiple sources (e.g., CSV, JSON files) and aggregates it into a single structured format. Include error handling for inconsistent or invalid data.",
+    ),
+    (
+        "04_simple_blog_platform.zip",
+        "Develop a basic blog platform where users can create, edit, and delete posts. Implement user authentication and a simple text editor for post creation.",
+    ),
+    (
+        "05_inventory_management_system.zip",
+        "Create a system to manage inventory for a small business. Features should include adding, updating, and deleting inventory items, as well as tracking stock levels.",
+    ),
+    (
+        "06_real_time_chat_app.zip",
+        "Develop a real-time chat application where users can send and receive messages instantly. Include features like user presence, typing indicators, and read receipts.",
+    ),
+    (
+        "07_task_scheduler_reminder_system.zip",
+        "Build a system where users can schedule tasks and set reminders. Include functionalities for recurring tasks, notifications, and calendar integration.",
+    ),
+    (
+        "08_personal_finance_tracker.zip",
+        "Create a personal finance tracking application that categorizes expenses and incomes. Offer insights based on spending patterns and suggest budgeting tips.",
+    ),
+    (
+        "09_iot_device_data_analytics.zip",
+        "Develop a platform that collects data from various IoT devices, stores it, and performs analytics to provide actionable insights. Include real-time data processing and visualization.",
+    ),
+    (
+        "10_ecommerce_store_social_features.zip",
+        "Build a comprehensive e-commerce platform with social features. This includes product listing, shopping cart, checkout process, user reviews, and social interactions like sharing products, following users, and creating wish lists.",
+    ),
+]
+
 
 def worker(zip_file, description):
     click.echo(f"Testing: {description}")
@@ -23,21 +67,23 @@ def send_request_cmd(
     password: str,
     output: str,
 ) -> None:
-    url = "https://codegen-xca4qjgx4a-uc.a.run.app/code"
+    url = "http://127.0.0.1:8000/code"
     data = {"description": description, "user_id": user_id}
 
     try:
         response = requests.post(url, json=data, auth=HTTPBasicAuth(username, password))
 
         if response.status_code == 200:
-            workspace_dir = "workspace"
-            if not os.path.exists(workspace_dir):
-                os.makedirs(workspace_dir)
             with open(f"workspace/{output}", "wb") as f:
                 f.write(response.content)
             click.echo(f"File downloaded successfully: {output}")
         else:
-            click.echo(f"Failed to download file. Status Code: {response.status_code} - {response.reason}")
+            import IPython
+
+            IPython.embed()
+            click.echo(
+                f"Failed to download file. Status Code: {response.status_code} - {response.reason}"
+            )
     except requests.exceptions.RequestException as e:
         click.echo(f"Error: {e}")
 
@@ -72,51 +118,25 @@ def send_request(
     send_request_cmd(description, user_id, username, password, output)
 
 
+@cli.command()
+def test() -> None:
+    i = 1
+    click.echo("Select a test case:")
+
+    for file, description in test_descriptions:
+        click.echo(f"[{i}] {description}")
+        i += 1
+
+    case = int(input("Case: "))
+
+    file_name, description = test_descriptions[case - 1]
+    
+    click.echo(f"Testing: {description}")
+    send_request_cmd(description, 333, "admin", "asd453jnsdof9384rjnsdf", file_name)
+
+
 @cli.command(help="Run tests for all predefined descriptions.")
 def run_tests():
-    test_descriptions = [
-        (
-            "01_webpage_to_markdown.zip",
-            "Develop a small script that takes a URL as input and returns the webpage in Markdown format.",
-        ),
-        (
-            "02_basic_calculator_api.zip",
-            "Create a REST API that performs basic arithmetic operations (add, subtract, multiply, divide). The API should accept two numbers and an operation as input and return the result.",
-        ),
-        (
-            "03_data_aggregation_tool.zip",
-            "Build a tool that reads data from multiple sources (e.g., CSV, JSON files) and aggregates it into a single structured format. Include error handling for inconsistent or invalid data.",
-        ),
-        (
-            "04_simple_blog_platform.zip",
-            "Develop a basic blog platform where users can create, edit, and delete posts. Implement user authentication and a simple text editor for post creation.",
-        ),
-        (
-            "05_inventory_management_system.zip",
-            "Create a system to manage inventory for a small business. Features should include adding, updating, and deleting inventory items, as well as tracking stock levels.",
-        ),
-        (
-            "06_real_time_chat_app.zip",
-            "Develop a real-time chat application where users can send and receive messages instantly. Include features like user presence, typing indicators, and read receipts.",
-        ),
-        (
-            "07_task_scheduler_reminder_system.zip",
-            "Build a system where users can schedule tasks and set reminders. Include functionalities for recurring tasks, notifications, and calendar integration.",
-        ),
-        (
-            "08_personal_finance_tracker.zip",
-            "Create a personal finance tracking application that categorizes expenses and incomes. Offer insights based on spending patterns and suggest budgeting tips.",
-        ),
-        (
-            "09_iot_device_data_analytics.zip",
-            "Develop a platform that collects data from various IoT devices, stores it, and performs analytics to provide actionable insights. Include real-time data processing and visualization.",
-        ),
-        (
-            "10_ecommerce_store_social_features.zip",
-            "Build a comprehensive e-commerce platform with social features. This includes product listing, shopping cart, checkout process, user reviews, and social interactions like sharing products, following users, and creating wish lists.",
-        ),
-    ]
-
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = [
             executor.submit(worker, zip_file, description)
