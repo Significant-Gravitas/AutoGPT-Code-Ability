@@ -58,7 +58,7 @@ class Param(BaseModel):
                     return v
 
         raise ValueError(
-            f"param_type must be one of {basic_types}, or a container of these types"
+            f"param_type {v} must be one of {basic_types}, or a container of these types"
         )
 
 
