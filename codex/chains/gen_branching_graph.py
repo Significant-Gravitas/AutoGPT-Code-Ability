@@ -52,9 +52,10 @@ class Param(BaseModel):
 
         # Check for container types like list[int]
         if v.startswith("list[") or v.startswith("set[") or v.startswith("tuple["):
-            contained_type = v.split("[")[1].rstrip("]")
-            if contained_type in basic_types:
-                return v
+            contained_types = v.split("[")[1].rstrip("]").split(",")
+            for contained in contained_types:
+                if contained in basic_types:
+                    return v
 
         raise ValueError(
             f"param_type must be one of {basic_types}, or a container of these types"
@@ -97,7 +98,7 @@ class NodeDef(BaseModel):
                 "Tuple["
                 + ", ".join([param.param_type for param in self.output_params])
                 + "]"
-            )
+            ).lower()
 
     @validator("next_node_name", always=True)
     def validate_next_node_name(cls, v, values, **kwargs):
