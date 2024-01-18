@@ -133,7 +133,7 @@ class CodeOutputParser(StrOutputParser):
     def parse(self, text: str) -> str:
         """Returns the input text with no changes."""
         requirements, code = CodeOutputParser._sanitize_output(text)
-        return parse_requirements(requirements), CodeOutputParser.validate_code(code)
+        return parse_requirements(requirements), self.validate_code(code)
 
 
 template = """You are an expect python developer. Write the python code to implement the node. Do not skip any implementation details.
