@@ -162,7 +162,7 @@ Validation failures should raise a ValueError with a helpful message.
 
 
 def write_code_chain(
-    invoke_params: Dict = {}, max_retries: int = 3, attempts: int = 0
+    invoke_params: Dict = {}, max_retries: int = 5, attempts: int = 0
 ) -> str:
     """Returns the input text with no changes."""
     parser_write_node = CodeOutputParser(requested_node=invoke_params["node"])
