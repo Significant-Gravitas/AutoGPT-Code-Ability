@@ -1,4 +1,5 @@
 import logging
+import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List
 
@@ -19,26 +20,29 @@ from codex.code_gen import create_fastapi_server
 from codex.dag import compile_graph
 from codex.database import search_for_similar_node
 from codex.model import InputParameter, Node, OutputParameter
-import traceback
 
 logger = logging.getLogger(__name__)
-
 
 
 class NodeGraphGenerationError(Exception):
     simple_msg = "Failed in Sub System 1 first phase of code generation."
 
+
 class NodeDecompositionError(Exception):
     simple_msg = "Failed in Sub System 1 second phase of code generation."
+
 
 class NodeSeclectionError(Exception):
     simple_msg = "Failed in Sub System 2 first phase of code generation."
 
+
 class GraphCompliationError(Exception):
     simple_msg = "Failed in Sub System 3 first phase of code generation."
 
+
 class ServerCreationError(Exception):
     simple_msg = "Failed in Sub System 3 second phase of code generation."
+
 
 def select_node_from_possible_nodes(
     possible_nodes, processed_nodes, node
@@ -235,8 +239,7 @@ def process_node(
             return [node]
 
 
-
-def run(task_description: str, engine):
+def run(task_description: str, engine, fast: bool = True):
     """
     Runs the task processing pipeline.
 
@@ -258,30 +261,39 @@ def run(task_description: str, engine):
         generated_data = []
 
         with Session(engine) as session:
-            # Create a ThreadPoolExecutor
-            with ThreadPoolExecutor() as executor:
-                # Dictionary to hold future to path mapping
-                future_to_path = {
-                    executor.submit(
-                        process_path,
-                        path,
-                        session,
-                        ap,
-                        engine,
-                        path_index,
-                        len(ap.execution_paths),
-                    ): path
-                    for path_index, path in enumerate(ap.execution_paths, start=1)
-                }
+            if fast:
+                # Create a ThreadPoolExecutor
+                with ThreadPoolExecutor() as executor:
+                    # Dictionary to hold future to path mapping
+                    future_to_path = {
+                        executor.submit(
+                            process_path,
+                            path,
+                            session,
+                            ap,
+                            engine,
+                            path_index,
+                            len(ap.execution_paths),
+                        ): path
+                        for path_index, path in enumerate(ap.execution_paths, start=1)
+                    }
 
-                for future in as_completed(future_to_path):
-                    path = future_to_path[future]
-                    try:
-                        data = future.result()
-                        generated_data.append(data)
-                    except Exception as e:
-                        logger.error(f"❌ Path processing failed for {path.name}: {e}")
-                        raise e
+                    for future in as_completed(future_to_path):
+                        path = future_to_path[future]
+                        try:
+                            data = future.result()
+                            generated_data.append(data)
+                        except Exception as e:
+                            logger.error(
+                                f"❌ Path processing failed for {path.name}: {e}"
+                            )
+                            raise e
+            else:
+                for path_index, path in enumerate(ap.execution_paths, start=1):
+                    data = process_path(
+                        path, session, ap, engine, path_index, len(ap.execution_paths)
+                    )
+                    generated_data.append(data)
 
         try:
             runner = create_fastapi_server(generated_data)
@@ -341,7 +353,9 @@ def process_path(path, session, ap, engine, path_index, total_paths):
             return compile_graph(ng, processed_nodes, path)
         except Exception as e:
             errmsg = traceback.format_exc()
-            logger.error(f"❌ Failed to compile the graph: {e}\n\nDetails:\n{ng}\n {errmsg}")
+            logger.error(
+                f"❌ Failed to compile the graph: {e}\n\nDetails:\n{ng}\n {errmsg}"
+            )
             raise GraphCompliationError(f"Failed to compile graph: {e}")
     except Exception as e:
         errmsg = traceback.format_exc()
@@ -354,7 +368,7 @@ if __name__ == "__main__":
     from sqlalchemy import create_engine
 
     init()
-    DATABASE_URL = "postgresql://agpt_live:bnfaHGGSDF134345@0.0.0.0:5432/agpt_product"
+    DATABASE_URL = "postgresql://agpt_live:bnfaHGGSDF134345@0.0.0.0:5432/codegen"
     engine = create_engine(DATABASE_URL)
 
     class CustomFormatter(logging.Formatter):
@@ -392,4 +406,5 @@ if __name__ == "__main__":
     code = run(
         "Develop a small script that takes a URL and the desired foramt as input and then returns the webpage in Markdown or RST format depending on the desired format param.",
         engine,
+        fast=False,
     )
