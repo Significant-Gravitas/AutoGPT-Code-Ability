@@ -78,10 +78,10 @@ def send_request_cmd(
         if response.status_code == 200:
             with open(f"workspace/{output}", "wb") as f:
                 f.write(response.content)
-            click.echo(f"File downloaded successfully: {output}")
+            click.echo(f"✅ File downloaded successfully: {output}")
         else:
             click.echo(
-                f"Failed to download file. Status Code: {response.status_code} - {json.loads(response.content)['detail']}"
+                f"❌ {output} - Failed to download file. Status Code: {response.status_code} - {json.loads(response.content)['detail']}"
             )
     except requests.exceptions.RequestException as e:
         click.echo(f"Error: {e}")
