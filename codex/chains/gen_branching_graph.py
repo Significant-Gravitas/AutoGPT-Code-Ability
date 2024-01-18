@@ -170,8 +170,13 @@ class NodeGraph(BaseModel):
         errors = []
         # TODO: This may need improvement
         node_types = {}
-
+        
+        
+        node_names = []
+        unique_node_names = set()
         for node in v:
+            node_names.append(node.name)
+            unique_node_names.add(node.name)
             if node.node_type in node_types.keys():
                 node_types[node.node_type] += 1
             else:
@@ -196,7 +201,9 @@ class NodeGraph(BaseModel):
             errors.append("There can only be 1 start node")
         if node_types["end"] > 1:
             errors.append("There can only be 1 end node")
-
+        if len(node_names) != len(unique_node_names):
+            errors.append("Node names must be unique")
+        
         for node in v:
             if node.next_node_name and node.next_node_name not in ids:
                 errors.append(
