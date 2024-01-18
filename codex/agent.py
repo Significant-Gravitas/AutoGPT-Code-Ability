@@ -404,7 +404,7 @@ if __name__ == "__main__":
     logger.addHandler(ch)
 
     code = run(
-        "Develop a small script that takes a URL and the desired foramt as input and then returns the webpage in Markdown or RST format depending on the desired format param.",
+        "Develop a small script that takes a URL and the desired foramt as input and then returns the webpage in Markdown or RST format depending on the desired format param. Use a single execution path with an if statement",
         engine,
         fast=False,
     )
