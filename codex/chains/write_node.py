@@ -1,13 +1,15 @@
+import ast
 import logging
 from typing import Dict, List
 
 import black
-from langchain_openai import ChatOpenAI
+import isort
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+from langchain_openai import ChatOpenAI
+
+from codex.chains.gen_branching_graph import NodeDef, Param
 from codex.model import RequiredPackage
-import isort
-import ast
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +64,8 @@ def parse_requirements(requirements_str: str) -> List[RequiredPackage]:
 class CodeOutputParser(StrOutputParser):
     """OutputParser that parses LLMResult into the top likely string."""
 
+    requested_node: NodeDef
+
     @staticmethod
     def _sanitize_output(text: str):
         # Initialize variables to store requirements and code
@@ -76,12 +80,52 @@ class CodeOutputParser(StrOutputParser):
         return requirements, code
 
     @staticmethod
-    def validate_code(code: str) -> bool:
+    def extract_type_hints(func_def):
+        arg_types = {}
+        for arg in func_def.args.args:
+            # Extract argument name and type
+            arg_name = arg.arg
+            arg_type = arg.annotation
+            if arg_type is not None:
+                arg_types[arg_name] = ast.unparse(arg_type)
+
+        # Extract return type
+        return_type = None
+        if func_def.returns:
+            return_type = ast.unparse(func_def.returns)
+
+        arg_types = [
+            Param(param_type=arg_type, name=name)
+            for name, arg_type in arg_types.items()
+        ]
+        return_type = Param(param_type=return_type, name="return")
+        return arg_types, return_type
+
+    def validate_code(cls, code: str) -> bool:
         try:
             sorted_content = isort.code(code)
             formatted_code = black.format_str(sorted_content, mode=black.FileMode())
             # We parse the code here to make sure it is valid
-            ast.parse(formatted_code)
+            parsed_code = ast.parse(formatted_code)
+            args, ret = [], None
+            for ast_node in ast.walk(parsed_code):
+                if isinstance(ast_node, ast.FunctionDef):
+                    args, ret = cls.extract_type_hints(ast_node)
+                    break
+            errors = []
+            for i, arg in enumerate(args):
+                if arg != cls.requested_node.input_params[i]:
+                    errors.append(
+                        f"Input parameter {arg} does not match required parameter {cls.requested_node.input_params[i]}"
+                    )
+
+            if ret != cls.requested_node.get_return_type():
+                errors.append(
+                    f"Return type {ret} does not match required return type {cls.requested_node.get_return_type()}"
+                )
+
+            if errors:
+                raise ValueError(f"Errors found in generated node code: {errors}")
             return formatted_code
         except Exception as e:
             raise ValueError(f"Error formatting code: {e}")
@@ -117,7 +161,7 @@ def write_code_chain(
     invoke_params: Dict = {}, max_retries: int = 3, attempts: int = 0
 ) -> str:
     """Returns the input text with no changes."""
-    parser_write_node = CodeOutputParser()
+    parser_write_node = CodeOutputParser(requested_node=invoke_params["node"])
 
     prompt_write_node = ChatPromptTemplate.from_messages(
         [
