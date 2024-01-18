@@ -366,10 +366,12 @@ def process_path(path, session, ap, engine, path_index, total_paths):
 if __name__ == "__main__":
     from colorama import Fore, Style, init
     from sqlalchemy import create_engine
+    from sqlmodel import SQLModel
 
     init()
     DATABASE_URL = "postgresql://agpt_live:bnfaHGGSDF134345@0.0.0.0:5432/codegen"
     engine = create_engine(DATABASE_URL)
+    SQLModel.metadata.create_all(engine)
 
     class CustomFormatter(logging.Formatter):
         """Logging Formatter to add colors and count warning / errors"""
