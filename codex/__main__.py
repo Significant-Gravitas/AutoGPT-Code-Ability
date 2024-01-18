@@ -68,6 +68,7 @@ def send_request_cmd(
     output: str,
 ) -> None:
     import json
+
     url = "http://127.0.0.1:8000/code"
     data = {"description": description, "user_id": user_id}
 
@@ -128,7 +129,7 @@ def test() -> None:
     case = int(input("Case: "))
 
     file_name, description = test_descriptions[case - 1]
-    
+
     click.echo(f"Testing: {description}")
     send_request_cmd(description, 333, "admin", "asd453jnsdof9384rjnsdf", file_name)
 

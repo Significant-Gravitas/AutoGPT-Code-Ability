@@ -11,7 +11,7 @@ from langchain.pydantic_v1 import BaseModel
 
 from .chains.gen_branching_graph import ElseIf, NodeDef, NodeGraph, NodeTypeEnum
 from .model import FunctionData, Node
-import json
+
 logger = logging.getLogger(__name__)
 
 
@@ -139,7 +139,7 @@ def pre_process_nodes(node_graph: NodeGraph) -> List[CodeableNode]:
                     )
                     skip_node.extend(skip)
                     codeable_nodes.extend(code)
-            
+
             if node.false_next_node_name != node_graph.nodes[-1].name:
                 codeable_nodes.append(
                     CodeableNode(
@@ -258,7 +258,7 @@ def create_fastapi_server(functions_data: List[FunctionData]) -> bytes:
     with tempfile.TemporaryDirectory() as temp_dir:
         app_dir = os.path.join(temp_dir, "project")
         os.makedirs(app_dir, exist_ok=True)
-        
+
         combined_requirements = set(["fastapi\n", "uvicorn\n", "pydantic\n"])
         import_statements = "from fastapi import FastAPI, Body\nfrom pydantic import BaseModel\n\napp = FastAPI()\n"
         endpoint_functions = ""
@@ -289,10 +289,12 @@ def create_fastapi_server(functions_data: List[FunctionData]) -> bytes:
                 service_file.write(function_data.code)
 
             service_node_graph_file_name = f"service_{idx}_node_graph.json"
-            service_node_graph_file_path = os.path.join(app_dir, service_node_graph_file_name)
+            service_node_graph_file_path = os.path.join(
+                app_dir, service_node_graph_file_name
+            )
             with open(service_node_graph_file_path, "w") as service_node_graph_file:
                 service_node_graph_file.write(function_data.graph.json())
-            
+
             # Import statement for the function
             import_statements += (
                 f"from project.service_{idx} import {function_data.function_name}\n"
@@ -330,9 +332,9 @@ def endpoint_{idx}({params_str}):
         server_file_path = os.path.join(app_dir, "server.py")
         with open(server_file_path, "w") as server_file:
             server_file.write(import_statements + endpoint_functions)
-        
+
         init_file_path = os.path.join(app_dir, "__init__.py")
-        with open(init_file_path, 'w') as init_file:
+        with open(init_file_path, "w") as init_file:
             pass
 
         # Write combined requirements to requirements.txt

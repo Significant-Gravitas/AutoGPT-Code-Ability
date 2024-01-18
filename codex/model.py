@@ -6,6 +6,7 @@ from langchain.pydantic_v1 import BaseModel
 from sqlmodel import Column, Field, Relationship, SQLModel  # type: ignore
 from codex.chains.gen_branching_graph import NodeGraph
 
+
 # Define the Pydantic model for function data
 class FunctionData(BaseModel):
     function_name: str
@@ -13,10 +14,9 @@ class FunctionData(BaseModel):
     requirements_txt: str
     endpoint_name: str
     graph: NodeGraph
-    
+
     class Config:
-        arbitrary_types_allowed=True
-        
+        arbitrary_types_allowed = True
 
 
 class NodeTypeEnum(Enum):

@@ -62,10 +62,10 @@ class ValidatingPydanticOutputParser(PydanticOutputParser[T]):
 
         input_types = set([p.param_type for p in cls.requested_node.input_params])
         output_types = set([p.param_type for p in cls.requested_node.output_params])
-        
+
         selected_input_types = set([p.param_type for p in selected_node.input_params])
         selected_output_types = set([p.param_type for p in selected_node.output_params])
-        
+
         if input_types != selected_input_types:
             logger.error(
                 f"🚫 The Selected Node does not have all the required input types: {selected_node.name}"
@@ -77,7 +77,7 @@ class ValidatingPydanticOutputParser(PydanticOutputParser[T]):
                 f"🚫 The Selected Node does not have all the required output types: {selected_node.name}"
             )
             return False
-        
+
         # First check if the node_details and node_def have matching number of input and output params
         if len(selected_node.input_params) != len(cls.requested_node.input_params):
             logger.error(

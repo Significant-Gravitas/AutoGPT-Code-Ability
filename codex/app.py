@@ -11,7 +11,13 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
 from sqlmodel import SQLModel, create_engine  # type: ignore
 from starlette.background import BackgroundTask
-from codex.agent import run, NodeDecompositionError, NodeGraphGenerationError, GraphCompliationError, ServerCreationError
+from codex.agent import (
+    run,
+    NodeDecompositionError,
+    NodeGraphGenerationError,
+    GraphCompliationError,
+    ServerCreationError,
+)
 
 DATABASE_URL = os.environ.get(
     "DATABASE_URL", "postgresql://agpt_live:bnfaHGGSDF134345@0.0.0.0:5432/codegen"
@@ -21,6 +27,7 @@ engine = create_engine(DATABASE_URL)
 SQLModel.metadata.create_all(engine)
 
 DETAILED = os.environ.get("DETAILED", "False").lower() == "true"
+
 
 # Enum for Runner
 class RunnerEnum(str, Enum):
@@ -92,13 +99,21 @@ def handle_code_request(request: CodeRequest, user: str = Depends(authenticate))
     try:
         zip_bytes = run(request.description, engine)
     except NodeGraphGenerationError as e:
-        raise HTTPException(status_code=500, detail=str(e) if DETAILED else e.simple_msg)
+        raise HTTPException(
+            status_code=500, detail=str(e) if DETAILED else e.simple_msg
+        )
     except NodeDecompositionError as e:
-        raise HTTPException(status_code=500, detail=str(e) if DETAILED else e.simple_msg)
+        raise HTTPException(
+            status_code=500, detail=str(e) if DETAILED else e.simple_msg
+        )
     except GraphCompliationError as e:
-        raise HTTPException(status_code=500, detail=str(e) if DETAILED else e.simple_msg)
+        raise HTTPException(
+            status_code=500, detail=str(e) if DETAILED else e.simple_msg
+        )
     except ServerCreationError as e:
-        raise HTTPException(status_code=500, detail=str(e) if DETAILED else e.simple_msg)
+        raise HTTPException(
+            status_code=500, detail=str(e) if DETAILED else e.simple_msg
+        )
     except Exception as e:
         logger.exception(e)
         raise HTTPException(status_code=500, detail=str(e))
