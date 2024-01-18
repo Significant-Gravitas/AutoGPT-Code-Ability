@@ -95,10 +95,12 @@ class CodeOutputParser(StrOutputParser):
             return_type = ast.unparse(func_def.returns)
 
         arg_types = [
-            Param(param_type=arg_type, name=name)
+            Param(param_type=arg_type.lower(), name=name, description="...")
             for name, arg_type in arg_types.items()
         ]
-        return_type = Param(param_type=return_type, name="return")
+        return_type = Param(
+            param_type=return_type.lower(), name="return", description="..."
+        )
         return arg_types, return_type
 
     def validate_code(cls, code: str) -> bool:
@@ -108,10 +110,12 @@ class CodeOutputParser(StrOutputParser):
             # We parse the code here to make sure it is valid
             parsed_code = ast.parse(formatted_code)
             args, ret = [], None
+
             for ast_node in ast.walk(parsed_code):
                 if isinstance(ast_node, ast.FunctionDef):
                     args, ret = cls.extract_type_hints(ast_node)
                     break
+
             errors = []
             for i, arg in enumerate(args):
                 if arg != cls.requested_node.input_params[i]:
@@ -119,9 +123,9 @@ class CodeOutputParser(StrOutputParser):
                         f"Input parameter {arg} does not match required parameter {cls.requested_node.input_params[i]}"
                     )
 
-            if ret != cls.requested_node.get_return_type():
+            if ret.param_type != cls.requested_node.get_return_type():
                 errors.append(
-                    f"Return type {ret} does not match required return type {cls.requested_node.get_return_type()}"
+                    f"Return type {ret.param_type} does not match required return type {cls.requested_node.get_return_type()}"
                 )
 
             if errors:
