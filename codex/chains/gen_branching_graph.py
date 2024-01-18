@@ -23,6 +23,12 @@ class Param(BaseModel):
     param_type: str
     name: str
     description: str
+    
+    def __eq__(self, other):
+        if not isinstance(other, Param):
+            return False
+
+        return self.param_type.lower() == other.param_type.lower()
 
     @validator("param_type")
     def check_param_type(cls, v):
@@ -80,6 +86,14 @@ class NodeDef(BaseModel):
     true_next_node_name: Optional[str] = None
     elifs: Optional[List[ElseIf]] = None
     false_next_node_name: Optional[str] = None
+    
+    def get_return_type(self) -> Optional[str]:
+        if not self.output_params:
+            return None
+        elif len(self.output_params) == 1:
+            return self.output_params[0].param_type
+        else:
+            return "Tuple[" + ", ".join([param.param_type for param in self.output_params]) + "]"
 
     @validator("next_node_name", always=True)
     def validate_next_node_name(cls, v, values, **kwargs):
