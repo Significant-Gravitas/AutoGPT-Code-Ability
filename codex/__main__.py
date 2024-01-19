@@ -4,7 +4,6 @@ import click
 import requests
 from requests.auth import HTTPBasicAuth
 
-
 test_descriptions = [
     (
         "01_webpage_to_markdown.zip",
