@@ -156,6 +156,57 @@ class NodeDef(BaseModel):
             raise ValueError(f'Node: {values.get("name")}: Only IF node can have elifs')
         return v
 
+    def code_template(self) -> str:
+        # Start building the function definition
+        function_def = f"def {self.name}("
+
+        # Add input parameters to the function definition
+        if self.input_params:
+            input_params_str = ", ".join(
+                f"{param.name}: {param.param_type}" for param in self.input_params
+            )
+            function_def += input_params_str
+
+        function_def += ")"
+
+        # Add output parameters as return type
+        if self.output_params:
+            if len(self.output_params) == 1:
+                # Single output
+                output_type = self.output_params[0].param_type
+            else:
+                # Multiple outputs wrapped in a Tuple
+                output_types = ", ".join(
+                    param.param_type for param in self.output_params
+                )
+                output_type = f"Tuple[{output_types}]"
+            function_def += f" -> {output_type}:\n"
+        else:
+            function_def += ":\n"
+
+        # Add the docstring
+        function_def += '    """\n'
+        function_def += f"    {self.description}\n\n"
+        function_def += "    Parameters:\n"
+        if self.input_params:
+            for param in self.input_params:
+                function_def += (
+                    f"        {param.name} ({param.param_type}): {param.description}\n"
+                )
+
+        if self.output_params:
+            function_def += "\n    Returns:\n"
+            for param in self.output_params:
+                function_def += (
+                    f"        {param.name} ({param.param_type}): {param.description}\n"
+                )
+        function_def += '    """\n'
+
+        # Placeholder for function body
+        function_def += "    pass\n"
+
+        return function_def
+
     class Config:
         use_enum_values = True
 
@@ -170,8 +221,7 @@ class NodeGraph(BaseModel):
         errors = []
         # TODO: This may need improvement
         node_types = {}
-        
-        
+
         node_names = []
         unique_node_names = set()
         for node in v:
@@ -203,7 +253,7 @@ class NodeGraph(BaseModel):
             errors.append("There can only be 1 end node")
         if len(node_names) != len(unique_node_names):
             errors.append("Node names must be unique")
-        
+
         for node in v:
             if node.next_node_name and node.next_node_name not in ids:
                 errors.append(

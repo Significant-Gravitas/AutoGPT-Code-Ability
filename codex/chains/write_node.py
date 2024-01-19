@@ -170,7 +170,10 @@ def write_code_chain(
     prompt_write_node = ChatPromptTemplate.from_messages(
         [
             ("system", template),
-            ("human", "Write the function for the following node {node}"),
+            (
+                "human",
+                "Write the function for the following node template: ```\n{node}\n```",
+            ),
         ]
     )
     chain_write_node = prompt_write_node | code_model | parser_write_node
