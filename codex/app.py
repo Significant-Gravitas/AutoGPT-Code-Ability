@@ -11,12 +11,13 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
 from sqlmodel import SQLModel, create_engine  # type: ignore
 from starlette.background import BackgroundTask
+
 from codex.agent import (
-    run,
+    GraphCompliationError,
     NodeDecompositionError,
     NodeGraphGenerationError,
-    GraphCompliationError,
     ServerCreationError,
+    run,
 )
 
 DATABASE_URL = os.environ.get(
