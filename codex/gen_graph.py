@@ -338,8 +338,9 @@ def process_path(path, session, ap, engine, path_index, total_paths):
             raise NodeGraphGenerationError(
                 f"Failed to generate node graph for path: {path.name}"
             )
+        else: 
+            logger.info(f"✅ Execution graph generated for path: {path.name}")
 
-        assert node_graph.nodes, "Execution graph is empty"
         logger.info("🌐 Execution graph generated")
         logger.debug(f"Execution graph: {node_graph}")
 
