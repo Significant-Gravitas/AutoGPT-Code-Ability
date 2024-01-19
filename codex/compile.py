@@ -374,7 +374,7 @@ def create_fastapi_server(functions_data: List[FunctionData]) -> bytes:
             if len(params) > 1:
                 # Create Pydantic model for request
                 request_model = f"class RequestModel{idx}(BaseModel):\n"
-                request_model += "\n".join([f"    {param.arg}: {param.annotation}" for param in params])
+                request_model += "\n".join([f"    {param.arg}: {ast.unparse(param.annotation)}" for param in params])
 
                 # Add to endpoint functions
                 endpoint_functions += f"""
@@ -387,7 +387,7 @@ def endpoint_{idx}(request: RequestModel{idx}):
 """
             else:
                 # Generate endpoint without Pydantic models
-                params_str = ", ".join([f"{param.arg}: {param.annotation}" for param in params])
+                params_str = ", ".join([f"{param.arg}: {ast.unparse(param.annotation)}" for param in params])
                 endpoint_functions += f"""
 @app.get("/{sanitized_endpoint_name}")
 def endpoint_{idx}({params_str}):
