@@ -80,7 +80,7 @@ class NodeDef(BaseModel):
     description: str
     input_params: Optional[List[Param]]
     output_params: Optional[List[Param]]
-    # Unique fields for different node types with string references
+
     next_node_name: Optional[str] = None
 
     python_if_condition: Optional[str] = None
@@ -247,14 +247,22 @@ class NodeGraph(BaseModel):
                         errors.append(
                             f"Node {node.name} has an input parameter that is not an output parameter of a previous nodes: {input_param.name}: {input_param.param_type}\n {output_params}"
                         )
+
         if node_types["start"] > 1:
             errors.append("There can only be 1 start node")
         if node_types["end"] > 1:
             errors.append("There can only be 1 end node")
         if len(node_names) != len(unique_node_names):
             errors.append("Node names must be unique")
-
+        last_node_type = None
         for node in v:
+            if node.node_type == NodeTypeEnum.IF.value:
+                if last_node_type == node.node_type:
+                    errors.append(
+                        f"Node logic error - IF node cannot follow another IF node: {node.name}"
+                    )
+
+            last_node_type = node.node_type
             if node.next_node_name and node.next_node_name not in ids:
                 errors.append(
                     f"Node {node.name} has a next_node_name that does not exist: {node.next_node_name}"
@@ -278,14 +286,15 @@ class NodeGraph(BaseModel):
                         )
             if len(errors) > 0:
                 raise ValueError("\n".join(errors))
-            return v
+        return v
 
 
 example_nodes = """
 Eample nodes:
+
 # Start Node (type start):
     {
-         e": "startNode1",
+        "name": "start_node",
         "node_type": "start",
         "description": "Start of the process",
         "output_params": [
@@ -295,12 +304,12 @@ Eample nodes:
                 "description": "Output parameter of start node",
             }
         ],
-        "next_node_name": "actionNode1",
+        "next_node_name": "action_node",
     }
     
 # Action Node (type action):
     {
-        "name": "actionNode1",
+        "name": "action_node",
         "node_type": "action",
         "description": "Perform an action",
         "input_params": [
@@ -317,11 +326,13 @@ Eample nodes:
                 "description": "The result of the action",
             }
         ],
-        "next_node_name": "ifNode1", # Not needed if it is the last node in a for each loop
+        "next_node_name": "if_node",
     },
+    
+    
 # If Node (type if):
     {
-        "name": "ifNode1",
+        "name": "if_node",
         "node_type": "if",
         "description": "Conditional execution",
         "input_params": [
@@ -332,15 +343,16 @@ Eample nodes:
             }
         ],
         "python_if_condition": "inputParam > 10",
-        "true_next_node_name": "actionNode2",
+        "true_next_node_name": "another_node",
         "elifs": [
             {"python_condition": "inputParam == 5", "true_next_node_name": "actionNode3"}
         ],
-        "false_next_node_name": "endNode2",
+        "false_next_node_name": "end_node",
     },
+    
 # End Node (type end):
     {
-        "name": "endNode1",
+        "name": "end_node",
         "node_type": "end",
         "description": "End of the process",
         "input_params": [
@@ -353,6 +365,43 @@ Eample nodes:
     },
 """
 
+NODE_GRAPH_RULES: str = """
+To create a valid node graph with valid nodes, follow these concise and clear rules:
+
+1. **Node List Composition**: The `nodes` attribute must be a list consisting exclusively of `NodeDef` instances.
+
+2. **Unique Node Names**: Each node in the graph must have a unique name that follow **python function name format**.
+
+3. **Node Type Compliance**: Ensure each node complies with its type-specific rules:
+   - START and ACTION nodes must have a `next_node_name`.
+   - END and IF nodes must not have a `next_node_name`.
+   - IF nodes require `python_if_condition`, `true_next_node_name`, `false_next_node_name`, and optionally `elifs`.
+   - An IF node can not be followed by another IF node.
+
+4. **Parameter Validation**:
+   - Non-START nodes must have `input_params`.
+   - END nodes must have `input_params` and must not have `output_params`.
+   - START, ACTION, and other specific node types must have `output_params`.
+   - param_type must be one of the following python types: `bool`, `int`, `float`, `complex`, `str`, `bytes`, `tuple`, `list`, `dict`, `set`, `frozenset`.
+   - collection based param_types must be in the format: `list[int]`, `set[str]`, `tuple[float, str]`, etc.
+   
+5. **Correct Node Linking**: 
+   - The `next_node_name` in each node should refer to another existing node in the list.
+   - For IF nodes, validate `true_next_node_name` and `false_next_node_name` against existing nodes.
+
+6. **EXACTLY ONE Start and ONE End Node**: The graph must contain only one START node and one END node.
+
+7. *NO ERROR HANDLING NODES**: There should be no nodes dedicated to error or exception handling.
+
+8. **Reachability**: Every node, except START nodes, must be reachable from at least one other node.
+
+9. **Optional Cyclic Dependency Check**: Consider checking for and eliminating cyclic dependencies to prevent infinite loops.
+
+By following these rules, you ensure the creation of a valid, consistent, and well-structured node graph.
+
+IMPORTANT A VALID NODE GRAPH MUST HAVE ONLY 1 END NODE!!!
+"""
+
 parser_generate_execution_graph = JsonOutputParser(pydantic_object=NodeGraph)
 parser_generate_execution_graph_obj = PydanticOutputParser(pydantic_object=NodeGraph)
 prompt_fix_generate_execution_graph = ChatPromptTemplate.from_messages(
@@ -361,6 +410,7 @@ prompt_fix_generate_execution_graph = ChatPromptTemplate.from_messages(
             "system",
             "Your are an expert at node graph generation. You will be given a node graph with an error in it along with the error message. Your task is to return the complete node graph with all errors fixed.\nReply in json format:\n{format_instructions}",
         ),
+        ("system", "Node Graph Rules:\n{NODE_GRAPH_RULES}"),
         (
             "human",
             "Node graph with error:\n{node_graph}\nError message:\n{error}",
@@ -371,15 +421,17 @@ prompt_generate_execution_graph = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "You are an expert software engineer specialised in breaking down a problem into a series of steps that can be developed by a junior developer. Each step is designed to be as generic as possible. The first step is a `start` node with `request` in the name it represents a request object and only has output params. The last step is a `end` node with `response` in the name it represents aresposne object and only has input parameters.\nReply in json format:\n{format_instructions}\n\n# Important:\n for param_type use only these primitive types - bool, int, float, complex, str, bytes, tuple, list, dict, set, frozenset.\n node names are in python function name format\n There must be only 1 start node and 1 end node.\n\n# Example Nodes\n{example_nodes}",
+            "You are an expert software engineer specialised in breaking down a problem into a series nodes as part of a node graph that can be developed by a junior developer.\n\nEach node is designed to be as generic as possible.\n\nReply in json format:\n{format_instructions}",
         ),
+        ("system", "### IMPORTANT\nNode Graph Rules:\n{NODE_GRAPH_RULES}"),
+        ("system", "Example Nodes:\n{example_nodes}"),
         (
             "human",
             "The application being developed is: \n{application_context}. Do not call any nodes with the same name as the endpoint: {graph_name}",
         ),
         (
             "human",
-            "Thinking carefully step by step. Ouput the steps as nodes for the api route ensuring output paraameter names of a node match the input parameter names needed by following nodes:\n{api_route}\n# Important:\n The the node definitions for all node_id's used must be in the graph\nErrors are handled by raising acceptions and are not passed throught the node graph",
+            "Thinking carefully step by step. Ouput the nodes for the api route ensuring output paraameter names of a node match the input parameter names needed by following nodes:\n{api_route}\n# Important:\n - The the node definitions for all node_id's used must be in the graph\n - Errors are handled by raising acceptions from within a node and are not handled within the graph. There should be no nodes dedicated to exception handling or rasing them!",
         ),
     ]
 ).partial(format_instructions=parser_generate_execution_graph.get_format_instructions())
@@ -392,21 +444,25 @@ prompt_generate_execution_graph = ChatPromptTemplate.from_messages(
 )
 def fix_node_graph(node_graph, error):
     chain = (
-        prompt_fix_generate_execution_graph
-        | model
-        | parser_generate_execution_graph_obj
+        prompt_fix_generate_execution_graph | model | parser_generate_execution_graph
     )
-    try:
-        return chain.invoke(
-            {
-                "node_graph": node_graph,
-                "error": error,
-            }
-        )
-    except Exception as e:
-        logger.warning(
-            f"Error fixing node graph: {e}\n\n{node_graph}\nValidation error during fixing node graph call"
-        )
+    attempts = 0
+    while attempts < 5:
+        try:
+            node_graph = chain.invoke(
+                {
+                    "node_graph": node_graph,
+                    "error": error,
+                    "NODE_GRAPH_RULES": NODE_GRAPH_RULES,
+                }
+            )
+            return NodeGraph.parse_obj(node_graph)
+        except Exception as e:
+            logger.warning(
+                f"Error fixing node graph: {e}\n\n{node_graph}\nValidation error during fixing node graph call"
+            )
+            error = str(e)
+            attempts += 1
 
 
 @retry(
@@ -422,6 +478,7 @@ def chain_generate_execution_graph(application_context, path, path_name):
             "api_route": path,
             "graph_name": path_name,
             "example_nodes": example_nodes,
+            "NODE_GRAPH_RULES": NODE_GRAPH_RULES,
         }
     )
     try:
@@ -439,6 +496,7 @@ prompt_decompose_node = ChatPromptTemplate.from_messages(
             "system",
             "You are an expert software engineer specialised in breaking down a problem into a series of steps that can be developed by a junior developer. Each step is designed to be as generic as possible. The first step is a `start` node with `request` in the name it represents a request object and only has output params. The last step is a `end` node with `response` in the name it represents aresposne object and only has input parameters.\nReply in json format:\n{format_instructions}\n\n# Important:\n for param_type use only these primitive types - bool, int, float, complex, str, bytes, tuple, list, dict, set, frozenset.\n node names are in python function name format\n There must be only 1 start node and 1 end node.\n\n# Example Nodes\n{example_nodes}",
         ),
+        ("system", "### IMPORTANT\nNode Graph Rules:\n{NODE_GRAPH_RULES}"),
         (
             "human",
             "The application being developed is: \n{application_context}",
@@ -462,6 +520,7 @@ def chain_decompose_node(application_context, node):
         {
             "application_context": application_context,
             "node": node,
+            "NODE_GRAPH_RULES": NODE_GRAPH_RULES,
         }
     )
 

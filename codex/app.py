@@ -98,7 +98,7 @@ logger = logging.getLogger(__name__)
 def handle_code_request(request: CodeRequest, user: str = Depends(authenticate)):
     logger.info(f"Received code request from user: {user}")
     try:
-        zip_bytes = run(request.description, engine)
+        zip_bytes = run(request.description, engine, fast=False)
     except NodeGraphGenerationError as e:
         raise HTTPException(
             status_code=500, detail=str(e) if DETAILED else e.simple_msg
