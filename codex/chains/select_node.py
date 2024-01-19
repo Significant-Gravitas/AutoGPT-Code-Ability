@@ -1,13 +1,14 @@
 import logging
-from typing import List, Optional, Dict, Type, TypeVar
+from typing import Dict, List, Optional, Type, TypeVar
 
-from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
 from langchain.output_parsers import PydanticOutputParser
+from langchain.prompts import ChatPromptTemplate
 from langchain.pydantic_v1 import BaseModel
+from langchain_openai import ChatOpenAI
+from tenacity import retry, stop_after_attempt, wait_none
+
 from codex.chains.gen_branching_graph import NodeDef
 from codex.model import Node
-from tenacity import retry, stop_after_attempt, wait_none
 
 logger = logging.getLogger(__name__)
 

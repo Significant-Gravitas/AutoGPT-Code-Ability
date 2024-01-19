@@ -1,10 +1,9 @@
 import logging
 
-from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
 from langchain.output_parsers import PydanticOutputParser
+from langchain.prompts import ChatPromptTemplate
 from langchain.pydantic_v1 import BaseModel
-
+from langchain_openai import ChatOpenAI
 
 logger = logging.getLogger(__name__)
 
