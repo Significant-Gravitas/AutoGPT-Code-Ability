@@ -37,7 +37,7 @@ prompt_decompose_task = ChatPromptTemplate.from_messages(
         ),
         (
             "human",
-            "Thinking carefully step by step.  Decompose this problem into the required api endpoints:\n{task}",
+            "Thinking carefully step by step.  Decompose this problem into the minimum number of api endpoints needed:\n{task}",
         ),
     ]
 ).partial(format_instructions=parser_decode_task.get_format_instructions())
