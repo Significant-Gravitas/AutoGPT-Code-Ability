@@ -60,6 +60,8 @@ def parse_requirements(requirements_str: str) -> List[RequiredPackage]:
 
     return packages
 
+class CodeValidationException(Exception):
+    pass
 
 class CodeOutputParser(StrOutputParser):
     """OutputParser that parses LLMResult into the top likely string."""
@@ -129,7 +131,7 @@ class CodeOutputParser(StrOutputParser):
                 )
 
             if errors:
-                raise ValueError(f"Errors found in generated node code: {errors}")
+                raise CodeValidationException(f"Node Template: ```\n{formatted_code}\n```\n\n Known issues with the code:\n\n" + "\n".join(errors))
             return formatted_code
         except Exception as e:
             raise ValueError(f"Error formatting code: {e}")
@@ -185,5 +187,10 @@ def write_code_chain(
         except Exception as e:
             attempts += 1
             logger.error(f"Error writing node: {e}")
+            continue
+        except CodeValidationException as e:
+            attempts += 1
+            logger.error(f"Error validating code: {e}")
+            invoke_params["node_template"] = str(e)
             continue
     raise ValueError(f"Error writing node after {max_retries} attempts.")
