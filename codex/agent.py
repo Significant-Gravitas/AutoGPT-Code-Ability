@@ -143,7 +143,7 @@ def process_node(
             if not complexity.is_complex:
                 logger.debug(f"📝 Writing new node code for: {node_def.name}")
                 required_packages, code = write_code_chain(
-                    invoke_params={"node": node_def}
+                    invoke_params={"node": node_def, "node_template": node_def.code_template()}
                 )
 
                 logger.debug(f"📦 Adding new node to the database: {node_def.name}")

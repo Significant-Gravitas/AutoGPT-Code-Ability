@@ -172,7 +172,7 @@ def write_code_chain(
             ("system", template),
             (
                 "human",
-                "Write the function for the following node template: ```\n{node}\n```",
+                "Write the function for the following node template: ```\n{node_template}\n```",
             ),
         ]
     )
