@@ -397,7 +397,7 @@ def fix_node_graph(node_graph, error):
         | parser_generate_execution_graph_obj
     )
     try:
-        output = chain.invoke(
+        return chain.invoke(
             {
                 "node_graph": node_graph,
                 "error": error,
@@ -407,8 +407,6 @@ def fix_node_graph(node_graph, error):
         logger.error(
             f"Error fixing node graph: {e}\n\n{node_graph}\nValidation error during fixing node graph call"
         )
-    return output
-
 
 @retry(
     wait=wait_none(),

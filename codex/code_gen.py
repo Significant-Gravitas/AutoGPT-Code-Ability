@@ -140,7 +140,7 @@ def pre_process_nodes(node_graph: NodeGraph) -> List[CodeableNode]:
                     skip_node.extend(skip)
                     codeable_nodes.extend(code)
 
-            if node.false_next_node_name != node_graph.nodes[-1].name:
+            if node.false_next_node_name != commonon_descendent:
                 codeable_nodes.append(
                     CodeableNode(
                         indent_level=indent_level,
