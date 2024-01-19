@@ -9,7 +9,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI
 
 from codex.chains.gen_branching_graph import NodeDef, Param
-from codex.model import RequiredPackage
+from codex.db_model import RequiredPackage
 
 logger = logging.getLogger(__name__)
 

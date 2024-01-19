@@ -404,7 +404,7 @@ def fix_node_graph(node_graph, error):
             }
         )
     except Exception as e:
-        logger.error(
+        logger.warning(
             f"Error fixing node graph: {e}\n\n{node_graph}\nValidation error during fixing node graph call"
         )
 
@@ -427,7 +427,7 @@ def chain_generate_execution_graph(application_context, path, path_name):
     try:
         node_graph = NodeGraph.parse_obj(output)
     except Exception as e:
-        logger.error(f"Error parsing node graph: {e}")
+        logger.warning(f"Error parsing node graph: {e}")
         return fix_node_graph(output, str(e))
     return node_graph
 
@@ -502,7 +502,7 @@ def chain_decompose_node(application_context, node):
 
 
 if __name__ == "__main__":
-    from codex.code_gen import pre_process_nodes
+    from codex.compile import pre_process_nodes
 
     logging.basicConfig(level=logging.INFO)
 

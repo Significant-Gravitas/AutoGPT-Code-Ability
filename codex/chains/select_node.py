@@ -8,7 +8,7 @@ from langchain_openai import ChatOpenAI
 from tenacity import retry, stop_after_attempt, wait_none
 
 from codex.chains.gen_branching_graph import NodeDef
-from codex.model import Node
+from codex.db_model import Node
 
 logger = logging.getLogger(__name__)
 

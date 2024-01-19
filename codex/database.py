@@ -4,7 +4,7 @@ from openai import OpenAI
 from sqlalchemy import func
 from sqlmodel import Session, select
 
-from .model import InputParameter, Node, OutputParameter
+from .db_model import InputParameter, Node, OutputParameter
 
 
 def select_node_by_id(session: Session, node_id: int) -> Optional[Node]:

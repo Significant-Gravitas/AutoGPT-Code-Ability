@@ -1,9 +1,10 @@
 from enum import Enum
 from typing import List, Optional
 
-from pgvector.sqlalchemy import Vector  # type: ignore
 from langchain.pydantic_v1 import BaseModel
+from pgvector.sqlalchemy import Vector  # type: ignore
 from sqlmodel import Column, Field, Relationship, SQLModel  # type: ignore
+
 from codex.chains.gen_branching_graph import NodeGraph
 
 

@@ -4,13 +4,16 @@ import os
 import re
 import tempfile
 import zipfile
+from collections import defaultdict
 from enum import Enum
 from typing import List
 
 from langchain.pydantic_v1 import BaseModel
 
+from codex.chains.decompose_task import ExecutionPath
+
 from .chains.gen_branching_graph import ElseIf, NodeDef, NodeGraph, NodeTypeEnum
-from .model import FunctionData, Node
+from .db_model import FunctionData, Node, RequiredPackage
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +80,63 @@ class CodeableNode(BaseModel):
             return out
         else:
             raise ValueError(f"Invalid node type: {self.node_type}")
+
+
+def generate_requirements_txt(packages: List[RequiredPackage]) -> str:
+    resolved_packages = defaultdict(list)
+
+    # Aggregate versions and specifiers for each package
+    for package in packages:
+        resolved_packages[package.package_name].append(
+            (package.version, package.specifier)
+        )
+
+    requirements = []
+    for package, versions_specifiers in resolved_packages.items():
+        # Handle different cases of version and specifier here
+        # For simplicity, we just pick the first version and specifier encountered
+        # More complex logic might be needed depending on the requirement
+        version, specifier = versions_specifiers[0]
+        if version and specifier:
+            requirement = f"{package}{specifier}{version}"
+        elif version:
+            requirement = f"{package}=={version}"
+        else:
+            requirement = package
+        requirements.append(requirement)
+
+    return "\n".join(requirements)
+
+
+def compile_graph(
+    graph: NodeGraph, node_implementations: List[Node], ep: ExecutionPath
+):
+    # Check if the graph is a DAG
+    python_file = ""
+    requirements = []
+    function_name = (
+        ep.name.strip().replace(" ", "_").replace("-", "_").replace("/", "").lower()
+        + "_request"
+    )
+
+    graph_script = convert_graph_to_code(graph, function_name)
+
+    for node in node_implementations:
+        if node.code:
+            python_file += f"\n\n{node.code}"
+        if node.required_packages:
+            requirements.extend(node.required_packages)
+
+    python_file += f"\n\n{graph_script}"
+    requirements_txt = generate_requirements_txt(requirements)
+
+    return FunctionData(
+        function_name=function_name,
+        code=python_file,
+        requirements_txt=requirements_txt,
+        endpoint_name=ep.endpoint_name,
+        graph=graph,
+    )
 
 
 def convert_graph_to_code(node_graph: NodeGraph, function_name: str) -> str:
@@ -224,6 +284,9 @@ def find_common_descendent(nodes: List[Node], node: NodeDef, i: int) -> str:
     return commonon_descendent
 
 
+class CompilerError(Exception):
+    pass
+
 def analyze_function_signature(code: str, function_name: str):
     # Parse the code into an AST (Abstract Syntax Tree)
     try:
@@ -231,13 +294,13 @@ def analyze_function_signature(code: str, function_name: str):
     except Exception as e:
         logger.error(f"Error parsing code: {e}")
         logger.error(f"Code:\n {code}")
-        raise ValueError("Error parsing code")
+        raise CompilerError("Error parsing code")
 
     # Find the definition of the function
     for node in tree.body:
         if isinstance(node, ast.FunctionDef) and node.name == function_name:
             # Extract the parameters
-            params = [arg.arg for arg in node.args.args]
+            params = [arg for arg in node.args.args]
 
             # Check for return annotation
             return_type = None
@@ -266,9 +329,16 @@ def create_fastapi_server(functions_data: List[FunctionData]) -> bytes:
         # Process each function data Pydantic object
         for idx, function_data in enumerate(functions_data):
             # Analyze the function
-            params, return_type = analyze_function_signature(
-                function_data.code, function_data.function_name
-            )
+            try:
+                params, return_type = analyze_function_signature(
+                    function_data.code, function_data.function_name
+                )
+            except CompilerError as e:
+                logger.error(f"Node Graph for failed compilation:\n{function_data.graph.json()}")
+                raise e
+            except Exception as e:
+                raise e
+            
             if not params:
                 logger.error(
                     f"Function {function_data.function_name} has no parameters: Details:\n {function_data.code}"
@@ -304,7 +374,7 @@ def create_fastapi_server(functions_data: List[FunctionData]) -> bytes:
             if len(params) > 1:
                 # Create Pydantic model for request
                 request_model = f"class RequestModel{idx}(BaseModel):\n"
-                request_model += "\n".join([f"    {param}: str" for param in params])
+                request_model += "\n".join([f"    {param.arg}: {param.annotation}" for param in params])
 
                 # Add to endpoint functions
                 endpoint_functions += f"""
@@ -317,11 +387,11 @@ def endpoint_{idx}(request: RequestModel{idx}):
 """
             else:
                 # Generate endpoint without Pydantic models
-                params_str = ", ".join([f"{param}: str" for param in params])
+                params_str = ", ".join([f"{param.arg}: {param.annotation}" for param in params])
                 endpoint_functions += f"""
 @app.get("/{sanitized_endpoint_name}")
 def endpoint_{idx}({params_str}):
-    return {function_data.function_name}({', '.join(params)})
+    return {function_data.function_name}({', '.join([param.arg for param in params])})
 """
 
             # Add requirements
@@ -335,6 +405,7 @@ def endpoint_{idx}({params_str}):
 
         init_file_path = os.path.join(app_dir, "__init__.py")
         with open(init_file_path, "w") as init_file:
+            init_file.write("")
             pass
 
         # Write combined requirements to requirements.txt

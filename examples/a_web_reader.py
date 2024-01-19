@@ -1,4 +1,4 @@
-from codex.model import InputParameter, Node, OutputParameter
+from codex.db_model import InputParameter, Node, OutputParameter
 
 nodes = [
     Node(  # type: ignore

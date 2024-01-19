@@ -16,10 +16,9 @@ from codex.chains.gen_branching_graph import (
 )
 from codex.chains.select_node import SelectNode, chain_select_from_possible_nodes
 from codex.chains.write_node import write_code_chain
-from codex.code_gen import create_fastapi_server
-from codex.dag import compile_graph
+from codex.compile import compile_graph, create_fastapi_server
 from codex.database import search_for_similar_node
-from codex.model import InputParameter, Node, OutputParameter
+from codex.db_model import InputParameter, Node, OutputParameter
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +114,6 @@ def process_node(
     session (Session): Database session.
     node (NodeDef): The current node to process.
     ap (ApplicationPaths): Application paths context.
-    dag (nx.DiGraph): The directed acyclic graph of nodes.
     """
     logger.debug(f"🚀 Processing node: {node_def.name}")
     if node_def.node_type in [NodeTypeEnum.START.value, NodeTypeEnum.END.value]:
@@ -143,7 +141,10 @@ def process_node(
             if not complexity.is_complex:
                 logger.debug(f"📝 Writing new node code for: {node_def.name}")
                 required_packages, code = write_code_chain(
-                    invoke_params={"node": node_def, "node_template": node_def.code_template()}
+                    invoke_params={
+                        "node": node_def,
+                        "node_template": node_def.code_template(),
+                    }
                 )
 
                 logger.debug(f"📦 Adding new node to the database: {node_def.name}")
@@ -235,7 +236,7 @@ def process_node(
                         )
                         param.name = selected_node.output_map[param.name]
 
-            logger.debug(f"🔗 Adding existing node to the DAG: {node.name}")
+            logger.debug(f"🔗 Adding existing node to the graph: {node.name}")
             return [node]
 
 
@@ -329,7 +330,9 @@ def process_path(path, session, ap, engine, path_index, total_paths):
         )
         logger.debug("📈 Generating execution graph")
 
-        node_graph = chain_generate_execution_graph(ap.application_context, path, path.name)
+        node_graph = chain_generate_execution_graph(
+            ap.application_context, path, path.name
+        )
         if not node_graph:
             logger.error(f"❌ Failed to generate node graph for path: {path.name}")
             raise NodeGraphGenerationError(
@@ -342,7 +345,9 @@ def process_path(path, session, ap, engine, path_index, total_paths):
 
         processed_nodes = []
         for node_index, node in enumerate(node_graph.nodes, start=1):
-            logger.info(f"🔨 Processing node {node_index}/{len(node_graph.nodes)}: {node.name}")
+            logger.info(
+                f"🔨 Processing node {node_index}/{len(node_graph.nodes)}: {node.name}"
+            )
             processed_node = process_node(session, node, processed_nodes, ap, engine)
 
             if processed_node:

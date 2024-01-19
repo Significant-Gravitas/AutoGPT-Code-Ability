@@ -1,4 +1,4 @@
-from codex.model import InputParameter, Node, OutputParameter
+from codex.db_model import InputParameter, Node, OutputParameter
 
 registration_path = [
     # Node for requesting user registration details

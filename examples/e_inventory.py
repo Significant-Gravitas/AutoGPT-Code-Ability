@@ -1,4 +1,4 @@
-from codex.model import InputParameter, Node, OutputParameter
+from codex.db_model import InputParameter, Node, OutputParameter
 
 # Execution Path 1: Adding Inventory Items
 

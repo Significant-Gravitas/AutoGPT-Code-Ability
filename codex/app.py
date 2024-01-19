@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from sqlmodel import SQLModel, create_engine  # type: ignore
 from starlette.background import BackgroundTask
 
-from codex.agent import (
+from codex.gen_graph import (
     GraphCompliationError,
     NodeDecompositionError,
     NodeGraphGenerationError,
