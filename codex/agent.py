@@ -329,20 +329,20 @@ def process_path(path, session, ap, engine, path_index, total_paths):
         )
         logger.debug("📈 Generating execution graph")
 
-        ng = chain_generate_execution_graph(ap.application_context, path, path.name)
-        if not ng:
+        node_graph = chain_generate_execution_graph(ap.application_context, path, path.name)
+        if not node_graph:
             logger.error(f"❌ Failed to generate node graph for path: {path.name}")
             raise NodeGraphGenerationError(
                 f"Failed to generate node graph for path: {path.name}"
             )
 
-        assert ng.nodes, "Execution graph is empty"
+        assert node_graph.nodes, "Execution graph is empty"
         logger.info("🌐 Execution graph generated")
-        logger.debug(f"Execution graph: {ng}")
+        logger.debug(f"Execution graph: {node_graph}")
 
         processed_nodes = []
-        for node_index, node in enumerate(ng.nodes, start=1):
-            logger.info(f"🔨 Processing node {node_index}/{len(ng.nodes)}: {node.name}")
+        for node_index, node in enumerate(node_graph.nodes, start=1):
+            logger.info(f"🔨 Processing node {node_index}/{len(node_graph.nodes)}: {node.name}")
             processed_node = process_node(session, node, processed_nodes, ap, engine)
 
             if processed_node:
@@ -350,16 +350,16 @@ def process_path(path, session, ap, engine, path_index, total_paths):
 
         logger.info("🔗 All nodes processed, compiling graph")
         try:
-            return compile_graph(ng, processed_nodes, path)
+            return compile_graph(node_graph, processed_nodes, path)
         except Exception as e:
             errmsg = traceback.format_exc()
             logger.error(
-                f"❌ Failed to compile the graph: {e}\n\nDetails:\n{ng}\n {errmsg}"
+                f"❌ Failed to compile the graph: {e}\n\nDetails:\n{node_graph}\n {errmsg}"
             )
             raise GraphCompliationError(f"Failed to compile graph: {e}")
     except Exception as e:
         errmsg = traceback.format_exc()
-        logger.error(f"❌ Path processing failed: {e}\n\nDetails:\n{ng}\n {errmsg}")
+        logger.error(f"❌ Path processing failed: {e}\n\nDetails:\n {errmsg}")
         raise e
 
 
