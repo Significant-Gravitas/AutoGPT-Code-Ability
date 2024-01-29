@@ -72,7 +72,7 @@ for ii, cluster in enumerate(closest_descriptions.keys()):
     request = f"Respond in the format:\nTask Type: summary of type of tasks in this cluster\nExample Task: an example task\nSummaries the following task cluster explain the type of tasks that are present and generating an example task that is indicative of the tasks in this cluster. \n\n Cluster {cluster} \n\n {descriptions[0]} \n\n {descriptions[1]} \n\n {descriptions[2]} \n\n {descriptions[3]} \n\n {descriptions[4]}"
 
     response = client.chat.completions.create(
-        model="gpt-4-1106-preview",
+        model="gpt-4-0125-preview",
         messages=[{"role": "user", "content": request}],
     )
 
