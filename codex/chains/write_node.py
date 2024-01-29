@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 code_model = ChatOpenAI(
     temperature=1,
-    model_name="gpt-4-1106-preview",
+    model_name="gpt-4-0125-preview",
     max_tokens=4095,
 )
 
@@ -60,8 +60,10 @@ def parse_requirements(requirements_str: str) -> List[RequiredPackage]:
 
     return packages
 
+
 class CodeValidationException(Exception):
     pass
+
 
 class CodeOutputParser(StrOutputParser):
     """OutputParser that parses LLMResult into the top likely string."""
@@ -131,7 +133,10 @@ class CodeOutputParser(StrOutputParser):
                 )
 
             if errors:
-                raise CodeValidationException(f"Node Template: ```\n{formatted_code}\n```\n\n Known issues with the code:\n\n" + "\n".join(errors))
+                raise CodeValidationException(
+                    f"Node Template: ```\n{formatted_code}\n```\n\n Known issues with the code:\n\n"
+                    + "\n".join(errors)
+                )
             return formatted_code
         except Exception as e:
             raise ValueError(f"Error formatting code: {e}")
