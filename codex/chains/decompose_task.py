@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 model = ChatOpenAI(
     temperature=1,
-    model_name="gpt-4-1106-preview",
+    model_name="gpt-4-0125-preview",
     max_tokens=4095,
     model_kwargs={"top_p": 1, "frequency_penalty": 0, "presence_penalty": 0},
 ).bind(**{"response_format": {"type": "json_object"}})
