@@ -197,3 +197,29 @@ def write_graph_chain(
             continue
     raise ValueError(f"Error writing node after {max_retries} attempts.")
 
+
+if __name__ == '__main__':
+
+    cg = write_graph_chain({"function_name": "check_availability", "description": '''### **Overview**
+
+The function is designed to return the real-time availability status of professionals, dynamically updated based on their current activity or schedule. It operates without the need for database access, relying instead on real-time or pre-set schedule data provided at the time of the query.
+
+### **Input**
+
+1. **Current Time:** The timestamp at which the availability status is being requested.
+2. **Schedule Data:** A pre-set schedule for the professional, including start and end times of appointments or busy periods.
+
+### **Process**
+
+1. **Validation:** Check if the **Schedule** **Data** is valid and if the current time is provided in the correct format.
+2. **Determine Availability:**
+    - If schedule data is provided, the function compares the current time against the schedule to determine if the professional is currently in an appointment or busy period.
+    - If no schedule data is provided, the function assumes the professional's status is assumed to be 'Available' .
+
+### **Output**
+
+1. **Availability Status:** A response indicating the professional's current availability status. The status can be:
+    - 'Available' - The professional is free and can accept appointments.
+    - 'Busy' - The professional is currently occupied and cannot accept appointments.'''})
+    import IPython
+    IPython.embed()
