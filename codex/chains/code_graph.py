@@ -165,3 +165,35 @@ NEVER USE ANY OR OBJ TYPES
 END YOUR REPLY AS SOON AS YOU FNISH THE CODE BLOCK
 '''
 
+
+def write_graph_chain(
+    invoke_params: Dict = {}, max_retries: int = 5, attempts: int = 0
+) -> str:
+    """Returns the input text with no changes."""
+    parser_write_node = CodeGraphOutputParser(function_name=invoke_params["function_name"])
+
+    prompt_write_node = ChatPromptTemplate.from_messages(
+        [
+            ("system", system_prompt),
+            (
+                "human",
+                "Main function name: {function_name}\n Description: {description}",
+            ),
+        ]
+    )
+    chain_write_graph = prompt_write_node | code_model | parser_write_node
+    while attempts < max_retries:
+        try:
+            return chain_write_graph.invoke(
+                invoke_params,
+            )
+        except Exception as e:
+            attempts += 1
+            logger.error(f"Error writing node: {e}")
+            continue
+        except CodeGraphParsingException as e:
+            attempts += 1
+            logger.error(f"Error validating code: {e}")
+            continue
+    raise ValueError(f"Error writing node after {max_retries} attempts.")
+
