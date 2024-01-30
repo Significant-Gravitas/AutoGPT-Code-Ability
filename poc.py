@@ -1,6 +1,6 @@
 import ast
 
-class FuncDefVisitor(ast.NodeVisitor):
+class FuncDefParser(ast.NodeVisitor):
     def __init__(self):
         self.functions = {}
         self.imports = []
