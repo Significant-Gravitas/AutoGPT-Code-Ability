@@ -60,3 +60,33 @@ class CodeGraphVisitor(ast.NodeVisitor):
 class CodeGraphParsingException(Exception):
     pass
 
+class CodeGraphOutputParser(StrOutputParser):
+    """OutputParser that parses LLMResult into the top likely string."""
+    function_name: str
+
+    @staticmethod
+    def _sanitize_output(text: str):
+        # Initialize variables to store requirements and code
+        code = text.split("```python")[1].split("```")[0]
+        logger.debug(f"Code: {code}")
+        return code
+    
+
+    def parse(self, text: str) -> str:
+        """Returns the input text with no changes."""
+        code = CodeGraphOutputParser._sanitize_output(text)
+        tree = ast.parse(code)
+        visitor = CodeGraphVisitor()
+        visitor.visit(tree)
+        
+        functions = visitor.functions.copy()
+        del functions[self.function_name]
+        
+        return CodeGraph(
+            name=self.function_name,
+            code_graph=visitor.functions[self.function_name],
+            imports=visitor.imports,
+            functions=functions
+        )
+            
+
