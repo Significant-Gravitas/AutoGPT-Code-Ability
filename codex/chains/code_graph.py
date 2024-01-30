@@ -57,3 +57,6 @@ class CodeGraphVisitor(ast.NodeVisitor):
         self.functions[node.name] = ast.unparse(node)
         self.generic_visit(node)
 
+class CodeGraphParsingException(Exception):
+    pass
+
