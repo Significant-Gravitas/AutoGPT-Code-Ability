@@ -1,21 +1,21 @@
-from langchain.pydantic_v1 import BaseModel
-from typing import Dict, List
 import ast
 import logging
 from typing import Dict, List
 
-import ast
 from langchain.prompts import ChatPromptTemplate
+from langchain.pydantic_v1 import BaseModel
 from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI
 
 logger = logging.getLogger(__name__)
+
 
 class CodeGraph(BaseModel):
     name: str
     code_graph: str
     imports: List[str]
     functions: Dict[str, str]
+
 
 class Param(BaseModel):
     param_type: str
@@ -27,23 +27,25 @@ class Param(BaseModel):
 
         return self.param_type.lower() == other.param_type.lower()
 
+
 class FunctionDef(BaseModel):
     name: str
     args: List[Param]
     return_type: str
     template: str
 
+
 code_model = ChatOpenAI(
     temperature=1,
     model_name="gpt-4-0125-preview",
     max_tokens=4095,
 )
-    
+
+
 class CodeGraphVisitor(ast.NodeVisitor):
     def __init__(self):
         self.functions = {}
         self.imports = []
-
 
     def visit_Import(self, node):
         for alias in node.names:
@@ -66,11 +68,11 @@ class CodeGraphVisitor(ast.NodeVisitor):
         params = []
         for arg in node.args.args:
             arg_name = arg.arg
-            arg_type = ast.unparse(arg.annotation) if arg.annotation else 'Unknown'
+            arg_type = ast.unparse(arg.annotation) if arg.annotation else "Unknown"
             args.append(f"{arg_name}: {arg_type}")
             params.append(Param(param_type=arg_type, name=arg_name))
-        args_str = ', '.join(args)
-        return_type = ast.unparse(node.returns) if node.returns else 'None'
+        args_str = ", ".join(args)
+        return_type = ast.unparse(node.returns) if node.returns else "None"
         print(f"Function '{node.name}' definition ({args_str}) -> {return_type}:")
         self.functions[node.name] = FunctionDef(
             name=node.name,
@@ -80,11 +82,14 @@ class CodeGraphVisitor(ast.NodeVisitor):
         )
         self.generic_visit(node)
 
+
 class CodeGraphParsingException(Exception):
     pass
 
+
 class CodeGraphOutputParser(StrOutputParser):
     """OutputParser that parses LLMResult into the top likely string."""
+
     function_name: str
 
     @staticmethod
@@ -93,7 +98,6 @@ class CodeGraphOutputParser(StrOutputParser):
         code = text.split("```python")[1].split("```")[0]
         logger.debug(f"Code: {code}")
         return code
-    
 
     def parse(self, text: str) -> str:
         """Returns the input text with no changes."""
@@ -101,24 +105,25 @@ class CodeGraphOutputParser(StrOutputParser):
         tree = ast.parse(code)
         visitor = CodeGraphVisitor()
         visitor.visit(tree)
-        
+
         functions = visitor.functions.copy()
         del functions[self.function_name]
-        
+
         return CodeGraph(
             name=self.function_name,
             code_graph=visitor.functions[self.function_name],
             imports=visitor.imports,
-            functions=functions
+            functions=functions,
         )
-            
+
 
 system_prompt = '''As an expert staff engineer. You write the structure of a problem in a python function that uses only stuff from only the core python libs, calling stub functions that you have designed to be simple enough for a junior developer to implement.
 
 You always use types from the core python types: `bool`, `int`, `float`, `complex`, `str`, `bytes`, `tuple`, `list`, `dict`, `set`, `frozenset`.
  collection based param_types must be in the format: `list[int]`, `set[str]`, `tuple[float, str]`, etc.
 You can use types from libraries when required.
-You use pydantic objects for complex types
+You use pydantic objects for complex types.
+Generated files can be passed around as bytes
 
 You always add a doc string to each function so the junior developer knows what to do.
 
@@ -182,10 +187,12 @@ def convert_webpages(urls: List[str], format: str) -> List[str]:
     return output
 ```
 
-Always start your answer with your analysis of the problem and possible problems. Then discuss the types of objects that maybe useful
+Thinking carefully step by step. Always start your answer with your analysis of the problem and possible problems. Then discuss the types of objects that maybe useful
 
-NEVER USE ANY OR OBJ TYPES 
-END YOUR REPLY AS SOON AS YOU FNISH THE CODE BLOCK
+## IMPORTANT
+1. NEVER USE ANY OR OBJ TYPES 
+2. ALWAYS CREATE STUB FUNCTIONS FOR LOGIC TO BE IMPLEMENTED
+3. USE A SINGLE CODE BLOCK FOR ALL PYTHON CODE
 '''
 
 
@@ -193,7 +200,9 @@ def write_graph_chain(
     invoke_params: Dict = {}, max_retries: int = 5, attempts: int = 0
 ) -> str:
     """Returns the input text with no changes."""
-    parser_write_node = CodeGraphOutputParser(function_name=invoke_params["function_name"])
+    parser_write_node = CodeGraphOutputParser(
+        function_name=invoke_params["function_name"]
+    )
 
     prompt_write_node = ChatPromptTemplate.from_messages(
         [
@@ -221,9 +230,11 @@ def write_graph_chain(
     raise ValueError(f"Error writing node after {max_retries} attempts.")
 
 
-if __name__ == '__main__':
-
-    cg = write_graph_chain({"function_name": "check_availability", "description": '''### **Overview**
+if __name__ == "__main__":
+    cg = write_graph_chain(
+        {
+            "function_name": "check_availability",
+            "description": """### **Overview**
 
 The function is designed to return the real-time availability status of professionals, dynamically updated based on their current activity or schedule. It operates without the need for database access, relying instead on real-time or pre-set schedule data provided at the time of the query.
 
@@ -243,6 +254,9 @@ The function is designed to return the real-time availability status of professi
 
 1. **Availability Status:** A response indicating the professional's current availability status. The status can be:
     - 'Available' - The professional is free and can accept appointments.
-    - 'Busy' - The professional is currently occupied and cannot accept appointments.'''})
+    - 'Busy' - The professional is currently occupied and cannot accept appointments.""",
+        }
+    )
     import IPython
+
     IPython.embed()
