@@ -17,6 +17,22 @@ class CodeGraph(BaseModel):
     imports: List[str]
     functions: Dict[str, str]
 
+class Param(BaseModel):
+    param_type: str
+    name: str
+
+    def __eq__(self, other):
+        if not isinstance(other, Param):
+            return False
+
+        return self.param_type.lower() == other.param_type.lower()
+
+class FunctionDef(BaseModel):
+    name: str
+    args: List[Param]
+    return_type: str
+    template: str
+
 code_model = ChatOpenAI(
     temperature=1,
     model_name="gpt-4-0125-preview",
@@ -47,14 +63,21 @@ class CodeGraphVisitor(ast.NodeVisitor):
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         args = []
+        params = []
         for arg in node.args.args:
             arg_name = arg.arg
             arg_type = ast.unparse(arg.annotation) if arg.annotation else 'Unknown'
             args.append(f"{arg_name}: {arg_type}")
+            params.append(Param(param_type=arg_type, name=arg_name))
         args_str = ', '.join(args)
         return_type = ast.unparse(node.returns) if node.returns else 'None'
         print(f"Function '{node.name}' definition ({args_str}) -> {return_type}:")
-        self.functions[node.name] = ast.unparse(node)
+        self.functions[node.name] = FunctionDef(
+            name=node.name,
+            args=params,
+            return_type=return_type,
+            template=ast.unparse(node),
+        )
         self.generic_visit(node)
 
 class CodeGraphParsingException(Exception):
