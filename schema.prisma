@@ -1,0 +1,22 @@
+datasource db {
+    // could be postgresql or mysql
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+    extensions = [vector]
+}
+
+generator db {
+    provider             = "prisma-client-py"
+    interface            = "asyncio"
+    recursive_type_depth = 5
+    previewFeatures = ["postgresqlExtensions"]
+}
+
+model FunctionDef {
+    id        String   @id @default(dbgenerated("gen_random_uuid()"))
+    createdAt DateTime @default(now())
+
+    embedding Unsupported("vector(1536)")?
+    name      String
+    code      String
+}
