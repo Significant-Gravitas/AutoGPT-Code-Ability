@@ -38,8 +38,7 @@ sequenceDiagram
 ```
 
 
-
-## Database Schema
+##  Database Schema
 
 The schema revolves around key models:
 
