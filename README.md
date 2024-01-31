@@ -8,15 +8,21 @@ The Codex System is an innovative coding agent designed to streamline the softwa
 
 ## Components of Codex
 
-The Codex System is comprised of the following sub-agents:
+The Codex System is an advanced software development framework comprised of various specialized sub-agents and components. Each component plays a critical role in the software development lifecycle, from conception to deployment. In addition to the primary sub-agents, the Codex System includes essential supportive components: the Common Module, Chains Module, and Prompts Module.
 
-1. **Design (Product Owner)**: This component focuses on understanding and defining the product requirements. It acts as the bridge between the client's needs and the technical team, ensuring that the software developed aligns with the client's vision.
+1. **Design (Product Owner)**: This component is pivotal in understanding and defining the product requirements. It acts as a bridge between the client's needs and the technical team, ensuring that the developed software aligns perfectly with the client's vision.
 
-2. **Architect (Solutions Architect)**: Responsible for devising the overall architecture of the application. This component breaks down the application into manageable pieces and writes the templates that guide the development process.
+2. **Architect (Solutions Architect)**: Responsible for crafting the overall architecture of the application. This component breaks down the application into manageable modules and writes the templates that guide the development process.
 
-3. **Coding (Junior Developer)**: This is the hands-on coding component. Based on the templates and guidelines provided by the Architect, the Coding sub-agent writes the individual functions and pieces of the application.
+3. **Coding (Junior Developer)**: The hands-on coding component. Utilizing the templates and guidelines provided by the Architect, the Coding sub-agent is responsible for writing the individual functions and pieces of the application.
 
-4. **Delivery (Deployment Agent)**: The final component is responsible for compiling, packaging, and deploying the completed application. It ensures that the software is successfully deployed to the relevant environment.
+4. **Delivery (Deployment Agent)**: The final phase of the software development process, this component is tasked with compiling, packaging, and deploying the completed application, ensuring its successful deployment to the designated environment.
+
+5. **Common Module**: A fundamental component used across all stages of development. It provides shared functionalities and resources, such as libraries and tools, that are essential for the Design, Architect, Coding, and Delivery modules. This module ensures consistency and efficiency in the development process.
+
+6. **Chains Module**: A specialized component used by all sub-agents for making Language Learning Model (LLM) calls. The Chains Module contains a seperate file for each llm call. The file must include loading the prompt templates, configuring the prompt, calling the llm, validation of resposne and retry logic.
+
+7. **Prompts**: This component works closely with the Chains Module to generate and manage prompts for LLM interactions. It holds all the prompt templates allowing us to easily itterate prompt design without needing to modify the code.
 
 ## Mermaid Diagram
 
