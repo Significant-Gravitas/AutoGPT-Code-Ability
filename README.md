@@ -24,18 +24,49 @@ Below is a Mermaid diagram illustrating the structure of the Codex System and th
 
 ```mermaid
 erDiagram
-    CODEX-SYSTEM ||--|{ DESIGN : includes
-    CODEX-SYSTEM ||--|{ ARCHITECT : includes
-    CODEX-SYSTEM ||--|{ CODING : includes
-    CODEX-SYSTEM ||--|{ DELIVERY : includes
+    CODEX ||--o{ DESIGN : includes
+    CODEX ||--o{ ARCHITECT : includes
+    CODEX ||--o{ CODING : includes
+    CODEX ||--o{ DELIVERY : includes
     DESIGN ||--|| COMMON-MODULE : uses
     ARCHITECT ||--|| COMMON-MODULE : uses
     CODING ||--|| COMMON-MODULE : uses
     DELIVERY ||--|| COMMON-MODULE : uses
-    DESIGN ||--|{ ARCHITECT : "defines requirements for"
-    ARCHITECT ||--|{ CODING : "architects solution for"
-    CODING ||--|{ DELIVERY : "develops code for"
-    DELIVERY ||--|| CODEX-SYSTEM : "deploys application for"
+    DESIGN ||--|| CHAINS-MODULE : "uses for LLM calls"
+    ARCHITECT ||--|| CHAINS-MODULE : "uses for LLM calls"
+    CODING ||--|| CHAINS-MODULE : "uses for LLM calls"
+    DELIVERY ||--|| CHAINS-MODULE : "uses for LLM calls"
+    DESIGN ||--|| ARCHITECT : "defines requirements for"
+    ARCHITECT ||--|| CODING : "architects solution for"
+    CODING ||--|| DELIVERY : "develops code for"
+    DELIVERY ||--o{ CODEX : "deploys application to"
+    CHAINS-MODULE ||--|| PROMPTS : "manges all prompt templates"
+
+    CODEX {
+        string name
+    }
+    DESIGN {
+        string role "Product Owner"
+    }
+    ARCHITECT {
+        string role "Solutions Architect"
+    }
+    CODING {
+        string role "Junior Developer"
+    }
+    DELIVERY {
+        string role "Build Engineer"
+    }
+    COMMON-MODULE {
+        string function
+    }
+    CHAINS-MODULE {
+        string purpose "LLM Calls"
+    }
+    PROMPTS {
+        string purpose "Prompt Templates"
+    }
+
 ```
 
 ## Workflow
