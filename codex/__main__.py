@@ -148,8 +148,125 @@ def run_tests():
 @cli.command()
 def ng():
     from codex.chains.gen_branching_graph import NodeGraph
-    graph = {"nodes": [{"name": "StartDivide", "node_type": "start", "description": "Start node for the division operation", "input_params": [], "output_params": [{"param_type": "float", "name": "numerator", "description": "The numerator for division"}, {"param_type": "float", "name": "denominator", "description": "The denominator for division"}], "next_node_name": "CheckForZero", "python_if_condition": None, "true_next_node_name": None, "elifs": None, "false_next_node_name": None}, {"name": "CheckForZero", "node_type": "if", "description": "Checks if the denominator is zero", "input_params": [{"param_type": "float", "name": "denominator", "description": "The denominator for division"}], "output_params": [], "next_node_name": None, "python_if_condition": "denominator == 0", "true_next_node_name": "RaiseDivideByZeroException", "elifs": None, "false_next_node_name": "PerformDivision"}, {"name": "raise_exception", "node_type": "action", "description": "Raises an exception if the denominator is zero", "input_params": [{"param_type": "float", "name": "denominator", "description": "The denominator for division"}], "output_params": [{"param_type": "str", "name": "error_message", "description": "Error message for division by zero"}], "next_node_name": "EndDivide", "python_if_condition": None, "true_next_node_name": None, "elifs": None, "false_next_node_name": None}, {"name": "perform_division", "node_type": "action", "description": "Performs the division operation", "input_params": [{"param_type": "float", "name": "numerator", "description": "The numerator for division"}, {"param_type": "float", "name": "denominator", "description": "The denominator for division"}], "output_params": [{"param_type": "float", "name": "result", "description": "The result of division"}], "next_node_name": "EndDivide", "python_if_condition": None, "true_next_node_name": None, "elifs": None, "false_next_node_name": None}, {"name": "EndDivide", "node_type": "end", "description": "End node for the division operation", "input_params": [{"param_type": "float", "name": "result", "description": "The result of division"}], "output_params": [], "next_node_name": None, "python_if_condition": None, "true_next_node_name": None, "elifs": None, "false_next_node_name": None}]}
+
+    graph = {
+        "nodes": [
+            {
+                "name": "StartDivide",
+                "node_type": "start",
+                "description": "Start node for the division operation",
+                "input_params": [],
+                "output_params": [
+                    {
+                        "param_type": "float",
+                        "name": "numerator",
+                        "description": "The numerator for division",
+                    },
+                    {
+                        "param_type": "float",
+                        "name": "denominator",
+                        "description": "The denominator for division",
+                    },
+                ],
+                "next_node_name": "CheckForZero",
+                "python_if_condition": None,
+                "true_next_node_name": None,
+                "elifs": None,
+                "false_next_node_name": None,
+            },
+            {
+                "name": "CheckForZero",
+                "node_type": "if",
+                "description": "Checks if the denominator is zero",
+                "input_params": [
+                    {
+                        "param_type": "float",
+                        "name": "denominator",
+                        "description": "The denominator for division",
+                    }
+                ],
+                "output_params": [],
+                "next_node_name": None,
+                "python_if_condition": "denominator == 0",
+                "true_next_node_name": "RaiseDivideByZeroException",
+                "elifs": None,
+                "false_next_node_name": "PerformDivision",
+            },
+            {
+                "name": "raise_exception",
+                "node_type": "action",
+                "description": "Raises an exception if the denominator is zero",
+                "input_params": [
+                    {
+                        "param_type": "float",
+                        "name": "denominator",
+                        "description": "The denominator for division",
+                    }
+                ],
+                "output_params": [
+                    {
+                        "param_type": "str",
+                        "name": "error_message",
+                        "description": "Error message for division by zero",
+                    }
+                ],
+                "next_node_name": "EndDivide",
+                "python_if_condition": None,
+                "true_next_node_name": None,
+                "elifs": None,
+                "false_next_node_name": None,
+            },
+            {
+                "name": "perform_division",
+                "node_type": "action",
+                "description": "Performs the division operation",
+                "input_params": [
+                    {
+                        "param_type": "float",
+                        "name": "numerator",
+                        "description": "The numerator for division",
+                    },
+                    {
+                        "param_type": "float",
+                        "name": "denominator",
+                        "description": "The denominator for division",
+                    },
+                ],
+                "output_params": [
+                    {
+                        "param_type": "float",
+                        "name": "result",
+                        "description": "The result of division",
+                    }
+                ],
+                "next_node_name": "EndDivide",
+                "python_if_condition": None,
+                "true_next_node_name": None,
+                "elifs": None,
+                "false_next_node_name": None,
+            },
+            {
+                "name": "EndDivide",
+                "node_type": "end",
+                "description": "End node for the division operation",
+                "input_params": [
+                    {
+                        "param_type": "float",
+                        "name": "result",
+                        "description": "The result of division",
+                    }
+                ],
+                "output_params": [],
+                "next_node_name": None,
+                "python_if_condition": None,
+                "true_next_node_name": None,
+                "elifs": None,
+                "false_next_node_name": None,
+            },
+        ]
+    }
     NodeGraph.parse_obj(graph)
-    
+
+
 if __name__ == "__main__":
     cli()

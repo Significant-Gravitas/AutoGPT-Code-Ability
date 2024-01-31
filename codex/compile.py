@@ -287,6 +287,7 @@ def find_common_descendent(nodes: List[Node], node: NodeDef, i: int) -> str:
 class CompilerError(Exception):
     pass
 
+
 def analyze_function_signature(code: str, function_name: str):
     # Parse the code into an AST (Abstract Syntax Tree)
     try:
@@ -334,11 +335,13 @@ def create_fastapi_server(functions_data: List[FunctionData]) -> bytes:
                     function_data.code, function_data.function_name
                 )
             except CompilerError as e:
-                logger.error(f"Node Graph for failed compilation:\n{function_data.graph.json()}")
+                logger.error(
+                    f"Node Graph for failed compilation:\n{function_data.graph.json()}"
+                )
                 raise e
             except Exception as e:
                 raise e
-            
+
             if not params:
                 logger.error(
                     f"Function {function_data.function_name} has no parameters: Details:\n {function_data.code}"
@@ -374,7 +377,12 @@ def create_fastapi_server(functions_data: List[FunctionData]) -> bytes:
             if len(params) > 1:
                 # Create Pydantic model for request
                 request_model = f"class RequestModel{idx}(BaseModel):\n"
-                request_model += "\n".join([f"    {param.arg}: {ast.unparse(param.annotation)}" for param in params])
+                request_model += "\n".join(
+                    [
+                        f"    {param.arg}: {ast.unparse(param.annotation)}"
+                        for param in params
+                    ]
+                )
 
                 # Add to endpoint functions
                 endpoint_functions += f"""
@@ -387,7 +395,12 @@ def endpoint_{idx}(request: RequestModel{idx}):
 """
             else:
                 # Generate endpoint without Pydantic models
-                params_str = ", ".join([f"{param.arg}: {ast.unparse(param.annotation)}" for param in params])
+                params_str = ", ".join(
+                    [
+                        f"{param.arg}: {ast.unparse(param.annotation)}"
+                        for param in params
+                    ]
+                )
                 endpoint_functions += f"""
 @app.get("/{sanitized_endpoint_name}")
 def endpoint_{idx}({params_str}):
