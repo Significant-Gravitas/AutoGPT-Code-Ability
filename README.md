@@ -216,3 +216,104 @@ erDiagram
 
 ## Useful commands 
 > docker buildx build --platform linux/amd64 -t gcr.io/agpt-dev/mvp/codegen . --push
+
+
+## Prisma with Python: Quick Setup and Usage Guide
+
+Prisma is an open-source database toolkit that simplifies database access and management. Although Prisma is traditionally associated with JavaScript and TypeScript, it can also be integrated with Python projects. This section of the README provides a quick cheat sheet for setting up Prisma in a Python environment, applying migrations, and other useful tips.
+
+### 1. Setting Up Prisma
+
+#### Prerequisites:
+- Node.js installed (for Prisma CLI)
+- Python environment setup
+
+#### Steps:
+
+1. **Install Prisma CLI**:
+   - Use npm to install Prisma globally:
+     ```bash
+     npm install -g prisma
+     ```
+
+2. **Initialize Prisma in Your Project**:
+   - Navigate to your Python project directory and initialize Prisma:
+     ```bash
+     prisma init
+     ```
+   - This command creates a new `prisma` directory with a default `schema.prisma` file.
+
+3. **Configure Your Database**:
+   - In `schema.prisma`, configure the `datasource` block to point to your database. For example, for PostgreSQL:
+     ```prisma
+     datasource db {
+       provider = "postgresql"
+       url      = env("DATABASE_URL")
+     }
+     ```
+   - Replace `DATABASE_URL` with your database connection string.
+
+### 2. Defining Your Data Model
+
+- In the `schema.prisma` file, define your data models. For example:
+  ```prisma
+  model User {
+    id    Int     @id @default(autoincrement())
+    name  String
+    email String  @unique
+  }
+  ```
+
+### 3. Migrations
+
+#### Creating Migrations:
+
+- After defining your models, create a migration to update the database schema:
+  ```bash
+  prisma migrate dev --name init
+  ```
+- This command creates SQL files in the `prisma/migrations` directory.
+
+#### Applying Migrations:
+
+- Apply migrations to update your database schema:
+  ```bash
+  prisma migrate deploy
+  ```
+
+### 4. Generating Prisma Client
+
+- Generate Prisma Client to interact with your database:
+  ```bash
+  prisma generate
+  ```
+
+### 5. Using Prisma with Python
+
+- Since Prisma Client is native to JavaScript/TypeScript, using it in Python requires a workaround. You can execute Prisma Client through a child process. For example:
+  ```python
+  import subprocess
+  import json
+
+  def run_prisma_command(command):
+      result = subprocess.run(["npx", "prisma", *command], capture_output=True)
+      return json.loads(result.stdout)
+
+  users = run_prisma_command(["query", "user", "--all"])
+  print(users)
+  ```
+
+### 6. Useful Commands
+
+- **Introspect Database**: To update your Prisma schema based on an existing database:
+  ```bash
+  prisma introspect
+  ```
+- **Studio**: Prisma Studio provides a GUI to view and edit data in your database:
+  ```bash
+  prisma studio
+  ```
+
+### Conclusion
+
+This cheat sheet covers the basics of setting up Prisma in a Python project and performing essential database operations. Remember that using Prisma with Python is less straightforward than with JavaScript/TypeScript, and it may require additional setup and handling. For more detailed information, refer to the [Prisma Documentation](https://www.prisma.io/docs/).
