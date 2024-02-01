@@ -19,10 +19,11 @@ class PromptEngine:
 """
 
 import glob
+import logging
 import os
 from difflib import get_close_matches
 from typing import List
-import logging
+
 from jinja2 import Environment, FileSystemLoader
 
 logger = logging.getLogger(__name__)
