@@ -1,12 +1,12 @@
 import logging
+
 from .model import (
-    ApplicationRequirements,
     APIRouteRequirement,
+    ApplicationRequirements,
+    Parameter,
     RequestModel,
     ResponseModel,
-    Parameter,
 )
-
 
 logger = logging.getLogger(__name__)
 
