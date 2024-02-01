@@ -49,7 +49,7 @@ class APIRouteRequirement(BaseModel):
     database_schema: DatabaseSchema
 
 
-class ApplicationRequirement(BaseModel):
+class ApplicationRequirements(BaseModel):
     # Application name
     name: str
     # Context on what the application is
