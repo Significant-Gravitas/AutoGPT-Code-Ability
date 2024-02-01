@@ -110,6 +110,11 @@ sequenceDiagram
 
 ##  Database Schema
 
+<p align="center">
+    <img src="docs/mermaid.png" alt="Mermaid Diagram of Schema" style="border-radius: 50px;" width="600">
+</p>
+
+
 The schema revolves around key models:
 
 - CodeGraph: Represents the logic and structure of code as graphs, linked to function definitions and database schemas.
