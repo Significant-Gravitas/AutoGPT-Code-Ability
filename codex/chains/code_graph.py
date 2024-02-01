@@ -111,7 +111,7 @@ class CodeGraphOutputParser(StrOutputParser):
 
         return CodeGraph(
             name=self.function_name,
-            code_graph=visitor.functions[self.function_name],
+            code_graph=visitor.functions[self.function_name].template,
             imports=visitor.imports,
             functions=functions,
         )
