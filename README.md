@@ -10,7 +10,7 @@ The Codex System is an innovative coding agent designed to streamline the softwa
 
 The Codex System is an advanced software development framework comprised of various specialized sub-agents and components. Each component plays a critical role in the software development lifecycle, from conception to deployment. In addition to the primary sub-agents, the Codex System includes essential supportive components: the Common Module, Chains Module, and Prompts Module.
 
-1. **Design (Product Owner)**: This component is pivotal in understanding and defining the product requirements. It acts as a bridge between the client's needs and the technical team, ensuring that the developed software aligns perfectly with the client's vision.
+1. **Requirements (Product Owner)**: This component is pivotal in understanding and defining the product requirements. It acts as a bridge between the client's needs and the technical team, ensuring that the developed software aligns perfectly with the client's vision.
 
 2. **Architect (Solutions Architect)**: Responsible for crafting the overall architecture of the application. This component breaks down the application into manageable modules and writes the templates that guide the development process.
 
@@ -30,19 +30,19 @@ Below is a Mermaid diagram illustrating the structure of the Codex System and th
 
 ```mermaid
 erDiagram
-    CODEX ||--o{ DESIGN : includes
+    CODEX ||--o{ REQUIREMENTS : includes
     CODEX ||--o{ ARCHITECT : includes
     CODEX ||--o{ CODING : includes
     CODEX ||--o{ DELIVERY : includes
-    DESIGN ||--|| COMMON-MODULE : uses
+    REQUIREMENTS ||--|| COMMON-MODULE : uses
     ARCHITECT ||--|| COMMON-MODULE : uses
     CODING ||--|| COMMON-MODULE : uses
     DELIVERY ||--|| COMMON-MODULE : uses
-    DESIGN ||--|| CHAINS-MODULE : "uses for LLM calls"
+    REQUIREMENTS ||--|| CHAINS-MODULE : "uses for LLM calls"
     ARCHITECT ||--|| CHAINS-MODULE : "uses for LLM calls"
     CODING ||--|| CHAINS-MODULE : "uses for LLM calls"
     DELIVERY ||--|| CHAINS-MODULE : "uses for LLM calls"
-    DESIGN ||--|| ARCHITECT : "defines requirements for"
+    REQUIREMENTS ||--|| ARCHITECT : "defines requirements for"
     ARCHITECT ||--|| CODING : "architects solution for"
     CODING ||--|| DELIVERY : "develops code for"
     DELIVERY ||--o{ CODEX : "deploys application to"
@@ -51,7 +51,7 @@ erDiagram
     CODEX {
         string name
     }
-    DESIGN {
+    REQUIREMENTS {
         string role "Product Owner"
     }
     ARCHITECT {
