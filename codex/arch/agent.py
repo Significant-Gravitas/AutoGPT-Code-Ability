@@ -1,9 +1,10 @@
 import logging
+from codex.design.model import ApplicationRequirements
 
 logger = logging.getLogger(__name__)
 
 
-def create_code_graph():
+def create_code_graph(requirements: ApplicationRequirements):
     """
     Create the code graph for a given api route
 
