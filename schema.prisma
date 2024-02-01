@@ -2,184 +2,178 @@
 // It is configured for PostgreSQL and uses an environment variable for the connection URL.
 // The 'extensions' feature enables the use of PostgreSQL-specific data types.
 datasource db {
-  provider   = "postgresql"
-  url        = env("DATABASE_URL")
-  extensions = [vector]
+    provider   = "postgresql"
+    url        = env("DATABASE_URL")
+    extensions = [vector]
 }
 
 // generator db configures Prisma Client settings.
 // It is set up to use Prisma Client Python with asyncio interface and specific features.
 generator db {
-  provider             = "prisma-client-py"
-  interface            = "asyncio"
-  recursive_type_depth = 5
-  previewFeatures      = ["postgresqlExtensions"]
+    provider             = "prisma-client-py"
+    interface            = "asyncio"
+    recursive_type_depth = 5
+    previewFeatures      = ["postgresqlExtensions"]
 }
 
 // Application represents the main software application entity.
 // It includes basic metadata and has relationships with compiled routes.
 model Application {
-  id                        Int                      @id @default(autoincrement())
-  createdAt                 DateTime                 @default(now())
-  name                      String
-  description               String
-  compiledRoutes            CompiledRoute[]
-  applicationRequirements   ApplicationRequirements? @relation(fields: [applicationRequirementsId], references: [id])
-  applicationRequirementsId Int?
+    id                        Int                      @id @default(autoincrement())
+    createdAt                 DateTime                 @default(now())
+    name                      String
+    description               String
+    compiledRoutes            CompiledRoute[]
+    applicationRequirements   ApplicationRequirements? @relation(fields: [applicationRequirementsId], references: [id])
+    applicationRequirementsId Int?
 }
 
 // CompiledRoute represents a version of a route that has been processed or compiled.
 // It links to its source code graph and associated functions and applications.
 model CompiledRoute {
-  id           Int                          @id @default(autoincrement())
-  createdAt    DateTime                     @default(now())
-  embedding    Unsupported("vector(1536)")?
-  description  String
-  code         String
-  codeGraphId  Int?                         @unique
-  codeGraph    CodeGraph?                   @relation(fields: [codeGraphId], references: [id])
-  functions    Functions[]
-  applications Application[]
+    id           Int                          @id @default(autoincrement())
+    createdAt    DateTime                     @default(now())
+    embedding    Unsupported("vector(1536)")?
+    description  String
+    code         String
+    codeGraphId  Int?                         @unique
+    codeGraph    CodeGraph?                   @relation(fields: [codeGraphId], references: [id])
+    functions    Functions[]
+    applications Application[]
 }
 
 // CodeGraph represents a graph-based representation of code or logic.
 // It is associated with function definitions and can be linked to a database schema.
 model CodeGraph {
-  id                    Int                  @id @default(autoincrement())
-  createdAt             DateTime             @default(now())
-  function_name         String
-  api_route             String
-  graph                 String
-  functionDefs          FunctionDefinition[]
-  compiledRoute         CompiledRoute?
-  databaseSchemaId      Int? // Foreign key for one-to-many relationship
-  databaseSchema        DatabaseSchema?      @relation(fields: [databaseSchemaId], references: [id])
-  routeRequirement      APIRouteRequirement? @relation(fields: [aPIRouteRequirementId], references: [id])
-  aPIRouteRequirementId Int?
+    id                    Int                  @id @default(autoincrement())
+    createdAt             DateTime             @default(now())
+    function_name         String
+    api_route             String
+    graph                 String
+    functionDefs          FunctionDefinition[]
+    compiledRoute         CompiledRoute?
+    databaseSchemaId      Int? // Foreign key for one-to-many relationship
+    databaseSchema        DatabaseSchema?      @relation(fields: [databaseSchemaId], references: [id])
+    routeRequirement      APIRouteRequirement? @relation(fields: [aPIRouteRequirementId], references: [id])
+    aPIRouteRequirementId Int?
 }
 
 // FunctionDefinition defines a function, including its input and return types.
 // It links to a specific code graph and function.
 model FunctionDefinition {
-  id          Int       @id @default(autoincrement())
-  createdAt   DateTime  @default(now())
-  name        String
-  description String
-  input_type  String
-  return_type String
-  codeGraphId Int
-  codeGraph   CodeGraph @relation(fields: [codeGraphId], references: [id])
-  functionId  String
-  function    Functions @relation(fields: [functionId], references: [id])
+    id          Int       @id @default(autoincrement())
+    createdAt   DateTime  @default(now())
+    name        String
+    description String
+    input_type  String
+    return_type String
+    codeGraphId Int
+    codeGraph   CodeGraph @relation(fields: [codeGraphId], references: [id])
+    functionId  Int
+    function    Functions @relation(fields: [functionId], references: [id])
 }
 
 // Functions represents individual software functions.
 // It includes information about the function and its relationships to packages and compiled routes.
 model Functions {
-  id             String                       @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt      DateTime                     @default(now())
-  embedding      Unsupported("vector(1536)")?
-  name           String
-  description    String
-  input_type     String
-  return_type    String
-  code           String
-  functionDefs   FunctionDefinition[]
-  packages       Package[]
-  compiledRoutes CompiledRoute[]
+    id             Int                          @id @default(autoincrement())
+    createdAt      DateTime                     @default(now())
+    embedding      Unsupported("vector(1536)")?
+    name           String
+    description    String
+    input_type     String
+    return_type    String
+    code           String
+    functionDefs   FunctionDefinition[]
+    packages       Package[]
+    compiledRoutes CompiledRoute[]
 }
 
 // Package represents a software package, including its version and specifier.
 // It is related to functions that are part of the package.
 model Package {
-  id          String      @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt   DateTime    @default(now())
-  packageName String
-  version     String
-  specifier   String
-  functions   Functions[]
+    id          Int         @id @default(autoincrement())
+    createdAt   DateTime    @default(now())
+    packageName String
+    version     String
+    specifier   String
+    functions   Functions[]
 }
 
 // DatabaseSchema represents the schema of a database.
 // It includes a description and relationships to database tables and code graphs.
 model DatabaseSchema {
-  id                  Int                          @id @default(autoincrement())
-  createdAt           DateTime                     @default(now())
-  embedding           Unsupported("vector(1536)")?
-  description         String
-  tables              DatabaseTable[]
-  codeGraphs          CodeGraph[] // Link to multiple CodeGraphs
-  APIRouteRequirement APIRouteRequirement[]
+    id                  Int                          @id @default(autoincrement())
+    createdAt           DateTime                     @default(now())
+    embedding           Unsupported("vector(1536)")?
+    description         String
+    tables              DatabaseTable[]
+    codeGraphs          CodeGraph[] // Link to multiple CodeGraphs
+    APIRouteRequirement APIRouteRequirement[]
 }
 
 // DatabaseTable represents a table within a database schema.
 // It includes details about the table and relationships to schemas and other tables.
 model DatabaseTable {
-  id                Int                          @id @default(autoincrement())
-  createdAt         DateTime                     @default(now())
-  embedding         Unsupported("vector(1536)")?
-  description       String
-  definition        String
-  schemas           DatabaseSchema[]
-  relatedFromTables DatabaseTable[]              @relation("TableRelations")
-  relatedToTables   DatabaseTable[]              @relation("TableRelations")
+    id                Int                          @id @default(autoincrement())
+    createdAt         DateTime                     @default(now())
+    embedding         Unsupported("vector(1536)")?
+    description       String
+    definition        String
+    schemas           DatabaseSchema[]
+    relatedFromTables DatabaseTable[]              @relation("TableRelations")
+    relatedToTables   DatabaseTable[]              @relation("TableRelations")
 }
-
 
 // ------------------------- Requirements Models ------------------------- //
 // ApplicationRequirements represents the requirements for a specific application.  
 // ------------------------- --------------------------------------------- //
 
 model ApplicationRequirements {
-  id          Int                   @id @default(autoincrement())
-  name        String
-  context     String
-  apiRoutes   APIRouteRequirement[]
-  Application Application[]
+    id          Int                   @id @default(autoincrement())
+    name        String
+    context     String
+    apiRoutes   APIRouteRequirement[]
+    Application Application[]
 }
 
 model APIRouteRequirement {
-  id                        Int                      @id @default(autoincrement())
-  method                    String
-  path                      String
-  description               String
-  request                   Json
-  response                  Json
-  database                  String
-  schemas                   DatabaseSchema?          @relation(fields: [databaseSchemaId], references: [id])
-  application               ApplicationRequirements? @relation(fields: [applicationRequirementsId], references: [id])
-  applicationRequirementsId Int?
-  databaseSchemaId          Int?
-  requestObjects            RequestObject?           @relation(fields: [requestObjectId], references: [id])
-  requestObjectId           Int?
-  responseObject            ResponseObject?          @relation(fields: [responseObjectId], references: [id])
-  responseObjectId          Int?
-  CodeGraph                 CodeGraph[]
+    id                        Int                      @id @default(autoincrement())
+    method                    String
+    path                      String
+    description               String
+    schemas                   DatabaseSchema?          @relation(fields: [databaseSchemaId], references: [id])
+    databaseSchemaId          Int?
+    application               ApplicationRequirements? @relation(fields: [applicationRequirementsId], references: [id])
+    applicationRequirementsId Int?
+    requestObjects            RequestObject?           @relation(fields: [requestObjectId], references: [id])
+    requestObjectId           Int?
+    responseObject            ResponseObject?          @relation(fields: [responseObjectId], references: [id])
+    responseObjectId          Int?
+    CodeGraph                 CodeGraph[]
 }
 
 model ResponseObject {
-  id        Int                   @id @default(autoincrement())
-  name      String
-  paramType String
-  context   String
-  apiRoutes APIRouteRequirement[]
-  params    Param[]
+    id        Int                   @id @default(autoincrement())
+    name      String
+    context   String
+    apiRoutes APIRouteRequirement[]
+    params    Param[]
 }
 
 model RequestObject {
-  id        Int                   @id @default(autoincrement())
-  name      String
-  paramType String
-  context   String
-  apiRoutes APIRouteRequirement[]
-  params    Param[]
+    id        Int                   @id @default(autoincrement())
+    name      String
+    context   String
+    apiRoutes APIRouteRequirement[]
+    params    Param[]
 }
 
 model Param {
-  id              Int              @id @default(autoincrement())
-  name            String
-  description     String
-  param_type      String
-  requestObjects  RequestObject[]
-  responseObjects ResponseObject[]
+    id              Int              @id @default(autoincrement())
+    name            String
+    description     String
+    param_type      String
+    requestObjects  RequestObject[]
+    responseObjects ResponseObject[]
 }
