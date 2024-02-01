@@ -130,7 +130,9 @@ model DatabaseTable {
 // ------------------------- --------------------------------------------- //
 
 model ApplicationRequirements {
-    id          Int                   @id @default(autoincrement())
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+
     name        String
     context     String
     apiRoutes   APIRouteRequirement[]
@@ -138,7 +140,9 @@ model ApplicationRequirements {
 }
 
 model APIRouteRequirement {
-    id                        Int                      @id @default(autoincrement())
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+
     method                    String
     path                      String
     description               String
@@ -154,23 +158,29 @@ model APIRouteRequirement {
 }
 
 model ResponseObject {
-    id        Int                   @id @default(autoincrement())
-    name      String
-    context   String
-    apiRoutes APIRouteRequirement[]
-    params    Param[]
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+
+    name        String
+    description String
+    apiRoutes   APIRouteRequirement[]
+    params      Param[]
 }
 
 model RequestObject {
-    id        Int                   @id @default(autoincrement())
-    name      String
-    context   String
-    apiRoutes APIRouteRequirement[]
-    params    Param[]
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+
+    name        String
+    description String
+    apiRoutes   APIRouteRequirement[]
+    params      Param[]
 }
 
 model Param {
-    id              Int              @id @default(autoincrement())
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+
     name            String
     description     String
     param_type      String

@@ -10,13 +10,13 @@ class Parameter(BaseModel):
 
 class RequestModel(BaseModel):
     name: str
-    context: str
+    description: str
     params: List[Parameter]
 
 
 class ResponseModel(BaseModel):
     name: str
-    context: str
+    description: str
     params: List[Parameter]
 
 
