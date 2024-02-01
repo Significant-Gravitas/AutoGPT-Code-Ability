@@ -65,16 +65,21 @@ class APIRouteRequirement(BaseModel):
     # This is the database schema this api route will use
     # I'm thinking it will be a prisma table schema or maybe a list of table schemas
     # See the schema.prisma file in the codex directory more info
-    database_schema: DatabaseSchema
+    database_schema: DatabaseSchema | None = None
 
     def __str__(self):
+        db_schema_str = (
+            f"**Database Schema**:\n{str(self.database_schema)}\n"
+            if self.database_schema
+            else ""
+        )
         return (
             f"**Method**: `{self.method}`\n"
             f"**Path**: `{self.path}`\n"
             f"**Description**: {self.description}\n"
             f"**Request Model**:\n{str(self.request_model)}\n"
             f"**Response Model**:\n{str(self.response_model)}\n"
-            f"**Database Schema**:\n{str(self.database_schema)}\n"
+            f"{db_schema_str}"
         )
 
 
