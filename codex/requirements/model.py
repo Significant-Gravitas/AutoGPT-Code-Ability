@@ -8,11 +8,18 @@ class Parameter(BaseModel):
     param_type: str
     description: str
 
+    def __str__(self):
+        return f"- **Name**: {self.name}\n  - **Type**: {self.param_type}\n  - **Description**: {self.description}\n"
+
 
 class RequestModel(BaseModel):
     name: str
     description: str
     params: List[Parameter]
+
+    def __str__(self):
+        params_str = "\n".join(str(param) for param in self.params)
+        return f"### {self.name}\n**Description**: {self.description}\n**Parameters**:\n{params_str}\n"
 
 
 class ResponseModel(BaseModel):
@@ -20,16 +27,27 @@ class ResponseModel(BaseModel):
     description: str
     params: List[Parameter]
 
+    def __str__(self):
+        params_str = "\n".join(str(param) for param in self.params)
+        return f"### {self.name}\n**Description**: {self.description}\n**Parameters**:\n{params_str}\n"
+
 
 class DatabaseTable(BaseModel):
     description: str
     definition: str
+
+    def __str__(self):
+        return f"**Description**: {self.description}\n**Definition**:\n```\n{self.definition}\n```\n"
 
 
 class DatabaseSchema(BaseModel):
     name: str
     description: str
     tables: List[DatabaseTable]
+
+    def __str__(self):
+        tables_str = "\n".join(str(table) for table in self.tables)
+        return f"## {self.name}\n**Description**: {self.description}\n**Tables**:\n{tables_str}\n"
 
 
 class APIRouteRequirement(BaseModel):
@@ -49,6 +67,16 @@ class APIRouteRequirement(BaseModel):
     # See the schema.prisma file in the codex directory more info
     database_schema: DatabaseSchema
 
+    def __str__(self):
+        return (
+            f"**Method**: `{self.method}`\n"
+            f"**Path**: `{self.path}`\n"
+            f"**Description**: {self.description}\n"
+            f"**Request Model**:\n{str(self.request_model)}\n"
+            f"**Response Model**:\n{str(self.response_model)}\n"
+            f"**Database Schema**:\n{str(self.database_schema)}\n"
+        )
+
 
 class ApplicationRequirements(BaseModel):
     # Application name
@@ -57,3 +85,7 @@ class ApplicationRequirements(BaseModel):
     context: str
 
     api_routes: List[APIRouteRequirement]
+
+    def __str__(self):
+        api_routes_str = "\n".join(str(route) for route in self.api_routes)
+        return f"# {self.name}\n**Context**: {self.context}\n**API Routes**:\n{api_routes_str}\n"
