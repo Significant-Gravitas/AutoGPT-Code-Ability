@@ -1,5 +1,6 @@
 import logging
-from codex.design.model import ApplicationRequirements
+
+from codex.requirements.model import ApplicationRequirements
 
 logger = logging.getLogger(__name__)
 
