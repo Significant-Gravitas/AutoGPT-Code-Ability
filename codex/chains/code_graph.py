@@ -10,13 +10,6 @@ from langchain_openai import ChatOpenAI
 logger = logging.getLogger(__name__)
 
 
-class CodeGraph(BaseModel):
-    name: str
-    code_graph: str
-    imports: List[str]
-    functions: Dict[str, str]
-
-
 class Param(BaseModel):
     param_type: str
     name: str
@@ -33,6 +26,13 @@ class FunctionDef(BaseModel):
     args: List[Param]
     return_type: str
     template: str
+
+
+class CodeGraph(BaseModel):
+    name: str
+    code_graph: str
+    imports: List[str]
+    functions: Dict[str, FunctionDef]
 
 
 code_model = ChatOpenAI(
