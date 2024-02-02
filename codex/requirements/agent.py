@@ -122,7 +122,7 @@ def hardcoded_requirements(task: str) -> ApplicationRequirements:
                     ),
                 ],
             )
-        case 'Appointment Optimization Tool':
+        case "Appointment Optimization Tool":
             appointment_model = RequestModel(
                 name="AppointmentModel",
                 description="An object used to make good times for an appointment",
@@ -136,11 +136,13 @@ def hardcoded_requirements(task: str) -> ApplicationRequirements:
                         name="prefered_hours",
                         param_type="str",
                         description="The professional's preferred working hours (e.g., 9 AM to 5 PM), which could be a default setting or specified for each day.",
-                    ), Parameter(
+                    ),
+                    Parameter(
                         name="travel_time_buffer",
                         param_type="time",
                         description="Information regarding the time needed to travel between appointments. This could be a fixed duration or vary based on the time of day or location.",
-                    ), Parameter(
+                    ),
+                    Parameter(
                         name="time_frame",
                         param_type="str",
                         description="The time frame during which the client wishes to schedule the appointment (e.g., a specific date or range of dates).",
@@ -161,7 +163,7 @@ def hardcoded_requirements(task: str) -> ApplicationRequirements:
                         name="alternatives",
                         param_type="datetime[]",
                         description="If no optimal slots are available, provide a list of alternative slots, clearly indicating that they are outside the preferred criteria.",
-                    )
+                    ),
                 ],
             )
 
@@ -171,7 +173,7 @@ def hardcoded_requirements(task: str) -> ApplicationRequirements:
                 api_routes=[
                     APIRouteRequirement(
                         method="POST",
-                         path="/create_schedule",
+                        path="/create_schedule",
                         description="Function that returns the availability of professionals, updating based on current activity or schedule.",
                         request_model=appointment_model,
                         response_model=appointment_response,
@@ -179,7 +181,7 @@ def hardcoded_requirements(task: str) -> ApplicationRequirements:
                     ),
                 ],
             )
-        case 'Distance Calculator':
+        case "Distance Calculator":
             distance_model = RequestModel(
                 name="DistanceInput",
                 description="An object used to find the start and end locations",
@@ -210,7 +212,7 @@ def hardcoded_requirements(task: str) -> ApplicationRequirements:
                         name="travel_time",
                         param_type="time",
                         description="An estimation of the time it would take for the professional to travel from their location to the client's location, considering average travel conditions.",
-                    )
+                    ),
                 ],
             )
 
