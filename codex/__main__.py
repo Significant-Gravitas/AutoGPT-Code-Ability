@@ -136,9 +136,9 @@ def test() -> None:
     # send_request_cmd(description, 333, "admin", "asd453jnsdof9384rjnsdf", file_name)
     from codex.architect.agent import create_code_graphs
     from codex.delivery.agent import compile_application
+    from codex.delivery.packager import create_zip_file
     from codex.developer.agent import write_code_graphs
     from codex.requirements.agent import hardcoded_requirements
-    from codex.delivery.packager import create_zip_file
 
     # Requirements agent develops the requirements for the application
     r = hardcoded_requirements("Availability Checker")
@@ -150,8 +150,7 @@ def test() -> None:
     application = compile_application(r, completed_graphs)
     zipfile = create_zip_file(application)
     with open(f"workspace/output.zip", "wb") as f:
-                f.write(zipfile)
-    print(application.json())
+        f.write(zipfile)
 
 
 @cli.command(help="Run tests for all predefined descriptions.")

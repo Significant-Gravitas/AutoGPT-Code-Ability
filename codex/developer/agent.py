@@ -4,6 +4,7 @@ from typing import List
 from codex.architect.model import CodeGraph, FunctionDef
 from codex.chains.write_node import write_code_chain
 from codex.developer.model import Function
+
 logger = logging.getLogger(__name__)
 
 
@@ -24,13 +25,13 @@ def code_functions(code_graph: CodeGraph) -> CodeGraph:
         logger.info(f"Coding function {function_name}")
         packages, function_code = create_code(code_graph.function_name, function_def)
         code_graph.functions[function_name] = Function(
-            name=function_name, 
+            name=function_name,
             doc_string=function_def.doc_string,
             args=function_def.args,
             return_type=function_def.return_type,
-            code=function_code, 
-            packages=packages
-            )
+            code=function_code,
+            packages=packages,
+        )
     return code_graph
 
 
