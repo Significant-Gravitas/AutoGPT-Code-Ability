@@ -35,6 +35,7 @@ def generate_requirements_txt(packages: List[Package]) -> str:
 
     return "\n".join(requirements)
 
+
 def create_zip_file(application: Application) -> bytes:
     """
     Creates a zip file from the application
@@ -57,7 +58,7 @@ def create_zip_file(application: Application) -> bytes:
             server_file_path = os.path.join(app_dir, "server.py")
             with open(server_file_path, "w") as server_file:
                 server_file.write(application.server_code)
-                
+
             requirements_file_path = os.path.join(app_dir, "requirements.txt")
             with open(requirements_file_path, "w") as requirements_file:
                 requirements_file.write(generate_requirements_txt(application.packages))

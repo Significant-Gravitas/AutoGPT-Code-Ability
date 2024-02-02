@@ -50,9 +50,9 @@ def create_server_code(application: Application) -> Application:
         "from fastapi import FastAPI",
         "from fastapi.responses import JSONResponse",
         "import logging",
-        "from typing import *", 
+        "from typing import *",
     ]
-    server_code_header = f"logger = logging.getLogger(__name__)\n\napp = FastAPI(title='{application.name}', description='{application.description}')"
+    server_code_header = f"""logger = logging.getLogger(__name__)\n\napp = FastAPI(title="{application.name}", description="{application.description}")"""
     service_routes_code = []
     for route_path, compiled_route in application.routes.items():
         logger.info(f"Creating route for {route_path}")
