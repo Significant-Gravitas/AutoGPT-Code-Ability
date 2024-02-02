@@ -4,6 +4,7 @@ import os
 import click
 import requests
 from requests.auth import HTTPBasicAuth
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from codex.common.logging_config import setup_logging
 
@@ -121,26 +122,37 @@ def send_request(
 
 @cli.command()
 def test() -> None:
-    from codex.architect.agent import create_code_graphs
-    from codex.delivery.agent import compile_application
-    from codex.delivery.packager import create_zip_file
-    from codex.developer.agent import write_code_graphs
-    from codex.requirements.agent import hardcoded_requirements
+    def process_app(app_name: str) -> None:
+        from codex.architect.agent import create_code_graphs
+        from codex.delivery.agent import compile_application
+        from codex.delivery.packager import create_zip_file
+        from codex.developer.agent import write_code_graphs
+        from codex.requirements.agent import hardcoded_requirements
 
-    apps = ["Availability Checker", "Invoice Generator", "Appointment Optimization Tool", "Distance Calculator"]
-    for app_name in apps:
         out_filename = f"{app_name.replace(' ', '_').lower()}.zip"
         # Requirements agent develops the requirements for the application
         r = hardcoded_requirements(app_name)
         # Architect agent creates the code graphs for the requirements
         graphs = create_code_graphs(r)
-        # Coding agent writes the code for the code graphs
+        # Developer agent writes the code for the code graphs
         completed_graphs = write_code_graphs(graphs)
-        # Delivery Agent builds he code and delivers it to the user
+        # Delivery Agent builds the code and delivers it to the user
         application = compile_application(r, completed_graphs)
         zipfile = create_zip_file(application)
         with open(f"workspace/{out_filename}", "wb") as f:
             f.write(zipfile)
+
+    apps = [
+        "Availability Checker",
+        "Invoice Generator",
+        "Appointment Optimization Tool",
+        "Distance Calculator",
+    ]
+
+    with ThreadPoolExecutor() as executor:
+        futures = [executor.submit(process_app, app_name) for app_name in apps]
+        for future in as_completed(futures):
+            future.result()  # Waiting for each future to complete, you can handle exceptions here if needed
 
 
 @cli.command(help="Run tests for all predefined descriptions.")
