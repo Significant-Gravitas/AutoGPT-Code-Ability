@@ -131,12 +131,17 @@ def test() -> None:
 
     # click.echo(f"Testing: {description}")
     # send_request_cmd(description, 333, "admin", "asd453jnsdof9384rjnsdf", file_name)
-    from codex.requirements.agent import hardcoded_requirements
     from codex.architect.agent import create_code_graphs
-
+    from codex.requirements.agent import hardcoded_requirements
+    from codex.coding.agent import write_code_graphs
+    # Requirements agent develops the requirements for the application
     r = hardcoded_requirements("Availability Checker")
+    # Architect agent creates the code graphs for the requirements
     graphs = create_code_graphs(r)
-    print(graphs)
+    # Coding agent writes the code for the code graphs
+    completed_graphs = write_code_graphs(graphs)
+    # Delivery Agent builds he code and delivers it to the user
+    print(completed_graphs)
 
 
 @cli.command(help="Run tests for all predefined descriptions.")
