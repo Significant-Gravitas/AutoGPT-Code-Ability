@@ -1,8 +1,8 @@
 import logging
-
-from codex.requirements.model import ApplicationRequirements
-from codex.chains.code_graph import write_graph_chain, CodeGraph
 from typing import List
+
+from codex.chains.code_graph import CodeGraph, write_graph_chain
+from codex.requirements.model import ApplicationRequirements
 
 logger = logging.getLogger(__name__)
 
