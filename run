@@ -1,0 +1,4 @@
+export PYTHONPATH=$PYTHONPATH:$PWD
+export ENV=local
+
+poetry run python -m codex "$@"
