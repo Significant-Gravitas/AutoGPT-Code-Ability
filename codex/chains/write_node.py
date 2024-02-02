@@ -124,7 +124,7 @@ class CodeOutputParser(StrOutputParser):
 
             if errors:
                 raise CodeValidationException(
-                    f"Node Template: ```\n{formatted_code}\n```\n\n Known issues with the code:\n\n"
+                    f"Function Template: ```\n{formatted_code}\n```\n\nIssues with the code:\n\n"
                     + "\n".join(errors)
                 )
             return formatted_code
@@ -186,6 +186,7 @@ def write_code_chain(
         except CodeValidationException as e:
             attempts += 1
             logger.error(f"Error validating code: {e}")
-            invoke_params["function_template"] += f"\n\nError with template:\n {str(e)}"
+            # Note we make sure all inforamtion we need for the retry is included in the error message
+            invoke_params["function_template"] = str(e)
             continue
     raise ValueError(f"Error writing node after {max_retries} attempts.")
