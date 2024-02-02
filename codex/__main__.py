@@ -135,7 +135,7 @@ def test() -> None:
     # click.echo(f"Testing: {description}")
     # send_request_cmd(description, 333, "admin", "asd453jnsdof9384rjnsdf", file_name)
     from codex.architect.agent import create_code_graphs
-    from codex.coding.agent import write_code_graphs
+    from codex.developer.agent import write_code_graphs
     from codex.requirements.agent import hardcoded_requirements
 
     # Requirements agent develops the requirements for the application

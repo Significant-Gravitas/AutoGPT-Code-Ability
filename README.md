@@ -14,7 +14,7 @@ The Codex System is an advanced software development framework comprised of vari
 
 2. **Architect (Solutions Architect)**: Responsible for crafting the overall architecture of the application. This component breaks down the application into manageable modules and writes the templates that guide the development process.
 
-3. **Coding (Junior Developer)**: The hands-on coding component. Utilizing the templates and guidelines provided by the Architect, the Coding sub-agent is responsible for writing the individual functions and pieces of the application.
+3. **Developer**: The hands-on coding component. Utilizing the templates and guidelines provided by the Architect, the Developer sub-agent is responsible for writing the individual functions and pieces of the application.
 
 4. **Delivery (Deployment Agent)**: The final phase of the software development process, this component is tasked with compiling, packaging, and deploying the completed application, ensuring its successful deployment to the designated environment.
 
@@ -32,19 +32,19 @@ Below is a Mermaid diagram illustrating the structure of the Codex System and th
 erDiagram
     CODEX ||--o{ REQUIREMENTS : includes
     CODEX ||--o{ ARCHITECT : includes
-    CODEX ||--o{ CODING : includes
+    CODEX ||--o{ DEVELOPER : includes
     CODEX ||--o{ DELIVERY : includes
     REQUIREMENTS ||--|| COMMON-MODULE : uses
     ARCHITECT ||--|| COMMON-MODULE : uses
-    CODING ||--|| COMMON-MODULE : uses
+    DEVELOPER ||--|| COMMON-MODULE : uses
     DELIVERY ||--|| COMMON-MODULE : uses
     REQUIREMENTS ||--|| CHAINS-MODULE : "uses for LLM calls"
     ARCHITECT ||--|| CHAINS-MODULE : "uses for LLM calls"
-    CODING ||--|| CHAINS-MODULE : "uses for LLM calls"
+    DEVELOPER ||--|| CHAINS-MODULE : "uses for LLM calls"
     DELIVERY ||--|| CHAINS-MODULE : "uses for LLM calls"
     REQUIREMENTS ||--|| ARCHITECT : "defines requirements for"
-    ARCHITECT ||--|| CODING : "architects solution for"
-    CODING ||--|| DELIVERY : "develops code for"
+    ARCHITECT ||--|| DEVELOPER : "architects solution for"
+    DEVELOPER ||--|| DELIVERY : "develops code for"
     DELIVERY ||--o{ CODEX : "deploys application to"
     CHAINS-MODULE ||--|| PROMPTS : "manges all prompt templates"
 
@@ -57,7 +57,7 @@ erDiagram
     ARCHITECT {
         string role "Solutions Architect"
     }
-    CODING {
+    DEVELOPER {
         string role "Junior Developer"
     }
     DELIVERY {
@@ -81,7 +81,7 @@ erDiagram
 
 2. **Architecture Design**: Based on the requirements, the Architect sub-agent develops a solution architecture, breaking down the application into smaller, manageable modules and creating templates.
 
-3. **Development**: The Coding sub-agent uses the templates and architecture guidelines to write the actual code for each module of the application.
+3. **Development**: The Developer sub-agent uses the templates and architecture guidelines to write the actual code for each module of the application.
 
 4. **Deployment**: Once the coding is complete, the Delivery sub-agent takes over to package, compile, and deploy the application to the desired environment.
 
@@ -91,19 +91,19 @@ sequenceDiagram
     participant User
     participant Design
     participant Architect
-    participant Coding
+    participant Developer
     participant Delivery
 
     User->>+Design: Request
     Design->>+User: Initial Requirements
     User->>+Design: Feedback/Corrections
     Design->>+Architect: Refined Requirements
-    Architect->>+Coding: Architecture & Templates
+    Architect->>+Developer: Architecture & Templates
     loop Development Iterations
-        Coding->>+Architect: Request Clarification
-        Architect->>+Coding: Additional Details
+        Developer->>+Architect: Request Clarification
+        Architect->>+Developer: Additional Details
     end
-    Coding->>+Delivery: Completed Code
+    Developer->>+Delivery: Completed Code
     Delivery->>+User: Deploy to Production
 ```
 
