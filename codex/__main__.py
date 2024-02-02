@@ -121,19 +121,6 @@ def send_request(
 
 @cli.command()
 def test() -> None:
-    # i = 1
-    # click.echo("Select a test case:")
-
-    # for file, description in test_descriptions:
-    #     click.echo(f"[{i}] {description}")
-    #     i += 1
-
-    # case = int(input("Case: "))
-
-    # file_name, description = test_descriptions[case - 1]
-
-    # click.echo(f"Testing: {description}")
-    # send_request_cmd(description, 333, "admin", "asd453jnsdof9384rjnsdf", file_name)
     from codex.architect.agent import create_code_graphs
     from codex.delivery.agent import compile_application
     from codex.delivery.packager import create_zip_file
