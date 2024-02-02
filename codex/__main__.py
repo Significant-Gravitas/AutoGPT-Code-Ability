@@ -138,6 +138,7 @@ def test() -> None:
     from codex.delivery.agent import compile_application
     from codex.developer.agent import write_code_graphs
     from codex.requirements.agent import hardcoded_requirements
+    from codex.delivery.packager import create_zip_file
 
     # Requirements agent develops the requirements for the application
     r = hardcoded_requirements("Availability Checker")
@@ -147,6 +148,9 @@ def test() -> None:
     completed_graphs = write_code_graphs(graphs)
     # Delivery Agent builds he code and delivers it to the user
     application = compile_application(r, completed_graphs)
+    zipfile = create_zip_file(application)
+    with open(f"workspace/output.zip", "wb") as f:
+                f.write(zipfile)
     print(application.json())
 
 
