@@ -186,7 +186,7 @@ def write_graph_chain(
     """Returns the input text with no changes."""
     parser_write_node = CodeGraphOutputParser(
         function_name=invoke_params["function_name"],
-        api_route=invoke_params["description"],
+        api_route=invoke_params["api_route"],
     )
 
     prompt_write_node = ChatPromptTemplate.from_messages(
@@ -206,13 +206,13 @@ def write_graph_chain(
             )
         except Exception as e:
             attempts += 1
-            logger.error(f"Error writing node: {e}")
+            logger.error(f"Error writing code graph: {e}")
             continue
         except CodeGraphParsingException as e:
             attempts += 1
-            logger.error(f"Error validating code: {e}")
+            logger.error(f"Error validating code graph: {e}")
             continue
-    raise ValueError(f"Error writing node after {max_retries} attempts.")
+    raise ValueError(f"Error writing code graph after {max_retries} attempts.")
 
 
 if __name__ == "__main__":
