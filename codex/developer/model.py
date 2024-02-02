@@ -4,9 +4,9 @@ from langchain.pydantic_v1 import BaseModel
 
 
 class Package(BaseModel):
-    packageName: str
-    version: str
-    specifier: str
+    package_name: str
+    version: str | None = None
+    specifier: str | None = None
 
 
 class Function(BaseModel):

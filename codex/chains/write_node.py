@@ -9,7 +9,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI
 
 from codex.architect.model import FunctionDef
-from codex.db_model import RequiredPackage
+from codex.developer.model import Package
 
 logger = logging.getLogger(__name__)
 
@@ -20,15 +20,15 @@ code_model = ChatOpenAI(
 )
 
 
-def parse_requirements(requirements_str: str) -> List[RequiredPackage]:
+def parse_requirements(requirements_str: str) -> List[Package]:
     """
-    Parses a string of requirements and creates a list of RequiredPackage objects.
+    Parses a string of requirements and creates a list of Package objects.
 
     Args:
     requirements_str (str): A string containing package requirements.
 
     Returns:
-    List[RequiredPackage]: A list of RequiredPackage objects.
+    List[Package]: A list of Package objects.
     """
     logger.debug("🔍 Parsing requirements...")
     packages = []
@@ -53,7 +53,7 @@ def parse_requirements(requirements_str: str) -> List[RequiredPackage]:
                     specifier = spec
                     break
 
-            package = RequiredPackage(
+            package = Package(
                 package_name=package_name, version=version, specifier=specifier
             )
             packages.append(package)

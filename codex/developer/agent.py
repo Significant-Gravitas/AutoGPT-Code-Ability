@@ -3,11 +3,11 @@ from typing import List
 
 from codex.architect.model import CodeGraph, FunctionDef
 from codex.chains.write_node import write_code_chain
-
+from codex.developer.model import Function
 logger = logging.getLogger(__name__)
 
 
-def write_code_graphs(code_graphs: List[CodeGraph]):
+def write_code_graphs(code_graphs: List[CodeGraph]) -> List[CodeGraph]:
     completed_graphs = []
     for code_graph in code_graphs:
         completed_cg = code_functions(code_graph)
@@ -22,8 +22,15 @@ def code_functions(code_graph: CodeGraph) -> CodeGraph:
     functions = []
     for function_name, function_def in code_graph.function_defs.items():
         logger.info(f"Coding function {function_name}")
-        function = create_code(code_graph.function_name, function_def)
-        functions.append(function)
+        packages, function_code = create_code(code_graph.function_name, function_def)
+        functions.append(Function(
+            name=function_name, 
+            doc_string=function_def.doc_string,
+            args=function_def.args,
+            return_type=function_def.return_type,
+            code=function_code, 
+            packages=packages
+            ))
     code_graph.functions = functions
     return code_graph
 
