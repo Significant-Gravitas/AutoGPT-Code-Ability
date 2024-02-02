@@ -10,3 +10,6 @@ def setup_logging(local: bool = False):
         logging.config.fileConfig(local_config)
     else:
         logging.config.fileConfig(cloud_config)
+    
+    # Set the log level for the httpx library to warning
+    logging.getLogger('httpx').setLevel(logging.WARNING)
