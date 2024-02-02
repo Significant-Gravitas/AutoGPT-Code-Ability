@@ -147,7 +147,7 @@ class CodeOutputParser(StrOutputParser):
         return parse_requirements(requirements), self.validate_code(code)
 
 
-template = """You are an expect python developer. Write the python code to implement the node. Do not skip any implementation details.
+template = """You are an expect python developer. Write the python code to implement the function. Do not skip any implementation details.
 Included error handling, comments and type hints.
 
 Return only the requreirments and python imports and function in Markdown format, e.g.:
@@ -179,7 +179,7 @@ def write_code_chain(
             ("system", template),
             (
                 "human",
-                "Write the function for the following node template: ```\n{node_template}\n```",
+                "You are writing a function for the following application: {application_context}.\nWrite using the following template write the complete function: ```\n{function_template}\n```",
             ),
         ]
     )
@@ -196,6 +196,6 @@ def write_code_chain(
         except CodeValidationException as e:
             attempts += 1
             logger.error(f"Error validating code: {e}")
-            invoke_params["node_template"] = str(e)
+            invoke_params["function_template"] += f"\n\nError with template:\n {str(e)}"
             continue
     raise ValueError(f"Error writing node after {max_retries} attempts.")
