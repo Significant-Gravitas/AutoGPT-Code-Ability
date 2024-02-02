@@ -85,7 +85,7 @@ def hardcoded_requirements(task: str) -> ApplicationRequirements:
                 params=[
                     Parameter(
                         name="services_rendered",
-                        param_type="array",
+                        param_type="List[Tuple[float, string, List[Tuple[str, str, float, float]], str]]"
                         description="a list of the services being rendered broken down by hours, service_description, and items used for the service. Items used is further broken down by name, description, unit_cost, and units used",
                     ),
                     Parameter(
