@@ -1,12 +1,12 @@
 import ast
 import logging
-from typing import Dict, List
+from typing import Dict
 
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI
 
-from codex.architect.model import CodeGraph, FunctionDef, Param
+from codex.architect.model import CodeGraph, FunctionDef
 
 logger = logging.getLogger(__name__)
 
@@ -41,20 +41,31 @@ class CodeGraphVisitor(ast.NodeVisitor):
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         args = []
-        params = []
         for arg in node.args.args:
-            arg_name = arg.arg
             arg_type = ast.unparse(arg.annotation) if arg.annotation else "Unknown"
-            args.append(f"{arg_name}: {arg_type}")
-            params.append(Param(param_type=arg_type, name=arg_name))
+            args.append(arg_type)
         args_str = ", ".join(args)
-        return_type = ast.unparse(node.returns) if node.returns else "None"
-        print(f"Function '{node.name}' definition ({args_str}) -> {return_type}:")
+        return_type = ast.unparse(node.returns) if node.returns else "Unknown"
+
+        # Extracting the docstring if it exists
+        if (
+            node.body
+            and isinstance(node.body[0], ast.Expr)
+            and isinstance(node.body[0].value, (ast.Str, ast.Constant))
+        ):
+            doc_string = node.body[0].value.s  # .s to get the string content
+        else:
+            doc_string = ""  # Or set a default docstring value if you prefer
+
+        print(
+            f"Function '{node.name}' definition ({args_str}) -> {return_type}: {doc_string}"
+        )
         self.functions[node.name] = FunctionDef(
             name=node.name,
-            args=params,
+            doc_string=doc_string,
+            args=args_str,
             return_type=return_type,
-            template=ast.unparse(node),
+            function_template=ast.unparse(node),
         )
         self.generic_visit(node)
 
@@ -67,6 +78,7 @@ class CodeGraphOutputParser(StrOutputParser):
     """OutputParser that parses LLMResult into the top likely string."""
 
     function_name: str
+    api_route: str
 
     @staticmethod
     def _sanitize_output(text: str):
@@ -86,8 +98,9 @@ class CodeGraphOutputParser(StrOutputParser):
         del functions[self.function_name]
 
         return CodeGraph(
-            name=self.function_name,
-            code_graph=visitor.functions[self.function_name].template,
+            function_name=self.function_name,
+            api_route=self.api_route,
+            code_graph=visitor.functions[self.function_name].function_template,
             imports=visitor.imports,
             function_defs=functions,
         )
@@ -177,7 +190,8 @@ def write_graph_chain(
 ) -> str:
     """Returns the input text with no changes."""
     parser_write_node = CodeGraphOutputParser(
-        function_name=invoke_params["function_name"]
+        function_name=invoke_params["function_name"],
+        api_route=invoke_params["description"],
     )
 
     prompt_write_node = ChatPromptTemplate.from_messages(

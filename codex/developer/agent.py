@@ -22,7 +22,7 @@ def code_functions(code_graph: CodeGraph) -> CodeGraph:
     functions = []
     for function_name, function_def in code_graph.function_defs.items():
         logger.info(f"Coding function {function_name}")
-        function = create_code(code_graph.name, function_def)
+        function = create_code(code_graph.function_name, function_def)
         functions.append(function)
     code_graph.functions = functions
     return code_graph
@@ -37,7 +37,7 @@ def create_code(appilcation_context: str, function_def: FunctionDef) -> str:
         invoke_params={
             "node": function_def,
             "application_context": appilcation_context,
-            "function_template": function_def.template,
+            "function_template": function_def.function_template,
         }
     )
     # TODO: Add function storage
