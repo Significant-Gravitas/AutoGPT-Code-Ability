@@ -19,19 +19,18 @@ def code_functions(code_graph: CodeGraph) -> CodeGraph:
     """
     Code the functions in the code graph
     """
-    functions = []
+    code_graph.functions = {}
     for function_name, function_def in code_graph.function_defs.items():
         logger.info(f"Coding function {function_name}")
         packages, function_code = create_code(code_graph.function_name, function_def)
-        functions.append(Function(
+        code_graph.functions[function_name] = Function(
             name=function_name, 
             doc_string=function_def.doc_string,
             args=function_def.args,
             return_type=function_def.return_type,
             code=function_code, 
             packages=packages
-            ))
-    code_graph.functions = functions
+            )
     return code_graph
 
 
