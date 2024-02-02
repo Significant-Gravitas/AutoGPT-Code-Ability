@@ -173,7 +173,7 @@ def hardcoded_requirements(task: str) -> ApplicationRequirements:
                 api_routes=[
                     APIRouteRequirement(
                         method="POST",
-                        path="/create_invoice",
+                         path="/create_schedule",
                         description="Function that returns the availability of professionals, updating based on current activity or schedule.",
                         request_model=appointment_model,
                         response_model=appointment_response,
