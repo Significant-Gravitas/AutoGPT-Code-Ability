@@ -181,5 +181,55 @@ def hardcoded_requirements(task: str) -> ApplicationRequirements:
                     ),
                 ],
             )
+        case 'Distance Calculator':
+            distance_model = RequestModel(
+                name="DistanceInput",
+                description="An object used to find the start and end locations",
+                params=[
+                    Parameter(
+                        name="start_location",
+                        param_type="Tuple[float, float]",
+                        description="AThe current location of the professional, provided as latitude and longitude coordinates.",
+                    ),
+                    Parameter(
+                        name="end_location",
+                        param_type="Tuple[str,str]",
+                        description="TThe location where the client wishes to have the appointment, provided as latitude and longitude coordinates.",
+                    ),
+                ],
+            )
+
+            distance_response = ResponseModel(
+                name="DistanceOutput",
+                description="Output of calcuating the distance",
+                params=[
+                    Parameter(
+                        name="distance",
+                        param_type="Tuple[float, float]",
+                        description="The calculated distance between the two locations, preferably in both kilometers and miles.",
+                    ),
+                    Parameter(
+                        name="travel_time",
+                        param_type="time",
+                        description="An estimation of the time it would take for the professional to travel from their location to the client's location, considering average travel conditions.",
+                    )
+                ],
+            )
+
+            return ApplicationRequirements(
+                name="Distance Calculator",
+                context="The Distance Calculator is a tool that calculates the distance between the professional's and the client's locations to aid in planning travel time for appointments.",
+                api_routes=[
+                    APIRouteRequirement(
+                        method="POST",
+                        path="/calculate_distance",
+                        description="Function that returns the distance for travel time based upon input",
+                        request_model=distance_model,
+                        response_model=distance_response,
+                        database_schema=None,
+                    ),
+                ],
+            )
+
         case _:
             raise NotImplementedError(f"Task {task} not implemented")
