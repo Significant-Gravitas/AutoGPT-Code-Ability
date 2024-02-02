@@ -19,6 +19,7 @@ def create_code_graphs(requirements: ApplicationRequirements) -> List[CodeGraph]
         cg = write_graph_chain(
             {
                 "function_name": api_route.path.replace("/", ""),
+                "api_route": api_route.path,
                 "description": f"### **Overview**\n{requirements.context}\n\n"
                 f"### **API Route**\n{str(api_route)}",
             }

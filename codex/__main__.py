@@ -145,7 +145,8 @@ def test() -> None:
     # Coding agent writes the code for the code graphs
     completed_graphs = write_code_graphs(graphs)
     # Delivery Agent builds he code and delivers it to the user
-    print(completed_graphs)
+    for function in completed_graphs:
+        print(function)
 
 
 @cli.command(help="Run tests for all predefined descriptions.")

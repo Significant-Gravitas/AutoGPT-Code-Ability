@@ -79,7 +79,6 @@ model Param {
     responseObjects ResponseObject[]
 }
 
-
 // DatabaseSchema represents the schema of a database.
 // It includes a description and relationships to database tables and code graphs.
 model DatabaseSchema {
@@ -105,7 +104,6 @@ model DatabaseTable {
     relatedToTables   DatabaseTable[]              @relation("TableRelations")
 }
 
-
 // ------------------------- Architect Models ---------------------------- //
 // Database models for the architect
 // ------------------------- --------------------------------------------- //
@@ -117,7 +115,8 @@ model CodeGraph {
     createdAt             DateTime             @default(now())
     function_name         String
     api_route             String
-    graph                 String
+    imports               String[]
+    code_graph            String
     functionDefs          FunctionDefinition[]
     compiledRoute         CompiledRoute?
     databaseSchemaId      Int? // Foreign key for one-to-many relationship
@@ -129,19 +128,18 @@ model CodeGraph {
 // FunctionDefinition defines a function, including its input and return types.
 // It links to a specific code graph and function.
 model FunctionDefinition {
-    id          Int       @id @default(autoincrement())
-    createdAt   DateTime  @default(now())
-    name        String
-    description String
-    input_type  String
-    return_type String
-    codeGraphId Int
-    codeGraph   CodeGraph @relation(fields: [codeGraphId], references: [id])
-    functionId  Int
-    function    Functions @relation(fields: [functionId], references: [id])
+    id                Int       @id @default(autoincrement())
+    createdAt         DateTime  @default(now())
+    name              String
+    doc_string        String
+    args              String
+    return_type       String
+    function_template String
+    codeGraphId       Int
+    codeGraph         CodeGraph @relation(fields: [codeGraphId], references: [id])
+    functionId        Int
+    function          Functions @relation(fields: [functionId], references: [id])
 }
-
-
 
 // ------------------------- Developer Models ---------------------------- //
 // Database models for the developer
@@ -173,8 +171,6 @@ model Package {
     specifier   String
     functions   Functions[]
 }
-
-
 
 // ------------------------- Delivery Models ----------------------------- //
 

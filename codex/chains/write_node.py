@@ -8,7 +8,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI
 
-from codex.architect.model import FunctionDef, Param
+from codex.architect.model import FunctionDef
 from codex.db_model import RequiredPackage
 
 logger = logging.getLogger(__name__)
@@ -85,27 +85,18 @@ class CodeOutputParser(StrOutputParser):
 
     @staticmethod
     def extract_type_hints(func_def):
-        arg_types = {}
+        args = []
         for arg in func_def.args.args:
-            # Extract argument name and type
-            arg_name = arg.arg
-            arg_type = arg.annotation
-            if arg_type is not None:
-                arg_types[arg_name] = ast.unparse(arg_type)
+            arg_type = ast.unparse(arg.annotation) if arg.annotation else "Unknown"
+            args.append(arg_type)
+        args_str = ", ".join(args)
 
         # Extract return type
-        return_type = None
+        return_type = "Unkown"
         if func_def.returns:
             return_type = ast.unparse(func_def.returns)
 
-        arg_types = [
-            Param(param_type=arg_type.lower(), name=name, description="...")
-            for name, arg_type in arg_types.items()
-        ]
-        return_type = Param(
-            param_type=return_type.lower(), name="return", description="..."
-        )
-        return arg_types, return_type
+        return args_str, return_type
 
     def validate_code(cls, code: str) -> bool:
         try:
@@ -121,15 +112,14 @@ class CodeOutputParser(StrOutputParser):
                     break
 
             errors = []
-            for i, arg in enumerate(args):
-                if arg != cls.requested_node.args[i]:
-                    errors.append(
-                        f"Input parameter {arg} does not match required parameter {cls.requested_node.args[i]}"
-                    )
-
-            if ret.param_type != cls.requested_node.return_type:
+            if args != cls.requested_node.args:
                 errors.append(
-                    f"Return type {ret.param_type} does not match required return type {cls.requested_node.return_type}"
+                    f"Input parameter {args} does not match required parameter {cls.requested_node.args}"
+                )
+
+            if ret != cls.requested_node.return_type:
+                errors.append(
+                    f"Return type {ret} does not match required return type {cls.requested_node.return_type}"
                 )
 
             if errors:

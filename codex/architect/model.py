@@ -3,26 +3,17 @@ from typing import Dict, List
 from langchain.pydantic_v1 import BaseModel
 
 
-class Param(BaseModel):
-    param_type: str
-    name: str
-
-    def __eq__(self, other):
-        if not isinstance(other, Param):
-            return False
-
-        return self.param_type.lower() == other.param_type.lower()
-
-
 class FunctionDef(BaseModel):
     name: str
-    args: List[Param]
+    doc_string: str
+    args: str
     return_type: str
-    template: str
+    function_template: str
 
 
 class CodeGraph(BaseModel):
-    name: str
+    function_name: str
+    api_route: str
     code_graph: str
     imports: List[str]
     function_defs: Dict[str, FunctionDef]
