@@ -1,8 +1,11 @@
 import concurrent.futures
+import os
 
 import click
 import requests
 from requests.auth import HTTPBasicAuth
+
+from codex.common.logging_config import setup_logging
 
 test_descriptions = [
     (
@@ -281,4 +284,5 @@ def ng():
 
 
 if __name__ == "__main__":
+    setup_logging(local=os.environ.get("ENV", "CLOUD").lower() == "local")
     cli()
