@@ -8,9 +8,8 @@ from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI
 
-from codex.chains.gen_branching_graph import NodeDef, Param
 from codex.db_model import RequiredPackage
-
+from codex.chains.code_graph import FunctionDef, Param
 logger = logging.getLogger(__name__)
 
 code_model = ChatOpenAI(
@@ -68,7 +67,7 @@ class CodeValidationException(Exception):
 class CodeOutputParser(StrOutputParser):
     """OutputParser that parses LLMResult into the top likely string."""
 
-    requested_node: NodeDef
+    requested_node: FunctionDef
 
     @staticmethod
     def _sanitize_output(text: str):
@@ -122,14 +121,14 @@ class CodeOutputParser(StrOutputParser):
 
             errors = []
             for i, arg in enumerate(args):
-                if arg != cls.requested_node.input_params[i]:
+                if arg != cls.requested_node.args[i]:
                     errors.append(
-                        f"Input parameter {arg} does not match required parameter {cls.requested_node.input_params[i]}"
+                        f"Input parameter {arg} does not match required parameter {cls.requested_node.args[i]}"
                     )
 
-            if ret.param_type != cls.requested_node.get_return_type():
+            if ret.param_type != cls.requested_node.return_type:
                 errors.append(
-                    f"Return type {ret.param_type} does not match required return type {cls.requested_node.get_return_type()}"
+                    f"Return type {ret.param_type} does not match required return type {cls.requested_node.return_type}"
                 )
 
             if errors:
