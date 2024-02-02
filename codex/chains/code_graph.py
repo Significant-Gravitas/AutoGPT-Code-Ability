@@ -113,7 +113,7 @@ class CodeGraphOutputParser(StrOutputParser):
             name=self.function_name,
             code_graph=visitor.functions[self.function_name].template,
             imports=visitor.imports,
-            functions=functions,
+            function_defs=functions,
         )
 
 
