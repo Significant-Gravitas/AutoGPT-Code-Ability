@@ -8,8 +8,9 @@ from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI
 
-from codex.db_model import RequiredPackage
 from codex.chains.code_graph import FunctionDef, Param
+from codex.db_model import RequiredPackage
+
 logger = logging.getLogger(__name__)
 
 code_model = ChatOpenAI(

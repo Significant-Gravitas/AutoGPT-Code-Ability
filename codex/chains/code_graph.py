@@ -35,6 +35,7 @@ class CodeGraph(BaseModel):
     function_defs: Dict[str, FunctionDef]
     functions: Dict[str, FunctionDef] | None = None
 
+
 code_model = ChatOpenAI(
     temperature=1,
     model_name="gpt-4-0125-preview",
