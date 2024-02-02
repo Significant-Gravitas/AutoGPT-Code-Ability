@@ -135,6 +135,7 @@ def test() -> None:
     # click.echo(f"Testing: {description}")
     # send_request_cmd(description, 333, "admin", "asd453jnsdof9384rjnsdf", file_name)
     from codex.architect.agent import create_code_graphs
+    from codex.delivery.agent import compile_application
     from codex.developer.agent import write_code_graphs
     from codex.requirements.agent import hardcoded_requirements
 
@@ -145,9 +146,8 @@ def test() -> None:
     # Coding agent writes the code for the code graphs
     completed_graphs = write_code_graphs(graphs)
     # Delivery Agent builds he code and delivers it to the user
-    for cg in completed_graphs:
-        for function in cg.functions:
-            print(function.code)
+    application = compile_application(r, completed_graphs)
+    print(application.json())
 
 
 @cli.command(help="Run tests for all predefined descriptions.")

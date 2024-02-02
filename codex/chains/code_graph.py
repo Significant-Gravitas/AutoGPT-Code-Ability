@@ -56,10 +56,6 @@ class CodeGraphVisitor(ast.NodeVisitor):
             doc_string = node.body[0].value.s  # .s to get the string content
         else:
             doc_string = ""  # Or set a default docstring value if you prefer
-
-        print(
-            f"Function '{node.name}' definition ({args_str}) -> {return_type}: {doc_string}"
-        )
         self.functions[node.name] = FunctionDef(
             name=node.name,
             doc_string=doc_string,
@@ -109,7 +105,7 @@ class CodeGraphOutputParser(StrOutputParser):
 system_prompt = '''As an expert staff engineer. You write the structure of a problem in a python function that uses only stuff from only the core python libs, calling stub functions that you have designed to be simple enough for a junior developer to implement.
 
 You always use types from the core python types: `bool`, `int`, `float`, `complex`, `str`, `bytes`, `tuple`, `list`, `dict`, `set`, `frozenset`.
- collection based param_types must be in the format: `list[int]`, `set[str]`, `tuple[float, str]`, etc.
+collection based param_types must be in the format: `list[int]`, `set[str]`, `tuple[float, str]`, etc.
 You can use types from libraries when required.
 You use pydantic objects for complex types.
 Generated files can be passed around as bytes
