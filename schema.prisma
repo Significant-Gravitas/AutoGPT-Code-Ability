@@ -151,11 +151,11 @@ model Functions {
     id             Int                          @id @default(autoincrement())
     createdAt      DateTime                     @default(now())
     embedding      Unsupported("vector(1536)")?
-    name           String
-    description    String
-    input_type     String
-    return_type    String
-    code           String
+    name              String
+    doc_string        String
+    args              String
+    return_type       String
+    code              String
     functionDefs   FunctionDefinition[]
     packages       Package[]
     compiledRoutes CompiledRoute[]
