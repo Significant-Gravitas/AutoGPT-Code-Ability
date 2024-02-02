@@ -50,6 +50,7 @@ def create_server_code(application: Application) -> Application:
         "from fastapi import FastAPI",
         "from fastapi.responses import JSONResponse",
         "import logging",
+        "from typing import List, Tuple, Dict, Any, Union, Optional, Literal, TypedDict, ForwardRef, TypeVar, Generic", 
     ]
     server_code_header = f"logger = logging.getLogger(__name__)\n\napp = FastAPI(title='{application.name}', description='{application.description}')"
     service_routes_code = []
