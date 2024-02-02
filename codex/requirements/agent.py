@@ -96,7 +96,6 @@ def hardcoded_requirements(task: str) -> ApplicationRequirements:
                 ],
             )
 
-            # Response Model for availability status
             invoice_response = ResponseModel(
                 name="inoviceresponse",
                 description="A pdf of an invoice",
@@ -149,7 +148,6 @@ def hardcoded_requirements(task: str) -> ApplicationRequirements:
                 ],
             )
 
-            # Response Model for availability status
             appointment_response = ResponseModel(
                 name="AppointmentResponse",
                 description="A few good times for appointments",
