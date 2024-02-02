@@ -2,11 +2,38 @@ import logging
 import os
 import tempfile
 import zipfile
+from typing import List, defaultdict
+from codex.developer.model import Package
 
 from codex.delivery.model import Application
 
 logger = logging.getLogger(__name__)
 
+
+def generate_requirements_txt(packages: List[Package]) -> str:
+    resolved_packages = defaultdict(list)
+
+    # Aggregate versions and specifiers for each package
+    for package in packages:
+        resolved_packages[package.package_name].append(
+            (package.version, package.specifier)
+        )
+
+    requirements = []
+    for package, versions_specifiers in resolved_packages.items():
+        # Handle different cases of version and specifier here
+        # For simplicity, we just pick the first version and specifier encountered
+        # More complex logic might be needed depending on the requirement
+        version, specifier = versions_specifiers[0]
+        if version and specifier:
+            requirement = f"{package}{specifier}{version}"
+        elif version:
+            requirement = f"{package}=={version}"
+        else:
+            requirement = package
+        requirements.append(requirement)
+
+    return "\n".join(requirements)
 
 def create_zip_file(application: Application) -> bytes:
     """
@@ -30,6 +57,10 @@ def create_zip_file(application: Application) -> bytes:
             server_file_path = os.path.join(app_dir, "server.py")
             with open(server_file_path, "w") as server_file:
                 server_file.write(application.server_code)
+                
+            requirements_file_path = os.path.join(app_dir, "requirements.txt")
+            with open(requirements_file_path, "w") as requirements_file:
+                requirements_file.write(generate_requirements_txt(application.packages))
 
             for route_name, compiled_route in application.routes.items():
                 service_file_path = os.path.join(
