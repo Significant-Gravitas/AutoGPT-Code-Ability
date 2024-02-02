@@ -1,15 +1,17 @@
 import logging
 
 from codex.requirements.model import ApplicationRequirements
-from codex.chains.code_graph import write_graph_chain
+from codex.chains.code_graph import write_graph_chain, CodeGraph
+from typing import List
 
 logger = logging.getLogger(__name__)
 
 
-def create_code_graph(requirements: ApplicationRequirements):
+def create_code_graphs(requirements: ApplicationRequirements) -> List[CodeGraph]:
     """
     Create the code graph for a given api route
     """
+    code_graphs = []
     for api_route in requirements.api_routes:
         logger.info(f"Creating code graph for {api_route.path}")
 
@@ -20,4 +22,5 @@ def create_code_graph(requirements: ApplicationRequirements):
                 f"### **API Route**\n{str(api_route)}",
             }
         )
-        return cg
+        code_graphs.append(cg)
+    return code_graphs
