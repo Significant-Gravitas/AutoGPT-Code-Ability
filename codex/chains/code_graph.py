@@ -3,37 +3,12 @@ import logging
 from typing import Dict, List
 
 from langchain.prompts import ChatPromptTemplate
-from langchain.pydantic_v1 import BaseModel
 from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI
 
+from codex.architect.model import CodeGraph, FunctionDef, Param
+
 logger = logging.getLogger(__name__)
-
-
-class Param(BaseModel):
-    param_type: str
-    name: str
-
-    def __eq__(self, other):
-        if not isinstance(other, Param):
-            return False
-
-        return self.param_type.lower() == other.param_type.lower()
-
-
-class FunctionDef(BaseModel):
-    name: str
-    args: List[Param]
-    return_type: str
-    template: str
-
-
-class CodeGraph(BaseModel):
-    name: str
-    code_graph: str
-    imports: List[str]
-    function_defs: Dict[str, FunctionDef]
-    functions: Dict[str, FunctionDef] | None = None
 
 
 code_model = ChatOpenAI(
