@@ -22,10 +22,10 @@ def compile_application(
     """
     compiled_routes = {}
     packages = []
-    for route in code_graphs:
-        compiled_route = compile_route(route)
+    for code_graph in code_graphs:
+        compiled_route = compile_route(code_graph)
         packages.extend(compiled_route.packages)
-        compiled_routes[route.api_route] = compiled_route
+        compiled_routes[code_graph.api_route] = compiled_route
 
     app = Application(
         name=application_requirement.name,
@@ -34,7 +34,7 @@ def compile_application(
         routes=compiled_routes,
         packages=packages,
     )
-    
+
     return create_server_code(app)
 
 
@@ -53,11 +53,12 @@ def create_server_code(application: Application) -> Application:
     ]
     server_code_header = f"logger = logging.getLogger(__name__)\n\napp = FastAPI(title='{application.name}', description='{application.description}')"
     service_routes_code = []
-    for route_path, compiled_route in application.routes:
+    for route_path, compiled_route in application.routes.items():
+        logger.info(f"Creating route for {route_path}")
         # import the main function from the service file
         service_import = f"from project.{compiled_route.service_file_name.replace('.py', '')} import {compiled_route.main_function_name}"
         server_code_imports.append(service_import)
-        
+
         # Write the api endpoint
         # TODO: pass the request method
         route_code = f"""@app.post("{route_path}")
@@ -66,23 +67,25 @@ async def {compiled_route.main_function_name}_route({compiled_route.request_para
         response = {compiled_route.main_function_name}({compiled_route.param_names_str})
     except Exception as e:
         logger.exception("Error processing request")
-        response = {"error": str(e)}
+        response = dict()
+        response["error"] =  str(e)
     return JSONResponse(content=response)
 """
         service_routes_code.append(route_code)
-    
+
     # Compile the server code
     server_code = "\n".join(server_code_imports)
     server_code += "\n\n"
     server_code += server_code_header
     server_code += "\n\n"
     server_code += "\n\n".join(service_routes_code)
-    
+
     # Update the application with the server code
     sorted_content = isort.code(server_code)
     formatted_code = black.format_str(sorted_content, mode=black.FileMode())
     return application.copy(update={"server_code": formatted_code})
-        
+
+
 def compile_route(code_graph: CodeGraph) -> CompiledRoute:
     """
     Packages the route for delivery
@@ -91,7 +94,7 @@ def compile_route(code_graph: CodeGraph) -> CompiledRoute:
     packages = []
     imports = []
     rest_of_code_sections = []
-    for function in code_graph.functions:
+    for func_name, function in code_graph.functions.items():
         import_code, rest_of_code = extract_imports(function.code)
         imports.append(import_code)
         rest_of_code_sections.append(rest_of_code)
@@ -110,7 +113,7 @@ def compile_route(code_graph: CodeGraph) -> CompiledRoute:
     sorted_content = isort.code(output_code)
 
     formatted_code = black.format_str(sorted_content, mode=black.FileMode())
-    
+
     return CompiledRoute(
         service_code=formatted_code,
         service_file_name=code_graph.function_name.strip().replace(" ", "_")
@@ -125,33 +128,31 @@ def compile_route(code_graph: CodeGraph) -> CompiledRoute:
 def extract_request_params(main_function_code: str) -> str:
     """
     Extracts the request params from the main function code.
-    
+
     Example Return:
         'id: int, name: str'
     """
     tree = ast.parse(main_function_code)
-    
+
     params = []
     param_names = []
-    
+
     for node in ast.walk(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             for arg in node.args.args:
                 param_name = arg.arg
                 # Default to 'Any' or another placeholder if you prefer
-                type_annotation = 'Any'
+                type_annotation = "Any"
                 if arg.annotation:
                     type_annotation = ast.unparse(arg.annotation)
-                params.append(f'{param_name}: {type_annotation}')
+                params.append(f"{param_name}: {type_annotation}")
                 param_names.append(param_name)
-            break 
-    
-    params_annotations = ', '.join(params)
-    param_names_str = ', '.join(param_names)
+            break
+
+    params_annotations = ", ".join(params)
+    param_names_str = ", ".join(param_names)
     return params_annotations, param_names_str
 
-    
-    
 
 def extract_imports(function_code: str) -> (str, str):
     """
