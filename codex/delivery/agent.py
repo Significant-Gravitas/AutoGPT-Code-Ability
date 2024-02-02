@@ -50,14 +50,14 @@ def create_server_code(application: Application) -> Application:
         "from fastapi import FastAPI",
         "from fastapi.responses import JSONResponse",
         "import logging",
-        "from typing import List, Tuple, Dict, Any, Union, Optional, Literal, TypedDict, ForwardRef, TypeVar, Generic", 
+        "from typing import *", 
     ]
     server_code_header = f"logger = logging.getLogger(__name__)\n\napp = FastAPI(title='{application.name}', description='{application.description}')"
     service_routes_code = []
     for route_path, compiled_route in application.routes.items():
         logger.info(f"Creating route for {route_path}")
         # import the main function from the service file
-        service_import = f"from project.{compiled_route.service_file_name.replace('.py', '')} import {compiled_route.main_function_name}"
+        service_import = f"from project.{compiled_route.service_file_name.replace('.py', '')} import *"
         server_code_imports.append(service_import)
 
         # Write the api endpoint
