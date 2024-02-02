@@ -1,9 +1,12 @@
 import logging
+from typing import List
+
+from codex.chains.code_graph import CodeGraph
 
 logger = logging.getLogger(__name__)
 
 
-def package_app():
+def complie_code_graphs(code_graphs: List[CodeGraph]) -> List[str]:
     """
     Packages the app for delivery
 
