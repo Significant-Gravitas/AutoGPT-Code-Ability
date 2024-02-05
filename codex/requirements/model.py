@@ -89,8 +89,10 @@ class ApplicationRequirements(BaseModel):
     # Context on what the application is
     context: str
 
-    api_routes: List[APIRouteRequirement]
+    api_routes: List[APIRouteRequirement] | None = None
 
     def __str__(self):
+        if not self.api_routes:
+            return f"# {self.name}\n**Context**: {self.context}\n"
         api_routes_str = "\n".join(str(route) for route in self.api_routes)
         return f"# {self.name}\n**Context**: {self.context}\n**API Routes**:\n{api_routes_str}\n"

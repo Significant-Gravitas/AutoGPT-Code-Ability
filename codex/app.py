@@ -12,13 +12,11 @@ from pydantic import BaseModel
 from sqlmodel import SQLModel, create_engine  # type: ignore
 from starlette.background import BackgroundTask
 
-from codex.gen_graph import (
-    GraphCompliationError,
-    NodeDecompositionError,
-    NodeGraphGenerationError,
-    ServerCreationError,
-    run,
-)
+from codex.architect.agent import create_code_graphs
+from codex.delivery.agent import compile_application
+from codex.delivery.packager import create_zip_file
+from codex.developer.agent import write_code_graphs
+from codex.requirements.agent import define_requirements
 
 DATABASE_URL = os.environ.get(
     "DATABASE_URL", "postgresql://agpt_live:bnfaHGGSDF134345@0.0.0.0:5432/codegen"
@@ -97,24 +95,15 @@ logger = logging.getLogger(__name__)
 @app.post("/code")
 def handle_code_request(request: CodeRequest, user: str = Depends(authenticate)):
     logger.info(f"Received code request from user: {user}")
-    try:
-        zip_bytes = run(request.description, engine, fast=False)
-    except NodeGraphGenerationError as e:
-        raise HTTPException(
-            status_code=500, detail=str(e) if DETAILED else e.simple_msg
-        )
-    except NodeDecompositionError as e:
-        raise HTTPException(
-            status_code=500, detail=str(e) if DETAILED else e.simple_msg
-        )
-    except GraphCompliationError as e:
-        raise HTTPException(
-            status_code=500, detail=str(e) if DETAILED else e.simple_msg
-        )
-    except ServerCreationError as e:
-        raise HTTPException(
-            status_code=500, detail=str(e) if DETAILED else e.simple_msg
-        )
+    try:  # Requirements agent develops the requirements for the application
+        r = define_requirements(request.description)
+        # Architect agent creates the code graphs for the requirements
+        graphs = create_code_graphs(r)
+        # Developer agent writes the code for the code graphs
+        completed_graphs = write_code_graphs(graphs)
+        # Delivery Agent builds the code and delivers it to the user
+        application = compile_application(r, completed_graphs)
+        zip_bytes = create_zip_file(application)
     except Exception as e:
         logger.exception(e)
         raise HTTPException(status_code=500, detail=str(e))

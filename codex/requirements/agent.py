@@ -18,10 +18,11 @@ def define_requirements(task: str) -> ApplicationRequirements:
     Relevant chains:
 
     codex/chains/decompose_task.py
-
-    TODO: Work out the interface for this
     """
-    pass
+    return ApplicationRequirements(
+        name="",
+        context=task,
+    )
 
 
 def hardcoded_requirements(task: str) -> ApplicationRequirements:
