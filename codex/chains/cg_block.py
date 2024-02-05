@@ -69,13 +69,13 @@ class Validator:
         visitor.visit(tree)
 
         functions = visitor.functions.copy()
-        del functions[self.invoke_params["function_name"]]
+        del functions[invoke_params["function_name"]]
 
         response.response = CodeGraph(
-            function_name=self.function_name,
-            api_route=self.invoke_params["api_route"],
+            function_name=invoke_params["function_name"],
+            api_route=invoke_params["api_route"],
             code_graph=visitor.functions[
-                self.invoke_params["function_name"]
+                invoke_params["function_name"]
             ].function_template,
             imports=visitor.imports,
             function_defs=functions,
