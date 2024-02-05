@@ -123,7 +123,7 @@ class AIBlock:
             logger.error(f"Error loading template: {e}")
             raise PromptTemplateInvocationError(f"Error loading template: {e}")
 
-    def invoke(self, invoke_params: dict, max_retries=3) -> Any:
+    async def invoke(self, invoke_params: dict, max_retries=3) -> Any:
         retries = 0
         try:
             system_prompt = self.load_temaplate(
@@ -170,65 +170,120 @@ class AIBlock:
         except Exception as e:
             logger.error(f"Error invoking AIBlock: {e}")
             raise LLMFailure(f"Error invoking AIBlock: {e}")
+        
+        await self.save_output(validated_response)
 
         return validated_response.response
 
     async def save_output(self, validated_response: ValidatedResponse):
-        raise NotImplementedError("save_output method not implemented")
-
+        from prisma.models import CodeGraph
+        db = Prisma(auto_register=True)
+        await db.connect() 
+        
+        cg = await CodeGraph.prisma().create(
+            data={
+                "function_name": validated_response.response.function_name,
+                "api_route": validated_response.response.api_route,
+                "code_graph": validated_response.response.code_graph,
+                "imports": validated_response.response.imports,            }
+        )
+        
+        await db.disconnect()
+        
+        return cg
+        
     async def update_item(self, item: Any):
-        raise NotImplementedError("update_item method not implemented")
-
+        from prisma.models import CodeGraph
+        db = Prisma(auto_register=True)
+        await db.connect()
+        
+        cg = await CodeGraph.prisma().update(
+            where={"id": item.id},
+            data={
+                "function_name": item.function_name,
+                "api_route": item.api_route,
+                "code_graph": item.code_graph,
+                "imports": item.imports,
+            },
+        )
+        
+        await db.disconnect()
+        
+        return cg
+    
     async def get_item(self, item_id: str):
-        raise NotImplementedError("get_item method not implemented")
-
+        from prisma.models import CodeGraph
+        db = Prisma(auto_register=True)
+        await db.connect()
+        
+        cg = await CodeGraph.prisma().find_unique(where={"id": item_id})
+        
+        await db.disconnect()
+        
+        return cg
+    
     async def delete_item(self, item_id: str):
-        raise NotImplementedError("delete_item method not implemented")
-
+        from prisma.models import CodeGraph
+        db = Prisma(auto_register=True)
+        await db.connect()
+        
+        cg = await CodeGraph.prisma().delete(where={"id": item_id})
+        
+        await db.disconnect()
+        
     async def list_items(self, item_id: str, page: int, page_size: int):
-        raise NotImplementedError("list_items method not implemented")
-
+        from prisma.models import CodeGraph
+        db = Prisma(auto_register=True)
+        await db.connect()
+        
+        cg = await CodeGraph.prisma().find_many(skip=(page - 1) * page_size, take=page_size)
+        
+        await db.disconnect()
+        
+        return cg
+        
     def routes(self):
         base_router = APIRouter()
 
-        @base_router.get(f"/{self.name}s")
+        @base_router.get("/codegraphs")
         async def list_objects(
             request: Request,
             page: Optional[int] = Query(1, ge=1),
             page_size: Optional[int] = Query(10, ge=1),
         ):
-            pass
+            return await self.list_items(page, page_size)
 
-        @base_router.get(f"/{self.name}/{id}")
+        @base_router.get("/codegraph/{id}")
         async def get_object(
             request: Request,
             id: int,
         ):
-            pass
+            return await self.get_item(id)
 
-        @base_router.post(f"/{self.name}")
+        @base_router.post("/codegraph")
         async def create_object(
             request: Request,
         ):
-            pass
+            return await self.save_output(request)
 
-        @base_router.patch(f"/{self.name}/{id}")
+        @base_router.patch("/codegraph/{id}")
         async def update_object(
             request: Request,
             id: int,
         ):
-            pass
+            return await self.update_item(request)
 
-        @base_router.delete(f"/{self.name}/{id}")
+        @base_router.delete("/codegraph/{id}")
         async def delete_object(
             request: Request,
             id: int,
         ):
-            pass
+            return await self.delete_item(id)
 
 
 if __name__ == "__main__":
     import codex.common.logging_config
+    import asyncio
 
     codex.common.logging_config.setup_logging()
 
@@ -246,7 +301,7 @@ if __name__ == "__main__":
         oai_client=ois_client,
         db_client=None,
     )
-    ans = block.invoke(
+    ans = asyncio.run(block.invoke(
         {
             "api_route": "/api/v1/availability",
             "function_name": "check_availability",
@@ -272,8 +327,7 @@ The function is designed to return the real-time availability status of professi
     - 'Available' - The professional is free and can accept appointments.
     - 'Busy' - The professional is currently occupied and cannot accept appointments.""",
         }
-    )
+    ))
 
     import IPython
-
     IPython.embed()
