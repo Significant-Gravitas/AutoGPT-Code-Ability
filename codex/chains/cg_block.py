@@ -236,9 +236,9 @@ if __name__ == "__main__":
 
     block = AIBlock(
         name="code-graph",
-        system_prompt_template="cg.sys.python",
-        user_prompt_template="cg.usr.python",
-        retry_prompt_template="cg.rty.python",
+        system_prompt_template="cg.python.system",
+        user_prompt_template="cg.python.user",
+        retry_prompt_template="cg.python.retry",
         model="gpt-4-0125-preview",
         validator=Validator(),
         is_json_response=False,
@@ -275,7 +275,5 @@ The function is designed to return the real-time availability status of professi
     )
 
     import IPython
-
-    IPython.embed()
 
     IPython.embed()
