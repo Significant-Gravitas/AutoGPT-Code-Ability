@@ -1,17 +1,18 @@
 import ast
+import hashlib
+import json
 import logging
 import os
 import pathlib
 from typing import Any, Optional
 
-import json
 from fastapi import APIRouter, Query, Request, Response, UploadFile
 from jinja2 import Environment, FileSystemLoader
 from openai import OpenAI
 from openai.types import CompletionUsage
 from openai.types.chat import ChatCompletion
 from prisma import Prisma
-import hashlib
+
 from codex.chains.code_graph import CodeGraph, CodeGraphVisitor
 
 logger = logging.getLogger(__name__)
@@ -135,7 +136,7 @@ class AIBlock:
             template_str += f.read()
 
         self.template_hash = hashlib.md5(template_str.encode()).hexdigest()
-        
+
     async def store_call_template(self):
         from prisma.models import LLMCallTemplate
 
@@ -169,14 +170,13 @@ class AIBlock:
 
         return call_template
 
-
     async def store_call_attempt(
         self, response: ValidatedResponse, attempt: int, prompt: str
     ):
         from prisma.models import LLMCallAttempt
 
         await self.db_client.connect()
-        
+
         assert self.call_template_id, "Call template ID not set"
 
         call_attempt = await LLMCallAttempt.prisma().create(
@@ -238,7 +238,7 @@ class AIBlock:
             response = self.oai_client.chat.completions.create(**request_params)
 
             presponse = self.validator.parse(response)
-            
+
             await self.store_call_attempt(
                 presponse,
                 retries,
@@ -284,7 +284,6 @@ class AIBlock:
     async def save_output(self, validated_response: ValidatedResponse):
         from prisma.models import CodeGraph
 
-
         await self.db_client.connect()
 
         cg = await CodeGraph.prisma().create(
@@ -302,7 +301,6 @@ class AIBlock:
 
     async def update_item(self, item: Any):
         from prisma.models import CodeGraph
-
 
         await self.db_client.connect()
 
@@ -323,7 +321,6 @@ class AIBlock:
     async def get_item(self, item_id: str):
         from prisma.models import CodeGraph
 
-
         await self.db_client.connect()
 
         cg = await CodeGraph.prisma().find_unique(where={"id": item_id})
@@ -335,7 +332,6 @@ class AIBlock:
     async def delete_item(self, item_id: str):
         from prisma.models import CodeGraph
 
-
         await self.db_client.connect()
 
         cg = await CodeGraph.prisma().delete(where={"id": item_id})
@@ -344,7 +340,6 @@ class AIBlock:
 
     async def list_items(self, item_id: str, page: int, page_size: int):
         from prisma.models import CodeGraph
-
 
         await self.db_client.connect()
 
@@ -396,8 +391,9 @@ class AIBlock:
 
 
 if __name__ == "__main__":
-    import codex.common.logging_config
     import asyncio
+
+    import codex.common.logging_config
 
     codex.common.logging_config.setup_logging()
 
