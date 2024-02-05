@@ -4,6 +4,7 @@ import os
 import pathlib
 from typing import Any, Optional
 
+import json
 from fastapi import APIRouter, Query, Request, Response, UploadFile
 from jinja2 import Environment, FileSystemLoader
 from openai import OpenAI
@@ -37,9 +38,10 @@ class ValidatedResponse:
     usage_statistics: CompletionUsage
     message: str
 
-    def __init__(self, response: Any, usage_statistics: CompletionUsage):
+    def __init__(self, response: Any, usage_statistics: CompletionUsage, message: str):
         self.response = response
         self.usage_statistics = usage_statistics
+        self.message = message
 
 
 class Validator:
@@ -111,7 +113,7 @@ class AIBlock:
             os.path.dirname(__file__), f"../{template_base_path}/{self.model}"
         )
         self.templates_dir = pathlib.Path(self.template_base_path).resolve(strict=True)
-        
+
         self.generate_template_hash()
         self.call_template_id = None
 
@@ -133,44 +135,65 @@ class AIBlock:
             template_str += f.read()
 
         self.template_hash = hashlib.md5(template_str.encode()).hexdigest()
-
+        
     async def store_call_template(self):
         from prisma.models import LLMCallTemplate
 
-        db = Prisma(auto_register=True)
-        await db.connect()
+        # Connect to the database
+        await self.db_client.connect()
 
-        call_template = await LLMCallTemplate.prisma().create(
-            data={
-                "templateName": self.prompt_template_name,
+        # Check if an entry with the same fileHash already exists
+        existing_template = await LLMCallTemplate.prisma().find_first(
+            where={
                 "fileHash": self.template_hash,
             }
         )
 
-        await db.disconnect()
+        # If an existing entry is found, use it instead of creating a new one
+        if existing_template:
+            call_template = existing_template
+        else:
+            # If no entry exists with the same fileHash, create a new one
+            call_template = await LLMCallTemplate.prisma().create(
+                data={
+                    "templateName": self.prompt_template_name,
+                    "fileHash": self.template_hash,
+                }
+            )
+
+        # Disconnect from the database
+        await self.db_client.disconnect()
+
+        # Store the call template ID for future use
         self.call_template_id = call_template.id
+
         return call_template
+
 
     async def store_call_attempt(
         self, response: ValidatedResponse, attempt: int, prompt: str
     ):
         from prisma.models import LLMCallAttempt
 
-        db = Prisma(auto_register=True)
+        await self.db_client.connect()
+        
+        assert self.call_template_id, "Call template ID not set"
 
         call_attempt = await LLMCallAttempt.prisma().create(
             data={
-                "id": self.call_template_id,
+                "callTemplateId": self.call_template_id,
                 "completionTokens": response.usage_statistics.completion_tokens,
                 "promptTokens": response.usage_statistics.prompt_tokens,
                 "totalTokens": response.usage_statistics.total_tokens,
                 "attempt": attempt,
-                "prompt": prompt,
-                "completion": response.message,
+                "prompt": json.dumps(prompt) if not isinstance(prompt, str) else prompt,
+                "response": response.message,
+                "model": self.model,
             }
         )
 
-        await db.connect()
+        await self.db_client.disconnect()
+
         return call_attempt
 
     def load_temaplate(self, template: str, invoke_params: dict) -> str:
@@ -192,10 +215,9 @@ class AIBlock:
         return prompt
 
     async def invoke(self, invoke_params: dict, max_retries=3) -> Any:
-        
         if not self.call_template_id:
             await self.store_call_template()
-            
+
         retries = 0
         try:
             system_prompt = self.load_temaplate("system", invoke_params)
@@ -215,10 +237,12 @@ class AIBlock:
 
             response = self.oai_client.chat.completions.create(**request_params)
 
+            presponse = self.validator.parse(response)
+            
             await self.store_call_attempt(
-                response,
+                presponse,
                 retries,
-                self.messages_to_prompt_string(request_params["messages"]),
+                request_params["messages"],
             )
 
             validated_response = self.validator.run(invoke_params, response)
@@ -235,10 +259,12 @@ class AIBlock:
                         ],
                     )
                     response = self.oai_client.chat.completions.create(**request_params)
+                    presponse = self.validator.parse(response)
+
                     await self.store_call_attempt(
-                        response,
+                        presponse,
                         retries,
-                        self.messages_to_prompt_string(request_params["messages"]),
+                        request_params["messages"],
                     )
                     validated_response = self.validator.run(invoke_params, response)
                     break
@@ -258,8 +284,8 @@ class AIBlock:
     async def save_output(self, validated_response: ValidatedResponse):
         from prisma.models import CodeGraph
 
-        db = Prisma(auto_register=True)
-        await db.connect()
+
+        await self.db_client.connect()
 
         cg = await CodeGraph.prisma().create(
             data={
@@ -270,15 +296,15 @@ class AIBlock:
             }
         )
 
-        await db.disconnect()
+        await self.db_client.disconnect()
 
         return cg
 
     async def update_item(self, item: Any):
         from prisma.models import CodeGraph
 
-        db = Prisma(auto_register=True)
-        await db.connect()
+
+        await self.db_client.connect()
 
         cg = await CodeGraph.prisma().update(
             where={"id": item.id},
@@ -290,43 +316,43 @@ class AIBlock:
             },
         )
 
-        await db.disconnect()
+        await self.db_client.disconnect()
 
         return cg
 
     async def get_item(self, item_id: str):
         from prisma.models import CodeGraph
 
-        db = Prisma(auto_register=True)
-        await db.connect()
+
+        await self.db_client.connect()
 
         cg = await CodeGraph.prisma().find_unique(where={"id": item_id})
 
-        await db.disconnect()
+        await self.db_client.disconnect()
 
         return cg
 
     async def delete_item(self, item_id: str):
         from prisma.models import CodeGraph
 
-        db = Prisma(auto_register=True)
-        await db.connect()
+
+        await self.db_client.connect()
 
         cg = await CodeGraph.prisma().delete(where={"id": item_id})
 
-        await db.disconnect()
+        await self.db_client.disconnect()
 
     async def list_items(self, item_id: str, page: int, page_size: int):
         from prisma.models import CodeGraph
 
-        db = Prisma(auto_register=True)
-        await db.connect()
+
+        await self.db_client.connect()
 
         cg = await CodeGraph.prisma().find_many(
             skip=(page - 1) * page_size, take=page_size
         )
 
-        await db.disconnect()
+        await self.db_client.disconnect()
 
         return cg
 
@@ -377,7 +403,7 @@ if __name__ == "__main__":
 
     ois_client = OpenAI()
 
-    block =  AIBlock(
+    block = AIBlock(
         name="code-graph",
         prompt_template_name="cg.python",
         model="gpt-4-0125-preview",
@@ -385,7 +411,7 @@ if __name__ == "__main__":
         is_json_response=False,
         storeage_object=None,
         oai_client=ois_client,
-        db_client=None,
+        db_client=Prisma(auto_register=True),
     )
     ans = asyncio.run(
         block.invoke(
