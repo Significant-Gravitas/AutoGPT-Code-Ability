@@ -151,11 +151,11 @@ model Functions {
     id             Int                          @id @default(autoincrement())
     createdAt      DateTime                     @default(now())
     embedding      Unsupported("vector(1536)")?
-    name              String
-    doc_string        String
-    args              String
-    return_type       String
-    code              String
+    name           String
+    doc_string     String
+    args           String
+    return_type    String
+    code           String
     functionDefs   FunctionDefinition[]
     packages       Package[]
     compiledRoutes CompiledRoute[]
@@ -198,4 +198,27 @@ model Application {
     compiledRoutes            CompiledRoute[]
     applicationRequirements   ApplicationRequirements? @relation(fields: [applicationRequirementsId], references: [id])
     applicationRequirementsId Int?
+}
+
+// ------------------------- LLM Models ----------------------------- //
+
+model LLMCallTemplate {
+    id           Int              @id @default(autoincrement())
+    createdAt    DateTime         @default(now())
+    templateName String
+    fileHash     String
+    uses         LLMCallAttempt[]
+}
+
+model LLMCallAttempt {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+
+    model            String
+    completionTokens Int
+    promptTokens     Int
+    totalTokens      Int
+    attempt          Int
+    callTemplateId   Int
+    callTemplate     LLMCallTemplate @relation(fields: [callTemplateId], references: [id])
 }
