@@ -2,12 +2,12 @@ import logging
 import os
 from typing import Any, Optional
 
+from fastapi import APIRouter, Query, Request, Response, UploadFile
 from jinja2 import Environment, FileSystemLoader
 from openai import OpenAI
 from openai.types import CompletionUsage
 from openai.types.chat import ChatCompletion
 from prisma import Prisma
-from fastapi import APIRouter, Query, Request, Response, UploadFile
 
 logger = logging.getLogger(__name__)
 
@@ -140,23 +140,21 @@ def invoke(self, invoke_params: dict, max_retries=3) -> Any:
 
     return validated_response.response
 
-
     async def save_output(self, validated_response: ValidatedResponse):
         raise NotImplementedError("save_output method not implemented")
-    
+
     async def update_item(self, item: Any):
         raise NotImplementedError("update_item method not implemented")
-    
+
     async def get_item(self, item_id: str):
         raise NotImplementedError("get_item method not implemented")
-    
+
     async def delete_item(self, item_id: str):
         raise NotImplementedError("delete_item method not implemented")
-    
+
     async def list_items(self, item_id: str, page: int, page_size: int):
-        raise NotImplementedError("list_items method not implemented")       
-    
-    
+        raise NotImplementedError("list_items method not implemented")
+
     def routes(self):
         base_router = APIRouter()
 
@@ -174,23 +172,23 @@ def invoke(self, invoke_params: dict, max_retries=3) -> Any:
             id: int,
         ):
             pass
-        
+
         @base_router.post(f"/{self.name}")
         async def create_object(
             request: Request,
         ):
             pass
-        
+
         @base_router.patch(f"/{self.name}/{id}")
         async def update_object(
             request: Request,
             id: int,
         ):
             pass
-        
+
         @base_router.delete(f"/{self.name}/{id}")
         async def delete_object(
             request: Request,
-            id: int, 
+            id: int,
         ):
             pass
