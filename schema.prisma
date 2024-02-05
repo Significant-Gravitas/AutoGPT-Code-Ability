@@ -16,9 +16,9 @@ generator db {
     previewFeatures      = ["postgresqlExtensions"]
 }
 
-// ------------------------- Requirements Models ------------------------- //
+// ------------------------- Requirements Models ------------------------------ //
 // ApplicationRequirements represents the requirements for a specific application.  
-// ------------------------- --------------------------------------------- //
+// ------------------------- -------------------------------------------------- //
 
 model ApplicationRequirements {
     id        Int      @id @default(autoincrement())
