@@ -219,6 +219,10 @@ model LLMCallAttempt {
     promptTokens     Int
     totalTokens      Int
     attempt          Int
+
+    prompt           Json
+    resposne         String
+
     callTemplateId   Int
     callTemplate     LLMCallTemplate @relation(fields: [callTemplateId], references: [id])
 }
