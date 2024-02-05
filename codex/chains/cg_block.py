@@ -10,7 +10,7 @@ from openai import OpenAI
 from openai.types import CompletionUsage
 from openai.types.chat import ChatCompletion
 from prisma import Prisma
-
+import hashlib
 from codex.chains.code_graph import CodeGraph, CodeGraphVisitor
 
 logger = logging.getLogger(__name__)
@@ -87,9 +87,7 @@ class AIBlock:
     def __init__(
         self,
         name: str,
-        system_prompt_template: str,
-        user_prompt_template: str,
-        retry_prompt_template: str,
+        prompt_template_name: str,
         model: str,
         validator: Validator,
         is_json_response: bool,
@@ -99,25 +97,55 @@ class AIBlock:
         template_base_path: str = "prompts",
     ):
         self.name = name
-        self.system_prompt_template = system_prompt_template
-        self.user_prompt_template = user_prompt_template
-        self.retry_prompt_template = retry_prompt_template
+        self.prompt_template_name = prompt_template_name
         self.model = model
         self.validator = validator
         self.db_client = db_client
         self.storeage_object = storeage_object
         self.is_json_response = is_json_response
         self.oai_client = oai_client
-        self.template_base_path = template_base_path
+        self.template_base_path = templates_dir = os.path.join(
+                os.path.dirname(__file__), f"../{template_base_path}/{self.model}"
+            )
+        self.template_dir = pathlib.Path(self.templates_dir).resolve(strict=True)
+        self.generate_template_hash()
+        self.store_call_template()
+
+    def generate_template_hash(self):
+        template_str = ""
+        with open(f"{self.templates_dir}/{self.prompt_template_name}.system.j2", "r") as f:
+            template_str += f.read()
+        
+        with open(f"{self.templates_dir}/{self.prompt_template_name}.user.j2", "r") as f:
+            template_str += f.read()
+            
+        with open(f"{self.templates_dir}/{self.prompt_template_name}.retry.j2", "r") as f:
+            template_str += f.read()
+            
+        self.template_hash = hashlib.md5(template_str.encode()).hexdigest()
+        
+    
+    def store_call_template(self):
+        from prisma.models import LLMCallTemplate
+        db = Prisma(auto_register=True)
+        await db.connect() 
+        
+        call_template = await LLMCallTemplate.prisma().create(
+            data={
+                "templateName": self.prompt_template_name,
+                "fileHash": self.template_hash,
+                }
+        )
+        
+        await db.disconnect()
+        self.call_template_id = call_template.id
+        return call_template
+                
 
     def load_temaplate(self, template: str, invoke_params: dict) -> str:
         try:
-            templates_dir = os.path.join(
-                os.path.dirname(__file__), f"../{self.template_base_path}/{self.model}"
-            )
-            templates_dir = pathlib.Path(templates_dir).resolve(strict=True)
-            templates_env = Environment(loader=FileSystemLoader(templates_dir))
-            prompt_template = templates_env.get_template(f"{template}.j2")
+            templates_env = Environment(loader=FileSystemLoader(self.templates_dir))
+            prompt_template = templates_env.get_template(f"{self.prompt_template_name}.{template}.j2")
             return prompt_template.render(**invoke_params)
         except Exception as e:
             logger.error(f"Error loading template: {e}")
@@ -127,9 +155,9 @@ class AIBlock:
         retries = 0
         try:
             system_prompt = self.load_temaplate(
-                self.system_prompt_template, invoke_params
+                "system", invoke_params
             )
-            user_prompt = self.load_temaplate(self.user_prompt_template, invoke_params)
+            user_prompt = self.load_temaplate("user", invoke_params)
 
             request_params = {
                 "model": self.model,
@@ -151,7 +179,7 @@ class AIBlock:
                 try:
                     invoke_params["error_msg"] = str(e)
                     retry_prompt = self.load_temaplate(
-                        self.retry_prompt_template, invoke_params
+                        "retry", invoke_params
                     )
                     request_params["messages"] = (
                         [
