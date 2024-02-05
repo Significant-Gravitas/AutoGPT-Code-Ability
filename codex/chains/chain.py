@@ -69,7 +69,7 @@ class AIBlock:
         storeage_object: Any,
         oai_client: OpenAI,
         db_client: Prisma,
-        template_base_path: str = "templates",
+        template_base_path: str = "prompts",
     ):
         self.name = name
         self.system_prompt_template = system_prompt_template
@@ -80,66 +80,71 @@ class AIBlock:
         self.db_client = db_client
         self.storeage_object = storeage_object
         self.is_json_response = is_json_response
+        self.oai_client = oai_client
+        self.template_base_path = template_base_path
 
     def load_temaplate(self, template: str, invoke_params: dict) -> str:
         try:
             templates_dir = os.path.join(
-                os.path.dirname(__file__), f"../{self.template_base_path}/{self.model}/"
+                os.path.dirname(__file__), f"../{self.template_base_path}/{self.model}"
             )
+            templates_dir = pathlib.Path(templates_dir).resolve(strict=True)
             templates_env = Environment(loader=FileSystemLoader(templates_dir))
-            prompt_template = templates_env.get_template(f"templates_dir/{template}.j2")
+            prompt_template = templates_env.get_template(f"{template}.j2")
             return prompt_template.render(**invoke_params)
         except Exception as e:
             logger.error(f"Error loading template: {e}")
             raise PromptTemplateInvocationError(f"Error loading template: {e}")
 
+    def invoke(self, invoke_params: dict, max_retries=3) -> Any:
+        retries = 0
+        try:
+            system_prompt = self.load_temaplate(
+                self.system_prompt_template, invoke_params
+            )
+            user_prompt = self.load_temaplate(self.user_prompt_template, invoke_params)
 
-def invoke(self, invoke_params: dict, max_retries=3) -> Any:
-    retries = 0
-    try:
-        system_prompt = self.load_temaplate(self.system_prompt_template, invoke_params)
-        user_prompt = self.load_temaplate(self.user_prompt_template, invoke_params)
+            request_params = {
+                "model": self.model,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                "max_tokens": 4095,
+                "temperature": 1,
+            }
+            if self.is_json_response:
+                request_params["response_format"] = {"type": "json_object"}
 
-        request_params = {
-            "model": self.model,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            "max_tokens": 4095,
-            "temperature": 1,
-        }
-        if self.is_json_response:
-            request_params["response_format"] = {"type": "json_object"}
+            response = self.oai_client.chat.completions.create(**request_params)
+            validated_response = self.validator.run(invoke_params, response)
+        except ValidationError as e:
+            while retries < max_retries:
+                retries += 1
+                try:
+                    invoke_params["error_msg"] = str(e)
+                    retry_prompt = self.load_temaplate(
+                        self.retry_prompt_template, invoke_params
+                    )
+                    request_params["messages"] = (
+                        [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": retry_prompt},
+                        ],
+                    )
+                    response = self.oai_client.chat.completions.create(**request_params)
+                    validated_response = self.validator.run(invoke_params, response)
+                    break
+                except Exception as e:
+                    logger.error(
+                        f"{retries}/{max_retries} Error validating response: {e}"
+                    )
+                    continue
+        except Exception as e:
+            logger.error(f"Error invoking AIBlock: {e}")
+            raise LLMFailure(f"Error invoking AIBlock: {e}")
 
-        response = self.oai_client.chat.completions.create(**request_params)
-        validated_response = self.validator.run(invoke_params, response)
-    except ValidationError as e:
-        while retries < max_retries:
-            retries += 1
-            try:
-                invoke_params["error_msg"] = str(e)
-                retry_prompt = self.load_temaplate(
-                    self.retry_prompt_template, invoke_params
-                )
-                request_params["messages"] = (
-                    [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": retry_prompt},
-                    ],
-                )
-                response = self.oai_client.chat.completions.create(**request_params)
-                validated_response = self.validator.run(invoke_params, response)
-                break
-            except Exception as e:
-                logger.error(f"{retries}/{max_retries} Error validating response: {e}")
-                continue
-    except Exception as e:
-        logger.error(f"Error invoking AIBlock: {e}")
-        raise LLMFailure(f"Error invoking AIBlock: {e}")
-
-    return validated_response.response
-
+        return validated_response.response
     async def save_output(self, validated_response: ValidatedResponse):
         raise NotImplementedError("save_output method not implemented")
 
