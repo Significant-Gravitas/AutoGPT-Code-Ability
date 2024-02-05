@@ -3,9 +3,9 @@ import os
 import tempfile
 import zipfile
 from typing import List, defaultdict
-from codex.developer.model import Package
 
 from codex.delivery.model import Application
+from codex.developer.model import Package
 
 logger = logging.getLogger(__name__)
 

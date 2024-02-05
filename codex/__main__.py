@@ -1,10 +1,10 @@
 import concurrent.futures
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import click
 import requests
 from requests.auth import HTTPBasicAuth
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from codex.common.logging_config import setup_logging
 
