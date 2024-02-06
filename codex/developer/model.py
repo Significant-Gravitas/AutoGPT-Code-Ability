@@ -20,3 +20,8 @@ class Function(BaseModel):
 
 class CheckComplexity(BaseModel):
     is_complex: bool
+
+
+class GeneratedCode(BaseModel):
+    packages: List[Package]
+    code: str
