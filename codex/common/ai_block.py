@@ -48,6 +48,16 @@ class AIBlock:
 
     It also holds the database call logic for creating, updating, getting, and deleting
     objects generated from the AI Block.
+    
+    YOU MUST IMPLEMENT THE FOLLOWING METHODS:
+        - def validate(self, invoke_params: dict, response: ValidatedResponse) -> ValidatedResponse:
+        - async def create_item(self, validated_response: ValidatedResponse):
+
+    You should also implement theses methods if you want to use the database logic:
+        - async def update_item(self, query_params: dict):
+        - async def get_item(self, query_params: dict):
+        - async def delete_item(self, query_params: dict):
+        - async def list_items(self, query_params: dict):
     """
 
     def __init__(
