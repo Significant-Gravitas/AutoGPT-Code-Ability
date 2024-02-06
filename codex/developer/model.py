@@ -16,3 +16,7 @@ class Function(BaseModel):
     return_type: str
     code: str
     packages: List[Package] | None = None
+
+
+class CheckComplexity(BaseModel):
+    is_complex: bool
