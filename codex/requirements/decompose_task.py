@@ -1,8 +1,10 @@
+import json
+from typing import List
+
+from pydantic import BaseModel
+
 from codex.common.ai_block import AIBlock, ValidatedResponse, ValidationError
 from codex.requirements.model import DecomposeTaskModel
-from typing import List 
-from pydantic import BaseModel
-import json
 
 
 ## TEMP
@@ -18,21 +20,23 @@ class ApplicationPaths(BaseModel):
 
 
 class DecomposeTaskAIBlock(AIBlock):
-    
     prompt_template_name = "decompose_task"
     model = "gpt-4-0125-preview"
-    
-    def validate(self, invoke_params: dict, response: ValidatedResponse) -> ValidatedResponse:
+    is_json_response = True
+
+    def validate(
+        self, invoke_params: dict, response: ValidatedResponse
+    ) -> ValidatedResponse:
         json_data = json.loads(response.response)
-        
+
         try:
             model = DecomposeTaskModel(**json_data)
             response.response = model
         except Exception as e:
             raise ValidationError(f"Error validating response: {e}")
-        
+
         return response
-    
+
     async def create_item(self, validated_response: ValidatedResponse):
-        """ This is just a temporary that doesnt have a database model"""
+        """This is just a temporary that doesnt have a database model"""
         pass
