@@ -19,6 +19,9 @@ class ApplicationPaths(BaseModel):
 
 class DecomposeTaskAIBlock(AIBlock):
     
+    prompt_template_name = "decompose_task"
+    model = "gpt-4-0125-preview"
+    
     def validate(self, invoke_params: dict, response: ValidatedResponse) -> ValidatedResponse:
         json_data = json.loads(response.response)
         
