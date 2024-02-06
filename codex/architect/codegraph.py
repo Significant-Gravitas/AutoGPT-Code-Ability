@@ -4,7 +4,9 @@ from prisma.models import CodeGraph as CodeGraphDBModel
 
 from codex.architect.model import CodeGraph, FunctionDef
 from codex.common.ai_block import AIBlock, ValidatedResponse, ValidationError
+import logging
 
+logger = logging.getLogger(__name__)
 
 class CodeGraphVisitor(ast.NodeVisitor):
     def __init__(self):
@@ -100,7 +102,7 @@ class CodeGraphAIBlock(AIBlock):
                 "imports": validated_response.response.imports,
             }
         )
-
+        logger.debug(f"Created CodeGraph: {cg}")
         await self.db_client.disconnect()
 
         return cg
