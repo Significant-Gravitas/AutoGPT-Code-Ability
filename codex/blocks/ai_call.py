@@ -1,4 +1,3 @@
-import ast
 import hashlib
 import json
 import logging
@@ -12,8 +11,6 @@ from openai.types import CompletionUsage
 from openai.types.chat import ChatCompletion
 from prisma import Prisma
 from pydantic import BaseModel
-
-from codex.chains.code_graph import CodeGraph, CodeGraphVisitor
 
 logger = logging.getLogger(__name__)
 
@@ -44,9 +41,17 @@ class ValidatedResponse(BaseModel):
 
 
 class AIBlock:
+    """
+    The AI BLock is a base class for all AI Blocks. It provides a common interface for
+    calling an LLM, parsing the response, validating the response, and then storing it
+    along with the call attempt in the database.
+
+    It also holds the database call logic for creating, updating, getting, and deleting
+    objects generated from the AI Block.
+    """
+
     def __init__(
         self,
-        name: str,
         prompt_template_name: str,
         model: str,
         is_json_response: bool,
@@ -54,7 +59,17 @@ class AIBlock:
         db_client: Prisma,
         template_base_path: str = "prompts",
     ):
-        self.name = name
+        """
+        Args:
+            prompt_template_name (str): the name of the prompt template prefix. e.g.
+                "cg.python" this is appened with ".system.j2" / ".user.j2" / ".retry.j2"
+            model (str): the llm model to use for the call
+            is_json_response (bool): if a json response should be forced
+            oai_client (OpenAI): The OpenAI client
+            db_client (Prisma): The Prisma Database client
+            template_base_path (str, optional): The base path of the prompts folder
+                relative to the codex module Defaults to "prompts".
+        """
         self.prompt_template_name = prompt_template_name
         self.model = model
         self.db_client = db_client
@@ -179,27 +194,22 @@ class AIBlock:
             message=message.content,
         )
 
-    def validate(self, invoke_params: dict, response: ValidatedResponse) -> Any:
-        text = response.response
-        code = text.split("```python")[1].split("```")[0]
+    def validate(
+        self, invoke_params: dict, response: ValidatedResponse
+    ) -> ValidatedResponse:
+        """
+        Validates the generated resposne is correct
+        Args:
+            invoke_params (dict): the invole parameters for ths call
+            response (ValidatedResponse): the parsed response
 
-        tree = ast.parse(code)
-        visitor = CodeGraphVisitor()
-        visitor.visit(tree)
+        Returns:
+            ValidatedResponse: the validated response
 
-        functions = visitor.functions.copy()
-        del functions[invoke_params["function_name"]]
-
-        response.response = CodeGraph(
-            function_name=invoke_params["function_name"],
-            api_route=invoke_params["api_route"],
-            code_graph=visitor.functions[
-                invoke_params["function_name"]
-            ].function_template,
-            imports=visitor.imports,
-            function_defs=functions,
-        )
-        return response
+        Raises:
+            ValidationError: if the response is invalid
+        """
+        raise NotImplementedError("Validate Method not implemented")
 
     async def invoke(self, invoke_params: dict, max_retries=3) -> Any:
         if not self.call_template_id:
@@ -270,126 +280,47 @@ class AIBlock:
 
         return validated_response.response
 
-    async def save_output(self, validated_response: ValidatedResponse):
-        from prisma.models import CodeGraph
+    async def create_item(self, validated_response: ValidatedResponse):
+        """
+        Create an item from the validated response
 
-        await self.db_client.connect()
+        Args:
+            validated_response (ValidatedResponse): _description_
+        """
+        raise NotImplementedError("Create Item Method not implemented")
 
-        cg = await CodeGraph.prisma().create(
-            data={
-                "function_name": validated_response.response.function_name,
-                "api_route": validated_response.response.api_route,
-                "code_graph": validated_response.response.code_graph,
-                "imports": validated_response.response.imports,
-            }
-        )
+    async def update_item(self, query_params: dict):
+        """
+        Update an existing item in the database
 
-        await self.db_client.disconnect()
+        Args:
+            query_params (dict): _description_
+        """
+        raise NotImplementedError("Update Method not implemented")
 
-        return cg
+    async def get_item(self, query_params: dict):
+        """
+        Gets an item from the database
 
-    async def update_item(self, item: Any):
-        from prisma.models import CodeGraph
+        Args:
+            query_params (dict): _description_
+        """
+        raise NotImplementedError("Get Item Method not implemented")
 
-        await self.db_client.connect()
+    async def delete_item(self, query_params: dict):
+        """
+        Deletes an item from the database
 
-        cg = await CodeGraph.prisma().update(
-            where={"id": item.id},
-            data={
-                "function_name": item.function_name,
-                "api_route": item.api_route,
-                "code_graph": item.code_graph,
-                "imports": item.imports,
-            },
-        )
+        Args:
+            query_params (dict): _description_
+        """
+        raise NotImplementedError("Delete Item Method not implemented")
 
-        await self.db_client.disconnect()
+    async def list_items(self, query_params: dict):
+        """
+        Lists items from the database
 
-        return cg
-
-    async def get_item(self, item_id: str):
-        from prisma.models import CodeGraph
-
-        await self.db_client.connect()
-
-        cg = await CodeGraph.prisma().find_unique(where={"id": item_id})
-
-        await self.db_client.disconnect()
-
-        return cg
-
-    async def delete_item(self, item_id: str):
-        from prisma.models import CodeGraph
-
-        await self.db_client.connect()
-
-        cg = await CodeGraph.prisma().delete(where={"id": item_id})
-
-        await self.db_client.disconnect()
-
-    async def list_items(self, item_id: str, page: int, page_size: int):
-        from prisma.models import CodeGraph
-
-        await self.db_client.connect()
-
-        cg = await CodeGraph.prisma().find_many(
-            skip=(page - 1) * page_size, take=page_size
-        )
-
-        await self.db_client.disconnect()
-
-        return cg
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    import codex.common.logging_config
-
-    codex.common.logging_config.setup_logging()
-
-    ois_client = OpenAI()
-
-    block = AIBlock(
-        name="code-graph",
-        prompt_template_name="cg.python",
-        model="gpt-4-0125-preview",
-        validator=Validator(),
-        is_json_response=False,
-        storeage_object=None,
-        oai_client=ois_client,
-        db_client=Prisma(auto_register=True),
-    )
-    ans = asyncio.run(
-        block.invoke(
-            {
-                "api_route": "/api/v1/availability",
-                "function_name": "check_availability",
-                "description": """### **Overview**
-
-The function is designed to return the real-time availability status of professionals, dynamically updated based on their current activity or schedule. It operates without the need for database access, relying instead on real-time or pre-set schedule data provided at the time of the query.
-
-### **Input**
-
-1. **Current Time:** The timestamp at which the availability status is being requested.
-2. **Schedule Data:** A pre-set schedule for the professional, including start and end times of appointments or busy periods.
-
-### **Process**
-
-1. **Validation:** Check if the **Schedule** **Data** is valid and if the current time is provided in the correct format.
-2. **Determine Availability:**
-    - If schedule data is provided, the function compares the current time against the schedule to determine if the professional is currently in an appointment or busy period.
-    - If no schedule data is provided, the function assumes the professional's status is assumed to be 'Available' .
-
-### **Output**
-
-1. **Availability Status:** A response indicating the professional's current availability status. The status can be:
-    - 'Available' - The professional is free and can accept appointments.
-    - 'Busy' - The professional is currently occupied and cannot accept appointments.""",
-            }
-        )
-    )
-
-    import IPython
-
-    IPython.embed()
+        Args:
+            query_params (dict): _description_
+        """
+        raise NotImplementedError("List Items Method not implemented")
