@@ -59,54 +59,51 @@ class AIBlock:
         - async def delete_item(self, query_params: dict):
         - async def list_items(self, query_params: dict):
     """
+    prompt_template_name = ""
+    langauge = None
+    model = ""
+    is_json_response = False
+    template_base_path = "prompts"
 
     def __init__(
         self,
-        prompt_template_name: str,
-        model: str,
-        is_json_response: bool,
         oai_client: OpenAI,
         db_client: Prisma,
-        template_base_path: str = "prompts",
     ):
         """
         Args:
-            prompt_template_name (str): the name of the prompt template prefix. e.g.
-                "cg.python" this is appened with ".system.j2" / ".user.j2" / ".retry.j2"
-            model (str): the llm model to use for the call
-            is_json_response (bool): if a json response should be forced
             oai_client (OpenAI): The OpenAI client
             db_client (Prisma): The Prisma Database client
-            template_base_path (str, optional): The base path of the prompts folder
-                relative to the codex module Defaults to "prompts".
         """
-        self.prompt_template_name = prompt_template_name
-        self.model = model
         self.db_client = db_client
-        self.is_json_response = is_json_response
         self.oai_client = oai_client
         self.template_base_path = os.path.join(
-            os.path.dirname(__file__), f"../{template_base_path}/{self.model}"
+            os.path.dirname(__file__), f"../{self.template_base_path}/{self.model}"
         )
         self.templates_dir = pathlib.Path(self.template_base_path).resolve(strict=True)
 
         self.generate_template_hash()
         self.call_template_id = None
+        self.set_prompt_template_name()
+                
 
     def generate_template_hash(self):
         template_str = ""
+        lang_str = "" 
+        if self.langauge:
+            lang_str = f"{self.langauge}."
         with open(
-            f"{self.templates_dir}/{self.prompt_template_name}.system.j2", "r"
+            f"{self.templates_dir}/{self.prompt_template_name}/{lang_str}system.j2", "r"
         ) as f:
             template_str += f.read()
 
         with open(
-            f"{self.templates_dir}/{self.prompt_template_name}.user.j2", "r"
+            f"{self.templates_dir}/{self.prompt_template_name}/{lang_str}user.j2", "r"
         ) as f:
             template_str += f.read()
 
         with open(
-            f"{self.templates_dir}/{self.prompt_template_name}.retry.j2", "r"
+            f"{self.templates_dir}/{self.prompt_template_name}/{lang_str}retry.j2", "r"
         ) as f:
             template_str += f.read()
 

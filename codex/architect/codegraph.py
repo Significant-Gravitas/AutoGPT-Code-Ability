@@ -55,6 +55,11 @@ class CodeGraphVisitor(ast.NodeVisitor):
 
 
 class CodeGraphAIBlock(AIBlock):
+    
+    prompt_template_name = "codegraph/cg.python"
+    model = "gpt-4-0125-preview"
+    langauge = "python"
+    
     def validate(
         self, invoke_params: dict, response: ValidatedResponse
     ) -> ValidatedResponse:
