@@ -286,7 +286,7 @@ class AIBlock:
             logger.error(f"Error invoking AIBlock: {e}")
             raise LLMFailure(f"Error invoking AIBlock: {e}")
 
-        await self.save_output(validated_response)
+        await self.create_item(validated_response)
 
         return validated_response.response
 
