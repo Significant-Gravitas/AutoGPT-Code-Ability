@@ -1,6 +1,11 @@
-from fastapi import FastAPI, File, HTTPException, Path, UploadFile
-from fastapi.responses import FileResponse
+import json
+import logging
 
+from fastapi import FastAPI, File, Path, Query, Response, UploadFile
+from fastapi.responses import FileResponse
+from prisma import Prisma
+
+import codex.database
 from codex.api_models import (
     ApplicationCreate,
     ApplicationResponse,
@@ -16,8 +21,7 @@ from codex.api_models import (
     UserUpdate,
 )
 
-from codex.database import get_or_create_user_by_discord_id, update_user
-from prisma import Prisma
+logger = logging.getLogger(__name__)
 
 db_client = Prisma(auto_register=True)
 
@@ -38,7 +42,7 @@ def get_discord_user(discord_id: int):
     Retrieve a user by their Discord ID.
     """
     try:
-        user = get_or_create_user_by_discord_id(discord_id, db_client)
+        user = codex.database.get_or_create_user_by_discord_id(discord_id, db_client)
         return UserResponse(
             id=user.id,
             discord_id=user.discord_id,
@@ -48,7 +52,12 @@ def get_discord_user(discord_id: int):
             role=user.role,
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving user: {e}")
+        logger.error(f"Error retrieving user by discord id ({discord_id}): {e}")
+        return Response(
+            content=json.dumps({"error": "Error retrieving user by discord_id"}),
+            status_code=404,
+            media_type="application/json",
+        )
 
 
 @app.get("/user/{user_id}", response_model=UserResponse, tags=["users"])
@@ -57,7 +66,7 @@ def get_user(user_id: int = Path(..., description="The unique identifier of the 
     Retrieve a user by their unique identifier.
     """
     try:
-        user = get_user(user_id, db_client)
+        user = codex.database.get_user(user_id, db_client)
         return UserResponse(
             id=user.id,
             discord_id=user.discord_id,
@@ -67,7 +76,12 @@ def get_user(user_id: int = Path(..., description="The unique identifier of the 
             role=user.role,
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving user: {e}")
+        logger.error(f"Error retrieving user: {e}")
+        return Response(
+            content=json.dumps({"error": f"Error retrieving user by id {e}"}),
+            status_code=404,
+            media_type="application/json",
+        )
 
 
 @app.put("/user/{user_id}", response_model=UserResponse, tags=["users"])
@@ -76,7 +90,7 @@ def update_user(user_id: int, user_update: UserUpdate):
     Update a user's information by their unique identifier.
     """
     try:
-        user = update_user(user_id, user_update, db_client)
+        user = codex.database.update_user(user_id, user_update, db_client)
         return UserResponse(
             id=user.id,
             discord_id=user.discord_id,
@@ -86,16 +100,32 @@ def update_user(user_id: int, user_update: UserUpdate):
             role=user.role,
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error updating user: {e}")
+        logger.error(f"Error updating user: {e}")
+        return Response(
+            content=json.dumps({"error": f"Error updating user {e}"}),
+            status_code=404,
+            media_type="application/json",
+        )
 
 
 @app.get("/user/", response_model=UsersListResponse, tags=["users"])
-def list_users():
+def list_users(
+    page: int | None = Query(1, ge=1),
+    page_size: int | None = Query(10, ge=1),
+):
     """
     List all users.
     """
-    # Implementation goes here
-    return {"action": "list_users"}
+    try:
+        users = codex.database.list_users(page, page_size, db_client)
+        return users
+    except Exception as e:
+        logger.error(f"Error listing users: {e}")
+        return Response(
+            content=json.dumps({"error": f"Error listing users, {e}"}),
+            status_code=404,
+            media_type="application/json",
+        )
 
 
 # Apps endpoints

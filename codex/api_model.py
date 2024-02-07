@@ -4,6 +4,14 @@ from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr, Field
 
+
+class Pagination(BaseModel):
+    total_items: int = Field(..., description="Total number of items.", example=42)
+    total_pages: int = Field(..., description="Total number of pages.", example=97)
+    current_page: int = Field(..., description="Current_page page number.", example=1)
+    page_size: int = Field(..., description="Number of items per page.", example=25)
+
+
 ###### USERS ######
 
 
@@ -45,6 +53,7 @@ class UserResponse(BaseModel):
 
 class UsersListResponse(BaseModel):
     users: List[UserResponse]
+    pagination: Optional[Pagination] = None
 
 
 ####### APPS #######
@@ -68,6 +77,7 @@ class ApplicationResponse(BaseModel):
 
 class ApplicationsListResponse(BaseModel):
     applications: List[ApplicationResponse]
+    pagination: Optional[Pagination] = None
 
 
 ###### SPECS ######
@@ -121,6 +131,7 @@ class SpecificationResponse(BaseModel):
 
 class SpecificationsListResponse(BaseModel):
     specifications: List[SpecificationModel]
+    pagination: Optional[Pagination] = None
 
 
 ### Deliverables ###
@@ -148,6 +159,7 @@ class DeliverableResponse(BaseModel):
 
 class DeliverablesListResponse(BaseModel):
     completedApps: List[CompletedAppModel]
+    pagination: Optional[Pagination] = None
 
 
 ### Deployements ###
@@ -167,3 +179,4 @@ class DeploymentResponse(BaseModel):
 
 class DeploymentsListResponse(BaseModel):
     deployments: List[DeploymentMetadata]
+    pagination: Optional[Pagination] = None
