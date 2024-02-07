@@ -14,7 +14,6 @@ from codex.api_model import (
     DeliverablesListResponse,
     DeploymentResponse,
     DeploymentsListResponse,
-    SpecificationModel,
     SpecificationResponse,
     SpecificationsListResponse,
     UserResponse,
@@ -284,7 +283,7 @@ async def update_spec(
     user_id: int,
     app_id: int,
     spec_id: int,
-    spec_update: SpecificationModel,
+    spec_update: SpecificationResponse,
 ):
     """
     Update a specific specification by its ID for a given application and user.
@@ -450,7 +449,7 @@ async def list_deliverables(
     response_model=DeploymentResponse,
     tags=["deployments"],
 )
-def create_deployment(
+async def create_deployment(
     user_id: int,
     app_id: int,
     spec_id: int,
@@ -474,7 +473,7 @@ def create_deployment(
     response_model=DeploymentResponse,
     tags=["deployments"],
 )
-def get_deployment(
+async def get_deployment(
     user_id: int, app_id: int, spec_id: int, deliverable_id: int, deployment_id: int
 ):
     """
@@ -497,7 +496,7 @@ def get_deployment(
     "/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/{deployment_id}",
     tags=["deployments"],
 )
-def delete_deployment(
+async def delete_deployment(
     user_id: int, app_id: int, spec_id: int, deliverable_id: int, deployment_id: int
 ):
     """
@@ -525,7 +524,7 @@ def delete_deployment(
     response_model=DeploymentsListResponse,
     tags=["deployments"],
 )
-def list_deployments(
+async def list_deployments(
     user_id: int,
     app_id: int,
     spec_id: int,
@@ -554,7 +553,7 @@ def list_deployments(
 
 
 @app.get("/deployments/{deployment_id}/download", tags=["deployments"])
-def download_deployment(deployment_id: int):
+async def download_deployment(deployment_id: int):
     """
     Download the zip file for a specific deployment.
     """
