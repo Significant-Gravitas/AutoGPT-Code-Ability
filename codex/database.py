@@ -1,5 +1,5 @@
 from prisma import Prisma
-from prisma.models import Application, CompletedApp, Specification, User
+from prisma.models import Application, CompletedApp, Deployment, Specification, User
 
 from codex.api_model import (
     APIRouteSpecModel,
@@ -10,6 +10,9 @@ from codex.api_model import (
     CompletedAppModel,
     DeliverableResponse,
     DeliverablesListResponse,
+    DeploymentMetadata,
+    DeploymentResponse,
+    DeploymentsListResponse,
     Pagination,
     ParamModel,
     RequestObjectModel,
@@ -394,12 +397,12 @@ async def delete_deliverable(
 
 
 async def list_deliverables(
-    db_client: Prisma,
     user_id: int,
     app_id: int,
     spec_id: int,
     page: int = 1,
     page_size: int = 10,
+    db_client: Prisma = None,
 ) -> DeliverablesListResponse:
     await db_client.connect()
 
@@ -445,3 +448,87 @@ async def list_deliverables(
             page_size=page_size,
         ),
     )
+
+
+async def get_deployment(deployment_id: int, db_client: Prisma) -> DeploymentResponse:
+    await db_client.connect()
+
+    deployment = await Deployment.prisma().find_unique(
+        where={"id": deployment_id},
+    )
+
+    await db_client.disconnect()
+
+    if deployment is None:
+        raise ValueError(f"Deployment with ID {deployment_id} not found.")
+
+    return DeliverableResponse(
+        deployment=DeploymentMetadata(
+            id=deployment.id,
+            createdAt=deployment.createdAt,
+            fileName=deployment.fileName,
+            fileSize=deployment.fileSize,
+            path=deployment.path,
+        )
+    )
+
+
+async def delete_deployment(deployment_id: int, db_client: Prisma) -> None:
+    try:
+        await db_client.connect()
+
+        await Deployment.prisma().update(
+            where={
+                "id": deployment_id,
+            },
+            data={"deleted": True},
+        )
+
+        await db_client.disconnect()
+    except Exception as e:
+        raise e
+
+
+async def list_deployments(
+    user_id: int, deliverable_id: int, page: int, page_size: int, db_client: Prisma
+) -> DeploymentsListResponse:
+    await db_client.connect()
+
+    skip = (page - 1) * page_size
+
+    total_items = await Deployment.count(
+        where={
+            "deliverable_id": deliverable_id,
+            "userId": user_id,
+        }
+    )
+    if total_items == 0:
+        await db_client.disconnect()
+        return DeploymentsListResponse(
+            deployments=[],
+            pagination=Pagination(
+                total_items=0, total_pages=0, current_page=0, page_size=0
+            ),
+        )
+
+    deployments = await Deployment.find_many(
+        skip=skip,
+        take=page_size,
+        where={
+            "deliverable_id": deliverable_id,
+            "userId": user_id,
+        },
+    )
+
+    total_pages = (total_items + page_size - 1) // page_size
+
+    pagination = Pagination(
+        total_items=total_items,
+        total_pages=total_pages,
+        current_page=page,
+        page_size=page_size,
+    )
+
+    await db_client.disconnect()
+
+    return DeploymentsListResponse(deployments=deployments, pagination=pagination)
