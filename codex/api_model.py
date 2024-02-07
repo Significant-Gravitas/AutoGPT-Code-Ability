@@ -117,7 +117,7 @@ class APIRouteSpecModel(BaseModel):
     responseObject: Optional[ResponseObjectModel] = None
 
 
-class SpecificationModel(BaseModel):
+class SpecificationResponse(BaseModel):
     id: int
     createdAt: datetime
     name: str
@@ -125,12 +125,8 @@ class SpecificationModel(BaseModel):
     apiRoutes: List[APIRouteSpecModel] = []
 
 
-class SpecificationResponse(BaseModel):
-    specification: SpecificationModel
-
-
 class SpecificationsListResponse(BaseModel):
-    specifications: List[SpecificationModel]
+    specs: List[SpecificationResponse]
     pagination: Optional[Pagination] = None
 
 
