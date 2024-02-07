@@ -1,12 +1,18 @@
 import ast
+import logging
 
 from prisma.models import CodeGraph as CodeGraphDBModel
 
 from codex.architect.model import CodeGraph, FunctionDef
-from codex.common.ai_block import AIBlock, ValidatedResponse, ValidationError
-import logging
+from codex.common.ai_block import (
+    AIBlock,
+    Indentifiers,
+    ValidatedResponse,
+    ValidationError,
+)
 
 logger = logging.getLogger(__name__)
+
 
 class CodeGraphVisitor(ast.NodeVisitor):
     def __init__(self):
@@ -57,11 +63,10 @@ class CodeGraphVisitor(ast.NodeVisitor):
 
 
 class CodeGraphAIBlock(AIBlock):
-    
     prompt_template_name = "codegraph/cg.python"
     model = "gpt-4-0125-preview"
     langauge = "python"
-    
+
     def validate(
         self, invoke_params: dict, response: ValidatedResponse
     ) -> ValidatedResponse:
@@ -89,7 +94,9 @@ class CodeGraphAIBlock(AIBlock):
         except Exception as e:
             raise ValidationError(f"Error validating response: {e}")
 
-    async def create_item(self, validated_response: ValidatedResponse):
+    async def create_item(
+        self, ids: Indentifiers, validated_response: ValidatedResponse
+    ):
         """This is just a temporary that doesnt have a database model"""
 
         await self.db_client.connect()
@@ -136,7 +143,7 @@ class CodeGraphAIBlock(AIBlock):
     async def delete_item(self, item_id: str):
         await self.db_client.connect()
 
-        cg = await CodeGraphDBModel.prisma().delete(where={"id": item_id})
+        await CodeGraphDBModel.prisma().delete(where={"id": item_id})
 
         await self.db_client.disconnect()
 

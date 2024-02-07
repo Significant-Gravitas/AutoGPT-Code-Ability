@@ -40,6 +40,14 @@ class ValidatedResponse(BaseModel):
         arbitrary_types_allowed = True
 
 
+class Indentifiers(BaseModel):
+    user_id: int
+    app_id: int
+    spec_id: int | None = None
+    completed_app_id: int | None = None
+    deployment_id: int | None = None
+
+
 class AIBlock:
     """
     The AI BLock is a base class for all AI Blocks. It provides a common interface for
@@ -48,7 +56,7 @@ class AIBlock:
 
     It also holds the database call logic for creating, updating, getting, and deleting
     objects generated from the AI Block.
-    
+
     YOU MUST IMPLEMENT THE FOLLOWING METHODS:
         - def validate(self, invoke_params: dict, response: ValidatedResponse) -> ValidatedResponse:
         - async def create_item(self, validated_response: ValidatedResponse):
@@ -59,6 +67,7 @@ class AIBlock:
         - async def delete_item(self, query_params: dict):
         - async def list_items(self, query_params: dict):
     """
+
     prompt_template_name = ""
     langauge = None
     model = ""
@@ -81,36 +90,35 @@ class AIBlock:
             os.path.dirname(__file__), f"../{self.template_base_path}/{self.model}"
         )
         self.templates_dir = pathlib.Path(self.template_base_path).resolve(strict=True)
-
-        self.generate_template_hash()
         self.call_template_id = None
         self.set_prompt_template_name()
-                
 
-    def generate_template_hash(self):
+    async def store_call_template(self):
+        from prisma.models import LLMCallTemplate
+
         template_str = ""
-        lang_str = "" 
+        lang_str = ""
         if self.langauge:
             lang_str = f"{self.langauge}."
         with open(
             f"{self.templates_dir}/{self.prompt_template_name}/{lang_str}system.j2", "r"
         ) as f:
-            template_str += f.read()
+            system_prompt = f.read()
+            template_str += system_prompt
 
         with open(
             f"{self.templates_dir}/{self.prompt_template_name}/{lang_str}user.j2", "r"
         ) as f:
-            template_str += f.read()
+            user_prompt = f.read()
+            template_str += user_prompt
 
         with open(
             f"{self.templates_dir}/{self.prompt_template_name}/{lang_str}retry.j2", "r"
         ) as f:
-            template_str += f.read()
+            retry_prompt = f.read()
+            template_str += retry_prompt
 
         self.template_hash = hashlib.md5(template_str.encode()).hexdigest()
-
-    async def store_call_template(self):
-        from prisma.models import LLMCallTemplate
 
         # Connect to the database
         await self.db_client.connect()
@@ -131,6 +139,9 @@ class AIBlock:
                 data={
                     "templateName": self.prompt_template_name,
                     "fileHash": self.template_hash,
+                    "systemPrompt": system_prompt,
+                    "userPrompt": user_prompt,
+                    "retryPrompt": retry_prompt,
                 }
             )
 
@@ -143,7 +154,12 @@ class AIBlock:
         return call_template
 
     async def store_call_attempt(
-        self, response: ValidatedResponse, attempt: int, prompt: str
+        self,
+        user_id: int,
+        app_id: int,
+        response: ValidatedResponse,
+        attempt: int,
+        prompt: str,
     ):
         from prisma.models import LLMCallAttempt
 
@@ -153,6 +169,8 @@ class AIBlock:
 
         call_attempt = await LLMCallAttempt.prisma().create(
             data={
+                "userId": user_id,
+                "appId": app_id,
                 "callTemplateId": self.call_template_id,
                 "completionTokens": response.usage_statistics.completion_tokens,
                 "promptTokens": response.usage_statistics.prompt_tokens,
@@ -218,7 +236,9 @@ class AIBlock:
         """
         raise NotImplementedError("Validate Method not implemented")
 
-    async def invoke(self, invoke_params: dict, max_retries=3) -> Any:
+    async def invoke(
+        self, ids: Indentifiers, invoke_params: dict, max_retries=3
+    ) -> Any:
         if not self.call_template_id:
             await self.store_call_template()
 
@@ -244,6 +264,8 @@ class AIBlock:
             presponse = self.parse(response)
 
             await self.store_call_attempt(
+                ids.user_id,
+                ids.app_id,
                 presponse,
                 retries,
                 request_params["messages"],
@@ -272,7 +294,7 @@ class AIBlock:
                         retries,
                         request_params["messages"],
                     )
-                    validated_response = self.validate(invoke_params, presponse)
+                    validated_response = self.validate(ids, presponse)
                     break
                 except Exception as e:
                     logger.error(
@@ -283,11 +305,13 @@ class AIBlock:
             logger.error(f"Error invoking AIBlock: {e}")
             raise LLMFailure(f"Error invoking AIBlock: {e}")
 
-        await self.create_item(validated_response)
+        await self.create_item(ids, validated_response)
 
         return validated_response.response
 
-    async def create_item(self, validated_response: ValidatedResponse):
+    async def create_item(
+        self, ids: Indentifiers, validated_response: ValidatedResponse
+    ):
         """
         Create an item from the validated response
 
