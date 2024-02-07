@@ -147,6 +147,7 @@ class CompletedAppModel(BaseModel):
     name: str
     description: str
     compiledRoutes: List[CompiledRouteModel] = []
+    databaseSchema: str
 
 
 class DeliverableResponse(BaseModel):

@@ -349,25 +349,6 @@ async def list_specs(
 
 
 # Deliverables endpoints
-@app.get(
-    "/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}",
-    response_model=DeliverableResponse,
-    tags=["deliverables"],
-)
-def get_deliverable(user_id: int, app_id: int, spec_id: int, deliverable_id: int):
-    """
-    Retrieve a specific deliverable (completed app) including its compiled routes by ID.
-    """
-    # Implementation goes here
-    return {
-        "user_id": user_id,
-        "app_id": app_id,
-        "spec_id": spec_id,
-        "deliverable_id": deliverable_id,
-        "action": "get_deliverable",
-    }
-
-
 @app.post(
     "/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/",
     tags=["deliverables"],
@@ -378,30 +359,62 @@ def create_deliverable(user_id: int, app_id: int, spec_id: int):
     Create a new deliverable (completed app) for a specific specification.
     """
     # Implementation goes here
-    return {
-        "user_id": user_id,
-        "app_id": app_id,
-        "spec_id": spec_id,
-        "action": "create_deliverable",
-    }
+    return Response(
+        content=json.dumps(
+            {"error": "Creating a new deliverable is not yet implemented."}
+        ),
+        status_code=500,
+        media_type="application/json",
+    )
+
+
+@app.get(
+    "/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}",
+    response_model=DeliverableResponse,
+    tags=["deliverables"],
+)
+async def get_deliverable(
+    user_id: int, app_id: int, spec_id: int, deliverable_id: int, db_client: Prisma
+):
+    """
+    Retrieve a specific deliverable (completed app) including its compiled routes by ID.
+    """
+    try:
+        deliverable = await get_deliverable(
+            db_client, user_id, app_id, spec_id, deliverable_id
+        )
+        return deliverable
+    except ValueError as e:
+        return Response(
+            content=json.dumps({"error": str(e)}),
+            status_code=404,
+            media_type="application/json",
+        )
 
 
 @app.delete(
     "/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}",
     tags=["deliverables"],
 )
-def delete_deliverable(user_id: int, app_id: int, spec_id: int, deliverable_id: int):
+async def delete_deliverable(
+    user_id: int, app_id: int, spec_id: int, deliverable_id: int, db_client: Prisma
+):
     """
     Delete a specific deliverable (completed app) by ID.
     """
-    # Implementation goes here
-    return {
-        "user_id": user_id,
-        "app_id": app_id,
-        "spec_id": spec_id,
-        "deliverable_id": deliverable_id,
-        "action": "delete_deliverable",
-    }
+    try:
+        await delete_deliverable(db_client, user_id, app_id, spec_id, deliverable_id)
+        return Response(
+            content=json.dumps({"message": "Deliverable deleted successfully"}),
+            status_code=200,
+            media_type="application/json",
+        )
+    except Exception as e:
+        return Response(
+            content=json.dumps({"error": f"Error deleting deliverable: {str(e)}"}),
+            status_code=500,
+            media_type="application/json",
+        )
 
 
 @app.get(
@@ -409,17 +422,28 @@ def delete_deliverable(user_id: int, app_id: int, spec_id: int, deliverable_id: 
     response_model=DeliverablesListResponse,
     tags=["deliverables"],
 )
-def list_deliverables(user_id: int, app_id: int, spec_id: int):
+async def list_deliverables(
+    user_id: int,
+    app_id: int,
+    spec_id: int,
+    db_client: Prisma,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1),
+):
     """
     List all deliverables (completed apps) for a specific specification.
     """
-    # Implementation goes here
-    return {
-        "user_id": user_id,
-        "app_id": app_id,
-        "spec_id": spec_id,
-        "action": "list_deliverables",
-    }
+    try:
+        deliverables = await list_deliverables(
+            db_client, user_id, app_id, spec_id, page, page_size
+        )
+        return deliverables
+    except Exception as e:
+        return Response(
+            content=json.dumps({"error": f"Error listing deliverables: {str(e)}"}),
+            status_code=500,
+            media_type="application/json",
+        )
 
 
 # deployments endpoints
