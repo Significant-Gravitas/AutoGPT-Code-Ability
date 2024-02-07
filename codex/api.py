@@ -16,7 +16,17 @@ from codex.api_models import (
     UserUpdate,
 )
 
-app = FastAPI()
+from codex.database import get_or_create_user_by_discord_id, update_user
+from prisma import Prisma
+
+db_client = Prisma(auto_register=True)
+
+app = FastAPI(
+    title="Codex",
+    description="Codex is a platform for creating, deploying, and managing web applications.",
+    summary="Codex API",
+    version="0.1",
+)
 
 
 # User endpoints
@@ -27,8 +37,18 @@ def get_discord_user(discord_id: int):
     """
     Retrieve a user by their Discord ID.
     """
-    # Implementation goes here
-    return {"user_id": discord_id, "action": "get_user"}
+    try:
+        user = get_or_create_user_by_discord_id(discord_id, db_client)
+        return UserResponse(
+            id=user.id,
+            discord_id=user.discord_id,
+            createdAt=user.createdAt,
+            email=user.email,
+            name=user.name,
+            role=user.role,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving user: {e}")
 
 
 @app.get("/user/{user_id}", response_model=UserResponse, tags=["users"])
@@ -36,8 +56,18 @@ def get_user(user_id: int = Path(..., description="The unique identifier of the 
     """
     Retrieve a user by their unique identifier.
     """
-    # Implementation goes here
-    return {"user_id": user_id, "action": "get_user"}
+    try:
+        user = get_user(user_id, db_client)
+        return UserResponse(
+            id=user.id,
+            discord_id=user.discord_id,
+            createdAt=user.createdAt,
+            email=user.email,
+            name=user.name,
+            role=user.role,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving user: {e}")
 
 
 @app.put("/user/{user_id}", response_model=UserResponse, tags=["users"])
@@ -45,8 +75,18 @@ def update_user(user_id: int, user_update: UserUpdate):
     """
     Update a user's information by their unique identifier.
     """
-    # Implementation goes here
-    return {"user_id": user_id, "action": "update_user"}
+    try:
+        user = update_user(user_id, user_update, db_client)
+        return UserResponse(
+            id=user.id,
+            discord_id=user.discord_id,
+            createdAt=user.createdAt,
+            email=user.email,
+            name=user.name,
+            role=user.role,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating user: {e}")
 
 
 @app.get("/user/", response_model=UsersListResponse, tags=["users"])
