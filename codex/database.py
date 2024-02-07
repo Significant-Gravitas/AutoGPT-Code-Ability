@@ -1,7 +1,20 @@
 from prisma import Prisma
-from prisma.models import User, Application
+from prisma.models import Application, Specification, User
 
-from codex.api_model import Pagination, UserResponse, UsersListResponse, ApplicationCreate, ApplicationResponse, ApplicationsListResponse
+from codex.api_model import (
+    APIRouteSpecModel,
+    ApplicationCreate,
+    ApplicationResponse,
+    ApplicationsListResponse,
+    Pagination,
+    ParamModel,
+    RequestObjectModel,
+    ResponseObjectModel,
+    SpecificationResponse,
+    SpecificationsListResponse,
+    UserResponse,
+    UsersListResponse,
+)
 
 
 async def get_or_create_user_by_discord_id(discord_id: int, db_client: Prisma) -> User:
@@ -89,7 +102,9 @@ async def list_users(page: int, page_size: int, db_client: Prisma) -> UsersListR
     return UsersListResponse(users=user_responses, pagination=pagination)
 
 
-async def get_app_by_id(user_id: int, app_id: int, db_client: Prisma) -> ApplicationResponse:
+async def get_app_by_id(
+    user_id: int, app_id: int, db_client: Prisma
+) -> ApplicationResponse:
     await db_client.connect()
 
     app = await Application.prisma().find_first(
@@ -113,7 +128,9 @@ async def get_app_by_id(user_id: int, app_id: int, db_client: Prisma) -> Applica
         return None
 
 
-async def create_app(user_id: int, app_data: ApplicationCreate, db_client: Prisma) -> ApplicationResponse:
+async def create_app(
+    user_id: int, app_data: ApplicationCreate, db_client: Prisma
+) -> ApplicationResponse:
     await db_client.connect()
 
     app = await Application.prisma().create(
@@ -135,50 +152,197 @@ async def create_app(user_id: int, app_data: ApplicationCreate, db_client: Prism
 
 
 async def delete_app(user_id: int, app_id: int, db_client: Prisma) -> None:
-    await db_client.connect()
+    try:
+        await db_client.connect()
+        await Application.prisma().update(
+            where={
+                "id": app_id,
+                "userid": user_id,
+            },
+            data={"deleted": True},
+        )
 
-    await Application.prisma().delete_many(
-        where={
-            "id": app_id,
-            "userid": user_id,
-        }
-    )
-
-    await db_client.disconnect()
+        await db_client.disconnect()
+    except Exception as e:
+        raise e
 
 
-async def list_apps(user_id: int, page: int, page_size: int, db_client: Prisma) -> ApplicationsListResponse:
+async def list_apps(
+    user_id: int, page: int, page_size: int, db_client: Prisma
+) -> ApplicationsListResponse:
     await db_client.connect()
 
     skip = (page - 1) * page_size
-    total_items = await Application.count(
-        where={"userid": user_id}
-    )
+    total_items = await Application.count(where={"userid": user_id, "deleted": False})
     apps = await Application.prisma().find_many(
-        where={"userid": user_id},
-        skip=skip,
-        take=page_size
+        where={"userid": user_id}, skip=skip, take=page_size
+    )
+    if apps:
+        total_pages = (total_items + page_size - 1) // page_size
+
+        await db_client.disconnect()
+
+        applications_response = [
+            ApplicationResponse(
+                id=app.id,
+                createdAt=app.createdAt,
+                updatedAt=app.updatedAt,
+                name=app.name,
+                userid=app.userid,
+            )
+            for app in apps
+        ]
+
+        pagination = Pagination(
+            total_items=total_items,
+            total_pages=total_pages,
+            current_page=page,
+            page_size=page_size,
+        )
+
+        return ApplicationsListResponse(
+            applications=applications_response, pagination=pagination
+        )
+    else:
+        return ApplicationsListResponse(
+            applications=[],
+            pagination=Pagination(
+                total_items=0, total_pages=0, current_page=0, page_size=0
+            ),
+        )
+
+
+def map_spec_model_to_response(specification: Specification) -> SpecificationResponse:
+    routes = []
+    for route in specification.apiRoutes:
+        routes.append(
+            APIRouteSpecModel(
+                id=route.id,
+                createdAt=route.createdAt,
+                method=route.method,
+                path=route.path,
+                description=route.description,
+                requestObject=RequestObjectModel(
+                    id=route.requestObject.id,
+                    createdAt=route.requestObject.createdAt,
+                    name=route.requestObject.name,
+                    description=route.requestObject.description,
+                    params=[
+                        ParamModel(
+                            id=param.id,
+                            createdAt=param.createdAt,
+                            name=param.name,
+                            description=param.description,
+                            param_type=param.param_type,
+                        )
+                        for param in route.requestObject.params
+                    ],
+                ),
+                responseObject=ResponseObjectModel(
+                    id=route.responseObject.id,
+                    createdAt=route.responseObject.createdAt,
+                    name=route.responseObject.name,
+                    description=route.responseObject.description,
+                    params=[
+                        ParamModel(
+                            id=param.id,
+                            createdAt=param.createdAt,
+                            name=param.name,
+                            description=param.description,
+                            param_type=param.param_type,
+                        )
+                        for param in route.responseObject.params
+                    ],
+                ),
+            )
+        )
+
+    return SpecificationResponse(
+        id=specification.id,
+        createdAt=specification.createdAt,
+        name=specification.name,
+        context=specification.context,
+        apiRoutes=routes,
     )
 
-    total_pages = (total_items + page_size - 1) // page_size
 
+async def get_specification(
+    user_id: int, app_id: int, spec_id: int, db_client: Prisma
+) -> SpecificationResponse:
+    await db_client.connect()
+
+    specification = await Specification.prisma().find_first(
+        where={
+            "id": spec_id,
+            "userId": user_id,
+            "appId": app_id,
+        },
+        include={
+            "apiRoutes": {
+                "include": {
+                    "requestObject": {"include": {"params": True}},
+                    "responseObject": {"include": {"params": True}},
+                }
+            }
+        },
+    )
     await db_client.disconnect()
+    return map_spec_model_to_response(specification)
 
-    applications_response = [
-        ApplicationResponse(
-            id=app.id,
-            createdAt=app.createdAt,
-            updatedAt=app.updatedAt,
-            name=app.name,
-            userid=app.userid,
-        ) for app in apps
-    ]
 
-    pagination = Pagination(
-        total_items=total_items,
-        total_pages=total_pages,
-        current_page=page,
-        page_size=page_size,
+async def delete_specification(spec_id: int, db_client: Prisma) -> Specification:
+    try:
+        await db_client.connect()
+        await Specification.prisma().update(
+            where={"id": spec_id},
+            data={"deleted": True},
+        )
+        await db_client.disconnect()
+    except Exception as e:
+        raise e
+
+
+async def list_specifications(
+    user_id: int, app_id: int, page: int, page_size: int, db_client: Prisma
+) -> SpecificationsListResponse:
+    await db_client.connect()
+
+    skip = (page - 1) * page_size
+    total_items = await Specification.count(
+        where={"userid": user_id, "appId": app_id, "deleted": False}
     )
+    if total_items > 0:
+        specs = await Specification.prisma().find_many(
+            where={"userid": user_id},
+            include={
+                "apiRoutes": {
+                    "include": {
+                        "requestObject": {"include": {"params": True}},
+                        "responseObject": {"include": {"params": True}},
+                    }
+                }
+            },
+            skip=skip,
+            take=page_size,
+        )
 
-    return ApplicationsListResponse(applications=applications_response, pagination=pagination)
+        total_pages = (total_items + page_size - 1) // page_size
+
+        await db_client.disconnect()
+        specs_response = [map_spec_model_to_response(spec) for spec in specs]
+
+        pagination = Pagination(
+            total_items=total_items,
+            total_pages=total_pages,
+            current_page=page,
+            page_size=page_size,
+        )
+
+        return SpecificationResponse(specs=specs_response, pagination=pagination)
+    else:
+        return SpecificationsListResponse(
+            specs=[],
+            pagination=Pagination(
+                total_items=0, total_pages=0, current_page=0, page_size=0
+            ),
+        )

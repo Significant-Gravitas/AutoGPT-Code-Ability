@@ -14,6 +14,7 @@ from codex.api_model import (
     DeliverablesListResponse,
     DeploymentResponse,
     DeploymentsListResponse,
+    SpecificationModel,
     SpecificationResponse,
     SpecificationsListResponse,
     UserResponse,
@@ -130,7 +131,9 @@ def list_users(
 
 
 # Apps endpoints
-@app.get("/user/{user_id}/apps/{app_id}", response_model=ApplicationResponse, tags=["apps"])
+@app.get(
+    "/user/{user_id}/apps/{app_id}", response_model=ApplicationResponse, tags=["apps"]
+)
 async def get_app(
     user_id: int = Path(..., description="The unique identifier of the user"),
     app_id: int = Path(..., description="The unique identifier of the application"),
@@ -181,7 +184,11 @@ async def delete_app(user_id: int, app_id: int):
     """
     try:
         await codex.database.delete_app(user_id, app_id, db_client)
-        return {"message": "Application deleted successfully"}
+        return Response(
+            content=json.dumps({"message": "Application deleted successfully"}),
+            status_code=200,
+            media_type="application/json",
+        )
     except Exception as e:
         logger.error(f"Error deleting application: {e}")
         return Response(
@@ -191,7 +198,9 @@ async def delete_app(user_id: int, app_id: int):
         )
 
 
-@app.get("/user/{user_id}/apps/", response_model=ApplicationsListResponse, tags=["apps"])
+@app.get(
+    "/user/{user_id}/apps/", response_model=ApplicationsListResponse, tags=["apps"]
+)
 async def list_apps(
     user_id: int,
     page: int = Query(1, ge=1),
@@ -201,7 +210,9 @@ async def list_apps(
     List all applications for a given user.
     """
     try:
-        apps_response = await codex.database.list_apps(user_id, page, page_size, db_client)
+        apps_response = await codex.database.list_apps(
+            user_id, page, page_size, db_client
+        )
         return apps_response
     except Exception as e:
         logger.error(f"Error listing applications: {e}")
@@ -211,23 +222,8 @@ async def list_apps(
             media_type="application/json",
         )
 
+
 # Specs endpoints
-@app.get(
-    "/user/{user_id}/apps/{app_id}/specs/{spec_id}",
-    response_model=SpecificationResponse,
-    tags=["specs"],
-)
-def get_spec(user_id: int, app_id: int, spec_id: int):
-    """
-    Retrieve a specific specification by its ID for a given application and user.
-    """
-    # Implementation goes here
-    return {
-        "user_id": user_id,
-        "app_id": app_id,
-        "spec_id": spec_id,
-        "action": "get_spec",
-    }
 
 
 @app.post(
@@ -240,39 +236,88 @@ def create_spec(user_id: int, app_id: int):
     Create a new specification for a given application and user.
     """
     # Implementation goes here
-    return {"user_id": user_id, "app_id": app_id, "action": "create_spec"}
+    return Response(
+        content=json.dumps(
+            {"error": "Creating a new specification is not yet implemented."}
+        ),
+        status_code=500,
+        media_type="application/json",
+    )
+
+
+@app.get(
+    "/user/{user_id}/apps/{app_id}/specs/{spec_id}",
+    response_model=SpecificationResponse,
+    tags=["specs"],
+)
+async def get_spec(user_id: int, app_id: int, spec_id: int, db_client: Prisma):
+    """
+    Retrieve a specific specification by its ID for a given application and user.
+    """
+    try:
+        specification = await codex.database.get_specification(
+            user_id, app_id, spec_id, db_client
+        )
+        if specification:
+            return specification
+        else:
+            return Response(
+                content=json.dumps({"error": "Specification not found"}),
+                status_code=404,
+                media_type="application/json",
+            )
+    except Exception as e:
+        logger.error(f"Error retrieving specification: {e}")
+        return Response(
+            content=json.dumps({"error": "Error retrieving specification"}),
+            status_code=404,
+            media_type="application/json",
+        )
 
 
 @app.put(
     "/user/{user_id}/apps/{app_id}/specs/{spec_id}",
-    tags=["specs"],
     response_model=SpecificationResponse,
+    tags=["specs"],
 )
-def update_spec(user_id: int, app_id: int, spec_id: int):
+async def update_spec(
+    user_id: int,
+    app_id: int,
+    spec_id: int,
+    spec_update: SpecificationModel,
+    db_client: Prisma,
+):
     """
     Update a specific specification by its ID for a given application and user.
     """
-    # Implementation goes here
-    return {
-        "user_id": user_id,
-        "app_id": app_id,
-        "spec_id": spec_id,
-        "action": "update_spec",
-    }
+    return Response(
+        content=json.dumps(
+            {"error": "Updating a specification is not yet implemented."}
+        ),
+        status_code=500,
+        media_type="application/json",
+    )
 
 
 @app.delete("/user/{user_id}/apps/{app_id}/specs/{spec_id}", tags=["specs"])
-def delete_spec(user_id: int, app_id: int, spec_id: int):
+async def delete_spec(user_id: int, app_id: int, spec_id: int, db_client: Prisma):
     """
     Delete a specific specification by its ID for a given application and user.
     """
-    # Implementation goes here
-    return {
-        "user_id": user_id,
-        "app_id": app_id,
-        "spec_id": spec_id,
-        "action": "delete_spec",
-    }
+    try:
+        await codex.database.delete_specification(spec_id, db_client)
+        return Response(
+            content=json.dumps({"message": "Specification deleted successfully"}),
+            status_code=200,
+            media_type="application/json",
+        )
+    except Exception as e:
+        logger.error(f"Error deleting specification: {e}")
+        return Response(
+            content=json.dumps({"error": "Error deleting specification"}),
+            status_code=404,
+            media_type="application/json",
+        )
 
 
 @app.get(
@@ -280,12 +325,27 @@ def delete_spec(user_id: int, app_id: int, spec_id: int):
     response_model=SpecificationsListResponse,
     tags=["specs"],
 )
-def list_specs(user_id: int, app_id: int):
+async def list_specs(
+    user_id: int,
+    app_id: int,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1),
+):
     """
     List all specifications for a given application and user.
     """
-    # Implementation goes here
-    return {"user_id": user_id, "app_id": app_id, "action": "list_specs"}
+    try:
+        specs = await codex.database.list_specifications(
+            user_id, app_id, page, page_size, db_client
+        )
+        return specs
+    except Exception as e:
+        logger.error(f"Error listing specifications: {e}")
+        return Response(
+            content=json.dumps({"error": "Error listing specifications"}),
+            status_code=404,
+            media_type="application/json",
+        )
 
 
 # Deliverables endpoints
