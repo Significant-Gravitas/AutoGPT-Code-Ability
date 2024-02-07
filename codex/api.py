@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 from prisma import Prisma
 
 import codex.database
-from codex.api_models import (
+from codex.api_model import (
     ApplicationCreate,
     ApplicationResponse,
     ApplicationsListResponse,
@@ -39,7 +39,8 @@ app = FastAPI(
 @app.get("/discord/{discord_id}", response_model=UserResponse, tags=["users"])
 def get_discord_user(discord_id: int):
     """
-    Retrieve a user by their Discord ID.
+    This is intended to be used by the Discord bot to retrieve user information.
+    The user_id that is retrived can then be used for other API calls.
     """
     try:
         user = codex.database.get_or_create_user_by_discord_id(discord_id, db_client)
@@ -129,48 +130,86 @@ def list_users(
 
 
 # Apps endpoints
-@app.get(
-    "/user/{user_id}/apps/{app_id}", response_model=ApplicationResponse, tags=["apps"]
-)
-def get_app(
+@app.get("/user/{user_id}/apps/{app_id}", response_model=ApplicationResponse, tags=["apps"])
+async def get_app(
     user_id: int = Path(..., description="The unique identifier of the user"),
     app_id: int = Path(..., description="The unique identifier of the application"),
 ):
     """
     Retrieve a specific application by its ID for a given user.
     """
-    # Implementation goes here
-    return {"user_id": user_id, "app_id": app_id, "action": "get_app"}
+    try:
+        app_response = await codex.database.get_app_by_id(user_id, app_id, db_client)
+        if app_response:
+            return app_response
+        else:
+            return Response(
+                content=json.dumps({"error": "Application not found"}),
+                status_code=404,
+                media_type="application/json",
+            )
+    except Exception as e:
+        logger.error(f"Error retrieving application: {e}")
+        return Response(
+            content=json.dumps({"error": f"Error retrieving application: {e}"}),
+            status_code=500,
+            media_type="application/json",
+        )
 
 
 @app.post("/user/{user_id}/apps/", response_model=ApplicationResponse, tags=["apps"])
-def create_app(user_id: int, app: ApplicationCreate):
+async def create_app(user_id: int, app: ApplicationCreate):
     """
     Create a new application for a user.
     """
-    # Implementation goes here
-    return {"user_id": user_id, "action": "create_app"}
+    try:
+        app_response = await codex.database.create_app(user_id, app, db_client)
+        return app_response
+    except Exception as e:
+        logger.error(f"Error creating application: {e}")
+        return Response(
+            content=json.dumps({"error": f"Error creating application: {e}"}),
+            status_code=500,
+            media_type="application/json",
+        )
 
 
 @app.delete("/user/{user_id}/apps/{app_id}", tags=["apps"])
-def delete_app(user_id: int, app_id: int):
+async def delete_app(user_id: int, app_id: int):
     """
     Delete a specific application by its ID for a given user.
     """
-    # Implementation goes here
-    return {"user_id": user_id, "app_id": app_id, "action": "delete_app"}
+    try:
+        await codex.database.delete_app(user_id, app_id, db_client)
+        return {"message": "Application deleted successfully"}
+    except Exception as e:
+        logger.error(f"Error deleting application: {e}")
+        return Response(
+            content=json.dumps({"error": f"Error deleting application: {e}"}),
+            status_code=500,
+            media_type="application/json",
+        )
 
 
-@app.get(
-    "/user/{user_id}/apps/", response_model=ApplicationsListResponse, tags=["apps"]
-)
-def list_apps(user_id: int):
+@app.get("/user/{user_id}/apps/", response_model=ApplicationsListResponse, tags=["apps"])
+async def list_apps(
+    user_id: int,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1),
+):
     """
     List all applications for a given user.
     """
-    # Implementation goes here
-    return {"user_id": user_id, "action": "list_apps"}
-
+    try:
+        apps_response = await codex.database.list_apps(user_id, page, page_size, db_client)
+        return apps_response
+    except Exception as e:
+        logger.error(f"Error listing applications: {e}")
+        return Response(
+            content=json.dumps({"error": f"Error listing applications: {e}"}),
+            status_code=500,
+            media_type="application/json",
+        )
 
 # Specs endpoints
 @app.get(
