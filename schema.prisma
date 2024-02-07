@@ -21,11 +21,12 @@ generator db {
 // ---------------------------------------------------------------------- //
 model User {
   id             Int              @id @default(autoincrement())
+  discord_id     String           @unique
   createdAt      DateTime         @default(now())
-  email          String           @unique
+  email          String?          
   name           String?
   role           Role             @default(USER)
-  password       String
+  password       String?
   apps           Application[]
   spes           Specification[]
   completedApp   CompletedApp[]
@@ -41,9 +42,8 @@ model Application {
   id             Int              @id @default(autoincrement())
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
-  request        String
+  name           String
   userid         Int
-  status         String
   user           User             @relation(fields: [userid], references: [id])
   specs          Specification[]
   LLMCallAttempt LLMCallAttempt[]
