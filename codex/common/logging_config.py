@@ -1,6 +1,8 @@
 import logging.config
 import os
+
 import coloredlogs
+
 
 def setup_logging(local: bool = False):
     file_path = os.path.abspath(__file__)
