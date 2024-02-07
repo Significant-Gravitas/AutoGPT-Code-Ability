@@ -1,6 +1,11 @@
 import json
 
-from codex.common.ai_block import AIBlock, ValidatedResponse, ValidationError
+from codex.common.ai_block import (
+    AIBlock,
+    Indentifiers,
+    ValidatedResponse,
+    ValidationError,
+)
 from codex.developer.model import CheckComplexity
 
 
@@ -22,6 +27,8 @@ class CheckComplexityAIBlock(AIBlock):
 
         return response
 
-    async def create_item(self, validated_response: ValidatedResponse):
+    async def create_item(
+        self, ids: Indentifiers, validated_response: ValidatedResponse
+    ):
         """This is just a temporary that doesnt have a database model"""
         pass

@@ -247,9 +247,9 @@ model LLMCallTemplate {
   createdAt     DateTime         @default(now())
   templateName  String
   fileHash      String
-  system_prompt String
-  user_prompt   String
-  retry_prompt  String
+  systemPrompt String
+  userPrompt   String
+  retryPrompt  String
   uses          LLMCallAttempt[]
 }
 
