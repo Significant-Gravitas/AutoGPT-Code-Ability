@@ -75,6 +75,49 @@ erDiagram
 
 ```
 
+## Interaction Flow
+
+This is what the expected user interaction workflow will look like:
+
+```mermaid
+
+sequenceDiagram
+    actor User
+    participant API as Codex API
+    participant Codex
+
+
+    User->>API: requests an application
+    API->>User: Returns App ID
+    alt Requirements Development
+      User->>API: Request Application Spec for App ID
+      API->>+Codex: Runs Requirments Flow
+      Codex-->>-User: Returns the App Spec ID
+      User->>API: Modifies App Spec Element
+      API->>User: Returns a new App Spec ID
+    end
+    
+    User->>API: Request App Spec ID is Developed
+    API->>+Codex: Runs Architect and Develop Flow
+
+    Codex->>-User: Returns Developed App ID
+    
+    User->>API: Requests Deveoped App ID is deployed
+    Note right of API: When we have added deployment flow
+
+    API->>+Codex: Runs Delivery Flow
+    Codex-->>-User: Returns Deployment details (id, url etc)
+
+    
+    User->>API: Requests Code for Developed App ID
+    Note right of API: During Beta
+
+    API->>+Codex: Runs Package flow
+
+    Codex-->>-User: Returns Zipfile
+    
+```
+
 ## Workflow
 
 1. **Requirement Analysis**: The Design sub-agent interacts with the client to gather and define the product requirements.
@@ -89,15 +132,15 @@ erDiagram
 ```mermaid
 sequenceDiagram
     participant User
-    participant Design
+    participant Requirements
     participant Architect
     participant Developer
     participant Delivery
 
-    User->>+Design: Request
-    Design->>+User: Initial Requirements
-    User->>+Design: Feedback/Corrections
-    Design->>+Architect: Refined Requirements
+    User->>+Requirements: Request
+    Requirements->>User: Initial Requirements
+    User->>+Requirements: Feedback/Corrections
+    Requirements->>+Architect: Refined Requirements
     Architect->>+Developer: Architecture & Templates
     loop Development Iterations
         Developer->>+Architect: Request Clarification
