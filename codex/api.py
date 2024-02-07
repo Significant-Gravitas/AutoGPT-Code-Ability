@@ -1,7 +1,7 @@
 import json
 import logging
 
-from fastapi import FastAPI, File, Path, Query, Response, UploadFile
+from fastapi import FastAPI, Path, Query, Response
 from fastapi.responses import FileResponse
 from prisma import Prisma
 
@@ -250,7 +250,7 @@ def create_spec(user_id: int, app_id: int):
     response_model=SpecificationResponse,
     tags=["specs"],
 )
-async def get_spec(user_id: int, app_id: int, spec_id: int, db_client: Prisma):
+async def get_spec(user_id: int, app_id: int, spec_id: int):
     """
     Retrieve a specific specification by its ID for a given application and user.
     """
@@ -285,7 +285,6 @@ async def update_spec(
     app_id: int,
     spec_id: int,
     spec_update: SpecificationModel,
-    db_client: Prisma,
 ):
     """
     Update a specific specification by its ID for a given application and user.
@@ -300,7 +299,7 @@ async def update_spec(
 
 
 @app.delete("/user/{user_id}/apps/{app_id}/specs/{spec_id}", tags=["specs"])
-async def delete_spec(user_id: int, app_id: int, spec_id: int, db_client: Prisma):
+async def delete_spec(user_id: int, app_id: int, spec_id: int):
     """
     Delete a specific specification by its ID for a given application and user.
     """
@@ -373,14 +372,12 @@ def create_deliverable(user_id: int, app_id: int, spec_id: int):
     response_model=DeliverableResponse,
     tags=["deliverables"],
 )
-async def get_deliverable(
-    user_id: int, app_id: int, spec_id: int, deliverable_id: int, db_client: Prisma
-):
+async def get_deliverable(user_id: int, app_id: int, spec_id: int, deliverable_id: int):
     """
     Retrieve a specific deliverable (completed app) including its compiled routes by ID.
     """
     try:
-        deliverable = await get_deliverable(
+        deliverable = await codex.database.get_deliverable(
             db_client, user_id, app_id, spec_id, deliverable_id
         )
         return deliverable
@@ -397,13 +394,15 @@ async def get_deliverable(
     tags=["deliverables"],
 )
 async def delete_deliverable(
-    user_id: int, app_id: int, spec_id: int, deliverable_id: int, db_client: Prisma
+    user_id: int, app_id: int, spec_id: int, deliverable_id: int
 ):
     """
     Delete a specific deliverable (completed app) by ID.
     """
     try:
-        await delete_deliverable(db_client, user_id, app_id, spec_id, deliverable_id)
+        await codex.database.delete_deliverable(
+            db_client, user_id, app_id, spec_id, deliverable_id
+        )
         return Response(
             content=json.dumps({"message": "Deliverable deleted successfully"}),
             status_code=200,
@@ -426,7 +425,6 @@ async def list_deliverables(
     user_id: int,
     app_id: int,
     spec_id: int,
-    db_client: Prisma,
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1),
 ):
@@ -434,8 +432,8 @@ async def list_deliverables(
     List all deliverables (completed apps) for a specific specification.
     """
     try:
-        deliverables = await list_deliverables(
-            db_client, user_id, app_id, spec_id, page, page_size
+        deliverables = await codex.database.list_deliverables(
+            user_id, app_id, spec_id, page, page_size, db_client
         )
         return deliverables
     except Exception as e:
@@ -447,6 +445,30 @@ async def list_deliverables(
 
 
 # deployments endpoints
+@app.post(
+    "/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/",
+    response_model=DeploymentResponse,
+    tags=["deployments"],
+)
+def create_deployment(
+    user_id: int,
+    app_id: int,
+    spec_id: int,
+    deliverable_id: int,
+):
+    """
+    Create a new deployment with the provided zip file.
+    """
+    # File upload handling and metadata storage implementation goes here
+    return Response(
+        content=json.dumps(
+            {"error": "Creating a new deployment is not yet implemented."}
+        ),
+        status_code=500,
+        media_type="application/json",
+    )
+
+
 @app.get(
     "/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/{deployment_id}",
     response_model=DeploymentResponse,
@@ -458,40 +480,17 @@ def get_deployment(
     """
     Retrieve metadata about a specific deployment.
     """
-    # Implementation goes here
-    return {
-        "user_id": user_id,
-        "app_id": app_id,
-        "spec_id": spec_id,
-        "deliverable_id": deliverable_id,
-        "deployment_id": deployment_id,
-        "action": "get_deployment",
-    }
-
-
-@app.post(
-    "/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/",
-    response_model=DeploymentResponse,
-    tags=["deployments"],
-)
-def create_deployment(
-    user_id: int,
-    app_id: int,
-    spec_id: int,
-    deliverable_id: int,
-    file: UploadFile = File(...),
-):
-    """
-    Create a new deployment with the provided zip file.
-    """
-    # File upload handling and metadata storage implementation goes here
-    return {
-        "user_id": user_id,
-        "app_id": app_id,
-        "spec_id": spec_id,
-        "deliverable_id": deliverable_id,
-        "action": "create_deployment",
-    }
+    try:
+        deployment = await codex.database.get_deployment(
+            deployment_id=deployment_id, db_client=db_client
+        )
+        return deployment
+    except ValueError as e:
+        return Response(
+            content=json.dumps({"error": str(e)}),
+            status_code=404,
+            media_type="application/json",
+        )
 
 
 @app.delete(
@@ -504,15 +503,21 @@ def delete_deployment(
     """
     Delete a specific deployment.
     """
-    # Implementation goes here
-    return {
-        "user_id": user_id,
-        "app_id": app_id,
-        "spec_id": spec_id,
-        "deliverable_id": deliverable_id,
-        "deployment_id": deployment_id,
-        "action": "delete_deployment",
-    }
+    try:
+        await codex.database.delete_deployment(
+            deployment_id=deployment_id, db_client=db_client
+        )
+        return Response(
+            content=json.dumps({"message": "Deployment deleted successfully"}),
+            status_code=200,
+            media_type="application/json",
+        )
+    except ValueError as e:
+        return Response(
+            content=json.dumps({"error": str(e)}),
+            status_code=404,
+            media_type="application/json",
+        )
 
 
 @app.get(
@@ -520,18 +525,32 @@ def delete_deployment(
     response_model=DeploymentsListResponse,
     tags=["deployments"],
 )
-def list_deployments(user_id: int, app_id: int, spec_id: int, deliverable_id: int):
+def list_deployments(
+    user_id: int,
+    app_id: int,
+    spec_id: int,
+    deliverable_id: int,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1),
+):
     """
     List all deployments for a specific deliverable.
     """
-    # Implementation goes here
-    return {
-        "user_id": user_id,
-        "app_id": app_id,
-        "spec_id": spec_id,
-        "deliverable_id": deliverable_id,
-        "action": "list_deployments",
-    }
+    try:
+        deployements = await codex.database.list_deployments(
+            user_id=user_id,
+            deliverable_id=deliverable_id,
+            page=page,
+            page_size=page_size,
+            db_client=db_client,
+        )
+        return deployements
+    except ValueError as e:
+        return Response(
+            content=json.dumps({"error": str(e)}),
+            status_code=404,
+            media_type="application/json",
+        )
 
 
 @app.get("/deployments/{deployment_id}/download", tags=["deployments"])
@@ -539,6 +558,9 @@ def download_deployment(deployment_id: int):
     """
     Download the zip file for a specific deployment.
     """
-    # Locate the file based on deployment_id, ensure it exists, and return a FileResponse
+    deployment_details = await codex.database.get_deployment(
+        deployment_id=deployment_id, db_client=db_client
+    )
+    logger.info(f"Downloading deployment: {deployment_details}")
     file_path = "path/to/deployment.zip"  # Placeholder path
     return FileResponse(path=file_path, filename="deployment.zip")

@@ -167,7 +167,7 @@ class DeploymentMetadata(BaseModel):
     createdAt: datetime
     fileName: str
     fileSize: int
-    downloadUrl: str  # Assuming there's a URL to download the zip file
+    path: str  # Assuming there's a URL to download the zip file
 
 
 class DeploymentResponse(BaseModel):
