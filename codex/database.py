@@ -178,7 +178,7 @@ async def list_apps(
 async def get_specification(
     user_id: int, app_id: int, spec_id: int, db_client: Prisma
 ) -> SpecificationResponse:
-    specification = await Specification.prisma().find_first(
+    specification = await Specification.prisma().find_first_or_raise(
         where={
             "id": spec_id,
             "userId": user_id,
