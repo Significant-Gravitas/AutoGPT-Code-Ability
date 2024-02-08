@@ -27,18 +27,15 @@ from codex.api_model import (
 async def get_or_create_user_by_discord_id(discord_id: int, db_client: Prisma) -> User:
     await db_client.connect()
 
-    user = await User.prisma().find_first(
+    user = await db_client.user.upsert(
         where={
             "discord_id": discord_id,
-        }
+        },
+        data={
+            "create": {"discord_id": discord_id},
+            "update": {},
+        },
     )
-
-    if not user:
-        user = await User.prisma().create(
-            data={
-                "discord_id": discord_id,
-            }
-        )
 
     await db_client.disconnect()
 
