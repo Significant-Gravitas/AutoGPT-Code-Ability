@@ -19,7 +19,7 @@ generator db {
 // ---------------------------------------------------------------------- //
 // ------------------------- Common Models ------------------------------ //
 // ---------------------------------------------------------------------- //
-model User {
+model CodexUser {
   id             Int              @id @default(autoincrement())
   discord_id     String           @unique
   createdAt      DateTime         @default(now())
@@ -47,8 +47,8 @@ model Application {
   name      String
   deleted   Boolean  @default(false)
 
-  userid         Int
-  user           User             @relation(fields: [userid], references: [id])
+  userId         Int
+  user           CodexUser             @relation(fields: [userId], references: [id])
   specs          Specification[]
   LLMCallAttempt LLMCallAttempt[]
 }
@@ -69,7 +69,7 @@ model Specification {
   completedApp  CompletedApp[]
   app           Application?   @relation(fields: [applicationId], references: [id])
   applicationId Int?
-  User          User?          @relation(fields: [userId], references: [id])
+  User          CodexUser?          @relation(fields: [userId], references: [id])
   userId        Int?
 }
 
@@ -245,7 +245,7 @@ model CompletedApp {
   compiledRoutes CompiledRoute[]
   spec           Specification?  @relation(fields: [specId], references: [id])
   specId         Int?
-  User           User?           @relation(fields: [userId], references: [id])
+  User           CodexUser?           @relation(fields: [userId], references: [id])
   userId         Int?
   Deployment     Deployment[]
 }
@@ -264,7 +264,7 @@ model Deployment {
   path           String
   completedApp   CompletedApp? @relation(fields: [completedAppId], references: [id])
   completedAppId Int?
-  User           User?         @relation(fields: [userId], references: [id])
+  User           CodexUser?         @relation(fields: [userId], references: [id])
   userId         Int?
 }
 
@@ -285,7 +285,7 @@ model LLMCallAttempt {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
 
-  User   User?        @relation(fields: [userId], references: [id])
+  User   CodexUser?        @relation(fields: [userId], references: [id])
   userId Int?
   app    Application? @relation(fields: [appId], references: [id])
   appId  Int?
