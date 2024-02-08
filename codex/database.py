@@ -114,7 +114,7 @@ async def get_app_by_id(
 ) -> ApplicationResponse:
     await db_client.connect()
 
-    app = await Application.prisma().find_first(
+    app = await Application.prisma().find_first_or_raise(
         where={
             "id": app_id,
             "userid": user_id,
@@ -123,16 +123,13 @@ async def get_app_by_id(
 
     await db_client.disconnect()
 
-    if app:
-        return ApplicationResponse(
-            id=app.id,
-            createdAt=app.createdAt,
-            updatedAt=app.updatedAt,
-            name=app.name,
-            userid=app.userid,
-        )
-    else:
-        return None
+    return ApplicationResponse(
+        id=app.id,
+        createdAt=app.createdAt,
+        updatedAt=app.updatedAt,
+        name=app.name,
+        userid=app.userid,
+    )
 
 
 async def create_app(
