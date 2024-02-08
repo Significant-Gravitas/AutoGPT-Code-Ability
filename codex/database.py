@@ -129,17 +129,13 @@ async def create_app(
 
 
 async def delete_app(user_id: int, app_id: int, db_client: Prisma) -> None:
-    try:
-        await Application.prisma().update(
-            where={
-                "id": app_id,
-                "userid": user_id,
-            },
-            data={"deleted": True},
-        )
-
-    except Exception as e:
-        raise e
+    await Application.prisma().update(
+        where={
+            "id": app_id,
+            "userid": user_id,
+        },
+        data={"deleted": True},
+    )
 
 
 async def list_apps(
@@ -260,14 +256,10 @@ async def get_specification(
 
 
 async def delete_specification(spec_id: int, db_client: Prisma) -> Specification:
-    try:
-        await Specification.prisma().update(
-            where={"id": spec_id},
-            data={"deleted": True},
-        )
-
-    except Exception as e:
-        raise e
+    await Specification.prisma().update(
+        where={"id": spec_id},
+        data={"deleted": True},
+    )
 
 
 async def list_specifications(
@@ -339,14 +331,10 @@ async def get_deliverable(
 async def delete_deliverable(
     db_client: Prisma, user_id: int, app_id: int, spec_id: int, deliverable_id: int
 ) -> None:
-    try:
-        await CompletedApp.prisma().update(
-            where={"id": deliverable_id},
-            data={"deleted": True},
-        )
-
-    except Exception as e:
-        raise e
+    await CompletedApp.prisma().update(
+        where={"id": deliverable_id},
+        data={"deleted": True},
+    )
 
 
 async def list_deliverables(
@@ -416,16 +404,12 @@ async def get_deployment(deployment_id: int, db_client: Prisma) -> DeploymentRes
 
 
 async def delete_deployment(deployment_id: int, db_client: Prisma) -> None:
-    try:
-        await Deployment.prisma().update(
-            where={
-                "id": deployment_id,
-            },
-            data={"deleted": True},
-        )
-
-    except Exception as e:
-        raise e
+    await Deployment.prisma().update(
+        where={
+            "id": deployment_id,
+        },
+        data={"deleted": True},
+    )
 
 
 async def list_deployments(
