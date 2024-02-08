@@ -61,7 +61,7 @@ async def update_user(user: User, db_client: Prisma) -> User:
 async def get_user(user_id: int, db_client: Prisma) -> User:
     await db_client.connect()
 
-    user = await User.prisma().find_unique(where={"id": user_id})
+    user = await User.prisma().find_unique_or_raise(where={"id": user_id})
 
     await db_client.disconnect()
 
@@ -359,27 +359,25 @@ async def get_deliverable(
     db_client: Prisma, user_id: int, app_id: int, spec_id: int, deliverable_id: int
 ) -> DeliverableResponse:
     await db_client.connect()
-    completed_app = await CompletedApp.prisma().find_unique(
+    completed_app = await CompletedApp.prisma().find_unique_or_raise(
         where={"id": deliverable_id},
         include={"compiledRoutes": True},
     )
     await db_client.disconnect()
 
-    if completed_app:
-        return DeliverableResponse(
-            completedApp=CompletedAppModel(
-                id=completed_app.id,
-                createdAt=completed_app.createdAt,
-                name=completed_app.name,
-                description=completed_app.description,
-                compiledRoutes=[
-                    CompiledRouteModel(**route.dict())
-                    for route in completed_app.compiledRoutes
-                ],
-                databaseSchema=completed_app.databaseSchema,
-            )
+    return DeliverableResponse(
+        completedApp=CompletedAppModel(
+            id=completed_app.id,
+            createdAt=completed_app.createdAt,
+            name=completed_app.name,
+            description=completed_app.description,
+            compiledRoutes=[
+                CompiledRouteModel(**route.dict())
+                for route in completed_app.compiledRoutes
+            ],
+            databaseSchema=completed_app.databaseSchema,
         )
-    raise ValueError("Deliverable not found")
+    )
 
 
 async def delete_deliverable(
@@ -453,14 +451,11 @@ async def list_deliverables(
 async def get_deployment(deployment_id: int, db_client: Prisma) -> DeploymentResponse:
     await db_client.connect()
 
-    deployment = await Deployment.prisma().find_unique(
+    deployment = await Deployment.prisma().find_unique_or_raise(
         where={"id": deployment_id},
     )
 
     await db_client.disconnect()
-
-    if deployment is None:
-        raise ValueError(f"Deployment with ID {deployment_id} not found.")
 
     return DeliverableResponse(
         deployment=DeploymentMetadata(
