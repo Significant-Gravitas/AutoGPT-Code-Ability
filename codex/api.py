@@ -294,6 +294,7 @@ async def update_spec(
     spec_update: SpecificationResponse,
 ):
     """
+    TODO: This needs to be implemented
     Update a specific specification by its ID for a given application and user.
     """
     return Response(
