@@ -417,9 +417,5 @@ def profile_management() -> ApplicationRequirements:
     return application_requirements
 
 
-
 def appointment_scheduling_system() -> ApplicationRequirements:
-    
-    return ApplicationRequirements(
-        
-    )
+    return ApplicationRequirements()
