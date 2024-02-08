@@ -2,7 +2,6 @@ from prisma import Prisma
 from prisma.models import Application, CompletedApp, Deployment, Specification, User
 
 from codex.api_model import (
-    APIRouteSpecModel,
     ApplicationCreate,
     ApplicationResponse,
     ApplicationsListResponse,
@@ -14,9 +13,6 @@ from codex.api_model import (
     DeploymentResponse,
     DeploymentsListResponse,
     Pagination,
-    ParamModel,
-    RequestObjectModel,
-    ResponseObjectModel,
     SpecificationResponse,
     SpecificationsListResponse,
     UserResponse,
@@ -179,60 +175,6 @@ async def list_apps(
         )
 
 
-def map_spec_model_to_response(specification: Specification) -> SpecificationResponse:
-    routes = []
-    for route in specification.apiRoutes:
-        routes.append(
-            APIRouteSpecModel(
-                id=route.id,
-                createdAt=route.createdAt,
-                method=route.method,
-                path=route.path,
-                description=route.description,
-                requestObject=RequestObjectModel(
-                    id=route.requestObject.id,
-                    createdAt=route.requestObject.createdAt,
-                    name=route.requestObject.name,
-                    description=route.requestObject.description,
-                    params=[
-                        ParamModel(
-                            id=param.id,
-                            createdAt=param.createdAt,
-                            name=param.name,
-                            description=param.description,
-                            param_type=param.param_type,
-                        )
-                        for param in route.requestObject.params
-                    ],
-                ),
-                responseObject=ResponseObjectModel(
-                    id=route.responseObject.id,
-                    createdAt=route.responseObject.createdAt,
-                    name=route.responseObject.name,
-                    description=route.responseObject.description,
-                    params=[
-                        ParamModel(
-                            id=param.id,
-                            createdAt=param.createdAt,
-                            name=param.name,
-                            description=param.description,
-                            param_type=param.param_type,
-                        )
-                        for param in route.responseObject.params
-                    ],
-                ),
-            )
-        )
-
-    return SpecificationResponse(
-        id=specification.id,
-        createdAt=specification.createdAt,
-        name=specification.name,
-        context=specification.context,
-        apiRoutes=routes,
-    )
-
-
 async def get_specification(
     user_id: int, app_id: int, spec_id: int, db_client: Prisma
 ) -> SpecificationResponse:
@@ -252,7 +194,7 @@ async def get_specification(
         },
     )
 
-    return map_spec_model_to_response(specification)
+    return SpecificationResponse.from_specification(specification)
 
 
 async def delete_specification(spec_id: int, db_client: Prisma) -> Specification:
@@ -286,7 +228,9 @@ async def list_specifications(
 
         total_pages = (total_items + page_size - 1) // page_size
 
-        specs_response = [map_spec_model_to_response(spec) for spec in specs]
+        specs_response = [
+            SpecificationResponse.from_specification(spec) for spec in specs
+        ]
 
         pagination = Pagination(
             total_items=total_items,

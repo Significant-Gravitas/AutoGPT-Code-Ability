@@ -124,6 +124,60 @@ class SpecificationResponse(BaseModel):
     context: str
     apiRoutes: List[APIRouteSpecModel] = []
 
+    @staticmethod
+    def from_specification(specification):
+        routes = []
+        for route in specification.apiRoutes:
+            routes.append(
+                APIRouteSpecModel(
+                    id=route.id,
+                    createdAt=route.createdAt,
+                    method=route.method,
+                    path=route.path,
+                    description=route.description,
+                    requestObject=RequestObjectModel(
+                        id=route.requestObject.id,
+                        createdAt=route.requestObject.createdAt,
+                        name=route.requestObject.name,
+                        description=route.requestObject.description,
+                        params=[
+                            ParamModel(
+                                id=param.id,
+                                createdAt=param.createdAt,
+                                name=param.name,
+                                description=param.description,
+                                param_type=param.param_type,
+                            )
+                            for param in route.requestObject.params
+                        ],
+                    ),
+                    responseObject=ResponseObjectModel(
+                        id=route.responseObject.id,
+                        createdAt=route.responseObject.createdAt,
+                        name=route.responseObject.name,
+                        description=route.responseObject.description,
+                        params=[
+                            ParamModel(
+                                id=param.id,
+                                createdAt=param.createdAt,
+                                name=param.name,
+                                description=param.description,
+                                param_type=param.param_type,
+                            )
+                            for param in route.responseObject.params
+                        ],
+                    ),
+                )
+            )
+
+        return SpecificationResponse(
+            id=specification.id,
+            createdAt=specification.createdAt,
+            name=specification.name,
+            context=specification.context,
+            apiRoutes=routes,
+        )
+
 
 class SpecificationsListResponse(BaseModel):
     specs: List[SpecificationResponse]
