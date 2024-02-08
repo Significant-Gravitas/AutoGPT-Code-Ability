@@ -29,8 +29,10 @@ from codex.api_model import (
 async def get_or_create_user_by_discord_id(
     discord_id: int, db_client: Prisma
 ) -> CodexUser:
-    user = await CodexUser.prisma().find_unique_or_raise(where={"discord_id": str(discord_id)})
-    
+    user = await CodexUser.prisma().find_unique_or_raise(
+        where={"discord_id": str(discord_id)}
+    )
+
     if not user:
         user = await CodexUser.prisma().create(discord_id=str(discord_id))
 
@@ -102,7 +104,7 @@ async def get_app_by_id(
     app = await Application.prisma().find_first_or_raise(
         where={
             "id": app_id,
-            "userid": user_id,
+            "userId": user_id, 
         }
     )
 
@@ -111,7 +113,7 @@ async def get_app_by_id(
         createdAt=app.createdAt,
         updatedAt=app.updatedAt,
         name=app.name,
-        userid=app.userid,
+        userid=app.userId,
     )
 
 
@@ -121,7 +123,7 @@ async def create_app(
     app = await Application.prisma().create(
         data={
             "name": app_data.name,
-            "userid": user_id,
+            "userId": user_id,
         }
     )
 
@@ -130,7 +132,7 @@ async def create_app(
         createdAt=app.createdAt,
         updatedAt=app.updatedAt,
         name=app.name,
-        userid=app.userid,
+        userid=app.userId,
     )
 
 
@@ -138,7 +140,7 @@ async def delete_app(user_id: int, app_id: int, db_client: Prisma) -> None:
     await Application.prisma().update(
         where={
             "id": app_id,
-            "userid": user_id,
+            "userId": user_id,
         },
         data={"deleted": True},
     )
@@ -148,9 +150,9 @@ async def list_apps(
     user_id: int, page: int, page_size: int, db_client: Prisma
 ) -> ApplicationsListResponse:
     skip = (page - 1) * page_size
-    total_items = await Application.count(where={"userid": user_id, "deleted": False})
+    total_items = await Application.prisma().count(where={"userId": user_id, "deleted": False})
     apps = await Application.prisma().find_many(
-        where={"userid": user_id}, skip=skip, take=page_size
+        where={"userId": user_id, "deleted": False}, skip=skip, take=page_size
     )
     if apps:
         total_pages = (total_items + page_size - 1) // page_size
@@ -161,7 +163,7 @@ async def list_apps(
                 createdAt=app.createdAt,
                 updatedAt=app.updatedAt,
                 name=app.name,
-                userid=app.userid,
+                userid=app.userId,
             )
             for app in apps
         ]

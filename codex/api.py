@@ -42,12 +42,6 @@ async def startup():
 async def shutdown():
     await db_client.disconnect()
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    await db_client.connect()
-    yield
-    await db_client.disconnect()
-
 
 # User endpoints
 @app.get("/discord/{discord_id}", response_model=UserResponse, tags=["users"])
