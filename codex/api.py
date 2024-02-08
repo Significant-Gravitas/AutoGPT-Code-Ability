@@ -1,5 +1,6 @@
 import json
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Path, Query, Response
 from fastapi.responses import FileResponse
@@ -33,9 +34,14 @@ app = FastAPI(
 )
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await db_client.connect()
+    yield
+    await db_client.disconnect()
+
+
 # User endpoints
-
-
 @app.get("/discord/{discord_id}", response_model=UserResponse, tags=["users"])
 def get_discord_user(discord_id: int):
     """

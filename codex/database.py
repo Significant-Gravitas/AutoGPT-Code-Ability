@@ -25,8 +25,6 @@ from codex.api_model import (
 
 
 async def get_or_create_user_by_discord_id(discord_id: int, db_client: Prisma) -> User:
-    await db_client.connect()
-
     user = await db_client.user.upsert(
         where={
             "discord_id": discord_id,
@@ -37,37 +35,25 @@ async def get_or_create_user_by_discord_id(discord_id: int, db_client: Prisma) -
         },
     )
 
-    await db_client.disconnect()
-
     return user
 
 
 async def update_user(user: User, db_client: Prisma) -> User:
-    await db_client.connect()
-
     user = await User.prisma().update(
         where={"id": user.id},
         data=user.dict(),
     )
 
-    await db_client.disconnect()
-
     return user
 
 
 async def get_user(user_id: int, db_client: Prisma) -> User:
-    await db_client.connect()
-
     user = await User.prisma().find_unique_or_raise(where={"id": user_id})
-
-    await db_client.disconnect()
 
     return user
 
 
 async def list_users(page: int, page_size: int, db_client: Prisma) -> UsersListResponse:
-    await db_client.connect()
-
     # Calculate the number of items to skip
     skip = (page - 1) * page_size
 
@@ -88,8 +74,6 @@ async def list_users(page: int, page_size: int, db_client: Prisma) -> UsersListR
         page_size=page_size,
     )
 
-    await db_client.disconnect()
-
     user_responses = [
         UserResponse(
             id=user.id,
@@ -109,16 +93,12 @@ async def list_users(page: int, page_size: int, db_client: Prisma) -> UsersListR
 async def get_app_by_id(
     user_id: int, app_id: int, db_client: Prisma
 ) -> ApplicationResponse:
-    await db_client.connect()
-
     app = await Application.prisma().find_first_or_raise(
         where={
             "id": app_id,
             "userid": user_id,
         }
     )
-
-    await db_client.disconnect()
 
     return ApplicationResponse(
         id=app.id,
@@ -132,16 +112,12 @@ async def get_app_by_id(
 async def create_app(
     user_id: int, app_data: ApplicationCreate, db_client: Prisma
 ) -> ApplicationResponse:
-    await db_client.connect()
-
     app = await Application.prisma().create(
         data={
             "name": app_data.name,
             "userid": user_id,
         }
     )
-
-    await db_client.disconnect()
 
     return ApplicationResponse(
         id=app.id,
@@ -154,7 +130,6 @@ async def create_app(
 
 async def delete_app(user_id: int, app_id: int, db_client: Prisma) -> None:
     try:
-        await db_client.connect()
         await Application.prisma().update(
             where={
                 "id": app_id,
@@ -163,7 +138,6 @@ async def delete_app(user_id: int, app_id: int, db_client: Prisma) -> None:
             data={"deleted": True},
         )
 
-        await db_client.disconnect()
     except Exception as e:
         raise e
 
@@ -171,8 +145,6 @@ async def delete_app(user_id: int, app_id: int, db_client: Prisma) -> None:
 async def list_apps(
     user_id: int, page: int, page_size: int, db_client: Prisma
 ) -> ApplicationsListResponse:
-    await db_client.connect()
-
     skip = (page - 1) * page_size
     total_items = await Application.count(where={"userid": user_id, "deleted": False})
     apps = await Application.prisma().find_many(
@@ -180,8 +152,6 @@ async def list_apps(
     )
     if apps:
         total_pages = (total_items + page_size - 1) // page_size
-
-        await db_client.disconnect()
 
         applications_response = [
             ApplicationResponse(
@@ -270,8 +240,6 @@ def map_spec_model_to_response(specification: Specification) -> SpecificationRes
 async def get_specification(
     user_id: int, app_id: int, spec_id: int, db_client: Prisma
 ) -> SpecificationResponse:
-    await db_client.connect()
-
     specification = await Specification.prisma().find_first(
         where={
             "id": spec_id,
@@ -287,18 +255,17 @@ async def get_specification(
             }
         },
     )
-    await db_client.disconnect()
+
     return map_spec_model_to_response(specification)
 
 
 async def delete_specification(spec_id: int, db_client: Prisma) -> Specification:
     try:
-        await db_client.connect()
         await Specification.prisma().update(
             where={"id": spec_id},
             data={"deleted": True},
         )
-        await db_client.disconnect()
+
     except Exception as e:
         raise e
 
@@ -306,8 +273,6 @@ async def delete_specification(spec_id: int, db_client: Prisma) -> Specification
 async def list_specifications(
     user_id: int, app_id: int, page: int, page_size: int, db_client: Prisma
 ) -> SpecificationsListResponse:
-    await db_client.connect()
-
     skip = (page - 1) * page_size
     total_items = await Specification.count(
         where={"userid": user_id, "appId": app_id, "deleted": False}
@@ -329,7 +294,6 @@ async def list_specifications(
 
         total_pages = (total_items + page_size - 1) // page_size
 
-        await db_client.disconnect()
         specs_response = [map_spec_model_to_response(spec) for spec in specs]
 
         pagination = Pagination(
@@ -352,12 +316,10 @@ async def list_specifications(
 async def get_deliverable(
     db_client: Prisma, user_id: int, app_id: int, spec_id: int, deliverable_id: int
 ) -> DeliverableResponse:
-    await db_client.connect()
     completed_app = await CompletedApp.prisma().find_unique_or_raise(
         where={"id": deliverable_id},
         include={"compiledRoutes": True},
     )
-    await db_client.disconnect()
 
     return DeliverableResponse(
         completedApp=CompletedAppModel(
@@ -378,12 +340,11 @@ async def delete_deliverable(
     db_client: Prisma, user_id: int, app_id: int, spec_id: int, deliverable_id: int
 ) -> None:
     try:
-        await db_client.connect()
         await CompletedApp.prisma().update(
             where={"id": deliverable_id},
             data={"deleted": True},
         )
-        await db_client.disconnect()
+
     except Exception as e:
         raise e
 
@@ -396,12 +357,9 @@ async def list_deliverables(
     page_size: int = 10,
     db_client: Prisma = None,
 ) -> DeliverablesListResponse:
-    await db_client.connect()
-
     skip = (page - 1) * page_size
     total_items = await CompletedApp.count()
     if total_items == 0:
-        await db_client.disconnect()
         return DeliverablesListResponse(
             completedApps=[],
             pagination=Pagination(
@@ -415,7 +373,6 @@ async def list_deliverables(
         take=page_size,
         include={"compiledRoutes": True},
     )
-    await db_client.disconnect()
 
     completed_apps = [
         CompletedAppModel(
@@ -443,13 +400,9 @@ async def list_deliverables(
 
 
 async def get_deployment(deployment_id: int, db_client: Prisma) -> DeploymentResponse:
-    await db_client.connect()
-
     deployment = await Deployment.prisma().find_unique_or_raise(
         where={"id": deployment_id},
     )
-
-    await db_client.disconnect()
 
     return DeliverableResponse(
         deployment=DeploymentMetadata(
@@ -464,8 +417,6 @@ async def get_deployment(deployment_id: int, db_client: Prisma) -> DeploymentRes
 
 async def delete_deployment(deployment_id: int, db_client: Prisma) -> None:
     try:
-        await db_client.connect()
-
         await Deployment.prisma().update(
             where={
                 "id": deployment_id,
@@ -473,7 +424,6 @@ async def delete_deployment(deployment_id: int, db_client: Prisma) -> None:
             data={"deleted": True},
         )
 
-        await db_client.disconnect()
     except Exception as e:
         raise e
 
@@ -481,8 +431,6 @@ async def delete_deployment(deployment_id: int, db_client: Prisma) -> None:
 async def list_deployments(
     user_id: int, deliverable_id: int, page: int, page_size: int, db_client: Prisma
 ) -> DeploymentsListResponse:
-    await db_client.connect()
-
     skip = (page - 1) * page_size
 
     total_items = await Deployment.count(
@@ -492,7 +440,6 @@ async def list_deployments(
         }
     )
     if total_items == 0:
-        await db_client.disconnect()
         return DeploymentsListResponse(
             deployments=[],
             pagination=Pagination(
@@ -517,7 +464,5 @@ async def list_deployments(
         current_page=page,
         page_size=page_size,
     )
-
-    await db_client.disconnect()
 
     return DeploymentsListResponse(deployments=deployments, pagination=pagination)
