@@ -134,6 +134,7 @@ class SpecificationResponse(BaseModel):
 
     @staticmethod
     def from_specification(specification):
+        print(specification.json())
         routes = []
         for route in specification.apiRoutes:
             routes.append(
@@ -144,10 +145,10 @@ class SpecificationResponse(BaseModel):
                     path=route.path,
                     description=route.description,
                     requestObject=RequestObjectModel(
-                        id=route.requestObject.id,
-                        createdAt=route.requestObject.createdAt,
-                        name=route.requestObject.name,
-                        description=route.requestObject.description,
+                        id=route.requestObjects.id,
+                        createdAt=route.requestObjects.createdAt,
+                        name=route.requestObjects.name,
+                        description=route.requestObjects.description,
                         params=[
                             ParamModel(
                                 id=param.id,
@@ -156,7 +157,7 @@ class SpecificationResponse(BaseModel):
                                 description=param.description,
                                 param_type=param.param_type,
                             )
-                            for param in route.requestObject.params
+                            for param in route.requestObjects.params
                         ],
                     ),
                     responseObject=ResponseObjectModel(
@@ -178,7 +179,7 @@ class SpecificationResponse(BaseModel):
                 )
             )
 
-        return SpecificationResponse(
+        ret_obj = SpecificationResponse(
             id=specification.id,
             createdAt=specification.createdAt,
             name=specification.name,
@@ -186,9 +187,12 @@ class SpecificationResponse(BaseModel):
             apiRoutes=routes,
         )
 
+        print("success")
+        return ret_obj
+
 
 class SpecificationsListResponse(BaseModel):
-    specs: List[SpecificationResponse]
+    specs: List[SpecificationResponse] | List[None] = []
     pagination: Optional[Pagination] = None
 
 

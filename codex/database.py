@@ -104,7 +104,7 @@ async def get_app_by_id(
     app = await Application.prisma().find_first_or_raise(
         where={
             "id": app_id,
-            "userId": user_id, 
+            "userId": user_id,
         }
     )
 
@@ -150,7 +150,9 @@ async def list_apps(
     user_id: int, page: int, page_size: int, db_client: Prisma
 ) -> ApplicationsListResponse:
     skip = (page - 1) * page_size
-    total_items = await Application.prisma().count(where={"userId": user_id, "deleted": False})
+    total_items = await Application.prisma().count(
+        where={"userId": user_id, "deleted": False}
+    )
     apps = await Application.prisma().find_many(
         where={"userId": user_id, "deleted": False}, skip=skip, take=page_size
     )
@@ -194,12 +196,12 @@ async def get_specification(
         where={
             "id": spec_id,
             "userId": user_id,
-            "appId": app_id,
+            "applicationId": app_id,
         },
         include={
             "apiRoutes": {
                 "include": {
-                    "requestObject": {"include": {"params": True}},
+                    "requestObjects": {"include": {"params": True}},
                     "responseObject": {"include": {"params": True}},
                 }
             }
@@ -220,16 +222,16 @@ async def list_specifications(
     user_id: int, app_id: int, page: int, page_size: int, db_client: Prisma
 ) -> SpecificationsListResponse:
     skip = (page - 1) * page_size
-    total_items = await Specification.count(
-        where={"userid": user_id, "appId": app_id, "deleted": False}
+    total_items = await Specification.prisma().count(
+        where={"userId": user_id, "applicationId": app_id, "deleted": False}
     )
     if total_items > 0:
         specs = await Specification.prisma().find_many(
-            where={"userid": user_id},
+            where={"userId": user_id},
             include={
                 "apiRoutes": {
                     "include": {
-                        "requestObject": {"include": {"params": True}},
+                        "requestObjects": {"include": {"params": True}},
                         "responseObject": {"include": {"params": True}},
                     }
                 }
@@ -251,7 +253,7 @@ async def list_specifications(
             page_size=page_size,
         )
 
-        return SpecificationResponse(specs=specs_response, pagination=pagination)
+        return SpecificationsListResponse(specs=specs_response, pagination=pagination)
     else:
         return SpecificationsListResponse(
             specs=[],
