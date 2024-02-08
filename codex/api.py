@@ -56,7 +56,7 @@ def get_discord_user(discord_id: int):
         logger.error(f"Error retrieving user by discord id ({discord_id}): {e}")
         return Response(
             content=json.dumps({"error": "Error retrieving user by discord_id"}),
-            status_code=404,
+            status_code=500,
             media_type="application/json",
         )
 
@@ -80,7 +80,7 @@ def get_user(user_id: int = Path(..., description="The unique identifier of the 
         logger.error(f"Error retrieving user: {e}")
         return Response(
             content=json.dumps({"error": f"Error retrieving user by id {e}"}),
-            status_code=404,
+            status_code=500,
             media_type="application/json",
         )
 
@@ -104,7 +104,7 @@ def update_user(user_id: int, user_update: UserUpdate):
         logger.error(f"Error updating user: {e}")
         return Response(
             content=json.dumps({"error": f"Error updating user {e}"}),
-            status_code=404,
+            status_code=500,
             media_type="application/json",
         )
 
@@ -124,7 +124,7 @@ def list_users(
         logger.error(f"Error listing users: {e}")
         return Response(
             content=json.dumps({"error": f"Error listing users, {e}"}),
-            status_code=404,
+            status_code=500,
             media_type="application/json",
         )
 
@@ -262,14 +262,14 @@ async def get_spec(user_id: int, app_id: int, spec_id: int):
         else:
             return Response(
                 content=json.dumps({"error": "Specification not found"}),
-                status_code=404,
+                status_code=500,
                 media_type="application/json",
             )
     except Exception as e:
         logger.error(f"Error retrieving specification: {e}")
         return Response(
             content=json.dumps({"error": "Error retrieving specification"}),
-            status_code=404,
+            status_code=500,
             media_type="application/json",
         )
 
@@ -313,7 +313,7 @@ async def delete_spec(user_id: int, app_id: int, spec_id: int):
         logger.error(f"Error deleting specification: {e}")
         return Response(
             content=json.dumps({"error": "Error deleting specification"}),
-            status_code=404,
+            status_code=500,
             media_type="application/json",
         )
 
@@ -341,7 +341,7 @@ async def list_specs(
         logger.error(f"Error listing specifications: {e}")
         return Response(
             content=json.dumps({"error": "Error listing specifications"}),
-            status_code=404,
+            status_code=500,
             media_type="application/json",
         )
 
@@ -383,7 +383,7 @@ async def get_deliverable(user_id: int, app_id: int, spec_id: int, deliverable_i
     except ValueError as e:
         return Response(
             content=json.dumps({"error": str(e)}),
-            status_code=404,
+            status_code=500,
             media_type="application/json",
         )
 
@@ -487,7 +487,7 @@ async def get_deployment(
     except ValueError as e:
         return Response(
             content=json.dumps({"error": str(e)}),
-            status_code=404,
+            status_code=500,
             media_type="application/json",
         )
 
@@ -514,7 +514,7 @@ async def delete_deployment(
     except ValueError as e:
         return Response(
             content=json.dumps({"error": str(e)}),
-            status_code=404,
+            status_code=500,
             media_type="application/json",
         )
 
@@ -547,7 +547,7 @@ async def list_deployments(
     except ValueError as e:
         return Response(
             content=json.dumps({"error": str(e)}),
-            status_code=404,
+            status_code=500,
             media_type="application/json",
         )
 
