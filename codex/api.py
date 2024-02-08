@@ -33,6 +33,14 @@ app = FastAPI(
     version="0.1",
 )
 
+@app.on_event("startup")
+async def startup():
+    await db_client.connect()
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    await db_client.disconnect()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -43,13 +51,13 @@ async def lifespan(app: FastAPI):
 
 # User endpoints
 @app.get("/discord/{discord_id}", response_model=UserResponse, tags=["users"])
-def get_discord_user(discord_id: int):
+async def get_discord_user(discord_id: int):
     """
     This is intended to be used by the Discord bot to retrieve user information.
     The user_id that is retrived can then be used for other API calls.
     """
     try:
-        user = codex.database.get_or_create_user_by_discord_id(discord_id, db_client)
+        user = await codex.database.get_or_create_user_by_discord_id(discord_id, db_client)
         return UserResponse(
             id=user.id,
             discord_id=user.discord_id,
@@ -68,12 +76,12 @@ def get_discord_user(discord_id: int):
 
 
 @app.get("/user/{user_id}", response_model=UserResponse, tags=["users"])
-def get_user(user_id: int = Path(..., description="The unique identifier of the user")):
+async def get_user(user_id: int = Path(..., description="The unique identifier of the user")):
     """
     Retrieve a user by their unique identifier.
     """
     try:
-        user = codex.database.get_user(user_id, db_client)
+        user = await codex.database.get_user(user_id, db_client)
         return UserResponse(
             id=user.id,
             discord_id=user.discord_id,
@@ -92,12 +100,12 @@ def get_user(user_id: int = Path(..., description="The unique identifier of the 
 
 
 @app.put("/user/{user_id}", response_model=UserResponse, tags=["users"])
-def update_user(user_id: int, user_update: UserUpdate):
+async def update_user(user_id: int, user_update: UserUpdate):
     """
     Update a user's information by their unique identifier.
     """
     try:
-        user = codex.database.update_user(user_id, user_update, db_client)
+        user = await codex.database.update_user(user_id, user_update, db_client)
         return UserResponse(
             id=user.id,
             discord_id=user.discord_id,
@@ -116,7 +124,7 @@ def update_user(user_id: int, user_update: UserUpdate):
 
 
 @app.get("/user/", response_model=UsersListResponse, tags=["users"])
-def list_users(
+async def list_users(
     page: int | None = Query(1, ge=1),
     page_size: int | None = Query(10, ge=1),
 ):
@@ -124,7 +132,7 @@ def list_users(
     List all users.
     """
     try:
-        users = codex.database.list_users(page, page_size, db_client)
+        users = await codex.database.list_users(page, page_size, db_client)
         return users
     except Exception as e:
         logger.error(f"Error listing users: {e}")
@@ -236,7 +244,7 @@ async def list_apps(
     tags=["specs"],
     response_model=SpecificationResponse,
 )
-def create_spec(user_id: int, app_id: int):
+async def create_spec(user_id: int, app_id: int):
     """
     Create a new specification for a given application and user.
     """
@@ -358,7 +366,7 @@ async def list_specs(
     tags=["deliverables"],
     response_model=DeliverableResponse,
 )
-def create_deliverable(user_id: int, app_id: int, spec_id: int):
+async def create_deliverable(user_id: int, app_id: int, spec_id: int):
     """
     Create a new deliverable (completed app) for a specific specification.
     """

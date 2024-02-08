@@ -29,32 +29,27 @@ from codex.api_model import (
 async def get_or_create_user_by_discord_id(
     discord_id: int, db_client: Prisma
 ) -> CodexUser:
-    CodexUser = await db_client.CodexUser.upsert(
-        where={
-            "discord_id": discord_id,
-        },
-        data={
-            "create": {"discord_id": discord_id},
-            "update": {},
-        },
-    )
+    user = await CodexUser.prisma().find_unique_or_raise(where={"discord_id": str(discord_id)})
+    
+    if not user:
+        user = await CodexUser.prisma().create(discord_id=str(discord_id))
 
-    return CodexUser
+    return user
 
 
 async def update_user(CodexUser: CodexUser, db_client: Prisma) -> CodexUser:
-    CodexUser = await CodexUser.prisma().update(
+    user = await CodexUser.prisma().update(
         where={"id": CodexUser.id},
         data=CodexUser.dict(),
     )
 
-    return CodexUser
+    return user
 
 
 async def get_user(user_id: int, db_client: Prisma) -> CodexUser:
-    CodexUser = await CodexUser.prisma().find_unique_or_raise(where={"id": user_id})
+    user = await CodexUser.prisma().find_unique_or_raise(where={"id": user_id})
 
-    return CodexUser
+    return user
 
 
 async def list_users(page: int, page_size: int, db_client: Prisma) -> UsersListResponse:
@@ -62,10 +57,17 @@ async def list_users(page: int, page_size: int, db_client: Prisma) -> UsersListR
     skip = (page - 1) * page_size
 
     # Query the database for the total number of users
-    total_items = await CodexUser.count()
+    total_items = await CodexUser.prisma().count()
+    if total_items == 0:
+        return UsersListResponse(
+            users=[],
+            pagination=Pagination(
+                total_items=0, total_pages=0, current_page=0, page_size=0
+            ),
+        )
 
     # Query the database for users with pagination
-    users = await CodexUser.find_many(skip=skip, take=page_size)
+    users = await CodexUser.prisma().find_many(skip=skip, take=page_size)
 
     # Calculate the total number of pages
     total_pages = (total_items + page_size - 1) // page_size
