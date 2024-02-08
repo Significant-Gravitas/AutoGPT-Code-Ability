@@ -1,5 +1,11 @@
 from prisma import Prisma
-from prisma.models import Application, CompletedApp, Deployment, Specification, User
+from prisma.models import (
+    Application,
+    CodexUser,
+    CompletedApp,
+    Deployment,
+    Specification,
+)
 
 from codex.api_model import (
     ApplicationCreate,
@@ -20,8 +26,10 @@ from codex.api_model import (
 )
 
 
-async def get_or_create_user_by_discord_id(discord_id: int, db_client: Prisma) -> User:
-    user = await db_client.user.upsert(
+async def get_or_create_user_by_discord_id(
+    discord_id: int, db_client: Prisma
+) -> CodexUser:
+    CodexUser = await db_client.CodexUser.upsert(
         where={
             "discord_id": discord_id,
         },
@@ -31,22 +39,22 @@ async def get_or_create_user_by_discord_id(discord_id: int, db_client: Prisma) -
         },
     )
 
-    return user
+    return CodexUser
 
 
-async def update_user(user: User, db_client: Prisma) -> User:
-    user = await User.prisma().update(
-        where={"id": user.id},
-        data=user.dict(),
+async def update_user(CodexUser: CodexUser, db_client: Prisma) -> CodexUser:
+    CodexUser = await CodexUser.prisma().update(
+        where={"id": CodexUser.id},
+        data=CodexUser.dict(),
     )
 
-    return user
+    return CodexUser
 
 
-async def get_user(user_id: int, db_client: Prisma) -> User:
-    user = await User.prisma().find_unique_or_raise(where={"id": user_id})
+async def get_user(user_id: int, db_client: Prisma) -> CodexUser:
+    CodexUser = await CodexUser.prisma().find_unique_or_raise(where={"id": user_id})
 
-    return user
+    return CodexUser
 
 
 async def list_users(page: int, page_size: int, db_client: Prisma) -> UsersListResponse:
@@ -54,10 +62,10 @@ async def list_users(page: int, page_size: int, db_client: Prisma) -> UsersListR
     skip = (page - 1) * page_size
 
     # Query the database for the total number of users
-    total_items = await User.count()
+    total_items = await CodexUser.count()
 
     # Query the database for users with pagination
-    users = await User.find_many(skip=skip, take=page_size)
+    users = await CodexUser.find_many(skip=skip, take=page_size)
 
     # Calculate the total number of pages
     total_pages = (total_items + page_size - 1) // page_size
@@ -72,14 +80,14 @@ async def list_users(page: int, page_size: int, db_client: Prisma) -> UsersListR
 
     user_responses = [
         UserResponse(
-            id=user.id,
-            discord_id=user.discord_id,
-            createdAt=user.createdAt,
-            email=user.email,
-            name=user.name,
-            role=user.role,
+            id=CodexUser.id,
+            discord_id=CodexUser.discord_id,
+            createdAt=CodexUser.createdAt,
+            email=CodexUser.email,
+            name=CodexUser.name,
+            role=CodexUser.role,
         )
-        for user in users
+        for CodexUser in users
     ]
 
     # Return both the users and the pagination info

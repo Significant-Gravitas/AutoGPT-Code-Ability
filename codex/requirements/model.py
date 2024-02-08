@@ -34,16 +34,16 @@ class ResponseModel(BaseModel):
 
 class DatabaseTable(BaseModel):
     description: str
-    definition: str
+    definition: str  # prisma model for a table
 
     def __str__(self):
         return f"**Description**: {self.description}\n**Definition**:\n```\n{self.definition}\n```\n"
 
 
 class DatabaseSchema(BaseModel):
-    name: str
-    description: str
-    tables: List[DatabaseTable]
+    name: str # name of the database schema
+    description: str # context on what the database schema is
+    tables: List[DatabaseTable] # list of tables in the database schema
 
     def __str__(self):
         tables_str = "\n".join(str(table) for table in self.tables)

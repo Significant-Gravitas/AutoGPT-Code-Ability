@@ -5,6 +5,14 @@ from typing import List, Optional
 from pydantic import BaseModel, EmailStr, Field
 
 
+class Indentifiers(BaseModel):
+    user_id: int
+    app_id: int
+    spec_id: int | None = None
+    completed_app_id: int | None = None
+    deployment_id: int | None = None
+
+
 class Pagination(BaseModel):
     total_items: int = Field(..., description="Total number of items.", example=42)
     total_pages: int = Field(..., description="Total number of pages.", example=97)
