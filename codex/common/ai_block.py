@@ -14,7 +14,16 @@ from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
+# From Langchain
+PYDANTIC_FORMAT_INSTRUCTIONS = """The output should be formatted as a JSON instance that conforms to the JSON schema below.
 
+As an example, for the schema {{"properties": {{"foo": {{"title": "Foo", "description": "a list of strings", "type": "array", "items": {{"type": "string"}}}}}}, "required": ["foo"]}}
+the object {{"foo": ["bar", "baz"]}} is a well-formatted instance of the schema. The object {{"properties": {{"foo": ["bar", "baz"]}}}} is not well-formatted.
+
+Here is the output schema:
+```
+{schema}
+```"""
 class LLMFailure(Exception):
     pass
 
@@ -72,6 +81,7 @@ class AIBlock:
     langauge = None
     model = ""
     is_json_response = False
+    pydantic_object = None
     template_base_path = "prompts"
 
     def __init__(
@@ -91,7 +101,6 @@ class AIBlock:
         )
         self.templates_dir = pathlib.Path(self.template_base_path).resolve(strict=True)
         self.call_template_id = None
-        self.set_prompt_template_name()
 
     async def store_call_template(self):
         from prisma.models import LLMCallTemplate
@@ -120,9 +129,6 @@ class AIBlock:
 
         self.template_hash = hashlib.md5(template_str.encode()).hexdigest()
 
-        # Connect to the database
-        await self.db_client.connect()
-
         # Check if an entry with the same fileHash already exists
         existing_template = await LLMCallTemplate.prisma().find_first(
             where={
@@ -145,9 +151,6 @@ class AIBlock:
                 }
             )
 
-        # Disconnect from the database
-        await self.db_client.disconnect()
-
         # Store the call template ID for future use
         self.call_template_id = call_template.id
 
@@ -162,8 +165,6 @@ class AIBlock:
         prompt: str,
     ):
         from prisma.models import LLMCallAttempt
-
-        await self.db_client.connect()
 
         assert self.call_template_id, "Call template ID not set"
 
@@ -182,15 +183,16 @@ class AIBlock:
             }
         )
 
-        await self.db_client.disconnect()
-
         return call_attempt
 
     def load_temaplate(self, template: str, invoke_params: dict) -> str:
         try:
+            lang_str = ""
+            if self.langauge:
+                lang_str = f"{self.langauge}."
             templates_env = Environment(loader=FileSystemLoader(self.templates_dir))
             prompt_template = templates_env.get_template(
-                f"{self.prompt_template_name}.{template}.j2"
+                f"{self.prompt_template_name}/{lang_str}{template}.j2"
             )
             return prompt_template.render(**invoke_params)
         except Exception as e:
@@ -235,6 +237,20 @@ class AIBlock:
             ValidationError: if the response is invalid
         """
         raise NotImplementedError("Validate Method not implemented")
+    
+    def get_format_instructions(self) -> str:
+        schema = self.pydantic_object.schema()
+
+        # Remove extraneous fields.
+        reduced_schema = schema
+        if "title" in reduced_schema:
+            del reduced_schema["title"]
+        if "type" in reduced_schema:
+            del reduced_schema["type"]
+        # Ensure json in context is well-formed with double quotes.
+        schema_str = json.dumps(reduced_schema)
+
+        return PYDANTIC_FORMAT_INSTRUCTIONS.format(schema=schema_str)
 
     async def invoke(
         self, ids: Indentifiers, invoke_params: dict, max_retries=3
@@ -244,6 +260,8 @@ class AIBlock:
 
         retries = 0
         try:
+            if self.is_json_response:
+                invoke_params["format_instructions"] = self.get_format_instructions()
             system_prompt = self.load_temaplate("system", invoke_params)
             user_prompt = self.load_temaplate("user", invoke_params)
 
