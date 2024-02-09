@@ -68,7 +68,6 @@ if __name__ == "__main__":
 
     block = ClarifyBlock(
         oai_client=oai,
-        db_client=db_client,
     )
 
     async def run_ai():
