@@ -12,20 +12,28 @@ def cli():
     pass
 
 
-@click.command()
+@cli.command()
 @click.option(
     "--database",
     "-d",
     default="postgres://agpt_live:bnfaHGGSDF134345@127.0.0.1/codegen",
 )
 def populate_db(database):
+    """Populate the database with test data"""
+    import os
+
     from prisma import Prisma
 
-    db = Prisma(database_url=database, auto_register=True)
+    from codex.database import create_test_data
+    from codex.requirements.agent import populate_database_specs
+
+    os.environ["DATABASE_URL"] = database
+    db = Prisma(auto_register=True)
 
     async def popdb():
         await db.connect()
-        ###
+        await create_test_data()
+        await populate_database_specs()
         await db.disconnect()
 
     asyncio.run(popdb())

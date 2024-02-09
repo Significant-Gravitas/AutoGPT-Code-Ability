@@ -1,3 +1,5 @@
+from prisma.enums import AccessLevel
+
 from codex.requirements.model import (
     APIRouteRequirement,
     ApplicationRequirements,
@@ -48,6 +50,7 @@ def availability_checker_requirements() -> ApplicationRequirements:
             APIRouteRequirement(
                 method="POST",
                 path="/availability",
+                access_level=AccessLevel.PUBLIC,
                 description="Function that returns the availability of professionals, updating based on current activity or schedule.",
                 request_model=check_availability_request,
                 response_model=availability_status_response,
@@ -96,6 +99,7 @@ def invoice_generator_requirements() -> ApplicationRequirements:
             APIRouteRequirement(
                 method="POST",
                 path="/create_invoice",
+                access_level=AccessLevel.PUBLIC,
                 description="Function that returns the availability of professionals, updating based on current activity or schedule.",
                 request_model=invoice_model,
                 response_model=invoice_response,
@@ -159,6 +163,7 @@ def appointment_optimization_requirements() -> ApplicationRequirements:
             APIRouteRequirement(
                 method="POST",
                 path="/create_schedule",
+                access_level=AccessLevel.PUBLIC,
                 description="Function that returns the availability of professionals, updating based on current activity or schedule.",
                 request_model=appointment_model,
                 response_model=appointment_response,
@@ -212,6 +217,7 @@ def distance_calculator_requirements() -> ApplicationRequirements:
             APIRouteRequirement(
                 method="POST",
                 path="/calculate_distance",
+                access_level=AccessLevel.PUBLIC,
                 description="Function that returns the distance for travel time based upon input",
                 request_model=distance_model,
                 response_model=distance_response,
@@ -375,6 +381,7 @@ def profile_management() -> ApplicationRequirements:
         APIRouteRequirement(
             method="POST",
             path="/api/profile/create",
+            access_level=AccessLevel.PUBLIC,
             description="Creates a new user profile",
             request_model=create_profile_request,
             response_model=create_profile_response,
@@ -383,6 +390,7 @@ def profile_management() -> ApplicationRequirements:
         APIRouteRequirement(
             method="PUT",
             path="/api/profile/update",
+            access_level=AccessLevel.USER,
             description="Updates an existing user profile",
             request_model=update_profile_request,
             response_model=update_profile_response,
@@ -391,6 +399,7 @@ def profile_management() -> ApplicationRequirements:
         APIRouteRequirement(
             method="GET",
             path="/api/profile/retrieve",
+            access_level=AccessLevel.USER,
             description="Retrieves a user profile",
             request_model=retrieve_profile_request,
             response_model=retrieve_profile_response,
@@ -399,6 +408,7 @@ def profile_management() -> ApplicationRequirements:
         APIRouteRequirement(
             method="DELETE",
             path="/api/profile/delete",
+            access_level=AccessLevel.USER,
             description="Deletes a user profile",
             request_model=delete_profile_request,
             response_model=delete_profile_response,

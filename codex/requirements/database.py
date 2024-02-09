@@ -1,25 +1,11 @@
-from prisma import Prisma
-from prisma.models import Application, CodexUser, Specification
+from prisma.models import Specification
 
 from codex.api_model import Indentifiers
 
 from .model import ApplicationRequirements
 
 
-async def create_spec(ids: Indentifiers, spec: ApplicationRequirements, db: Prisma):
-    user = await CodexUser.prisma().find_unique_or_raise(
-        where={
-            "id": 1,
-        }
-    )
-
-    app = await Application.prisma().find_first_or_raise(
-        where={
-            "id": ids.app_id,
-            "userId": ids.user_id,
-        }
-    )
-
+async def create_spec(ids: Indentifiers, spec: ApplicationRequirements):
     routes = []
 
     for route in spec.api_routes:
@@ -69,6 +55,7 @@ async def create_spec(ids: Indentifiers, spec: ApplicationRequirements, db: Pris
         create_route = {
             "method": route.method,
             "path": route.path,
+            "accessLevel": route.access_level.value,
             "description": route.description,
             "requestObjects": {"create": create_request},
             "responseObject": {"create": create_response},
