@@ -26,9 +26,7 @@ from codex.api_model import (
 )
 
 
-async def get_or_create_user_by_discord_id(
-    discord_id: int, db_client: Prisma
-) -> CodexUser:
+async def get_or_create_user_by_discord_id(discord_id: int) -> CodexUser:
     user = await CodexUser.prisma().find_unique_or_raise(
         where={"discord_id": str(discord_id)}
     )
@@ -39,7 +37,7 @@ async def get_or_create_user_by_discord_id(
     return user
 
 
-async def update_user(CodexUser: CodexUser, db_client: Prisma) -> CodexUser:
+async def update_user(CodexUser: CodexUser) -> CodexUser:
     user = await CodexUser.prisma().update(
         where={"id": CodexUser.id},
         data=CodexUser.dict(),
@@ -48,13 +46,13 @@ async def update_user(CodexUser: CodexUser, db_client: Prisma) -> CodexUser:
     return user
 
 
-async def get_user(user_id: int, db_client: Prisma) -> CodexUser:
+async def get_user(user_id: int) -> CodexUser:
     user = await CodexUser.prisma().find_unique_or_raise(where={"id": user_id})
 
     return user
 
 
-async def list_users(page: int, page_size: int, db_client: Prisma) -> UsersListResponse:
+async def list_users(page: int, page_size: int) -> UsersListResponse:
     # Calculate the number of items to skip
     skip = (page - 1) * page_size
 
@@ -98,9 +96,7 @@ async def list_users(page: int, page_size: int, db_client: Prisma) -> UsersListR
     return UsersListResponse(users=user_responses, pagination=pagination)
 
 
-async def get_app_by_id(
-    user_id: int, app_id: int, db_client: Prisma
-) -> ApplicationResponse:
+async def get_app_by_id(user_id: int, app_id: int) -> ApplicationResponse:
     app = await Application.prisma().find_first_or_raise(
         where={
             "id": app_id,
@@ -117,9 +113,7 @@ async def get_app_by_id(
     )
 
 
-async def create_app(
-    user_id: int, app_data: ApplicationCreate, db_client: Prisma
-) -> ApplicationResponse:
+async def create_app(user_id: int, app_data: ApplicationCreate) -> ApplicationResponse:
     app = await Application.prisma().create(
         data={
             "name": app_data.name,
@@ -136,7 +130,7 @@ async def create_app(
     )
 
 
-async def delete_app(user_id: int, app_id: int, db_client: Prisma) -> None:
+async def delete_app(user_id: int, app_id: int) -> None:
     await Application.prisma().update(
         where={
             "id": app_id,
@@ -147,7 +141,7 @@ async def delete_app(user_id: int, app_id: int, db_client: Prisma) -> None:
 
 
 async def list_apps(
-    user_id: int, page: int, page_size: int, db_client: Prisma
+    user_id: int, page: int, page_size: int
 ) -> ApplicationsListResponse:
     skip = (page - 1) * page_size
     total_items = await Application.prisma().count(
@@ -190,7 +184,7 @@ async def list_apps(
 
 
 async def get_specification(
-    user_id: int, app_id: int, spec_id: int, db_client: Prisma
+    user_id: int, app_id: int, spec_id: int
 ) -> SpecificationResponse:
     specification = await Specification.prisma().find_first_or_raise(
         where={
@@ -211,7 +205,7 @@ async def get_specification(
     return SpecificationResponse.from_specification(specification)
 
 
-async def delete_specification(spec_id: int, db_client: Prisma) -> Specification:
+async def delete_specification(spec_id: int) -> Specification:
     await Specification.prisma().update(
         where={"id": spec_id},
         data={"deleted": True},
@@ -219,7 +213,7 @@ async def delete_specification(spec_id: int, db_client: Prisma) -> Specification
 
 
 async def list_specifications(
-    user_id: int, app_id: int, page: int, page_size: int, db_client: Prisma
+    user_id: int, app_id: int, page: int, page_size: int
 ) -> SpecificationsListResponse:
     skip = (page - 1) * page_size
     total_items = await Specification.prisma().count(
@@ -345,7 +339,7 @@ async def list_deliverables(
     )
 
 
-async def get_deployment(deployment_id: int, db_client: Prisma) -> DeploymentResponse:
+async def get_deployment(deployment_id: int) -> DeploymentResponse:
     deployment = await Deployment.prisma().find_unique_or_raise(
         where={"id": deployment_id},
     )
@@ -361,7 +355,7 @@ async def get_deployment(deployment_id: int, db_client: Prisma) -> DeploymentRes
     )
 
 
-async def delete_deployment(deployment_id: int, db_client: Prisma) -> None:
+async def delete_deployment(deployment_id: int) -> None:
     await Deployment.prisma().update(
         where={
             "id": deployment_id,
@@ -371,7 +365,7 @@ async def delete_deployment(deployment_id: int, db_client: Prisma) -> None:
 
 
 async def list_deployments(
-    user_id: int, deliverable_id: int, page: int, page_size: int, db_client: Prisma
+    user_id: int, deliverable_id: int, page: int, page_size: int
 ) -> DeploymentsListResponse:
     skip = (page - 1) * page_size
 
