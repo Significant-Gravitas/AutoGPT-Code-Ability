@@ -73,6 +73,12 @@ model Specification {
   userId        Int?
 }
 
+enum AccessLevel {
+  PUBLIC
+  USER
+  ADMIN
+}
+
 model APIRouteSpec {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
@@ -80,6 +86,7 @@ model APIRouteSpec {
   method           String
   path             String
   description      String
+  accessLevel      AccessLevel
   schemas          DatabaseSchema? @relation(fields: [databaseSchemaId], references: [id])
   databaseSchemaId Int?
   spec             Specification?  @relation(fields: [specId], references: [id])
@@ -90,7 +97,6 @@ model APIRouteSpec {
   responseObjectId Int?
   CodeGraph        CodeGraph[]
 
-  @@map("APIRouteRequirement")
 }
 
 model ResponseObject {
