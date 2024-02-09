@@ -3,6 +3,7 @@ import logging
 
 from fastapi import FastAPI, Path, Query, Response
 from fastapi.responses import FileResponse
+from openai import OpenAI
 from prisma import Prisma
 
 import codex.architect.agent as architect_agent
@@ -17,16 +18,14 @@ from codex.api_model import (
     DeliverablesListResponse,
     DeploymentResponse,
     DeploymentsListResponse,
+    Indentifiers,
     SpecificationResponse,
     SpecificationsListResponse,
     UserResponse,
     UsersListResponse,
     UserUpdate,
-    Indentifiers,
 )
 from codex.requirements.agent import generate_requirements
-from openai import OpenAI
-
 
 logger = logging.getLogger(__name__)
 
