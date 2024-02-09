@@ -1,5 +1,10 @@
 import logging
 
+import openai
+import prisma
+
+from codex.api_model import Indentifiers
+from codex.requirements.ai_clarify import ClarifyBlock
 from codex.requirements.database import create_spec
 from codex.requirements.hardcoded import (
     appointment_optimization_requirements,
@@ -11,6 +16,60 @@ from codex.requirements.hardcoded import (
 from codex.requirements.model import ApplicationRequirements
 
 logger = logging.getLogger(__name__)
+
+
+def generate_requirements(
+    ids: Indentifiers,
+    app_name: str,
+    description: str,
+    oai: openai.OpenAI,
+    db: prisma.Prisma,
+) -> ApplicationRequirements:
+    """
+    Runs the Requirements Agent to generate the system requirements based
+    upon the provided task
+
+    Args:
+        ids (Indentifiers): Relevant ids for database operations
+        app_name (str): name of the application
+        description (str): description of the application
+
+    Returns:
+        ApplicationRequirements: The system requirements for the application
+    """
+
+    # Step 1) Clarification Questions
+    clarify = ClarifyBlock(
+        oai_client=oai,
+        db_client=db,
+    )
+    qna = clarify.invoke(
+        ids=ids,
+        invoke_params={
+            "task_description": description,
+        },
+    )
+    # This where the steps I was thinking we could use
+
+    # Step 2) Generate for the system Requirements
+
+    # Step 3) Define the database schema
+
+    # Step 4) Define the api endpoints
+
+    # Step 5) Define the request and response models
+
+    # We maybe able to avoid needing llm calls for that
+
+    # Step 6) Generate the complete api route requirements
+
+    # Step 7) Compile the application requirements
+
+    full_spec = availability_checker_requirements()
+    # saved_spec = await create_spec(ids, full_spec, db)
+
+    # Step 8) Return the application requirements
+    return full_spec
 
 
 def hardcoded_requirements(task: str) -> ApplicationRequirements:

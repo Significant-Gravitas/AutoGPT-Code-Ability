@@ -1,8 +1,66 @@
 from typing import List
 
+from prisma.enums import AccessLevel
 from pydantic import BaseModel
 
+### Step 1: Clarifcation Questions ###
 
+
+class Question(BaseModel):
+    question: str
+    answer: str
+
+
+class Clarification(BaseModel):
+    thoughts: str
+    questions: List[Question]
+
+
+# Step 2: Generate for the system Requirements
+
+
+class Requirement(BaseModel):
+    thoughts: str
+    requirement: List[str]
+
+
+# Step 3: Define the database schema
+
+
+class DatabaseSchemaRequirement(BaseModel):
+    thoughts: str
+    prisma_table_models: List[str]
+
+
+# Step 4: Define the api endpoints
+class DraftAPIRoute(BaseModel):
+    method: str
+    path: str
+    access_level: AccessLevel
+
+
+class DraftRoutes(BaseModel):
+    thoughts: str
+    routes: List[DraftAPIRoute]
+
+
+# Step 5: Define the request and response models
+class DraftComplextModel(BaseModel):
+    name: str
+    pydantic_model: str
+
+
+class DraftRequestModel(BaseModel):
+    thoughts: str
+    models: List[DraftComplextModel]
+
+
+class DraftResponseModel(BaseModel):
+    thoughts: str
+    models: List[DraftComplextModel]
+
+
+### Full Spcification Models ###
 class Parameter(BaseModel):
     name: str
     param_type: str
@@ -57,6 +115,9 @@ class APIRouteRequirement(BaseModel):
 
     # This is context on what this api route should do
     description: str
+
+    # This is the access level required to access this api route
+    access_level: AccessLevel
 
     # This is the model for the request and response
     request_model: RequestModel
