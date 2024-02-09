@@ -165,7 +165,7 @@ model CodeGraph {
   id               Int                  @id @default(autoincrement())
   createdAt        DateTime             @default(now())
   function_name    String
-  api_route        String
+  apiPath          String
   imports          String[]
   code_graph       String
   functionDefs     FunctionDefinition[]
