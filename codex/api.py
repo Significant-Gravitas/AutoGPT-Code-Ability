@@ -1,6 +1,5 @@
 import json
 import logging
-from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Path, Query, Response
 from fastapi.responses import FileResponse
@@ -21,6 +20,10 @@ from codex.api_model import (
     UsersListResponse,
     UserUpdate,
 )
+import codex.architect.agent as architect_agent
+import codex.developer.agent as developer_agent
+import codex.delivery.agent as delivery_agent
+
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +35,7 @@ app = FastAPI(
     summary="Codex API",
     version="0.1",
 )
+
 
 @app.on_event("startup")
 async def startup():
@@ -51,7 +55,9 @@ async def get_discord_user(discord_id: int):
     The user_id that is retrived can then be used for other API calls.
     """
     try:
-        user = await codex.database.get_or_create_user_by_discord_id(discord_id, db_client)
+        user = await codex.database.get_or_create_user_by_discord_id(
+            discord_id, db_client
+        )
         return UserResponse(
             id=user.id,
             discord_id=user.discord_id,
@@ -70,7 +76,9 @@ async def get_discord_user(discord_id: int):
 
 
 @app.get("/user/{user_id}", response_model=UserResponse, tags=["users"])
-async def get_user(user_id: int = Path(..., description="The unique identifier of the user")):
+async def get_user(
+    user_id: int = Path(..., description="The unique identifier of the user"),
+):
     """
     Retrieve a user by their unique identifier.
     """
@@ -365,7 +373,24 @@ async def create_deliverable(user_id: int, app_id: int, spec_id: int):
     """
     Create a new deliverable (completed app) for a specific specification.
     """
-    # Implementation goes here
+    specification = await codex.database.get_specification(
+            user_id, app_id, spec_id, db_client
+        )
+    if specification:
+        return specification
+    else:
+        return Response(
+            content=json.dumps({"error": "Specification not found"}),
+            status_code=500,
+            media_type="application/json",
+        )
+    # Architect agent creates the code graphs for the requirements
+    graphs = architect_agent.create_code_graphs(specification)
+    # Developer agent writes the code for the code graphs
+    completed_graphs = developer_agent.write_code_graphs(graphs)
+    # Delivery Agent builds the code and delivers it to the user
+    application = delivery_agent.compile_application(specification, completed_graphs)
+    
     return Response(
         content=json.dumps(
             {"error": "Creating a new deliverable is not yet implemented."}
