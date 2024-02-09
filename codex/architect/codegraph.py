@@ -63,7 +63,7 @@ class CodeGraphVisitor(ast.NodeVisitor):
 
 
 class CodeGraphAIBlock(AIBlock):
-    prompt_template_name = "codegraph/cg.python"
+    prompt_template_name = "codegraph"
     model = "gpt-4-0125-preview"
     langauge = "python"
 
@@ -98,62 +98,80 @@ class CodeGraphAIBlock(AIBlock):
         self, ids: Indentifiers, validated_response: ValidatedResponse
     ):
         """This is just a temporary that doesnt have a database model"""
-
-        await self.db_client.connect()
+        funciton_defs = []
+        for key, value in validated_response.response.function_defs.items():
+            funciton_defs.append(
+                {
+                    "name": value.name,
+                    "doc_string": value.doc_string,
+                    "args": value.args,
+                    "return_type": value.return_type,
+                    "function_template": value.function_template,
+                }
+            )
 
         cg = await CodeGraphDBModel.prisma().create(
             data={
                 "function_name": validated_response.response.function_name,
-                "api_route": validated_response.response.api_route,
+                "apiPath": validated_response.response.api_route,
                 "code_graph": validated_response.response.code_graph,
                 "imports": validated_response.response.imports,
+                "functionDefs": {
+                    "create": funciton_defs
+                }
             }
         )
         logger.debug(f"Created CodeGraph: {cg}")
-        await self.db_client.disconnect()
 
         return cg
 
     async def update_item(self, item: CodeGraph):
-        await self.db_client.connect()
-
+        
+        funciton_defs = []
+        for key, value in item.function_defs.items():
+            funciton_defs.append(
+                {
+                    "name": value.name,
+                    "doc_string": value.doc_string,
+                    "args": value.args,
+                    "return_type": value.return_type,
+                    "function_template": value.function_template,
+                }
+            )
+        
         cg = await CodeGraphDBModel.prisma().update(
             where={"id": item.id},
             data={
                 "function_name": item.function_name,
-                "api_route": item.api_route,
+                "apiPath": item.api_route,
                 "code_graph": item.code_graph,
                 "imports": item.imports,
+                "functionDefs": {
+                    "create": funciton_defs
+                }
             },
         )
 
-        await self.db_client.disconnect()
 
         return cg
 
     async def get_item(self, item_id: str):
-        await self.db_client.connect()
 
         cg = await CodeGraphDBModel.prisma().find_unique(where={"id": item_id})
 
-        await self.db_client.disconnect()
 
         return cg
 
     async def delete_item(self, item_id: str):
-        await self.db_client.connect()
 
         await CodeGraphDBModel.prisma().delete(where={"id": item_id})
 
-        await self.db_client.disconnect()
 
     async def list_items(self, item_id: str, page: int, page_size: int):
-        await self.db_client.connect()
 
         cg = await CodeGraphDBModel.prisma().find_many(
             skip=(page - 1) * page_size, take=page_size
         )
 
-        await self.db_client.disconnect()
 
         return cg
