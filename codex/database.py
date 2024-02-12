@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from prisma import Prisma
 from prisma.models import (
     Application,
@@ -24,6 +26,77 @@ from codex.api_model import (
     UserResponse,
     UsersListResponse,
 )
+
+
+async def create_test_data():
+    await CodexUser.prisma().create_many(
+        [
+            {
+                "discord_id": "123456789",
+                "email": "joe.blogs@example.com",
+                "name": "Joe Blogs",
+                "role": "ADMIN",
+                "password": "password123",
+                "deleted": False,
+            },
+            {
+                "discord_id": "234567890",
+                "email": "jane.doe@example.com",
+                "name": "Jane Doe",
+                "role": "USER",
+                "password": "password123",
+                "deleted": False,
+            },
+        ]
+    )
+
+    # Insert applications
+    await Application.prisma().create_many(
+        [
+            {
+                "name": "Availability Checker",
+                "deleted": False,
+                "userId": 1,
+                "updatedAt": datetime.now(),
+            },
+            {
+                "name": "Invoice Generator",
+                "deleted": False,
+                "userId": 1,
+                "updatedAt": datetime.now(),
+            },
+            {
+                "name": "Appointment Optimization Tool",
+                "deleted": False,
+                "userId": 1,
+                "updatedAt": datetime.now(),
+            },
+            {
+                "name": "Distance Calculator",
+                "deleted": False,
+                "userId": 1,
+                "updatedAt": datetime.now(),
+            },
+            {
+                "name": "Profile Management System",
+                "deleted": False,
+                "userId": 1,
+                "updatedAt": datetime.now(),
+            },
+            {
+                "name": "Survey Tool",
+                "deleted": False,
+                "userId": 2,
+                "updatedAt": datetime.now(),
+            },
+            {
+                "name": "Scurvey Tool",
+                "deleted": True,
+                "userId": 2,
+                "updatedAt": datetime.now(),
+            },
+        ]
+    )
 
 
 async def get_or_create_user_by_discord_id(discord_id: int) -> CodexUser:

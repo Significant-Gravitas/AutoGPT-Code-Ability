@@ -49,6 +49,8 @@ def generate_requirements(
             "task_description": description,
         },
     )
+    print(f"Thoughts: {qna.thoughts}")
+
     # This where the steps I was thinking we could use
 
     # Step 2) Generate for the system Requirements
@@ -93,7 +95,7 @@ def hardcoded_requirements(task: str) -> ApplicationRequirements:
             raise NotImplementedError(f"Task {task} not implemented")
 
 
-async def populate_database():
+async def populate_database_specs():
     """
         This function will populate the database with the hardcoded requirements
 
@@ -107,11 +109,8 @@ async def populate_database():
       6 | 2024-02-08 11:51:15.216 | 2024-02-08 11:51:15.216 | Survey Tool                   | f       |      2
       7 | 2024-02-08 11:51:15.216 | 2024-02-08 11:51:15.216 | Scurvey Tool                  | t       |      2
     """
-    import prisma
-
     from codex.api_model import Indentifiers
 
-    db = prisma.Prisma(auto_register=True)
     requirmenets = [
         ("Availability Checker", 1),
         ("Invoice Generator", 1),
@@ -119,17 +118,9 @@ async def populate_database():
         ("Distance Calculator", 1),
         ("Profile Management System", 1),
     ]
-    await db.connect()
     ids = Indentifiers(user_id=1, app_id=1)
 
     for task, app_id in requirmenets:
         spec = hardcoded_requirements(task)
         ids.app_id = app_id
-        await create_spec(ids, spec, db)
-    await db.disconnect()
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    asyncio.run(populate_database())
+        await create_spec(ids, spec)
