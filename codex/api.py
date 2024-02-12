@@ -24,8 +24,10 @@ from codex.api_model import (
     UserResponse,
     UsersListResponse,
     UserUpdate,
+    Indentifiers,
 )
 from codex.requirements.agent import generate_requirements
+from openai import OpenAI
 
 logger = logging.getLogger(__name__)
 
