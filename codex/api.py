@@ -1,8 +1,7 @@
 import json
 import logging
 
-from fastapi import FastAPI, Path, Query, Response
-from prisma import Prisma
+from fastapi import APIRouter, Path, Query, Response
 
 import codex.database
 from codex.api_model import (
@@ -12,50 +11,22 @@ from codex.api_model import (
     UserResponse,
     UsersListResponse,
     UserUpdate,
-    Indentifiers,
 )
-from codex.architect.routes import delivery_router
-from codex.deploy.routes import deployment_router
-from codex.requirements.routes import spec_router
 
 logger = logging.getLogger(__name__)
 
-db_client = Prisma(auto_register=True)
-
-app = FastAPI(
-    title="Codex",
-    description="Codex is a platform for creating, deploying, and managing web applications.",
-    summary="Codex API",
-    version="0.1",
-)
-
-
-app.include_router(spec_router, prefix="/api/v1")
-app.include_router(delivery_router, prefix="/api/v1")
-app.include_router(deployment_router, prefix="api/v1")
-
-
-@app.on_event("startup")
-async def startup():
-    await db_client.connect()
-
-
-@app.on_event("shutdown")
-async def shutdown():
-    await db_client.disconnect()
+core_routes = APIRouter()
 
 
 # User endpoints
-@app.get("/discord/{discord_id}", response_model=UserResponse, tags=["users"])
+@core_routes.get("/discord/{discord_id}", response_model=UserResponse, tags=["users"])
 async def get_discord_user(discord_id: int):
     """
     This is intended to be used by the Discord bot to retrieve user information.
     The user_id that is retrived can then be used for other API calls.
     """
     try:
-        user = await codex.database.get_or_create_user_by_discord_id(
-            discord_id, db_client
-        )
+        user = await codex.database.get_or_create_user_by_discord_id(discord_id)
         return UserResponse(
             id=user.id,
             discord_id=user.discord_id,
@@ -73,7 +44,7 @@ async def get_discord_user(discord_id: int):
         )
 
 
-@app.get("/user/{user_id}", response_model=UserResponse, tags=["users"])
+@core_routes.get("/user/{user_id}", response_model=UserResponse, tags=["users"])
 async def get_user(
     user_id: int = Path(..., description="The unique identifier of the user"),
 ):
@@ -81,7 +52,7 @@ async def get_user(
     Retrieve a user by their unique identifier.
     """
     try:
-        user = await codex.database.get_user(user_id, db_client)
+        user = await codex.database.get_user(user_id)
         return UserResponse(
             id=user.id,
             discord_id=user.discord_id,
@@ -99,13 +70,13 @@ async def get_user(
         )
 
 
-@app.put("/user/{user_id}", response_model=UserResponse, tags=["users"])
+@core_routes.put("/user/{user_id}", response_model=UserResponse, tags=["users"])
 async def update_user(user_id: int, user_update: UserUpdate):
     """
     Update a user's information by their unique identifier.
     """
     try:
-        user = await codex.database.update_user(user_id, user_update, db_client)
+        user = await codex.database.update_user(user_id, user_update)
         return UserResponse(
             id=user.id,
             discord_id=user.discord_id,
@@ -123,7 +94,7 @@ async def update_user(user_id: int, user_update: UserUpdate):
         )
 
 
-@app.get("/user/", response_model=UsersListResponse, tags=["users"])
+@core_routes.get("/user/", response_model=UsersListResponse, tags=["users"])
 async def list_users(
     page: int | None = Query(1, ge=1),
     page_size: int | None = Query(10, ge=1),
@@ -132,7 +103,7 @@ async def list_users(
     List all users.
     """
     try:
-        users = await codex.database.list_users(page, page_size, db_client)
+        users = await codex.database.list_users(page, page_size)
         return users
     except Exception as e:
         logger.error(f"Error listing users: {e}")
@@ -144,7 +115,7 @@ async def list_users(
 
 
 # Apps endpoints
-@app.get(
+@core_routes.get(
     "/user/{user_id}/apps/{app_id}", response_model=ApplicationResponse, tags=["apps"]
 )
 async def get_app(
@@ -155,7 +126,7 @@ async def get_app(
     Retrieve a specific application by its ID for a given user.
     """
     try:
-        app_response = await codex.database.get_app_by_id(user_id, app_id, db_client)
+        app_response = await codex.database.get_app_by_id(user_id, app_id)
         if app_response:
             return app_response
         else:
@@ -173,13 +144,15 @@ async def get_app(
         )
 
 
-@app.post("/user/{user_id}/apps/", response_model=ApplicationResponse, tags=["apps"])
+@core_routes.post(
+    "/user/{user_id}/apps/", response_model=ApplicationResponse, tags=["apps"]
+)
 async def create_app(user_id: int, app: ApplicationCreate):
     """
     Create a new application for a user.
     """
     try:
-        app_response = await codex.database.create_app(user_id, app, db_client)
+        app_response = await codex.database.create_app(user_id, app)
         return app_response
     except Exception as e:
         logger.error(f"Error creating application: {e}")
@@ -190,13 +163,13 @@ async def create_app(user_id: int, app: ApplicationCreate):
         )
 
 
-@app.delete("/user/{user_id}/apps/{app_id}", tags=["apps"])
+@core_routes.delete("/user/{user_id}/apps/{app_id}", tags=["apps"])
 async def delete_app(user_id: int, app_id: int):
     """
     Delete a specific application by its ID for a given user.
     """
     try:
-        await codex.database.delete_app(user_id, app_id, db_client)
+        await codex.database.delete_app(user_id, app_id)
         return Response(
             content=json.dumps({"message": "Application deleted successfully"}),
             status_code=200,
@@ -211,7 +184,7 @@ async def delete_app(user_id: int, app_id: int):
         )
 
 
-@app.get(
+@core_routes.get(
     "/user/{user_id}/apps/", response_model=ApplicationsListResponse, tags=["apps"]
 )
 async def list_apps(
@@ -223,9 +196,7 @@ async def list_apps(
     List all applications for a given user.
     """
     try:
-        apps_response = await codex.database.list_apps(
-            user_id, page, page_size, db_client
-        )
+        apps_response = await codex.database.list_apps(user_id, page, page_size)
         return apps_response
     except Exception as e:
         logger.error(f"Error listing applications: {e}")
