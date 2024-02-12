@@ -16,7 +16,7 @@ The Codex System is an advanced software development framework comprised of vari
 
 3. **Developer**: The hands-on coding component. Utilizing the templates and guidelines provided by the Architect, the Developer sub-agent is responsible for writing the individual functions and pieces of the application.
 
-4. **Delivery (Deployment Agent)**: The final phase of the software development process, this component is tasked with compiling, packaging, and deploying the completed application, ensuring its successful deployment to the designated environment.
+4. **Deploy Agent**: The final phase of the software development process, this component is tasked with compiling, packaging, and deploying the completed application, ensuring its successful deployment to the designated environment.
 
 5. **Common Module**: A fundamental component used across all stages of development. It provides shared functionalities and resources, such as libraries and tools, that are essential for the Design, Architect, Coding, and Delivery modules. This module ensures consistency and efficiency in the development process.
 
@@ -33,19 +33,19 @@ erDiagram
     CODEX ||--o{ REQUIREMENTS : includes
     CODEX ||--o{ ARCHITECT : includes
     CODEX ||--o{ DEVELOPER : includes
-    CODEX ||--o{ DELIVERY : includes
+    CODEX ||--o{ DEPLOY : includes
     REQUIREMENTS ||--|| COMMON-MODULE : uses
     ARCHITECT ||--|| COMMON-MODULE : uses
     DEVELOPER ||--|| COMMON-MODULE : uses
-    DELIVERY ||--|| COMMON-MODULE : uses
+    DEPLOY ||--|| COMMON-MODULE : uses
     REQUIREMENTS ||--|| CHAINS-MODULE : "uses for LLM calls"
     ARCHITECT ||--|| CHAINS-MODULE : "uses for LLM calls"
     DEVELOPER ||--|| CHAINS-MODULE : "uses for LLM calls"
-    DELIVERY ||--|| CHAINS-MODULE : "uses for LLM calls"
+    DEPLOY ||--|| CHAINS-MODULE : "uses for LLM calls"
     REQUIREMENTS ||--|| ARCHITECT : "defines requirements for"
     ARCHITECT ||--|| DEVELOPER : "architects solution for"
-    DEVELOPER ||--|| DELIVERY : "develops code for"
-    DELIVERY ||--o{ CODEX : "deploys application to"
+    DEVELOPER ||--|| DEPLOY : "develops code for"
+    DEPLOY ||--o{ CODEX : "deploys application to"
     CHAINS-MODULE ||--|| PROMPTS : "manges all prompt templates"
 
     CODEX {
@@ -60,7 +60,7 @@ erDiagram
     DEVELOPER {
         string role "Junior Developer"
     }
-    DELIVERY {
+    DEPLOY {
         string role "Build Engineer"
     }
     COMMON-MODULE {
@@ -105,7 +105,7 @@ sequenceDiagram
     User->>API: Requests Deveoped App ID is deployed
     Note right of API: When we have added deployment flow
 
-    API->>+Codex: Runs Delivery Flow
+    API->>+Codex: Runs Deployment Flow
     Codex-->>-User: Returns Deployment details (id, url etc)
 
     
@@ -126,7 +126,7 @@ sequenceDiagram
 
 3. **Development**: The Developer sub-agent uses the templates and architecture guidelines to write the actual code for each module of the application.
 
-4. **Deployment**: Once the coding is complete, the Delivery sub-agent takes over to package, compile, and deploy the application to the desired environment.
+4. **Deployment**: Once the coding is complete, the Deploy sub-agent takes over to package, compile, and deploy the application to the desired environment.
 
 
 ```mermaid
@@ -135,7 +135,7 @@ sequenceDiagram
     participant Requirements
     participant Architect
     participant Developer
-    participant Delivery
+    participant Deploy
 
     User->>+Requirements: Request
     Requirements->>User: Initial Requirements
@@ -146,8 +146,8 @@ sequenceDiagram
         Developer->>+Architect: Request Clarification
         Architect->>+Developer: Additional Details
     end
-    Developer->>+Delivery: Completed Code
-    Delivery->>+User: Deploy to Production
+    Developer->>+Deploy: Completed Code
+    Deploy->>+User: Deploy to Production
 ```
 
 

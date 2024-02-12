@@ -14,7 +14,7 @@ from codex.api_model import (
     UserUpdate,
 )
 from codex.architect.routes import delivery_router
-from codex.delivery.routes import deployment_router
+from codex.deploy.routes import deployment_router
 from codex.requirements.routes import spec_router
 
 logger = logging.getLogger(__name__)
