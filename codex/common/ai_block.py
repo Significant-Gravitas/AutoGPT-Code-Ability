@@ -24,6 +24,8 @@ Here is the output schema:
 ```
 {schema}
 ```"""
+
+
 class LLMFailure(Exception):
     pass
 
@@ -237,7 +239,7 @@ class AIBlock:
             ValidationError: if the response is invalid
         """
         raise NotImplementedError("Validate Method not implemented")
-    
+
     def get_format_instructions(self) -> str:
         schema = self.pydantic_object.schema()
 

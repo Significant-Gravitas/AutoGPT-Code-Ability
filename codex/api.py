@@ -3,9 +3,13 @@ import logging
 
 from fastapi import FastAPI, Path, Query, Response
 from fastapi.responses import FileResponse
+from openai import OpenAI
 from prisma import Prisma
 
+import codex.architect.agent as architect_agent
 import codex.database
+import codex.delivery.agent as delivery_agent
+import codex.developer.agent as developer_agent
 from codex.api_model import (
     ApplicationCreate,
     ApplicationResponse,
@@ -14,18 +18,21 @@ from codex.api_model import (
     DeliverablesListResponse,
     DeploymentResponse,
     DeploymentsListResponse,
+    Indentifiers,
     SpecificationResponse,
     SpecificationsListResponse,
     UserResponse,
     UsersListResponse,
     UserUpdate,
+    Indentifiers,
 )
-import codex.architect.agent as architect_agent
-import codex.developer.agent as developer_agent
-import codex.delivery.agent as delivery_agent
-
+from codex.requirements.agent import generate_requirements
+from openai import OpenAI
 
 logger = logging.getLogger(__name__)
+
+
+OAI_CLIENT = OpenAI()
 
 db_client = Prisma(auto_register=True)
 
@@ -246,18 +253,23 @@ async def list_apps(
     tags=["specs"],
     response_model=SpecificationResponse,
 )
-async def create_spec(user_id: int, app_id: int):
+async def create_spec(user_id: int, app_id: int, description: str):
     """
     Create a new specification for a given application and user.
     """
-    # Implementation goes here
-    return Response(
-        content=json.dumps(
-            {"error": "Creating a new specification is not yet implemented."}
-        ),
-        status_code=500,
-        media_type="application/json",
-    )
+    try:
+        app = await codex.database.get_app_by_id(user_id, app_id, db_client)
+        ids = Indentifiers(user_id=user_id, app_id=app_id)
+
+        spec = generate_requirements(ids, app.name, description, OAI_CLIENT, db_client)
+        return SpecificationResponse.from_specification(spec)
+    except Exception as e:
+        return Response(
+            content=json.dumps(
+                {"error": f"Error creating a new specification: {str(e)}"}),
+            status_code=500,
+            media_type="application/json",
+        )
 
 
 @app.get(
@@ -374,8 +386,8 @@ async def create_deliverable(user_id: int, app_id: int, spec_id: int):
     Create a new deliverable (completed app) for a specific specification.
     """
     specification = await codex.database.get_specification(
-            user_id, app_id, spec_id, db_client
-        )
+        user_id, app_id, spec_id, db_client
+    )
     if specification:
         return specification
     else:
@@ -390,7 +402,7 @@ async def create_deliverable(user_id: int, app_id: int, spec_id: int):
     completed_graphs = developer_agent.write_code_graphs(graphs)
     # Delivery Agent builds the code and delivers it to the user
     application = delivery_agent.compile_application(specification, completed_graphs)
-    
+
     return Response(
         content=json.dumps(
             {"error": "Creating a new deliverable is not yet implemented."}

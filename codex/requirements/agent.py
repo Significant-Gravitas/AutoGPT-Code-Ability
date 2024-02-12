@@ -1,5 +1,10 @@
 import logging
 
+import openai
+import prisma
+
+from codex.api_model import Indentifiers
+from codex.requirements.ai_clarify import ClarifyBlock
 from codex.requirements.database import create_spec
 from codex.requirements.hardcoded import (
     appointment_optimization_requirements,
@@ -11,6 +16,62 @@ from codex.requirements.hardcoded import (
 from codex.requirements.model import ApplicationRequirements
 
 logger = logging.getLogger(__name__)
+
+
+def generate_requirements(
+    ids: Indentifiers,
+    app_name: str,
+    description: str,
+    oai: openai.OpenAI,
+    db: prisma.Prisma,
+) -> ApplicationRequirements:
+    """
+    Runs the Requirements Agent to generate the system requirements based
+    upon the provided task
+
+    Args:
+        ids (Indentifiers): Relevant ids for database operations
+        app_name (str): name of the application
+        description (str): description of the application
+
+    Returns:
+        ApplicationRequirements: The system requirements for the application
+    """
+
+    # Step 1) Clarification Questions
+    clarify = ClarifyBlock(
+        oai_client=oai,
+        db_client=db,
+    )
+    qna = clarify.invoke(
+        ids=ids,
+        invoke_params={
+            "task_description": description,
+        },
+    )
+    print(f"Thoughts: {qna.thoughts}")
+
+    # This where the steps I was thinking we could use
+
+    # Step 2) Generate for the system Requirements
+
+    # Step 3) Define the database schema
+
+    # Step 4) Define the api endpoints
+
+    # Step 5) Define the request and response models
+
+    # We maybe able to avoid needing llm calls for that
+
+    # Step 6) Generate the complete api route requirements
+
+    # Step 7) Compile the application requirements
+
+    full_spec = availability_checker_requirements()
+    # saved_spec = await create_spec(ids, full_spec, db)
+
+    # Step 8) Return the application requirements
+    return full_spec
 
 
 def hardcoded_requirements(task: str) -> ApplicationRequirements:
@@ -34,7 +95,7 @@ def hardcoded_requirements(task: str) -> ApplicationRequirements:
             raise NotImplementedError(f"Task {task} not implemented")
 
 
-async def populate_database():
+async def populate_database_specs():
     """
         This function will populate the database with the hardcoded requirements
 
@@ -48,11 +109,8 @@ async def populate_database():
       6 | 2024-02-08 11:51:15.216 | 2024-02-08 11:51:15.216 | Survey Tool                   | f       |      2
       7 | 2024-02-08 11:51:15.216 | 2024-02-08 11:51:15.216 | Scurvey Tool                  | t       |      2
     """
-    import prisma
-
     from codex.api_model import Indentifiers
 
-    db = prisma.Prisma(auto_register=True)
     requirmenets = [
         ("Availability Checker", 1),
         ("Invoice Generator", 1),
@@ -60,17 +118,9 @@ async def populate_database():
         ("Distance Calculator", 1),
         ("Profile Management System", 1),
     ]
-    await db.connect()
     ids = Indentifiers(user_id=1, app_id=1)
 
     for task, app_id in requirmenets:
         spec = hardcoded_requirements(task)
         ids.app_id = app_id
-        await create_spec(ids, spec, db)
-    await db.disconnect()
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    asyncio.run(populate_database())
+        await create_spec(ids, spec)
