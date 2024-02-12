@@ -50,7 +50,7 @@ def availability_checker_requirements() -> ApplicationRequirements:
             APIRouteRequirement(
                 method="POST",
                 path="/availability",
-                function_name="",
+                function_name="check_availability",
                 access_level=AccessLevel.PUBLIC,
                 description="Function that returns the availability of professionals, updating based on current activity or schedule.",
                 request_model=check_availability_request,
@@ -100,7 +100,7 @@ def invoice_generator_requirements() -> ApplicationRequirements:
             APIRouteRequirement(
                 method="POST",
                 path="/create_invoice",
-                function_name="create_invoice", 
+                function_name="create_invoice",
                 access_level=AccessLevel.PUBLIC,
                 description="Function that returns the availability of professionals, updating based on current activity or schedule.",
                 request_model=invoice_model,
@@ -435,7 +435,7 @@ def profile_management() -> ApplicationRequirements:
     return application_requirements
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print(availability_checker_requirements())
     print(invoice_generator_requirements())
     print(appointment_optimization_requirements())

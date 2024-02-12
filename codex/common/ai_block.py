@@ -268,11 +268,14 @@ class AIBlock:
                     {"role": "user", "content": user_prompt},
                 ],
                 "max_tokens": 4095,
-                "temperature": 1,
             }
+
             if self.is_json_response:
                 request_params["response_format"] = {"type": "json_object"}
-
+        except Exception as e:
+            logger.error(f"Error creating request params: {e}")
+            raise LLMFailure(f"Error creating request params: {e}")
+        try:
             response = self.oai_client.chat.completions.create(**request_params)
 
             presponse = self.parse(response)
@@ -286,12 +289,13 @@ class AIBlock:
             )
 
             validated_response = self.validate(invoke_params, presponse)
-        except ValidationError as e:
+        except ValidationError as validation_error:
+            error_message = validation_error
             while retries < max_retries:
                 retries += 1
                 try:
                     invoke_params["generation"] = presponse.message
-                    invoke_params["error"] = str(e)
+                    invoke_params["error"] = str(error_message)
 
                     retry_prompt = self.load_temaplate("retry", invoke_params)
                     request_params["messages"] = (
@@ -310,14 +314,14 @@ class AIBlock:
                     )
                     validated_response = self.validate(ids, presponse)
                     break
-                except Exception as e:
+                except Exception as retry_error:
                     logger.error(
-                        f"{retries}/{max_retries} Error validating response: {e}"
+                        f"{retries}/{max_retries} Error validating response: {retry_error}"
                     )
                     continue
-        except Exception as e:
-            logger.error(f"Error invoking AIBlock: {e}")
-            raise LLMFailure(f"Error invoking AIBlock: {e}")
+        except Exception as unkown_error:
+            logger.error(f"Error invoking AIBlock: {unkown_error}")
+            raise LLMFailure(f"Error invoking AIBlock: {unkown_error}")
 
         await self.create_item(ids, validated_response)
 

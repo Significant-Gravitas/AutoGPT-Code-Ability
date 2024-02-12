@@ -1,6 +1,7 @@
 from typing import Dict, List
 
-from langchain.pydantic_v1 import BaseModel
+from prisma.models import APIRouteSpec
+from pydantic import BaseModel
 
 
 class FunctionDef(BaseModel):
@@ -13,8 +14,12 @@ class FunctionDef(BaseModel):
 
 class CodeGraph(BaseModel):
     function_name: str
-    api_route: str
+    api_route_spec: APIRouteSpec
     code_graph: str
     imports: List[str]
     function_defs: Dict[str, FunctionDef]
     functions: Dict[str, FunctionDef] | None = None
+
+
+class ApplicationGraphs(BaseModel):
+    code_graphs: List[CodeGraph]

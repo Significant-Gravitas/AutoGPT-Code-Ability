@@ -74,6 +74,20 @@ def test() -> None:
             future.result()  # Waiting for each future to complete, you can handle exceptions here if needed
 
 
+@cli.command()
+def serve() -> None:
+    import uvicorn
+
+    import codex.common.logging_config
+    from codex.app import app
+
+    codex.common.logging_config.setup_logging(
+        local=os.environ.get("ENV", "CLOUD").lower() == "local"
+    )
+
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
 if __name__ == "__main__":
     setup_logging(local=os.environ.get("ENV", "CLOUD").lower() == "local")
     cli()

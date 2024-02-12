@@ -188,8 +188,8 @@ model FunctionDefinition {
   function_template String
   codeGraphId       Int
   codeGraph         CodeGraph @relation(fields: [codeGraphId], references: [id])
-  functionId        Int
-  function          Functions @relation(fields: [functionId], references: [id])
+  functionId        Int?
+  function          Functions? @relation(fields: [functionId], references: [id])
 }
 
 // ------------------------- Developer Models ---------------------------- //

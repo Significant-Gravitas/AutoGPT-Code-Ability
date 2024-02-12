@@ -28,6 +28,7 @@ async def create_deliverable(user_id: int, app_id: int, spec_id: int):
     specification = await codex.requirements.database.get_specification(
         user_id, app_id, spec_id
     )
+    logger.info(f"Creating deliverable for {specification.name}")
     if specification:
         ids = Indentifiers(
             user_id=user_id,
@@ -35,7 +36,7 @@ async def create_deliverable(user_id: int, app_id: int, spec_id: int):
             spec_id=spec_id,
         )
         # Architect agent creates the code graphs for the requirements
-        graphs = architect_agent.create_code_graphs(ids, specification)
+        graphs = await architect_agent.create_code_graphs(ids, specification)
         return graphs
     else:
         return Response(
