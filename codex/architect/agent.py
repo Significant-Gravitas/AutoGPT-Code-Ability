@@ -1,17 +1,19 @@
 import logging
 from typing import List
 
+from openai import OpenAI
+
+from codex.api_model import Indentifiers
+from codex.architect.codegraph import CodeGraphAIBlock
 from codex.architect.model import CodeGraph
 from codex.requirements.model import ApplicationRequirements
-from codex.architect.codegraph import CodeGraphAIBlock
-from openai import OpenAI
-from codex.api_model import Indentifiers
 
 logger = logging.getLogger(__name__)
 
 
-
-def create_code_graphs(ids: Indentifiers, requirements: ApplicationRequirements, oai_client: OpenAI) -> List[CodeGraph]:
+def create_code_graphs(
+    ids: Indentifiers, requirements: ApplicationRequirements, oai_client: OpenAI
+) -> List[CodeGraph]:
     """
     Create the code graph for a given api route
     """
@@ -28,7 +30,7 @@ def create_code_graphs(ids: Indentifiers, requirements: ApplicationRequirements,
                 "function_name": api_route.function_name,
                 "api_route": api_route,
                 "description": api_route.description,
-            }
+            },
         )
         code_graphs.append(cg)
     return code_graphs

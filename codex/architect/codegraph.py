@@ -116,9 +116,7 @@ class CodeGraphAIBlock(AIBlock):
                 "apiPath": validated_response.response.api_route,
                 "code_graph": validated_response.response.code_graph,
                 "imports": validated_response.response.imports,
-                "functionDefs": {
-                    "create": funciton_defs
-                }
+                "functionDefs": {"create": funciton_defs},
             }
         )
         logger.debug(f"Created CodeGraph: {cg}")
@@ -126,7 +124,6 @@ class CodeGraphAIBlock(AIBlock):
         return cg
 
     async def update_item(self, item: CodeGraph):
-        
         funciton_defs = []
         for key, value in item.function_defs.items():
             funciton_defs.append(
@@ -138,7 +135,7 @@ class CodeGraphAIBlock(AIBlock):
                     "function_template": value.function_template,
                 }
             )
-        
+
         cg = await CodeGraphDBModel.prisma().update(
             where={"id": item.id},
             data={
@@ -146,32 +143,23 @@ class CodeGraphAIBlock(AIBlock):
                 "apiPath": item.api_route,
                 "code_graph": item.code_graph,
                 "imports": item.imports,
-                "functionDefs": {
-                    "create": funciton_defs
-                }
+                "functionDefs": {"create": funciton_defs},
             },
         )
-
 
         return cg
 
     async def get_item(self, item_id: str):
-
         cg = await CodeGraphDBModel.prisma().find_unique(where={"id": item_id})
-
 
         return cg
 
     async def delete_item(self, item_id: str):
-
         await CodeGraphDBModel.prisma().delete(where={"id": item_id})
 
-
     async def list_items(self, item_id: str, page: int, page_size: int):
-
         cg = await CodeGraphDBModel.prisma().find_many(
             skip=(page - 1) * page_size, take=page_size
         )
-
 
         return cg
