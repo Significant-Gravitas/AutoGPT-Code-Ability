@@ -5,6 +5,7 @@ from fastapi import APIRouter, Query, Response
 from fastapi.responses import FileResponse
 
 import codex.database
+import codex.deploy.database
 from codex.api_model import DeploymentResponse, DeploymentsListResponse
 
 logger = logging.getLogger(__name__)
@@ -49,7 +50,9 @@ async def get_deployment(
     Retrieve metadata about a specific deployment.
     """
     try:
-        deployment = await codex.database.get_deployment(deployment_id=deployment_id)
+        deployment = await codex.deploy.database.get_deployment(
+            deployment_id=deployment_id
+        )
         return deployment
     except ValueError as e:
         return Response(
@@ -70,7 +73,7 @@ async def delete_deployment(
     Delete a specific deployment.
     """
     try:
-        await codex.database.delete_deployment(deployment_id=deployment_id)
+        await codex.deploy.database.delete_deployment(deployment_id=deployment_id)
         return Response(
             content=json.dumps({"message": "Deployment deleted successfully"}),
             status_code=200,
@@ -101,7 +104,7 @@ async def list_deployments(
     List all deployments for a specific deliverable.
     """
     try:
-        deployements = await codex.database.list_deployments(
+        deployements = await codex.deploy.database.list_deployments(
             user_id=user_id,
             deliverable_id=deliverable_id,
             page=page,
@@ -121,7 +124,7 @@ async def download_deployment(deployment_id: int):
     """
     Download the zip file for a specific deployment.
     """
-    deployment_details = await codex.database.get_deployment(
+    deployment_details = await codex.deploy.database.get_deployment(
         deployment_id=deployment_id
     )
     logger.info(f"Downloading deployment: {deployment_details}")
