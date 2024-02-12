@@ -9,7 +9,7 @@ from jinja2 import Environment, FileSystemLoader
 from openai import OpenAI
 from openai.types import CompletionUsage
 from openai.types.chat import ChatCompletion
-from prisma import Prisma
+from prisma.models import LLMCallAttempt, LLMCallTemplate
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -88,15 +88,13 @@ class AIBlock:
 
     def __init__(
         self,
-        oai_client: OpenAI,
-        db_client: Prisma,
+        oai_client: OpenAI = OpenAI(),
     ):
         """
         Args:
             oai_client (OpenAI): The OpenAI client
             db_client (Prisma): The Prisma Database client
         """
-        self.db_client = db_client
         self.oai_client = oai_client
         self.template_base_path = os.path.join(
             os.path.dirname(__file__), f"../{self.template_base_path}/{self.model}"
@@ -105,8 +103,6 @@ class AIBlock:
         self.call_template_id = None
 
     async def store_call_template(self):
-        from prisma.models import LLMCallTemplate
-
         template_str = ""
         lang_str = ""
         if self.langauge:
@@ -166,8 +162,6 @@ class AIBlock:
         attempt: int,
         prompt: str,
     ):
-        from prisma.models import LLMCallAttempt
-
         assert self.call_template_id, "Call template ID not set"
 
         call_attempt = await LLMCallAttempt.prisma().create(

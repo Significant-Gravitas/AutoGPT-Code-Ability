@@ -43,8 +43,8 @@ def populate_db(database):
 def test() -> None:
     def process_app(app_name: str) -> None:
         from codex.architect.agent import create_code_graphs
-        from codex.delivery.agent import compile_application
-        from codex.delivery.packager import create_zip_file
+        from codex.deploy.agent import compile_application
+        from codex.deploy.packager import create_zip_file
         from codex.developer.agent import write_code_graphs
         from codex.requirements.agent import hardcoded_requirements
 

@@ -6,7 +6,7 @@ import black
 import isort
 
 from codex.architect.model import CodeGraph
-from codex.delivery.model import Application, CompiledRoute
+from codex.deploy.model import Application, CompiledRoute
 from codex.requirements.model import ApplicationRequirements
 
 logger = logging.getLogger(__name__)

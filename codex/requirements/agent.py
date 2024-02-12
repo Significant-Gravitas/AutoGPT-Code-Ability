@@ -1,8 +1,5 @@
 import logging
 
-import openai
-import prisma
-
 from codex.api_model import Indentifiers
 from codex.requirements.ai_clarify import ClarifyBlock
 from codex.requirements.database import create_spec
@@ -22,8 +19,6 @@ def generate_requirements(
     ids: Indentifiers,
     app_name: str,
     description: str,
-    oai: openai.OpenAI,
-    db: prisma.Prisma,
 ) -> ApplicationRequirements:
     """
     Runs the Requirements Agent to generate the system requirements based
@@ -39,10 +34,7 @@ def generate_requirements(
     """
 
     # Step 1) Clarification Questions
-    clarify = ClarifyBlock(
-        oai_client=oai,
-        db_client=db,
-    )
+    clarify = ClarifyBlock()
     qna = clarify.invoke(
         ids=ids,
         invoke_params={
