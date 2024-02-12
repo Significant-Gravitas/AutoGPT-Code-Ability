@@ -1,7 +1,7 @@
-import logging
-from typing import Optional
-from fastapi import APIRouter, FastAPI, Path, Query, Request, Response, UploadFile
 import json
+import logging
+
+from fastapi import APIRouter, Query, Response
 
 import codex.database
 from codex.api_model import (

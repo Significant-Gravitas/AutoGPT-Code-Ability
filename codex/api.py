@@ -3,30 +3,22 @@ import logging
 
 from fastapi import FastAPI, Path, Query, Response
 from fastapi.responses import FileResponse
-from openai import OpenAI
 from prisma import Prisma
 
-import codex.architect.agent as architect_agent
 import codex.database
-import codex.delivery.agent as delivery_agent
-import codex.developer.agent as developer_agent
 from codex.api_model import (
     ApplicationCreate,
     ApplicationResponse,
     ApplicationsListResponse,
-    DeliverableResponse,
-    DeliverablesListResponse,
     DeploymentResponse,
     DeploymentsListResponse,
-    Indentifiers,
-    SpecificationResponse,
-    SpecificationsListResponse,
     UserResponse,
     UsersListResponse,
     UserUpdate,
 )
-from codex.requirements.agent import generate_requirements
 from codex.requirements.routes import spec_router
+from codex.architect.routes import delivery_router
+
 logger = logging.getLogger(__name__)
 
 db_client = Prisma(auto_register=True)
@@ -40,6 +32,8 @@ app = FastAPI(
 
 
 app.include_router(spec_router, prefix="/api/v1")
+app.include_router(delivery_router, prefix="/api/v1")
+
 
 @app.on_event("startup")
 async def startup():
@@ -237,120 +231,6 @@ async def list_apps(
         logger.error(f"Error listing applications: {e}")
         return Response(
             content=json.dumps({"error": f"Error listing applications: {e}"}),
-            status_code=500,
-            media_type="application/json",
-        )
-
-
-# Deliverables endpoints
-@app.post(
-    "/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/",
-    tags=["deliverables"],
-    response_model=DeliverableResponse,
-)
-async def create_deliverable(user_id: int, app_id: int, spec_id: int):
-    """
-    Create a new deliverable (completed app) for a specific specification.
-    """
-    specification = await codex.database.get_specification(
-        user_id, app_id, spec_id, db_client
-    )
-    if specification:
-        return specification
-    else:
-        return Response(
-            content=json.dumps({"error": "Specification not found"}),
-            status_code=500,
-            media_type="application/json",
-        )
-    # Architect agent creates the code graphs for the requirements
-    graphs = architect_agent.create_code_graphs(specification)
-    # Developer agent writes the code for the code graphs
-    completed_graphs = developer_agent.write_code_graphs(graphs)
-    # Delivery Agent builds the code and delivers it to the user
-    application = delivery_agent.compile_application(specification, completed_graphs)
-
-    return Response(
-        content=json.dumps(
-            {"error": "Creating a new deliverable is not yet implemented."}
-        ),
-        status_code=500,
-        media_type="application/json",
-    )
-
-
-@app.get(
-    "/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}",
-    response_model=DeliverableResponse,
-    tags=["deliverables"],
-)
-async def get_deliverable(user_id: int, app_id: int, spec_id: int, deliverable_id: int):
-    """
-    Retrieve a specific deliverable (completed app) including its compiled routes by ID.
-    """
-    try:
-        deliverable = await codex.database.get_deliverable(
-            db_client, user_id, app_id, spec_id, deliverable_id
-        )
-        return deliverable
-    except ValueError as e:
-        return Response(
-            content=json.dumps({"error": str(e)}),
-            status_code=500,
-            media_type="application/json",
-        )
-
-
-@app.delete(
-    "/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}",
-    tags=["deliverables"],
-)
-async def delete_deliverable(
-    user_id: int, app_id: int, spec_id: int, deliverable_id: int
-):
-    """
-    Delete a specific deliverable (completed app) by ID.
-    """
-    try:
-        await codex.database.delete_deliverable(
-            db_client, user_id, app_id, spec_id, deliverable_id
-        )
-        return Response(
-            content=json.dumps({"message": "Deliverable deleted successfully"}),
-            status_code=200,
-            media_type="application/json",
-        )
-    except Exception as e:
-        return Response(
-            content=json.dumps({"error": f"Error deleting deliverable: {str(e)}"}),
-            status_code=500,
-            media_type="application/json",
-        )
-
-
-@app.get(
-    "/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/",
-    response_model=DeliverablesListResponse,
-    tags=["deliverables"],
-)
-async def list_deliverables(
-    user_id: int,
-    app_id: int,
-    spec_id: int,
-    page: int = Query(1, ge=1),
-    page_size: int = Query(10, ge=1),
-):
-    """
-    List all deliverables (completed apps) for a specific specification.
-    """
-    try:
-        deliverables = await codex.database.list_deliverables(
-            user_id, app_id, spec_id, page, page_size, db_client
-        )
-        return deliverables
-    except Exception as e:
-        return Response(
-            content=json.dumps({"error": f"Error listing deliverables: {str(e)}"}),
             status_code=500,
             media_type="application/json",
         )
