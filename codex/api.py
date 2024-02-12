@@ -26,11 +26,8 @@ from codex.api_model import (
     UserUpdate,
 )
 from codex.requirements.agent import generate_requirements
-
+from codex.requirements.routes import spec_router
 logger = logging.getLogger(__name__)
-
-
-OAI_CLIENT = OpenAI()
 
 db_client = Prisma(auto_register=True)
 
@@ -41,6 +38,8 @@ app = FastAPI(
     version="0.1",
 )
 
+
+app.include_router(spec_router, prefix="/api/v1")
 
 @app.on_event("startup")
 async def startup():
@@ -238,136 +237,6 @@ async def list_apps(
         logger.error(f"Error listing applications: {e}")
         return Response(
             content=json.dumps({"error": f"Error listing applications: {e}"}),
-            status_code=500,
-            media_type="application/json",
-        )
-
-
-# Specs endpoints
-
-
-@app.post(
-    "/user/{user_id}/apps/{app_id}/specs/",
-    tags=["specs"],
-    response_model=SpecificationResponse,
-)
-async def create_spec(user_id: int, app_id: int, description: str):
-    """
-    Create a new specification for a given application and user.
-    """
-    try:
-        app = await codex.database.get_app_by_id(user_id, app_id, db_client)
-        ids = Indentifiers(user_id=user_id, app_id=app_id)
-
-        spec = generate_requirements(ids, app.name, description, OAI_CLIENT, db_client)
-        return SpecificationResponse.from_specification(spec)
-    except Exception as e:
-        return Response(
-            content=json.dumps(
-                {"error": f"Error creating a new specification: {str(e)}"}),
-            status_code=500,
-            media_type="application/json",
-        )
-
-
-@app.get(
-    "/user/{user_id}/apps/{app_id}/specs/{spec_id}",
-    response_model=SpecificationResponse,
-    tags=["specs"],
-)
-async def get_spec(user_id: int, app_id: int, spec_id: int):
-    """
-    Retrieve a specific specification by its ID for a given application and user.
-    """
-    try:
-        specification = await codex.database.get_specification(
-            user_id, app_id, spec_id, db_client
-        )
-        if specification:
-            return specification
-        else:
-            return Response(
-                content=json.dumps({"error": "Specification not found"}),
-                status_code=500,
-                media_type="application/json",
-            )
-    except Exception as e:
-        logger.error(f"Error retrieving specification: {e}")
-        return Response(
-            content=json.dumps({"error": "Error retrieving specification"}),
-            status_code=500,
-            media_type="application/json",
-        )
-
-
-@app.put(
-    "/user/{user_id}/apps/{app_id}/specs/{spec_id}",
-    response_model=SpecificationResponse,
-    tags=["specs"],
-)
-async def update_spec(
-    user_id: int,
-    app_id: int,
-    spec_id: int,
-    spec_update: SpecificationResponse,
-):
-    """
-    TODO: This needs to be implemented
-    Update a specific specification by its ID for a given application and user.
-    """
-    return Response(
-        content=json.dumps(
-            {"error": "Updating a specification is not yet implemented."}
-        ),
-        status_code=500,
-        media_type="application/json",
-    )
-
-
-@app.delete("/user/{user_id}/apps/{app_id}/specs/{spec_id}", tags=["specs"])
-async def delete_spec(user_id: int, app_id: int, spec_id: int):
-    """
-    Delete a specific specification by its ID for a given application and user.
-    """
-    try:
-        await codex.database.delete_specification(spec_id, db_client)
-        return Response(
-            content=json.dumps({"message": "Specification deleted successfully"}),
-            status_code=200,
-            media_type="application/json",
-        )
-    except Exception as e:
-        logger.error(f"Error deleting specification: {e}")
-        return Response(
-            content=json.dumps({"error": "Error deleting specification"}),
-            status_code=500,
-            media_type="application/json",
-        )
-
-
-@app.get(
-    "/user/{user_id}/apps/{app_id}/specs/",
-    response_model=SpecificationsListResponse,
-    tags=["specs"],
-)
-async def list_specs(
-    user_id: int,
-    app_id: int,
-    page: int = Query(1, ge=1),
-    page_size: int = Query(10, ge=1),
-):
-    """
-    List all specifications for a given application and user.
-    """
-    try:
-        specs = await codex.database.list_specifications(
-            user_id, app_id, page, page_size, db_client
-        )
-        return specs
-    except Exception as e:
-        logger.error(f"Error listing specifications: {e}")
-        return Response(
-            content=json.dumps({"error": "Error listing specifications"}),
             status_code=500,
             media_type="application/json",
         )
