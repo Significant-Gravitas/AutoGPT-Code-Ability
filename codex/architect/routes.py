@@ -4,6 +4,7 @@ import logging
 from fastapi import APIRouter, Query, Response
 
 import codex.architect.agent as architect_agent
+import codex.architect.database
 import codex.database
 import codex.deploy.agent as delivery_agent
 import codex.developer.agent as developer_agent
@@ -67,7 +68,7 @@ async def get_deliverable(user_id: int, app_id: int, spec_id: int, deliverable_i
     Retrieve a specific deliverable (completed app) including its compiled routes by ID.
     """
     try:
-        deliverable = await codex.database.get_deliverable(
+        deliverable = await codex.architect.database.get_deliverable(
             user_id, app_id, spec_id, deliverable_id
         )
         return deliverable
@@ -90,7 +91,7 @@ async def delete_deliverable(
     Delete a specific deliverable (completed app) by ID.
     """
     try:
-        await codex.database.delete_deliverable(
+        await codex.architect.database.delete_deliverable(
             user_id, app_id, spec_id, deliverable_id
         )
         return Response(
@@ -122,7 +123,7 @@ async def list_deliverables(
     List all deliverables (completed apps) for a specific specification.
     """
     try:
-        deliverables = await codex.database.list_deliverables(
+        deliverables = await codex.architect.database.list_deliverables(
             user_id, app_id, spec_id, page, page_size
         )
         return deliverables

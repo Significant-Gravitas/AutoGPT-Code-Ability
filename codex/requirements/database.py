@@ -1,8 +1,12 @@
 from prisma.models import Specification
 
-from codex.api_model import Indentifiers
-
-from .model import ApplicationRequirements
+from codex.api_model import (
+    Indentifiers,
+    Pagination,
+    SpecificationResponse,
+    SpecificationsListResponse,
+)
+from codex.requirements.model import ApplicationRequirements
 
 
 async def create_spec(ids: Indentifiers, spec: ApplicationRequirements):
