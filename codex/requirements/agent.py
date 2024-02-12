@@ -42,6 +42,7 @@ def generate_requirements(
         },
     )
     print(f"Thoughts: {qna.thoughts}")
+
     # This where the steps I was thinking we could use
 
     # Step 2) Generate for the system Requirements
