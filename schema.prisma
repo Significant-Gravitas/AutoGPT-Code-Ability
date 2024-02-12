@@ -82,7 +82,7 @@ enum AccessLevel {
 model APIRouteSpec {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
-
+  functionName    String
   method           String
   path             String
   description      String

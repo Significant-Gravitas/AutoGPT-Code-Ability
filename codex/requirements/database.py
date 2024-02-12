@@ -59,6 +59,7 @@ async def create_spec(ids: Indentifiers, spec: ApplicationRequirements):
         create_route = {
             "method": route.method,
             "path": route.path,
+            "functionName": route.function_name,
             "accessLevel": route.access_level.value,
             "description": route.description,
             "requestObjects": {"create": create_request},
