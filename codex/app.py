@@ -25,7 +25,7 @@ app.include_router(core_routes, prefix="/api/v1")
 app.include_router(spec_router, prefix="/api/v1")
 app.include_router(delivery_router, prefix="/api/v1")
 app.include_router(developer_routes, prefix="/api/v1")
-app.include_router(deployment_router, prefix="api/v1")
+app.include_router(deployment_router, prefix="/api/v1")
 
 
 @app.on_event("startup")
