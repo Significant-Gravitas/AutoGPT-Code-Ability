@@ -4,6 +4,7 @@ import logging
 from fastapi import APIRouter, Query, Response
 
 import codex.database
+import codex.requirements.database
 from codex.api_model import (
     Indentifiers,
     SpecificationResponse,
@@ -54,9 +55,11 @@ async def get_spec(user_id: int, app_id: int, spec_id: int):
     Retrieve a specific specification by its ID for a given application and user.
     """
     try:
-        specification = await codex.database.get_specification(user_id, app_id, spec_id)
+        specification = await codex.requirements.database.get_specification(
+            user_id, app_id, spec_id
+        )
         if specification:
-            return specification
+            return SpecificationResponse.from_specification(specification)
         else:
             return Response(
                 content=json.dumps({"error": "Specification not found"}),
@@ -102,7 +105,7 @@ async def delete_spec(user_id: int, app_id: int, spec_id: int):
     Delete a specific specification by its ID for a given application and user.
     """
     try:
-        await codex.database.delete_specification(spec_id)
+        await codex.requirements.database.delete_specification(spec_id)
         return Response(
             content=json.dumps({"message": "Specification deleted successfully"}),
             status_code=200,
@@ -132,7 +135,7 @@ async def list_specs(
     List all specifications for a given application and user.
     """
     try:
-        specs = await codex.database.list_specifications(
+        specs = await codex.requirements.database.list_specifications(
             user_id, app_id, page, page_size
         )
         return specs

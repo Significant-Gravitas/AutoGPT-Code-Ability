@@ -7,7 +7,8 @@ import codex.architect.agent as architect_agent
 import codex.database
 import codex.deploy.agent as delivery_agent
 import codex.developer.agent as developer_agent
-from codex.api_model import DeliverableResponse, DeliverablesListResponse
+import codex.requirements.database
+from codex.api_model import DeliverableResponse, DeliverablesListResponse, Indentifiers
 
 logger = logging.getLogger(__name__)
 
@@ -18,23 +19,30 @@ delivery_router = APIRouter()
 @delivery_router.post(
     "/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/",
     tags=["deliverables"],
-    response_model=DeliverableResponse,
 )
 async def create_deliverable(user_id: int, app_id: int, spec_id: int):
     """
     Create a new deliverable (completed app) for a specific specification.
     """
-    specification = await codex.database.get_specification(user_id, app_id, spec_id)
+    specification = await codex.requirements.database.get_specification(
+        user_id, app_id, spec_id
+    )
     if specification:
-        return specification
+        ids = Indentifiers(
+            user_id=user_id,
+            app_id=app_id,
+            spec_id=spec_id,
+        )
+        # Architect agent creates the code graphs for the requirements
+        graphs = architect_agent.create_code_graphs(ids, specification)
+        return graphs
     else:
         return Response(
             content=json.dumps({"error": "Specification not found"}),
             status_code=500,
             media_type="application/json",
         )
-    # Architect agent creates the code graphs for the requirements
-    graphs = architect_agent.create_code_graphs(specification)
+
     # Developer agent writes the code for the code graphs
     completed_graphs = developer_agent.write_code_graphs(graphs)
     # Delivery Agent builds the code and delivers it to the user
