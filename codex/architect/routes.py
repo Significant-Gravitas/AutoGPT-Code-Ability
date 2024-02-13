@@ -9,7 +9,12 @@ import codex.database
 import codex.deploy.agent as delivery_agent
 import codex.developer.agent as developer_agent
 import codex.requirements.database
-from codex.api_model import DeliverableResponse, DeliverablesListResponse, Indentifiers
+from codex.api_model import (
+    DeliverableResponse,
+    DeliverablesListResponse,
+    Indentifiers,
+    CompletedAppModel,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +25,7 @@ delivery_router = APIRouter()
 @delivery_router.post(
     "/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/",
     tags=["deliverables"],
+    response_model=DeliverableResponse,
 )
 async def create_deliverable(user_id: int, app_id: int, spec_id: int):
     """
@@ -38,26 +44,20 @@ async def create_deliverable(user_id: int, app_id: int, spec_id: int):
         # Architect agent creates the code graphs for the requirements
         graphs = await architect_agent.create_code_graphs(ids, specification)
         # Developer agent writes the code for the code graphs
-        completed_graphs = await developer_agent.write_code_graphs(graphs)
-        return graphs
+        completed_app = await developer_agent.develop_application(graphs, specification)
+
+        return DeliverableResponse(
+            id=completed_app.id,
+            created_at=completed_app.createdAt,
+            name=completed_app.name,
+            description=completed_app.description,
+        )
     else:
         return Response(
             content=json.dumps({"error": "Specification not found"}),
             status_code=500,
             media_type="application/json",
         )
-
-    
-    # Delivery Agent builds the code and delivers it to the user
-    application = delivery_agent.compile_application(specification, completed_graphs)
-
-    return Response(
-        content=json.dumps(
-            {"error": "Creating a new deliverable is not yet implemented."}
-        ),
-        status_code=500,
-        media_type="application/json",
-    )
 
 
 @delivery_router.get(
@@ -73,7 +73,12 @@ async def get_deliverable(user_id: int, app_id: int, spec_id: int, deliverable_i
         deliverable = await codex.architect.database.get_deliverable(
             user_id, app_id, spec_id, deliverable_id
         )
-        return deliverable
+        return DeliverableResponse(
+            id=deliverable.id,
+            created_at=deliverable.createdAt,
+            name=deliverable.name,
+            description=deliverable.description,
+        )
     except ValueError as e:
         return Response(
             content=json.dumps({"error": str(e)}),
@@ -125,10 +130,22 @@ async def list_deliverables(
     List all deliverables (completed apps) for a specific specification.
     """
     try:
-        deliverables = await codex.architect.database.list_deliverables(
+        deliverables, pagination = await codex.architect.database.list_deliverables(
             user_id, app_id, spec_id, page, page_size
         )
-        return deliverables
+
+        return DeliverablesListResponse(
+            deliverables=[
+                DeliverableResponse(
+                    id=d.id,
+                    created_at=d.createdAt,
+                    name=d.name,
+                    description=d.description,
+                )
+                for d in deliverables
+            ],
+            pagination=pagination,
+        )
     except Exception as e:
         return Response(
             content=json.dumps({"error": f"Error listing deliverables: {str(e)}"}),
