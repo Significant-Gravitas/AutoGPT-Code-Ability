@@ -7,23 +7,21 @@ from prisma.models import FunctionDefinition as FunctionDefDBModel
 from prisma.models import Specification
 
 from codex.api_model import Indentifiers
-from codex.developer.model import Function
 from codex.developer.write_function import WriteFunctionAIBlock
 
 logger = logging.getLogger(__name__)
 
 
 async def develop_application(
-    code_graphs: List[CodeGraphDBModel], spec: Specification
+    ids: Indentifiers, code_graphs: List[CodeGraphDBModel], spec: Specification
 ) -> CompletedApp:
     """
     Develop the application
     """
-    completed_graphs = await write_code_graphs(code_graphs, spec)
+    completed_graphs = await write_code_graphs(ids, code_graphs, spec)
     app = await CompletedApp.prisma().create(
         data={
-            "compiled_routes": {"connect": [{"id": c.id for c in completed_graphs}]},
-            "application": {"connect": {"id": spec.app.id}},
+            "compiledRoutes": {"connect": [{"id": c.id for c in completed_graphs}]},
             "spec": {"connect": {"id": spec.id}},
             "name": spec.name,
             "description": spec.context,
@@ -33,18 +31,24 @@ async def develop_application(
 
 
 async def write_code_graphs(
+    ids: Indentifiers,
     code_graphs: List[CodeGraphDBModel],
     spec: Specification,
 ) -> List[CompiledRoute]:
     completed_graphs = []
     for code_graph in code_graphs:
-        writen_functions = code_functions(code_graph)
+        cg = await CodeGraphDBModel.prisma().find_unique(
+            where={"id": code_graph.id},
+            include={"functionDefs": True, "routeSpec": True},
+        )
+
+        writen_functions = await code_functions(ids, cg)
 
         croute = await CompiledRoute.prisma().create(
             data={
-                "code_graph": {"connect": {"id": code_graph.id}},
-                "code": code_graph.code,
-                "description": code_graph.description,
+                "codeGraph": {"connect": {"id": cg.id}},
+                "code": cg.code_graph,
+                "description": cg.routeSpec.description,
                 "functions": {"connect": [{"id": f.id for f in writen_functions}]},
             }
         )
@@ -53,15 +57,16 @@ async def write_code_graphs(
     return completed_graphs
 
 
-async def code_functions(code_graph: CodeGraphDBModel) -> List[FunctionDefDBModel]:
+async def code_functions(
+    ids: Indentifiers, code_graph: CodeGraphDBModel
+) -> List[FunctionDefDBModel]:
     """
     Code the functions in the code graph
     """
-    code_graph.functions = {}
     functions = []
-    for function_name, function_def in code_graph.function_defs.items():
-        logger.info(f"Coding function {function_name}")
-        function_obj = create_code(code_graph.function_name, function_def)
+    for function_def in code_graph.functionDefs:
+        logger.info(f"Coding function {function_def.name}")
+        function_obj = await create_code(ids, code_graph.function_name, function_def)
         functions.append(function_obj)
 
     return functions

@@ -39,7 +39,7 @@ async def create_deliverable(user_id: int, app_id: int, spec_id: int):
         graphs = await architect_agent.create_code_graphs(ids, specification)
         # Developer agent writes the code for the code graphs
         completed_app = await developer_agent.develop_application(
-            graphs.code_graphs, specification
+            ids, graphs.code_graphs, specification
         )
 
         return DeliverableResponse(
