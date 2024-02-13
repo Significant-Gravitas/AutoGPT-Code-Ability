@@ -35,7 +35,6 @@ async def create_deployment(
         completed_app_id=deliverable_id,
     )
     
-    
     # File upload handling and metadata storage implementation goes here
     return Response(
         content=json.dumps(
