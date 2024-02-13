@@ -5,6 +5,8 @@ from prisma.models import (
     CodeGraph as CodeGraphDBModel,
     FunctionDefinition as FunctionDefDBModel,
     CompiledRoute,
+    CompletedApp,
+    Specification
 )
 from codex.developer.model import Function
 from codex.developer.write_function import WriteFunctionAIBlock
@@ -13,8 +15,27 @@ from codex.api_model import Indentifiers
 logger = logging.getLogger(__name__)
 
 
+async def develop_application(
+    code_graphs: List[CodeGraphDBModel], spec: Specification
+) -> CompletedApp:
+    """
+    Develop the application
+    """
+    completed_graphs = await write_code_graphs(code_graphs, spec)
+    app = await CompletedApp.prisma().create(
+        data={
+            "compiled_routes": {"connect": [{"id": c.id for c in completed_graphs}]},
+            "application": {"connect": {"id": spec.app.id}},
+            "spec": {"connect": {"id": spec.id}},
+            "name": spec.name,
+            "description": spec.context,
+        }
+    )
+    return app
+
 async def write_code_graphs(
     code_graphs: List[CodeGraphDBModel],
+    spec: Specification,
 ) -> List[CompiledRoute]:
     completed_graphs = []
     for code_graph in code_graphs:
