@@ -1,6 +1,7 @@
 from typing import Dict, List
 
 from prisma.models import APIRouteSpec
+from prisma.models import CodeGraph as CodeGraphDBModel
 from pydantic import BaseModel
 
 
@@ -22,4 +23,4 @@ class CodeGraph(BaseModel):
 
 
 class ApplicationGraphs(BaseModel):
-    code_graphs: List[CodeGraph]
+    code_graphs: List[CodeGraphDBModel]
