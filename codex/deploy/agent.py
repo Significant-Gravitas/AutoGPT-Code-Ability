@@ -20,6 +20,9 @@ def compile_application(app: CompletedApp) -> Application:
         compiled_routes = {}
         packages = []
         for db_compiled_route in app.compiledRoutes:
+            logger.info(
+                f"Compiling route {db_compiled_route.apiRouteSpec.path}. Num Functions: { len(db_compiled_route.functions)}"
+            )
             for function in db_compiled_route.functions:
                 if function.packages:
                     for pack in function.packages:
@@ -105,7 +108,10 @@ def compile_route(compiled_route: CompiledRouteDBModel) -> CompiledRoute:
     packages = []
     imports = []
     rest_of_code_sections = []
-    for function in compiled_route.functions:
+    for i, function in enumerate(compiled_route.functions):
+        logger.info(
+            f"{i+1}/{len(compiled_route.functions)} Compiling function {function.name}"
+        )
         import_code, rest_of_code = extract_imports(function.code)
         imports.append(import_code)
         rest_of_code_sections.append(rest_of_code)

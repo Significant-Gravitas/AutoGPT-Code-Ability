@@ -45,6 +45,7 @@ async def create_deployment(
                 }
             },
         )
+        logger.info(f"Creating deployment for {completedApp.name}")
         app = deploy_agent.compile_application(completedApp)
         zip_file = packager.create_zip_file(app)
         bytes_io = io.BytesIO(zip_file)
