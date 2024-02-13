@@ -9,6 +9,7 @@ from codex.common.ai_block import Indentifiers
 from codex.requirements import flatten_endpoints
 from codex.requirements.ai_clarify import (
     FrontendClarificationBlock,
+    QuestionAndAnswerClarificationBlock,
     UserPersonaClarificationBlock,
     UserSkillClarificationBlock,
 )
@@ -137,23 +138,20 @@ async def generate_requirements(
     print("User Skill Clarification Done")
 
     # Clarification Rounds
-    q_and_a_response: QandAResponses = complete_and_parse(
-        prompt=MORE_INFO_EXPANDED_CLARIFICATIONS.format(
-            clarifiying_questions_as_string=running_state_obj.clarifying_questions_as_string(),
-            project_description=running_state_obj.project_description,
-            task=running_state_obj.task,
-        ),
-        return_model=QandAResponses,
+
+    q_and_a_clarify = QuestionAndAnswerClarificationBlock()
+    q_and_a_clarification: list[QandA] = await q_and_a_clarify.invoke(
+        ids=ids,
+        invoke_params={
+            "clarifiying_questions_so_far": running_state_obj.clarifying_questions_as_string(),
+            "project_description": running_state_obj.project_description,
+            "task": task,
+        },
     )
 
-    q_and_a: list[QandA] = []
-    for wrapped in q_and_a_response.answer:
-        converted_q_and_a = wrapped.wrapper
-        q_and_a.append(converted_q_and_a)
+    running_state_obj.q_and_a = q_and_a_clarification
 
-    running_state_obj.q_and_a = q_and_a
-
-    print("Q_AND_A Done")
+    print("Question and Answer Based Clarification Done")
 
     # Product Name and Description
     model = complete_and_parse(
@@ -445,9 +443,7 @@ if __name__ == "__main__":
     ids = Indentifiers(user_id=1, app_id=1)
     db_client = prisma.Prisma(auto_register=True)
 
-    oai = openai.OpenAI(
-        api_key="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"
-    )
+    oai = openai.OpenAI()
 
     task = """The Tutor App is an app designed for tutors to manage their clients, schedules, and invoices. 
 
