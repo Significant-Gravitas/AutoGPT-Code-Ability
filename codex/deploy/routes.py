@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 
 import codex.database
 import codex.deploy.database
-from codex.api_model import DeploymentResponse, DeploymentsListResponse
+from codex.api_model import DeploymentResponse, DeploymentsListResponse, Indentifiers
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +28,14 @@ async def create_deployment(
     """
     Create a new deployment with the provided zip file.
     """
+    ids = Indentifiers(
+        user_id=user_id,
+        app_id=app_id,
+        spec_id=spec_id,
+        completed_app_id=deliverable_id,
+    )
+    
+    
     # File upload handling and metadata storage implementation goes here
     return Response(
         content=json.dumps(
