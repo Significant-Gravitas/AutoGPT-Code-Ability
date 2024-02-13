@@ -1,8 +1,6 @@
 from prisma.models import CompletedApp
-
+from typing import List, Tuple
 from codex.api_model import (
-    CompiledRouteModel,
-    CompletedAppModel,
     DeliverableResponse,
     DeliverablesListResponse,
     Pagination,
@@ -17,19 +15,7 @@ async def get_deliverable(
         include={"compiledRoutes": True},
     )
 
-    return DeliverableResponse(
-        completedApp=CompletedAppModel(
-            id=completed_app.id,
-            createdAt=completed_app.createdAt,
-            name=completed_app.name,
-            description=completed_app.description,
-            compiledRoutes=[
-                CompiledRouteModel(**route.dict())
-                for route in completed_app.compiledRoutes
-            ],
-            databaseSchema=completed_app.databaseSchema,
-        )
-    )
+    return completed_app
 
 
 async def delete_deliverable(
@@ -47,7 +33,7 @@ async def list_deliverables(
     spec_id: int,
     page: int = 1,
     page_size: int = 10,
-) -> DeliverablesListResponse:
+) -> Tuple[List[CompletedApp], Pagination]:
     skip = (page - 1) * page_size
     total_items = await CompletedApp.count()
     if total_items == 0:
@@ -65,26 +51,10 @@ async def list_deliverables(
         include={"compiledRoutes": True},
     )
 
-    completed_apps = [
-        CompletedAppModel(
-            id=app.id,
-            createdAt=app.createdAt,
-            name=app.name,
-            description=app.description,
-            compiledRoutes=[
-                CompiledRouteModel(**route.dict()) for route in app.compiledRoutes
-            ],
-            databaseSchema=app.databaseSchema,
-        )
-        for app in completed_apps_data
-    ]
-
-    return DeliverablesListResponse(
-        completedApps=completed_apps,
-        pagination=Pagination(
-            total_items=total_items,
-            total_pages=total_pages,
-            current_page=page,
-            page_size=page_size,
-        ),
+    pagination = Pagination(
+        total_items=total_items,
+        total_pages=total_pages,
+        current_page=page,
+        page_size=page_size,
     )
+    return completed_apps_data, pagination
