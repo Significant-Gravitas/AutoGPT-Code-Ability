@@ -6,14 +6,13 @@ import black
 import isort
 from prisma.models import Functions as FunctionsDBModel
 
-from codex.architect.model import GeneratedCode
 from codex.common.ai_block import (
     AIBlock,
     Indentifiers,
     ValidatedResponse,
     ValidationError,
 )
-from codex.developer.model import Function, Package
+from codex.developer.model import Function, GeneratedCode, Package
 
 logger = logging.getLogger(__name__)
 
