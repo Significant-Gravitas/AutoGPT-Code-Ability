@@ -208,21 +208,14 @@ class CompiledRouteModel(BaseModel):
     # codeGraphId: Optional[int] = None  # Omitted to simplify, can be included if needed
 
 
-class CompletedAppModel(BaseModel):
+class DeliverableResponse(BaseModel):
     id: int
-    createdAt: datetime
+    created_at: datetime
     name: str
     description: str
-    compiledRoutes: List[CompiledRouteModel] = []
-    databaseSchema: str
-
-
-class DeliverableResponse(BaseModel):
-    completedApp: CompletedAppModel
-
 
 class DeliverablesListResponse(BaseModel):
-    completedApps: List[CompletedAppModel]
+    completedApps: List[DeliverableResponse]
     pagination: Optional[Pagination] = None
 
 
