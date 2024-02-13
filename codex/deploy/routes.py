@@ -8,7 +8,7 @@ from prisma.models import CompletedApp
 import codex.database
 import codex.deploy.agent as deploy_agent
 import codex.deploy.database
-import codex.deply.packager as packager
+import codex.deploy.packager as packager
 from codex.api_model import DeploymentResponse, DeploymentsListResponse
 
 logger = logging.getLogger(__name__)
