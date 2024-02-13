@@ -1,51 +1,67 @@
 import logging
 from typing import List
 
-from codex.architect.model import CodeGraph, FunctionDef
+from prisma.models import (
+    CodeGraph as CodeGraphDBModel,
+    FunctionDefinition as FunctionDefDBModel,
+    CompiledRoute,
+)
 from codex.developer.model import Function
+from codex.developer.write_function import WriteFunctionAIBlock
+from codex.api_model import Indentifiers
 
 logger = logging.getLogger(__name__)
 
 
-def write_code_graphs(code_graphs: List[CodeGraph]) -> List[CodeGraph]:
+async def write_code_graphs(
+    code_graphs: List[CodeGraphDBModel],
+) -> List[CompiledRoute]:
     completed_graphs = []
     for code_graph in code_graphs:
-        completed_cg = code_functions(code_graph)
-        completed_graphs.append(completed_cg)
+        writen_functions = code_functions(code_graph)
+
+        croute = await CompiledRoute.prisma().create(
+            data={
+                "code_graph": {"connect": {"id": code_graph.id}},
+                "code": code_graph.code,
+                "description": code_graph.description,
+                "functions": {"connect": [{"id": f.id for f in writen_functions}]},
+            }
+        )
+
+        completed_graphs.append(croute)
     return completed_graphs
 
 
-def code_functions(code_graph: CodeGraph) -> CodeGraph:
+async def code_functions(code_graph: CodeGraphDBModel) -> List[FunctionDefDBModel]:
     """
     Code the functions in the code graph
     """
     code_graph.functions = {}
+    functions = []
     for function_name, function_def in code_graph.function_defs.items():
         logger.info(f"Coding function {function_name}")
-        packages, function_code = create_code(code_graph.function_name, function_def)
-        code_graph.functions[function_name] = Function(
-            name=function_name,
-            doc_string=function_def.doc_string,
-            args=function_def.args,
-            return_type=function_def.return_type,
-            code=function_code,
-            packages=packages,
-        )
-    return code_graph
+        function_obj = create_code(code_graph.function_name, function_def)
+        functions.append(function_obj)
+
+    return functions
 
 
-def create_code(appilcation_context: str, function_def: FunctionDef) -> str:
+async def create_code(
+    ids: Indentifiers, appilcation_context: str, function_def: FunctionDefDBModel
+) -> str:
     """
     Gets the coding agent to write or lookup the code for a function
     """
     # TODO: Add code lookup
-    # function = write_code_chain(
-    #     invoke_params={
-    #         "node": function_def,
-    #         "application_context": appilcation_context,
-    #         "function_template": function_def.function_template,
-    #     }
-    # )
-    # TODO: Add function storage
-    # return function
-    pass
+    aiblock = WriteFunctionAIBlock()
+    ids.function_def_id = function_def.id
+    code = await aiblock.invoke(
+        ids=ids,
+        invoke_params={
+            "function_def": function_def,
+            "application_context": appilcation_context,
+            "function_template": function_def.function_template,
+        },
+    )
+    return code
