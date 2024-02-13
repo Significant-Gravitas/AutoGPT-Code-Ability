@@ -21,7 +21,7 @@ from codex.requirements.matching import find_best_match
 from codex.requirements.model import (
     APIRouteRequirement,
     ApplicationRequirements,
-    Clarfication,
+    Clarification,
     DBResponse,
     Endpoint,
     EndpointSchemaRefinementResponse,
@@ -99,7 +99,7 @@ async def generate_requirements(
                 ),
             )
             reply = parse(reply)
-            clarified = Clarfication(
+            clarified = Clarification(
                 question=FRONTEND_QUESTION,
                 answer=str(reply.get("answer")),
                 thoughts=str(reply.get("think")),
@@ -123,7 +123,7 @@ async def generate_requirements(
                 ),
             )
             reply = parse(reply)
-            clarified = Clarfication(
+            clarified = Clarification(
                 question=USER_PERSONA_QUESTION,
                 answer=str(reply.get("answer")),
                 thoughts=str(reply.get("think")),
@@ -146,7 +146,7 @@ async def generate_requirements(
                 ),
             )
             reply = parse(reply)
-            clarified = Clarfication(
+            clarified = Clarification(
                 question=USER_SKILL_LEVEL_QUESTION,
                 answer=str(reply.get("answer")),
                 thoughts=str(reply.get("think")),
@@ -380,6 +380,7 @@ async def generate_requirements(
                 print(route)
                 api_routes.append(
                     APIRouteRequirement(
+                        function_name=route.name,
                         method=route.type,
                         path=route.path,
                         description=route.description,
