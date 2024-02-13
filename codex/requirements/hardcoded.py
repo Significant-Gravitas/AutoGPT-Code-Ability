@@ -50,6 +50,7 @@ def availability_checker_requirements() -> ApplicationRequirements:
             APIRouteRequirement(
                 method="POST",
                 path="/availability",
+                function_name="check_availability",
                 access_level=AccessLevel.PUBLIC,
                 description="Function that returns the availability of professionals, updating based on current activity or schedule.",
                 request_model=check_availability_request,
@@ -99,6 +100,7 @@ def invoice_generator_requirements() -> ApplicationRequirements:
             APIRouteRequirement(
                 method="POST",
                 path="/create_invoice",
+                function_name="create_invoice",
                 access_level=AccessLevel.PUBLIC,
                 description="Function that returns the availability of professionals, updating based on current activity or schedule.",
                 request_model=invoice_model,
@@ -163,6 +165,7 @@ def appointment_optimization_requirements() -> ApplicationRequirements:
             APIRouteRequirement(
                 method="POST",
                 path="/create_schedule",
+                function_name="create_schedule",
                 access_level=AccessLevel.PUBLIC,
                 description="Function that returns the availability of professionals, updating based on current activity or schedule.",
                 request_model=appointment_model,
@@ -217,6 +220,7 @@ def distance_calculator_requirements() -> ApplicationRequirements:
             APIRouteRequirement(
                 method="POST",
                 path="/calculate_distance",
+                function_name="calculate_distance",
                 access_level=AccessLevel.PUBLIC,
                 description="Function that returns the distance for travel time based upon input",
                 request_model=distance_model,
@@ -381,6 +385,7 @@ def profile_management() -> ApplicationRequirements:
         APIRouteRequirement(
             method="POST",
             path="/api/profile/create",
+            function_name="create_profile",
             access_level=AccessLevel.PUBLIC,
             description="Creates a new user profile",
             request_model=create_profile_request,
@@ -390,6 +395,7 @@ def profile_management() -> ApplicationRequirements:
         APIRouteRequirement(
             method="PUT",
             path="/api/profile/update",
+            function_name="update_profile",
             access_level=AccessLevel.USER,
             description="Updates an existing user profile",
             request_model=update_profile_request,
@@ -399,6 +405,7 @@ def profile_management() -> ApplicationRequirements:
         APIRouteRequirement(
             method="GET",
             path="/api/profile/retrieve",
+            function_name="retrieve_profile",
             access_level=AccessLevel.USER,
             description="Retrieves a user profile",
             request_model=retrieve_profile_request,
@@ -408,6 +415,7 @@ def profile_management() -> ApplicationRequirements:
         APIRouteRequirement(
             method="DELETE",
             path="/api/profile/delete",
+            function_name="delete_profile",
             access_level=AccessLevel.USER,
             description="Deletes a user profile",
             request_model=delete_profile_request,
@@ -427,5 +435,9 @@ def profile_management() -> ApplicationRequirements:
     return application_requirements
 
 
-def appointment_scheduling_system() -> ApplicationRequirements:
-    return ApplicationRequirements()
+if __name__ == "__main__":
+    print(availability_checker_requirements())
+    print(invoice_generator_requirements())
+    print(appointment_optimization_requirements())
+    print(distance_calculator_requirements())
+    print(profile_management())

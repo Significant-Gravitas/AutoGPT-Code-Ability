@@ -24,4 +24,4 @@ class CheckComplexity(BaseModel):
 
 class GeneratedCode(BaseModel):
     packages: List[Package]
-    code: str
+    code: Function

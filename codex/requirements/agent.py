@@ -65,8 +65,6 @@ async def generate_requirements(
     ids: Indentifiers,
     app_name: str,
     description: str,
-    oai: openai.OpenAI,
-    db: prisma.Prisma,
 ) -> ApplicationRequirements:
     """
     Runs the Requirements Agent to generate the system requirements based

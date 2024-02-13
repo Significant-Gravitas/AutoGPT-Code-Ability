@@ -9,7 +9,7 @@ from jinja2 import Environment, FileSystemLoader
 from openai import OpenAI
 from openai.types import CompletionUsage
 from openai.types.chat import ChatCompletion
-from prisma import Prisma
+from prisma.models import LLMCallAttempt, LLMCallTemplate
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -88,15 +88,13 @@ class AIBlock:
 
     def __init__(
         self,
-        oai_client: OpenAI,
-        db_client: Prisma,
+        oai_client: OpenAI = OpenAI(),
     ):
         """
         Args:
             oai_client (OpenAI): The OpenAI client
             db_client (Prisma): The Prisma Database client
         """
-        self.db_client = db_client
         self.oai_client = oai_client
         self.template_base_path = os.path.join(
             os.path.dirname(__file__), f"../{self.template_base_path}/{self.model}"
@@ -105,8 +103,6 @@ class AIBlock:
         self.call_template_id = None
 
     async def store_call_template(self):
-        from prisma.models import LLMCallTemplate
-
         template_str = ""
         lang_str = ""
         if self.langauge:
@@ -166,8 +162,6 @@ class AIBlock:
         attempt: int,
         prompt: str,
     ):
-        from prisma.models import LLMCallAttempt
-
         assert self.call_template_id, "Call template ID not set"
 
         call_attempt = await LLMCallAttempt.prisma().create(
@@ -274,11 +268,14 @@ class AIBlock:
                     {"role": "user", "content": user_prompt},
                 ],
                 "max_tokens": 4095,
-                "temperature": 1,
             }
+
             if self.is_json_response:
                 request_params["response_format"] = {"type": "json_object"}
-
+        except Exception as e:
+            logger.error(f"Error creating request params: {e}")
+            raise LLMFailure(f"Error creating request params: {e}")
+        try:
             response = self.oai_client.chat.completions.create(**request_params)
 
             presponse = self.parse(response)
@@ -292,12 +289,13 @@ class AIBlock:
             )
 
             validated_response = self.validate(invoke_params, presponse)
-        except ValidationError as e:
+        except ValidationError as validation_error:
+            error_message = validation_error
             while retries < max_retries:
                 retries += 1
                 try:
                     invoke_params["generation"] = presponse.message
-                    invoke_params["error"] = str(e)
+                    invoke_params["error"] = str(error_message)
 
                     retry_prompt = self.load_temaplate("retry", invoke_params)
                     request_params["messages"] = (
@@ -316,18 +314,18 @@ class AIBlock:
                     )
                     validated_response = self.validate(ids, presponse)
                     break
-                except Exception as e:
+                except Exception as retry_error:
                     logger.error(
-                        f"{retries}/{max_retries} Error validating response: {e}"
+                        f"{retries}/{max_retries} Error validating response: {retry_error}"
                     )
                     continue
-        except Exception as e:
-            logger.error(f"Error invoking AIBlock: {e}")
-            raise LLMFailure(f"Error invoking AIBlock: {e}")
+        except Exception as unkown_error:
+            logger.error(f"Error invoking AIBlock: {unkown_error}")
+            raise LLMFailure(f"Error invoking AIBlock: {unkown_error}")
 
-        await self.create_item(ids, validated_response)
+        stored_obj = await self.create_item(ids, validated_response)
 
-        return validated_response.response
+        return stored_obj if stored_obj else validated_response.response
 
     async def create_item(
         self, ids: Indentifiers, validated_response: ValidatedResponse

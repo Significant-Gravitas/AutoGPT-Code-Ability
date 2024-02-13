@@ -1,8 +1,12 @@
 from prisma.models import Specification
 
-from codex.api_model import Indentifiers
-
-from .model import ApplicationRequirements
+from codex.api_model import (
+    Indentifiers,
+    Pagination,
+    SpecificationResponse,
+    SpecificationsListResponse,
+)
+from codex.requirements.model import ApplicationRequirements
 
 
 async def create_spec(ids: Indentifiers, spec: ApplicationRequirements):
@@ -55,6 +59,7 @@ async def create_spec(ids: Indentifiers, spec: ApplicationRequirements):
         create_route = {
             "method": route.method,
             "path": route.path,
+            "functionName": route.function_name,
             "accessLevel": route.access_level.value,
             "description": route.description,
             "requestObjects": {"create": create_request},
@@ -78,3 +83,75 @@ async def create_spec(ids: Indentifiers, spec: ApplicationRequirements):
 
     new_spec = await Specification.prisma().create(data=create_spec)
     return new_spec
+
+
+async def get_specification(user_id: int, app_id: int, spec_id: int) -> Specification:
+    specification = await Specification.prisma().find_first_or_raise(
+        where={
+            "id": spec_id,
+            "userId": user_id,
+            "applicationId": app_id,
+        },
+        include={
+            "apiRoutes": {
+                "include": {
+                    "requestObjects": {"include": {"params": True}},
+                    "responseObject": {"include": {"params": True}},
+                }
+            }
+        },
+    )
+
+    return specification
+
+
+async def delete_specification(spec_id: int) -> Specification:
+    await Specification.prisma().update(
+        where={"id": spec_id},
+        data={"deleted": True},
+    )
+
+
+async def list_specifications(
+    user_id: int, app_id: int, page: int, page_size: int
+) -> SpecificationsListResponse:
+    skip = (page - 1) * page_size
+    total_items = await Specification.prisma().count(
+        where={"userId": user_id, "applicationId": app_id, "deleted": False}
+    )
+    if total_items > 0:
+        specs = await Specification.prisma().find_many(
+            where={"userId": user_id},
+            include={
+                "apiRoutes": {
+                    "include": {
+                        "requestObjects": {"include": {"params": True}},
+                        "responseObject": {"include": {"params": True}},
+                    }
+                }
+            },
+            skip=skip,
+            take=page_size,
+        )
+
+        total_pages = (total_items + page_size - 1) // page_size
+
+        specs_response = [
+            SpecificationResponse.from_specification(spec) for spec in specs
+        ]
+
+        pagination = Pagination(
+            total_items=total_items,
+            total_pages=total_pages,
+            current_page=page,
+            page_size=page_size,
+        )
+
+        return SpecificationsListResponse(specs=specs_response, pagination=pagination)
+    else:
+        return SpecificationsListResponse(
+            specs=[],
+            pagination=Pagination(
+                total_items=0, total_pages=0, current_page=0, page_size=0
+            ),
+        )

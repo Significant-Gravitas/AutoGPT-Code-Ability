@@ -43,8 +43,8 @@ def populate_db(database):
 def test() -> None:
     def process_app(app_name: str) -> None:
         from codex.architect.agent import create_code_graphs
-        from codex.delivery.agent import compile_application
-        from codex.delivery.packager import create_zip_file
+        from codex.deploy.agent import compile_application
+        from codex.deploy.packager import create_zip_file
         from codex.developer.agent import write_code_graphs
         from codex.requirements.agent import hardcoded_requirements
 
@@ -72,6 +72,20 @@ def test() -> None:
         futures = [executor.submit(process_app, app_name) for app_name in apps]
         for future in as_completed(futures):
             future.result()  # Waiting for each future to complete, you can handle exceptions here if needed
+
+
+@cli.command()
+def serve() -> None:
+    import uvicorn
+
+    import codex.common.logging_config
+    from codex.app import app
+
+    codex.common.logging_config.setup_logging(
+        local=os.environ.get("ENV", "CLOUD").lower() == "local"
+    )
+
+    uvicorn.run(app, host="0.0.0.0", port=8000)
 
 
 if __name__ == "__main__":
