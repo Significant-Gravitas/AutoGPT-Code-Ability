@@ -7,7 +7,10 @@ from prisma.enums import AccessLevel
 
 from codex.common.ai_block import Indentifiers
 from codex.requirements import flatten_endpoints
-from codex.requirements.ai_clarify import FrontendClarificationBlock
+from codex.requirements.ai_clarify import (
+    FrontendClarificationBlock,
+    UserPersonaClarificationBlock,
+)
 from codex.requirements.complete import complete_and_parse, complete_anth
 from codex.requirements.database import create_spec
 from codex.requirements.gather_task_info import gather_task_info_loop
@@ -93,41 +96,30 @@ async def generate_requirements(
 
     print(running_state_obj.project_description_thoughts)
 
-
-    clarify = FrontendClarificationBlock()
-    fronend_clarification: Clarification = await clarify.invoke(
+    frontend_clarify = FrontendClarificationBlock()
+    frontend_clarification: Clarification = await frontend_clarify.invoke(
         ids=ids,
         invoke_params={
             "project_description": running_state_obj.project_description
         },
     )
 
-    running_state_obj.add_clarifying_question(fronend_clarification)
+    running_state_obj.add_clarifying_question(frontend_clarification)
 
-    print("Clarifications Done")
+    print("Frontend Clarification Done")
 
-    # User Persona
-    while True:
-        try:
-            reply = complete_anth(
-                MORE_INFO_BASE_CLARIFICATIONS_USER_PERSONA.format(
-                    clarifiying_questions_so_far=running_state_obj.clarifying_questions_as_string(),
-                    project_description=running_state_obj.project_description,
-                ),
-            )
-            reply = parse(reply)
-            clarified = Clarification(
-                question=USER_PERSONA_QUESTION,
-                answer=str(reply.get("answer")),
-                thoughts=str(reply.get("think")),
-            )
-            running_state_obj.add_clarifying_question(clarified)
-            break
-        except Exception as e:
-            print(f"Oops an error occured building user persona: {e}")
-            pass
+    user_persona_clarify = UserPersonaClarificationBlock()
+    user_persona_clarification: Clarification = await user_persona_clarify.invoke(
+        ids=ids,
+        invoke_params={
+            "clarifiying_questions_so_far": running_state_obj.clarifying_questions_as_string(),
+            "project_description": running_state_obj.project_description,
+        },
+    )
 
-    print("User Persona Done")
+    running_state_obj.add_clarifying_question(user_persona_clarification)
+
+    print("User Persona Clarification Done")
 
     # User Skill
     while True:
