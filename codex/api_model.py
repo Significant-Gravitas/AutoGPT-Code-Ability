@@ -11,6 +11,7 @@ class Indentifiers(BaseModel):
     spec_id: int | None = None
     completed_app_id: int | None = None
     deployment_id: int | None = None
+    function_def_id: int | None = None
 
 
 class Pagination(BaseModel):
