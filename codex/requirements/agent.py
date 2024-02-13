@@ -10,6 +10,7 @@ from codex.requirements import flatten_endpoints
 from codex.requirements.ai_clarify import (
     FrontendClarificationBlock,
     UserPersonaClarificationBlock,
+    UserSkillClarificationBlock,
 )
 from codex.requirements.complete import complete_and_parse, complete_anth
 from codex.requirements.database import create_spec
@@ -122,28 +123,18 @@ async def generate_requirements(
     print("User Persona Clarification Done")
 
     # User Skill
-    while True:
-        try:
-            reply = complete_anth(
-                MORE_INFO_BASE_CLARIFICATIONS_USER_SKILL.format(
-                    clarifiying_questions_so_far=running_state_obj.clarifying_questions_as_string(),
-                    project_description=running_state_obj.project_description,
-                ),
-            )
-            reply = parse(reply)
-            clarified = Clarification(
-                question=USER_SKILL_LEVEL_QUESTION,
-                answer=str(reply.get("answer")),
-                thoughts=str(reply.get("think")),
-            )
 
-            running_state_obj.add_clarifying_question(clarified)
-            break
-        except Exception as e:
-            print(f"Oops an error occured while calculating user skill: {e}")
-            pass
+    user_skill_clarify = UserSkillClarificationBlock()
+    user_skill_clarification: Clarification = await user_skill_clarify.invoke(
+        ids=ids,
+        invoke_params={
+            "clarifiying_questions_so_far": running_state_obj.clarifying_questions_as_string(),
+            "project_description": running_state_obj.project_description,
+        },
+    )
+    running_state_obj.add_clarifying_question(user_skill_clarification)
 
-    print("User Skill Done")
+    print("User Skill Clarification Done")
 
     # Clarification Rounds
     q_and_a_response: QandAResponses = complete_and_parse(
