@@ -1,5 +1,3 @@
-from .utils.QAFormat import Q_AND_A_FORMAT
-
 MODULE_INTO_INTO_DATABASE = """generate a Prisma schema file with the following product spec. Make sure it covers all requirements, roles, Q&A, and auth
 
 Your needed auth roles are: {needed_auth_roles}

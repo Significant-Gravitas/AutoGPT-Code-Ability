@@ -1,4 +1,4 @@
-from .utils.NestJSDocs import (
+from codex.prompts.claude.requirements.NestJSDocs import (
     NEST_JS_CRUD_GEN,
     NEST_JS_MODULES,
     NEST_JS_SQL,

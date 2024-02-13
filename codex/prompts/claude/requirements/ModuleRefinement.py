@@ -1,6 +1,3 @@
-from .utils.QAFormat import Q_AND_A_FORMAT
-
-
 MODULE_REFINEMENTS = """You are a system architect. Your goal is to refine modules into more detail based on the input and limitations provided
 
 you will reply in the following format, making sure all fields are fully filled and fitted and all existing modules are covered

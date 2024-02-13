@@ -1,5 +1,3 @@
-from .utils.QAFormat import Q_AND_A_FORMAT
-
 # This only includes Clarifications that were conclusive
 CLARIFICATIONS_INTO_NAME_AND_DESC = """
 Human: Here are a few Q&As before I ask:

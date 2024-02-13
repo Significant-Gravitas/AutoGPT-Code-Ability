@@ -1,5 +1,3 @@
-from .utils.QAFormat import Q_AND_A_FORMAT
-
 TASK_INTO_MORE_INFO = """
 
 Human: Your task is to "{task}"
@@ -112,6 +110,9 @@ An example of that would be
 
 repeat for each clarification
 </answer>
+<closing_thoughts>
+any closing thoughts go here
+</closing_thoughts>
 
 # Task
 "{task}"
