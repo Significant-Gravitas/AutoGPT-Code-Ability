@@ -3,12 +3,12 @@ from typing import List
 
 from pydantic import BaseModel
 
-from codex.api_model import Indentifiers
+from codex.common.ai_block import Indentifiers
 from codex.common.ai_block import AIBlock, ValidatedResponse, ValidationError
 from codex.requirements.model import Clarification
 
 
-class ClarifyBlock(AIBlock):
+class FrontendClarificationBlock(AIBlock):
     """
     This is a block that handles, calling the LLM, validating the response,
     storing llm calls, and returning the response to the user
@@ -60,22 +60,20 @@ if __name__ == "__main__":
     from openai import OpenAI
     from prisma import Prisma
 
-    from codex.api_model import Indentifiers
-
     ids = Indentifiers(user_id=1, app_id=1)
     db_client = Prisma(auto_register=True)
     oai = OpenAI()
 
-    block = ClarifyBlock(
+    block = FrontendClarificationBlock(
         oai_client=oai,
     )
 
     async def run_ai():
         await db_client.connect()
-        ans = await block.invoke(
+        ans: Clarification = await block.invoke(
             ids=ids,
             invoke_params={
-                "task_description": "Function that returns the availability of professionals, updating based on current activity or schedule."
+                "project_description": "Function that returns the availability of professionals, updating based on current activity or schedule."
             },
         )
         await db_client.disconnect()
@@ -84,11 +82,10 @@ if __name__ == "__main__":
     qna = run(run_ai())
 
     print(f"Thoughts: {qna.thoughts}")
-    for q in qna.questions:
-        print(f"\tQuestion: {q.question}")
-        print(f"\tAnswer: {q.answer}")
+    print(f"\tQuestion: {qna.question}")
+    print(f"\tAnswer: {qna.answer}")
 
-    # If you want to test the block in an interactive environment
-    import IPython
+    # # If you want to test the block in an interactive environment
+    # import IPython
 
-    IPython.embed()
+    # IPython.embed()

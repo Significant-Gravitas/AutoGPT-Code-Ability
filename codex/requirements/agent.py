@@ -5,8 +5,9 @@ import openai
 import prisma
 from prisma.enums import AccessLevel
 
-from codex.api_model import Indentifiers
+from codex.common.ai_block import Indentifiers
 from codex.requirements import flatten_endpoints
+from codex.requirements.ai_clarify import FrontendClarificationBlock
 from codex.requirements.complete import complete_and_parse, complete_anth
 from codex.requirements.database import create_spec
 from codex.requirements.gather_task_info import gather_task_info_loop
@@ -82,7 +83,9 @@ async def generate_requirements(
     running_state_obj = StateObj(task=description)
 
     # User Interview
-    full, completion = gather_task_info_loop(running_state_obj.task)
+    full, completion = gather_task_info_loop(
+        running_state_obj.task, ask_callback=None
+    )
     running_state_obj.project_description = completion.split("finished: ")[
         -1
     ].strip()
@@ -90,26 +93,16 @@ async def generate_requirements(
 
     print(running_state_obj.project_description_thoughts)
 
-    # Clarify Questions
-    while True:
-        try:
-            reply = complete_anth(
-                MORE_INFO_BASE_CLARIFICATIONS_FRONTEND.format(
-                    project_description=running_state_obj.project_description
-                ),
-            )
-            reply = parse(reply)
-            clarified = Clarification(
-                question=FRONTEND_QUESTION,
-                answer=str(reply.get("answer")),
-                thoughts=str(reply.get("think")),
-            )
 
-            running_state_obj.add_clarifying_question(clarified)
-            break
-        except Exception as e:
-            print(f"Oops an error occured getting frontend clarification: {e}")
-            pass
+    clarify = FrontendClarificationBlock()
+    fronend_clarification: Clarification = await clarify.invoke(
+        ids=ids,
+        invoke_params={
+            "project_description": running_state_obj.project_description
+        },
+    )
+
+    running_state_obj.add_clarifying_question(fronend_clarification)
 
     print("Clarifications Done")
 
@@ -468,6 +461,7 @@ async def populate_database_specs():
 if __name__ == "__main__":
     ids = Indentifiers(user_id=1, app_id=1)
     db_client = prisma.Prisma(auto_register=True)
+
     oai = openai.OpenAI(
         api_key="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"
     )
@@ -483,8 +477,9 @@ There will need to be authorization for identifying clients vs the tutor.
 Additionally, it will have proper management of financials, including invoice management and payment tracking. This includes things like paid/failed invoice notifications, unpaid invoice follow-up, summarizing d/w/m/y income, and generating reports."""
 
     async def run_gen():
+        await db_client.connect()
         output = await generate_requirements(
-            ids=ids, app_name="Tutor", description=task, oai=oai, db=db_client
+            ids=ids, app_name="Tutor", description=task
         )
         return output
 
