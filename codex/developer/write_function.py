@@ -12,7 +12,8 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
-from codex.developer.model import Package
+from codex.developer.model import Package, Function
+from prisma.models import Functions as FunctionsDBModel
 
 logger = logging.getLogger(__name__)
 
@@ -97,28 +98,36 @@ class WriteFunctionAIBlock(AIBlock):
 
     def validate_code(self, invoke_params: dict, code: str) -> bool:
         try:
-            requested_node = invoke_params["requested_node"]
+            function_def = invoke_params["function_def"]
 
             sorted_content = isort.code(code)
             formatted_code = black.format_str(sorted_content, mode=black.FileMode())
             # We parse the code here to make sure it is valid
             parsed_code = ast.parse(formatted_code)
             args, ret = [], None
-
+            docstring = None
+            generated_func_name = ""
+            
             for ast_node in ast.walk(parsed_code):
                 if isinstance(ast_node, ast.FunctionDef):
                     args, ret = self.extract_type_hints(ast_node)
+                    docstring = ast.get_docstring(ast_node)
+                    generated_func_name = ast_node.name
                     break
 
             errors = []
-            if args != requested_node.args:
+            if generated_func_name != function_def.name:
                 errors.append(
-                    f"Input parameter {args} does not match required parameter {requested_node.args}"
+                    f"Function name {generated_func_name} does not match required function name {function_def.name}"
+                )
+            if args != function_def.args:
+                errors.append(
+                    f"Input parameter {args} does not match required parameter {function_def.args}"
                 )
 
-            if ret != requested_node.return_type:
+            if ret != function_def.return_type:
                 errors.append(
-                    f"Return type {ret} does not match required return type {requested_node.return_type}"
+                    f"Return type {ret} does not match required return type {function_def.return_type}"
                 )
 
             if errors:
@@ -126,7 +135,13 @@ class WriteFunctionAIBlock(AIBlock):
                     f"Function Template: ```\n{formatted_code}\n```\n\nIssues with the code:\n\n"
                     + "\n".join(errors)
                 )
-            return formatted_code
+            return Function(
+                name=function_def.name,
+                doc_string=docstring if docstring else function_def.doc_string,
+                args=args,
+                return_type=ret,
+                code=formatted_code,
+            )
         except Exception as e:
             raise ValueError(f"Error formatting code: {e}")
 
@@ -148,4 +163,26 @@ class WriteFunctionAIBlock(AIBlock):
         self, ids: Indentifiers, validated_response: ValidatedResponse
     ):
         """This is just a temporary that doesnt have a database model"""
-        pass
+        genfunc = validated_response.response.code
+        
+        func = await FunctionsDBModel.prisma().create(
+            data={
+                "name": genfunc.name,
+                "doc_string": genfunc.doc_string,
+                "args": genfunc.args,
+                "return_type": genfunc.return_type,
+                "code": genfunc.code,
+                "packages": {
+                    "create": [
+                        {
+                            "packageName": package.package_name,
+                            "version": package.version,
+                            "specifier": package.specifier,
+                        }
+                        for package in validated_response.response.packages
+                    ]
+                },
+                "functionDefs": {"connect": {"id": ids.function_def_id}},
+            }
+        )
+        return func
