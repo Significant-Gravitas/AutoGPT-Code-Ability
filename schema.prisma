@@ -188,8 +188,8 @@ model FunctionDefinition {
   function_template String
   codeGraphId       Int
   codeGraph         CodeGraph @relation(fields: [codeGraphId], references: [id])
-  functionId        Int
-  function          Functions @relation(fields: [functionId], references: [id])
+  functionId        Int?
+  function          Functions? @relation(fields: [functionId], references: [id])
 }
 
 // ------------------------- Developer Models ---------------------------- //
@@ -251,8 +251,6 @@ model CompletedApp {
   compiledRoutes CompiledRoute[]
   spec           Specification?  @relation(fields: [specId], references: [id])
   specId         Int?
-  User           CodexUser?           @relation(fields: [userId], references: [id])
-  userId         Int?
   Deployment     Deployment[]
 }
 

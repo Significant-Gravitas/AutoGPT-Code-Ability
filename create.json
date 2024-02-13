@@ -1,0 +1,248 @@
+{
+    "name": "Profile Management System",
+    "context": "This system manages client and professional profiles, including operations for creating, updating, retrieving, and deleting profiles.",
+    "User": {
+        "connect": {
+            "id": 1
+        }
+    },
+    "app": {
+        "connect": {
+            "id": 1
+        }
+    },
+    "apiRoutes": {
+        "create": [
+            {
+                "method": "POST",
+                "path": "/api/profile/create",
+                "functionName": "create_profile",
+                "accessLevel": "PUBLIC",
+                "description": "Creates a new user profile",
+                "requestObjects": {
+                    "create": {
+                        "name": "CreateProfileRequest",
+                        "description": "Input required for creating a new profile",
+                        "params": {
+                            "create": [
+                                {
+                                    "name": "user_type",
+                                    "description": "Type of the user: client or professional",
+                                    "param_type": "str"
+                                },
+                                {
+                                    "name": "personal_details",
+                                    "description": "Name and contact information",
+                                    "param_type": "dict"
+                                },
+                                {
+                                    "name": "preferences",
+                                    "description": "Optional settings specific to the user type",
+                                    "param_type": "dict"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "responseObject": {
+                    "create": {
+                        "name": "CreateProfileResponse",
+                        "description": "Output after creating a profile",
+                        "params": {
+                            "create": [
+                                {
+                                    "name": "message",
+                                    "description": "Success or error message",
+                                    "param_type": "str"
+                                },
+                                {
+                                    "name": "profile_details",
+                                    "description": "Details of the created profile",
+                                    "param_type": "dict"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "schemas": {
+                    "create": {
+                        "description": "Schema for storing client and professional profiles",
+                        "tables": {
+                            "create": [
+                                {
+                                    "description": "Stores user profile information",
+                                    "definition": "\n        model Profile {\n        id          Int     @id @default(autoincrement())\n        user_type   String\n        name        String\n        contact     String\n        preferences Json?\n        }\n        "
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "method": "PUT",
+                "path": "/api/profile/update",
+                "functionName": "update_profile",
+                "accessLevel": "USER",
+                "description": "Updates an existing user profile",
+                "requestObjects": {
+                    "create": {
+                        "name": "UpdateProfileRequest",
+                        "description": "Input required for updating an existing profile",
+                        "params": {
+                            "create": [
+                                {
+                                    "name": "profile_id",
+                                    "description": "Profile ID or unique identifier",
+                                    "param_type": "str"
+                                },
+                                {
+                                    "name": "fields_to_update",
+                                    "description": "Fields to be updated with their new values",
+                                    "param_type": "dict"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "responseObject": {
+                    "create": {
+                        "name": "UpdateProfileResponse",
+                        "description": "Output after updating a profile",
+                        "params": {
+                            "create": [
+                                {
+                                    "name": "message",
+                                    "description": "Success or error message",
+                                    "param_type": "str"
+                                },
+                                {
+                                    "name": "updated_profile_details",
+                                    "description": "Details of the updated profile",
+                                    "param_type": "dict"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "schemas": {
+                    "create": {
+                        "description": "Schema for storing client and professional profiles",
+                        "tables": {
+                            "create": [
+                                {
+                                    "description": "Stores user profile information",
+                                    "definition": "\n        model Profile {\n        id          Int     @id @default(autoincrement())\n        user_type   String\n        name        String\n        contact     String\n        preferences Json?\n        }\n        "
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "method": "GET",
+                "path": "/api/profile/retrieve",
+                "functionName": "retrieve_profile",
+                "accessLevel": "USER",
+                "description": "Retrieves a user profile",
+                "requestObjects": {
+                    "create": {
+                        "name": "RetrieveProfileRequest",
+                        "description": "Input required for retrieving a profile",
+                        "params": {
+                            "create": [
+                                {
+                                    "name": "profile_id",
+                                    "description": "Profile ID or unique identifier",
+                                    "param_type": "str"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "responseObject": {
+                    "create": {
+                        "name": "RetrieveProfileResponse",
+                        "description": "Output after retrieving a profile",
+                        "params": {
+                            "create": [
+                                {
+                                    "name": "profile_details",
+                                    "description": "Details of the retrieved profile",
+                                    "param_type": "dict"
+                                },
+                                {
+                                    "name": "message",
+                                    "description": "Error message if the profile is not found",
+                                    "param_type": "str"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "schemas": {
+                    "create": {
+                        "description": "Schema for storing client and professional profiles",
+                        "tables": {
+                            "create": [
+                                {
+                                    "description": "Stores user profile information",
+                                    "definition": "\n        model Profile {\n        id          Int     @id @default(autoincrement())\n        user_type   String\n        name        String\n        contact     String\n        preferences Json?\n        }\n        "
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "method": "DELETE",
+                "path": "/api/profile/delete",
+                "functionName": "delete_profile",
+                "accessLevel": "USER",
+                "description": "Deletes a user profile",
+                "requestObjects": {
+                    "create": {
+                        "name": "DeleteProfileRequest",
+                        "description": "Input required for deleting a profile",
+                        "params": {
+                            "create": [
+                                {
+                                    "name": "profile_id",
+                                    "description": "Profile ID or unique identifier",
+                                    "param_type": "str"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "responseObject": {
+                    "create": {
+                        "name": "DeleteProfileResponse",
+                        "description": "Output after deleting a profile",
+                        "params": {
+                            "create": [
+                                {
+                                    "name": "message",
+                                    "description": "Success message confirming profile deletion or error message if the profile is not found or deletion fails",
+                                    "param_type": "str"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "schemas": {
+                    "create": {
+                        "description": "Schema for storing client and professional profiles",
+                        "tables": {
+                            "create": [
+                                {
+                                    "description": "Stores user profile information",
+                                    "definition": "\n        model Profile {\n        id          Int     @id @default(autoincrement())\n        user_type   String\n        name        String\n        contact     String\n        preferences Json?\n        }\n        "
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        ]
+    }
+}

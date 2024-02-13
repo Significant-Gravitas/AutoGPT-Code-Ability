@@ -114,7 +114,7 @@ class APIRouteRequirement(BaseModel):
     path: str
 
     function_name: str
-    
+
     # This is context on what this api route should do
     description: str
 
@@ -129,8 +129,6 @@ class APIRouteRequirement(BaseModel):
     # I'm thinking it will be a prisma table schema or maybe a list of table schemas
     # See the schema.prisma file in the codex directory more info
     database_schema: DatabaseSchema | None = None
-    
-
 
     def __str__(self):
         db_schema_str = (
