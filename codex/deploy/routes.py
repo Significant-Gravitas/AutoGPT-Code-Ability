@@ -1,12 +1,16 @@
+import io
 import json
 import logging
 
 from fastapi import APIRouter, Query, Response
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
+from prisma.models import CompletedApp
 
 import codex.database
+import codex.deploy.agent as deploy_agent
 import codex.deploy.database
-from codex.api_model import DeploymentResponse, DeploymentsListResponse, Indentifiers
+import codex.deploy.packager as packager
+from codex.api_model import DeploymentResponse, DeploymentsListResponse
 
 logger = logging.getLogger(__name__)
 
@@ -28,22 +32,40 @@ async def create_deployment(
     """
     Create a new deployment with the provided zip file.
     """
-    ids = Indentifiers(
-        user_id=user_id,
-        app_id=app_id,
-        spec_id=spec_id,
-        completed_app_id=deliverable_id,
-    )
-    
-    
-    # File upload handling and metadata storage implementation goes here
-    return Response(
-        content=json.dumps(
-            {"error": "Creating a new deployment is not yet implemented."}
-        ),
-        status_code=500,
-        media_type="application/json",
-    )
+    try:
+        completedApp = await CompletedApp.prisma().find_unique(
+            where={"id": deliverable_id},
+            include={
+                "compiledRoutes": {
+                    "include": {
+                        "functions": True,
+                        "apiRouteSpec": True,
+                        "codeGraph": True,
+                    }
+                }
+            },
+        )
+        logger.info(f"Creating deployment for {completedApp.name}")
+        app = deploy_agent.compile_application(completedApp)
+        zip_file = packager.create_zip_file(app)
+        bytes_io = io.BytesIO(zip_file)
+
+        return StreamingResponse(
+            bytes_io,
+            media_type="application/octet-stream",
+            headers={"Content-Disposition": "attachment; filename=app.zip"},
+        )
+
+    except Exception as e:
+        logger.error(f"Error creating deployment: {e}")
+        # File upload handling and metadata storage implementation goes here
+        return Response(
+            content=json.dumps(
+                {"error": "Error creating deployment", "details": str(e)}
+            ),
+            status_code=500,
+            media_type="application/json",
+        )
 
 
 @deployment_router.get(

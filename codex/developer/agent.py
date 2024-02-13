@@ -42,14 +42,16 @@ async def write_code_graphs(
             include={"functionDefs": True, "routeSpec": True},
         )
 
-        writen_functions = await code_functions(ids, cg)
+        written_functions = await code_functions(ids, cg)
 
+        funciton_ids = [{"id": f.id} for f in written_functions]
         croute = await CompiledRoute.prisma().create(
             data={
                 "codeGraph": {"connect": {"id": cg.id}},
                 "code": cg.code_graph,
                 "description": cg.routeSpec.description,
-                "functions": {"connect": [{"id": f.id for f in writen_functions}]},
+                "functions": {"connect": funciton_ids},
+                "apiRouteSpec": {"connect": {"id": code_graph.routeSpecId}},
             }
         )
 
@@ -64,8 +66,10 @@ async def code_functions(
     Code the functions in the code graph
     """
     functions = []
-    for function_def in code_graph.functionDefs:
-        logger.info(f"Coding function {function_def.name}")
+    for i, function_def in enumerate(code_graph.functionDefs):
+        logger.info(
+            f"{i+1}/{len(code_graph.functionDefs)}  Coding function {function_def.name}"
+        )
         function_obj = await create_code(ids, code_graph.function_name, function_def)
         functions.append(function_obj)
 

@@ -251,6 +251,7 @@ class AIBlock:
     async def invoke(
         self, ids: Indentifiers, invoke_params: dict, max_retries=3
     ) -> Any:
+        validated_response = None
         if not self.call_template_id:
             await self.store_call_template()
 
@@ -290,6 +291,7 @@ class AIBlock:
 
             validated_response = self.validate(invoke_params, presponse)
         except ValidationError as validation_error:
+            logger.error(f"Error on initial generation attempt: {validation_error}")
             error_message = validation_error
             while retries < max_retries:
                 retries += 1
@@ -319,13 +321,15 @@ class AIBlock:
                         f"{retries}/{max_retries} Error validating response: {retry_error}"
                     )
                     continue
+            if not validated_response:
+                raise LLMFailure(f"Error validating response: {validation_error}")
         except Exception as unkown_error:
             logger.error(f"Error invoking AIBlock: {unkown_error}")
             raise LLMFailure(f"Error invoking AIBlock: {unkown_error}")
 
         stored_obj = await self.create_item(ids, validated_response)
-
         return stored_obj if stored_obj else validated_response.response
+    
 
     async def create_item(
         self, ids: Indentifiers, validated_response: ValidatedResponse

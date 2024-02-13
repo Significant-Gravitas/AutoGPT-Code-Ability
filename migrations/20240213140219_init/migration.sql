@@ -125,7 +125,7 @@ CREATE TABLE "CodeGraph" (
     "imports" TEXT[],
     "code_graph" TEXT NOT NULL,
     "databaseSchemaId" INTEGER,
-    "routeSpecId" INTEGER,
+    "routeSpecId" INTEGER NOT NULL,
 
     CONSTRAINT "CodeGraph_pkey" PRIMARY KEY ("id")
 );
@@ -140,7 +140,7 @@ CREATE TABLE "FunctionDefinition" (
     "return_type" TEXT NOT NULL,
     "function_template" TEXT NOT NULL,
     "codeGraphId" INTEGER NOT NULL,
-    "functionId" INTEGER NOT NULL,
+    "functionId" INTEGER,
 
     CONSTRAINT "FunctionDefinition_pkey" PRIMARY KEY ("id")
 );
@@ -177,7 +177,8 @@ CREATE TABLE "CompiledRoute" (
     "embedding" vector(1536),
     "description" TEXT NOT NULL,
     "code" TEXT NOT NULL,
-    "codeGraphId" INTEGER,
+    "codeGraphId" INTEGER NOT NULL,
+    "apiRouteSpecId" INTEGER NOT NULL,
 
     CONSTRAINT "CompiledRoute_pkey" PRIMARY KEY ("id")
 );
@@ -191,7 +192,6 @@ CREATE TABLE "CompletedApp" (
     "name" TEXT NOT NULL,
     "description" TEXT NOT NULL,
     "specId" INTEGER,
-    "userId" INTEGER,
 
     CONSTRAINT "CompletedApp_pkey" PRIMARY KEY ("id")
 );
@@ -357,22 +357,22 @@ ALTER TABLE "APIRouteSpec" ADD CONSTRAINT "APIRouteSpec_responseObjectId_fkey" F
 ALTER TABLE "CodeGraph" ADD CONSTRAINT "CodeGraph_databaseSchemaId_fkey" FOREIGN KEY ("databaseSchemaId") REFERENCES "DatabaseSchema"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "CodeGraph" ADD CONSTRAINT "CodeGraph_routeSpecId_fkey" FOREIGN KEY ("routeSpecId") REFERENCES "APIRouteSpec"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "CodeGraph" ADD CONSTRAINT "CodeGraph_routeSpecId_fkey" FOREIGN KEY ("routeSpecId") REFERENCES "APIRouteSpec"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "FunctionDefinition" ADD CONSTRAINT "FunctionDefinition_codeGraphId_fkey" FOREIGN KEY ("codeGraphId") REFERENCES "CodeGraph"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "FunctionDefinition" ADD CONSTRAINT "FunctionDefinition_functionId_fkey" FOREIGN KEY ("functionId") REFERENCES "Functions"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "FunctionDefinition" ADD CONSTRAINT "FunctionDefinition_functionId_fkey" FOREIGN KEY ("functionId") REFERENCES "Functions"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "CompiledRoute" ADD CONSTRAINT "CompiledRoute_codeGraphId_fkey" FOREIGN KEY ("codeGraphId") REFERENCES "CodeGraph"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "CompiledRoute" ADD CONSTRAINT "CompiledRoute_codeGraphId_fkey" FOREIGN KEY ("codeGraphId") REFERENCES "CodeGraph"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CompiledRoute" ADD CONSTRAINT "CompiledRoute_apiRouteSpecId_fkey" FOREIGN KEY ("apiRouteSpecId") REFERENCES "APIRouteSpec"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "CompletedApp" ADD CONSTRAINT "CompletedApp_specId_fkey" FOREIGN KEY ("specId") REFERENCES "Specification"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "CompletedApp" ADD CONSTRAINT "CompletedApp_userId_fkey" FOREIGN KEY ("userId") REFERENCES "CodexUser"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Deployment" ADD CONSTRAINT "Deployment_completedAppId_fkey" FOREIGN KEY ("completedAppId") REFERENCES "CompletedApp"("id") ON DELETE SET NULL ON UPDATE CASCADE;

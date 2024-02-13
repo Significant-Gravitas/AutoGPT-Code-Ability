@@ -1,39 +1,52 @@
 import ast
 import logging
-from typing import List
 
 import black
 import isort
+from prisma.models import CompiledRoute as CompiledRouteDBModel
+from prisma.models import CompletedApp
 
-from codex.architect.model import CodeGraph
 from codex.deploy.model import Application, CompiledRoute
-from codex.requirements.model import ApplicationRequirements
+from codex.developer.model import Package
 
 logger = logging.getLogger(__name__)
 
 
-def compile_application(
-    application_requirement: ApplicationRequirements, code_graphs: List[CodeGraph]
-) -> Application:
+def compile_application(app: CompletedApp) -> Application:
     """
     Packages the app for delivery
-
-    NOTE: This agent will hopefull not reqire llm calls
     """
-    compiled_routes = {}
-    packages = []
-    for code_graph in code_graphs:
-        compiled_route = compile_route(code_graph)
-        packages.extend(compiled_route.packages)
-        compiled_routes[code_graph.api_route] = compiled_route
+    try:
+        compiled_routes = {}
+        packages = []
+        for db_compiled_route in app.compiledRoutes:
+            logger.info(
+                f"Compiling route {db_compiled_route.apiRouteSpec.path}. Num Functions: { len(db_compiled_route.functions)}"
+            )
+            for function in db_compiled_route.functions:
+                if function.packages:
+                    for pack in function.packages:
+                        packages.append(
+                            Package(
+                                package_name=pack.packageName,
+                                version=pack.version,
+                                specifier=pack.specifier,
+                            )
+                        )
+            compiled_routes[db_compiled_route.apiRouteSpec.path] = compile_route(
+                db_compiled_route
+            )
 
-    app = Application(
-        name=application_requirement.name,
-        description=application_requirement.context,
-        server_code="",
-        routes=compiled_routes,
-        packages=packages,
-    )
+        app = Application(
+            name=app.name,
+            description=app.description,
+            server_code="",
+            routes=compiled_routes,
+            packages=packages,
+        )
+    except Exception as e:
+        logger.exception("Error compiling application")
+        raise e
 
     return create_server_code(app)
 
@@ -87,7 +100,7 @@ async def {compiled_route.main_function_name}_route({compiled_route.request_para
     return application.copy(update={"server_code": formatted_code})
 
 
-def compile_route(code_graph: CodeGraph) -> CompiledRoute:
+def compile_route(compiled_route: CompiledRouteDBModel) -> CompiledRoute:
     """
     Packages the route for delivery
     """
@@ -95,14 +108,20 @@ def compile_route(code_graph: CodeGraph) -> CompiledRoute:
     packages = []
     imports = []
     rest_of_code_sections = []
-    for func_name, function in code_graph.functions.items():
+    for i, function in enumerate(compiled_route.functions):
+        logger.info(
+            f"{i+1}/{len(compiled_route.functions)} Compiling function {function.name}"
+        )
         import_code, rest_of_code = extract_imports(function.code)
         imports.append(import_code)
         rest_of_code_sections.append(rest_of_code)
-        packages.extend(function.packages)
+        if function.packages:
+            packages.extend(function.packages)
 
-    import_code, main_function = extract_imports(code_graph.code_graph)
-    req_param_str, param_names_str = extract_request_params(code_graph.code_graph)
+    import_code, main_function = extract_imports(compiled_route.codeGraph.code_graph)
+    req_param_str, param_names_str = extract_request_params(
+        compiled_route.codeGraph.code_graph
+    )
     imports.append(import_code)
 
     output_code = "\n".join(imports)
@@ -117,9 +136,11 @@ def compile_route(code_graph: CodeGraph) -> CompiledRoute:
 
     return CompiledRoute(
         service_code=formatted_code,
-        service_file_name=code_graph.function_name.strip().replace(" ", "_")
+        service_file_name=compiled_route.codeGraph.function_name.strip().replace(
+            " ", "_"
+        )
         + "_service.py",
-        main_function_name=code_graph.function_name,
+        main_function_name=compiled_route.codeGraph.function_name,
         request_param_str=req_param_str,
         param_names_str=param_names_str,
         packages=packages,
