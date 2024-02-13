@@ -4,6 +4,7 @@ from typing import List
 
 import black
 import isort
+from prisma.models import Functions as FunctionsDBModel
 
 from codex.architect.model import GeneratedCode
 from codex.common.ai_block import (
@@ -12,8 +13,7 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
-from codex.developer.model import Package, Function
-from prisma.models import Functions as FunctionsDBModel
+from codex.developer.model import Function, Package
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +107,7 @@ class WriteFunctionAIBlock(AIBlock):
             args, ret = [], None
             docstring = None
             generated_func_name = ""
-            
+
             for ast_node in ast.walk(parsed_code):
                 if isinstance(ast_node, ast.FunctionDef):
                     args, ret = self.extract_type_hints(ast_node)
@@ -164,7 +164,7 @@ class WriteFunctionAIBlock(AIBlock):
     ):
         """This is just a temporary that doesnt have a database model"""
         genfunc = validated_response.response.code
-        
+
         func = await FunctionsDBModel.prisma().create(
             data={
                 "name": genfunc.name,

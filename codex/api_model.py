@@ -214,6 +214,7 @@ class DeliverableResponse(BaseModel):
     name: str
     description: str
 
+
 class DeliverablesListResponse(BaseModel):
     completedApps: List[DeliverableResponse]
     pagination: Optional[Pagination] = None

@@ -1,10 +1,8 @@
-from prisma.models import CompletedApp
 from typing import List, Tuple
-from codex.api_model import (
-    DeliverableResponse,
-    DeliverablesListResponse,
-    Pagination,
-)
+
+from prisma.models import CompletedApp
+
+from codex.api_model import DeliverableResponse, DeliverablesListResponse, Pagination
 
 
 async def get_deliverable(

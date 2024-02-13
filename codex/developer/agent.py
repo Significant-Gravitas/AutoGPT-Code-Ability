@@ -1,16 +1,14 @@
 import logging
 from typing import List
 
-from prisma.models import (
-    CodeGraph as CodeGraphDBModel,
-    FunctionDefinition as FunctionDefDBModel,
-    CompiledRoute,
-    CompletedApp,
-    Specification
-)
+from prisma.models import CodeGraph as CodeGraphDBModel
+from prisma.models import CompiledRoute, CompletedApp
+from prisma.models import FunctionDefinition as FunctionDefDBModel
+from prisma.models import Specification
+
+from codex.api_model import Indentifiers
 from codex.developer.model import Function
 from codex.developer.write_function import WriteFunctionAIBlock
-from codex.api_model import Indentifiers
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +30,7 @@ async def develop_application(
         }
     )
     return app
+
 
 async def write_code_graphs(
     code_graphs: List[CodeGraphDBModel],
