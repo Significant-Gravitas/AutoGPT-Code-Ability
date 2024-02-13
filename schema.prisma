@@ -30,7 +30,6 @@ model CodexUser {
   deleted        Boolean          @default(false)
   apps           Application[]
   spes           Specification[]
-  completedApp   CompletedApp[]
   LLMCallAttempt LLMCallAttempt[]
   Deployment     Deployment[]
 }
@@ -48,7 +47,7 @@ model Application {
   deleted   Boolean  @default(false)
 
   userId         Int
-  user           CodexUser             @relation(fields: [userId], references: [id])
+  user           CodexUser        @relation(fields: [userId], references: [id])
   specs          Specification[]
   LLMCallAttempt LLMCallAttempt[]
 }
@@ -69,7 +68,7 @@ model Specification {
   completedApp  CompletedApp[]
   app           Application?   @relation(fields: [applicationId], references: [id])
   applicationId Int?
-  User          CodexUser?          @relation(fields: [userId], references: [id])
+  User          CodexUser?     @relation(fields: [userId], references: [id])
   userId        Int?
 }
 
@@ -80,9 +79,9 @@ enum AccessLevel {
 }
 
 model APIRouteSpec {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  functionName    String
+  id               Int             @id @default(autoincrement())
+  createdAt        DateTime        @default(now())
+  functionName     String
   method           String
   path             String
   description      String
@@ -96,7 +95,6 @@ model APIRouteSpec {
   responseObject   ResponseObject? @relation(fields: [responseObjectId], references: [id])
   responseObjectId Int?
   CodeGraph        CodeGraph[]
-
 }
 
 model ResponseObject {
@@ -179,15 +177,15 @@ model CodeGraph {
 // FunctionDefinition defines a function, including its input and return types.
 // It links to a specific code graph and function.
 model FunctionDefinition {
-  id                Int       @id @default(autoincrement())
-  createdAt         DateTime  @default(now())
+  id                Int        @id @default(autoincrement())
+  createdAt         DateTime   @default(now())
   name              String
   doc_string        String
   args              String
   return_type       String
   function_template String
   codeGraphId       Int
-  codeGraph         CodeGraph @relation(fields: [codeGraphId], references: [id])
+  codeGraph         CodeGraph  @relation(fields: [codeGraphId], references: [id])
   functionId        Int?
   function          Functions? @relation(fields: [functionId], references: [id])
 }
@@ -268,7 +266,7 @@ model Deployment {
   path           String
   completedApp   CompletedApp? @relation(fields: [completedAppId], references: [id])
   completedAppId Int?
-  User           CodexUser?         @relation(fields: [userId], references: [id])
+  User           CodexUser?    @relation(fields: [userId], references: [id])
   userId         Int?
 }
 
@@ -289,7 +287,7 @@ model LLMCallAttempt {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
 
-  User   CodexUser?        @relation(fields: [userId], references: [id])
+  User   CodexUser?   @relation(fields: [userId], references: [id])
   userId Int?
   app    Application? @relation(fields: [appId], references: [id])
   appId  Int?
