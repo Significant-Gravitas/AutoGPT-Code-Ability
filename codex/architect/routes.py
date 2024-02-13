@@ -37,6 +37,8 @@ async def create_deliverable(user_id: int, app_id: int, spec_id: int):
         )
         # Architect agent creates the code graphs for the requirements
         graphs = await architect_agent.create_code_graphs(ids, specification)
+        # Developer agent writes the code for the code graphs
+        completed_graphs = await developer_agent.write_code_graphs(graphs)
         return graphs
     else:
         return Response(
@@ -45,8 +47,7 @@ async def create_deliverable(user_id: int, app_id: int, spec_id: int):
             media_type="application/json",
         )
 
-    # Developer agent writes the code for the code graphs
-    completed_graphs = developer_agent.write_code_graphs(graphs)
+    
     # Delivery Agent builds the code and delivers it to the user
     application = delivery_agent.compile_application(specification, completed_graphs)
 
