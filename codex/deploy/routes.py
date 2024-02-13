@@ -1,8 +1,9 @@
+import io
 import json
 import logging
 
 from fastapi import APIRouter, Query, Response
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from prisma.models import CompletedApp
 
 import codex.database
@@ -38,16 +39,24 @@ async def create_deployment(
                 "compiledRoutes": {
                     "include": {
                         "functions": True,
-                        "aoiRouteSpec": True,
-                        "CodeGraph": True,
+                        "apiRouteSpec": True,
+                        "codeGraph": True,
                     }
                 }
             },
         )
         app = deploy_agent.compile_application(completedApp)
         zip_file = packager.create_zip_file(app)
-        return FileResponse(path=zip_file, filename="app.zip")
+        bytes_io = io.BytesIO(zip_file)
+
+        return StreamingResponse(
+            bytes_io,
+            media_type="application/octet-stream",
+            headers={"Content-Disposition": "attachment; filename=app.zip"},
+        )
+
     except Exception as e:
+        logger.error(f"Error creating deployment: {e}")
         # File upload handling and metadata storage implementation goes here
         return Response(
             content=json.dumps(

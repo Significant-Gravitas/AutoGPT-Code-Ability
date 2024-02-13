@@ -290,6 +290,7 @@ class AIBlock:
 
             validated_response = self.validate(invoke_params, presponse)
         except ValidationError as validation_error:
+            logger.error(f"Error on initial generation attempt: {validation_error}")
             error_message = validation_error
             while retries < max_retries:
                 retries += 1

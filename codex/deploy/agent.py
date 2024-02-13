@@ -16,29 +16,34 @@ def compile_application(app: CompletedApp) -> Application:
     """
     Packages the app for delivery
     """
-    compiled_routes = {}
-    packages = []
-    for db_compiled_route in app.compiledRoutes:
-        for function in db_compiled_route.functions:
-            for pack in function.packages:
-                packages.append(
-                    Package(
-                        package_name=pack.packageName,
-                        version=pack.version,
-                        specifier=pack.specifier,
-                    )
-                )
-        compiled_routes[db_compiled_route.aoiRouteSpec.path] = compile_route(
-            db_compiled_route
-        )
+    try:
+        compiled_routes = {}
+        packages = []
+        for db_compiled_route in app.compiledRoutes:
+            for function in db_compiled_route.functions:
+                if function.packages:
+                    for pack in function.packages:
+                        packages.append(
+                            Package(
+                                package_name=pack.packageName,
+                                version=pack.version,
+                                specifier=pack.specifier,
+                            )
+                        )
+            compiled_routes[db_compiled_route.apiRouteSpec.path] = compile_route(
+                db_compiled_route
+            )
 
-    app = Application(
-        name=app.name,
-        description=app.description,
-        server_code="",
-        routes=compiled_routes,
-        packages=packages,
-    )
+        app = Application(
+            name=app.name,
+            description=app.description,
+            server_code="",
+            routes=compiled_routes,
+            packages=packages,
+        )
+    except Exception as e:
+        logger.exception("Error compiling application")
+        raise e
 
     return create_server_code(app)
 
@@ -104,7 +109,8 @@ def compile_route(compiled_route: CompiledRouteDBModel) -> CompiledRoute:
         import_code, rest_of_code = extract_imports(function.code)
         imports.append(import_code)
         rest_of_code_sections.append(rest_of_code)
-        packages.extend(function.packages)
+        if function.packages:
+            packages.extend(function.packages)
 
     import_code, main_function = extract_imports(compiled_route.codeGraph.code_graph)
     req_param_str, param_names_str = extract_request_params(
@@ -124,11 +130,11 @@ def compile_route(compiled_route: CompiledRouteDBModel) -> CompiledRoute:
 
     return CompiledRoute(
         service_code=formatted_code,
-        service_file_name=compile_route.codeGraph.function_name.strip().replace(
+        service_file_name=compiled_route.codeGraph.function_name.strip().replace(
             " ", "_"
         )
         + "_service.py",
-        main_function_name=compile_route.codeGraph.function_name,
+        main_function_name=compiled_route.codeGraph.function_name,
         request_param_str=req_param_str,
         param_names_str=param_names_str,
         packages=packages,
