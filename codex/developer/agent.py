@@ -50,6 +50,7 @@ async def write_code_graphs(
                 "code": cg.code_graph,
                 "description": cg.routeSpec.description,
                 "functions": {"connect": [{"id": f.id for f in writen_functions}]},
+                "apiRouteSpec": {"connect": {"id": code_graph.routeSpecId}},
             }
         )
 

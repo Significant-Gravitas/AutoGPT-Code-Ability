@@ -95,6 +95,7 @@ model APIRouteSpec {
   responseObject   ResponseObject? @relation(fields: [responseObjectId], references: [id])
   responseObjectId Int?
   CodeGraph        CodeGraph[]
+  CompiledRoute    CompiledRoute[]
 }
 
 model ResponseObject {
@@ -170,8 +171,8 @@ model CodeGraph {
   compiledRoute    CompiledRoute?
   databaseSchemaId Int? // Foreign key for one-to-many relationship
   databaseSchema   DatabaseSchema?      @relation(fields: [databaseSchemaId], references: [id])
-  routeSpec        APIRouteSpec?        @relation(fields: [routeSpecId], references: [id])
-  routeSpecId      Int?
+  routeSpec        APIRouteSpec         @relation(fields: [routeSpecId], references: [id])
+  routeSpecId      Int
 }
 
 // FunctionDefinition defines a function, including its input and return types.
@@ -226,15 +227,17 @@ model Package {
 // CompiledRoute represents a version of a route that has been processed or compiled.
 // It links to its source code graph and associated functions and applications.
 model CompiledRoute {
-  id           Int                          @id @default(autoincrement())
-  createdAt    DateTime                     @default(now())
-  embedding    Unsupported("vector(1536)")?
-  description  String
-  code         String
-  codeGraphId  Int?                         @unique
-  codeGraph    CodeGraph?                   @relation(fields: [codeGraphId], references: [id])
-  functions    Functions[]
-  completedApp CompletedApp[]
+  id             Int                          @id @default(autoincrement())
+  createdAt      DateTime                     @default(now())
+  embedding      Unsupported("vector(1536)")?
+  description    String
+  code           String
+  codeGraphId    Int                       @unique
+  codeGraph      CodeGraph                   @relation(fields: [codeGraphId], references: [id])
+  apiRouteSpec   APIRouteSpec                 @relation(fields: [apiRouteSpecId], references: [id])
+  apiRouteSpecId Int
+  functions      Functions[]
+  completedApp   CompletedApp[]
 }
 
 // Application represents the main software application entity.

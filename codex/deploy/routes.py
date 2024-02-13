@@ -3,10 +3,13 @@ import logging
 
 from fastapi import APIRouter, Query, Response
 from fastapi.responses import FileResponse
+from prisma.models import CompletedApp
 
 import codex.database
+import codex.deploy.agent as deploy_agent
 import codex.deploy.database
-from codex.api_model import DeploymentResponse, DeploymentsListResponse, Indentifiers
+import codex.deply.packager as packager
+from codex.api_model import DeploymentResponse, DeploymentsListResponse
 
 logger = logging.getLogger(__name__)
 
@@ -28,21 +31,31 @@ async def create_deployment(
     """
     Create a new deployment with the provided zip file.
     """
-    ids = Indentifiers(
-        user_id=user_id,
-        app_id=app_id,
-        spec_id=spec_id,
-        completed_app_id=deliverable_id,
-    )
-    
-    # File upload handling and metadata storage implementation goes here
-    return Response(
-        content=json.dumps(
-            {"error": "Creating a new deployment is not yet implemented."}
-        ),
-        status_code=500,
-        media_type="application/json",
-    )
+    try:
+        completedApp = await CompletedApp.prisma().find_unique(
+            where={"id": deliverable_id},
+            include={
+                "compiledRoutes": {
+                    "include": {
+                        "functions": True,
+                        "aoiRouteSpec": True,
+                        "CodeGraph": True,
+                    }
+                }
+            },
+        )
+        app = deploy_agent.compile_application(completedApp)
+        zip_file = packager.create_zip_file(app)
+        return FileResponse(path=zip_file, filename="app.zip")
+    except Exception as e:
+        # File upload handling and metadata storage implementation goes here
+        return Response(
+            content=json.dumps(
+                {"error": "Error creating deployment", "details": str(e)}
+            ),
+            status_code=500,
+            media_type="application/json",
+        )
 
 
 @deployment_router.get(
