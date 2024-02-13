@@ -1,8 +1,15 @@
+from asyncio import run
 import logging
 
+import openai
+import prisma
+from prisma.enums import AccessLevel
+
 from codex.api_model import Indentifiers
-from codex.requirements.ai_clarify import ClarifyBlock
+from codex.requirements import flatten_endpoints
+from codex.requirements.complete import complete_and_parse, complete_anth
 from codex.requirements.database import create_spec
+from codex.requirements.gather_task_info import gather_task_info_loop
 from codex.requirements.hardcoded import (
     appointment_optimization_requirements,
     availability_checker_requirements,
@@ -10,12 +17,51 @@ from codex.requirements.hardcoded import (
     invoice_generator_requirements,
     profile_management,
 )
-from codex.requirements.model import ApplicationRequirements
+from codex.requirements.matching import find_best_match
+from codex.requirements.model import (
+    APIRouteRequirement,
+    ApplicationRequirements,
+    Clarfication,
+    DBResponse,
+    Endpoint,
+    EndpointSchemaRefinementResponse,
+    Feature,
+    FeaturesSuperObject,
+    ModuleRefinement,
+    ModuleResponse,
+    QandA,
+    QandAResponses,
+    RequestModel,
+    RequirementsGenResponse,
+    RequirementsResponse,
+    ResponseModel,
+    StateObj,
+)
+
+from codex.prompts.claude.requirements.ClarificationsIntoProduct import *
+from codex.prompts.claude.requirements.ProductIntoRequirement import *
+from codex.prompts.claude.requirements.RequirementIntoModule import *
+from codex.prompts.claude.requirements.TaskIntoClarifcations import *
+from codex.prompts.claude.requirements.ModuleRefinement import *
+from codex.prompts.claude.requirements.ModuleIntoDatabase import *
+from codex.prompts.claude.requirements.EndpointGeneration import *
+from codex.prompts.claude.requirements.AskFunction import *
+from codex.prompts.claude.requirements.QAFormat import *
+from codex.prompts.claude.requirements.SearchFunction import *
+from codex.requirements.build_requirements_refinement_object import (
+    convert_requirements,
+    RequirementsRefined,
+)
+from codex.requirements.parser import parse
+from codex.requirements.unwrap_schemas import (
+    convert_endpoint,
+    unwrap_db_schema,
+)
 
 logger = logging.getLogger(__name__)
 
 
-def generate_requirements(
+async def generate_requirements(
     ids: Indentifiers,
     app_name: str,
     description: str,
@@ -33,23 +79,291 @@ def generate_requirements(
         ApplicationRequirements: The system requirements for the application
     """
 
-    # Step 1) Clarification Questions
-    clarify = ClarifyBlock()
-    qna = clarify.invoke(
-        ids=ids,
-        invoke_params={
-            "task_description": description,
-        },
+    running_state_obj = StateObj(task=description)
+
+    # User Interview
+    full, completion = gather_task_info_loop(running_state_obj.task)
+    running_state_obj.project_description = completion.split("finished: ")[
+        -1
+    ].strip()
+    running_state_obj.project_description_thoughts = full
+
+    print(running_state_obj.project_description_thoughts)
+
+    # Clarify Questions
+    while True:
+        try:
+            reply = complete_anth(
+                MORE_INFO_BASE_CLARIFICATIONS_FRONTEND.format(
+                    project_description=running_state_obj.project_description
+                ),
+            )
+            reply = parse(reply)
+            clarified = Clarfication(
+                question=FRONTEND_QUESTION,
+                answer=str(reply.get("answer")),
+                thoughts=str(reply.get("think")),
+            )
+
+            running_state_obj.add_clarifying_question(clarified)
+            break
+        except Exception as e:
+            print(f"Oops an error occured getting frontend clarification: {e}")
+            pass
+
+    print("Clarifications Done")
+
+    # User Persona
+    while True:
+        try:
+            reply = complete_anth(
+                MORE_INFO_BASE_CLARIFICATIONS_USER_PERSONA.format(
+                    clarifiying_questions_so_far=running_state_obj.clarifying_questions_as_string(),
+                    project_description=running_state_obj.project_description,
+                ),
+            )
+            reply = parse(reply)
+            clarified = Clarfication(
+                question=USER_PERSONA_QUESTION,
+                answer=str(reply.get("answer")),
+                thoughts=str(reply.get("think")),
+            )
+            running_state_obj.add_clarifying_question(clarified)
+            break
+        except Exception as e:
+            print(f"Oops an error occured building user persona: {e}")
+            pass
+
+    print("User Persona Done")
+
+    # User Skill
+    while True:
+        try:
+            reply = complete_anth(
+                MORE_INFO_BASE_CLARIFICATIONS_USER_SKILL.format(
+                    clarifiying_questions_so_far=running_state_obj.clarifying_questions_as_string(),
+                    project_description=running_state_obj.project_description,
+                ),
+            )
+            reply = parse(reply)
+            clarified = Clarfication(
+                question=USER_SKILL_LEVEL_QUESTION,
+                answer=str(reply.get("answer")),
+                thoughts=str(reply.get("think")),
+            )
+
+            running_state_obj.add_clarifying_question(clarified)
+            break
+        except Exception as e:
+            print(f"Oops an error occured while calculating user skill: {e}")
+            pass
+
+    print("User Skill Done")
+
+    # Clarification Rounds
+    q_and_a_response: QandAResponses = complete_and_parse(
+        prompt=MORE_INFO_EXPANDED_CLARIFICATIONS.format(
+            clarifiying_questions_as_string=running_state_obj.clarifying_questions_as_string(),
+            project_description=running_state_obj.project_description,
+            task=running_state_obj.task,
+        ),
+        return_model=QandAResponses,
     )
-    print(f"Thoughts: {qna.thoughts}")
 
-    # This where the steps I was thinking we could use
+    q_and_a: list[QandA] = []
+    for wrapped in q_and_a_response.answer:
+        converted_q_and_a = wrapped.wrapper
+        q_and_a.append(converted_q_and_a)
 
-    # Step 2) Generate for the system Requirements
+    running_state_obj.q_and_a = q_and_a
 
-    # Step 3) Define the database schema
+    print("Q_AND_A Done")
 
-    # Step 4) Define the api endpoints
+    # Product Name and Description
+    model = complete_and_parse(
+        CLARIFICATIONS_INTO_NAME_AND_DESC.format(
+            joint_q_and_a=running_state_obj.joint_q_and_a(),
+            project_description=running_state_obj.project_description,
+            project_description_thoughts=running_state_obj.project_description_thoughts.split(
+                "Assistant", 1
+            )[
+                1
+            ],
+        ),
+        return_model=FeaturesSuperObject,
+    )
+
+    # Parsing
+    running_state_obj.product_name = model.project_name
+    running_state_obj.product_description = model.description
+    features: list[Feature] = []
+
+    for feature in model.features:
+        features.append(feature.feature)
+
+    running_state_obj.features = features
+
+    print("Features Done")
+
+    # Requirements Start
+    # Collect the requirements Q&A
+    requirement_response: RequirementsResponse = complete_and_parse(
+        prompt=FEATURE_BASELINE_CHECKS.format(
+            joint_q_and_a=running_state_obj.joint_q_and_a(),
+            product_description=running_state_obj.product_description,
+            FEATURE_BASELINE_QUESTIONS=FEATURE_BASELINE_QUESTIONS,
+            features=str(
+                [feature.dict() for feature in running_state_obj.features]
+            ),
+        ),
+        return_model=RequirementsResponse,
+    )
+    running_state_obj.requirements_q_and_a = [
+        requirement.wrapper for requirement in requirement_response.answer
+    ]
+
+    # Requirements conversion
+    refined_requirements = convert_requirements(
+        running_state_obj.requirements_q_and_a
+    )
+    running_state_obj.refined_requirement_q_a = refined_requirements
+
+    print("Refined Requirements Done")
+
+    # Requirements QA answers
+    # Build the requirements from the Q&A
+    requirement_gen_response: RequirementsGenResponse = complete_and_parse(
+        prompt=REQUIREMENTS.format(
+            joint_q_and_a=running_state_obj.joint_q_and_a(),
+            product_description=running_state_obj.product_description,
+            FEATURE_BASELINE_QUESTIONS=FEATURE_BASELINE_QUESTIONS,
+            features=str(
+                [feature.dict() for feature in running_state_obj.features]
+            ),
+            requirements_q_and_a_string=running_state_obj.requirements_q_and_a_string(),
+        ),
+        return_model=RequirementsGenResponse,
+    )
+    print(requirement_gen_response)
+    running_state_obj.requirements = requirement_gen_response.answer
+
+    print("Requirements Done")
+
+    # Modules seperation
+    # Build the requirements from the Q&A
+    module_response: ModuleResponse = complete_and_parse(
+        prompt=REQUIREMENTS_INTO_MODULES.format(
+            NEST_JS_FIRST_STEPS=NEST_JS_FIRST_STEPS,
+            NEST_JS_MODULES=NEST_JS_MODULES,
+            NEST_JS_SQL=NEST_JS_SQL,
+            NEST_JS_CRUD_GEN=NEST_JS_CRUD_GEN,
+            product_description=running_state_obj.product_description,
+            requirements_q_and_a_string=running_state_obj.requirements_q_and_a_string(),
+            requirements=str(running_state_obj.requirements),
+            joint_q_and_a=running_state_obj.joint_q_and_a(),
+            features=str(
+                [feature.dict() for feature in running_state_obj.features]
+            ),
+        ),
+        return_model=ModuleResponse,
+    )
+    running_state_obj.modules = [x.module for x in module_response.answer]
+
+    print("Modules 1st Step Done")
+
+    # Database Design
+    running_state_obj.database = None
+    db_response: DBResponse = complete_and_parse(
+        MODULE_INTO_INTO_DATABASE.format(
+            product_spec=running_state_obj.__str__(),
+            needed_auth_roles=running_state_obj.refined_requirement_q_a.authorization_roles,
+            modules={
+                ", ".join(module.name for module in running_state_obj.modules)
+            },
+        ),
+        return_model=DBResponse,
+    )
+    running_state_obj.database = unwrap_db_schema(db_response.database_schema)
+
+    print("DB Done")
+
+    # Module Refinement
+    # Build the requirements from the Q&A
+    refined_data: ModuleRefinement = complete_and_parse(
+        prompt=MODULE_REFINEMENTS.format(
+            system_requirements=f"{running_state_obj.__str__()}", id=f"{id}"
+        ),
+        return_model=ModuleRefinement,
+    )
+
+    print("Refined Modules Generated Done")
+
+    # Match modules to completions
+    for module in refined_data.modules:
+        module = module.module
+        # Extract module names from running_state_obj.modules for comparison
+        existing_module_names = [
+            existing.name for existing in running_state_obj.modules
+        ]
+        # Find the best match for module.module_name in existing_module_names
+        match = find_best_match(
+            module.module_name, existing_module_names, threshold=80
+        )
+
+        if match:
+            best_match, similarity = match[0], match[1]
+            # If a good match is found, proceed to update the module details
+            for index, existing in enumerate(running_state_obj.modules):
+                if existing.name == best_match:
+                    print(existing.name)
+                    running_state_obj.modules[
+                        index
+                    ].description = module.new_description
+                    endpoints = flatten_endpoints.flatten_endpoints(
+                        module.endpoints
+                    )
+                    running_state_obj.modules[index].endpoints = endpoints
+                    requirements = [
+                        requirement.requirement
+                        for requirement in module.module_requirements_list
+                    ]
+                    running_state_obj.modules[
+                        index
+                    ].requirements = requirements
+        else:
+            print(f"No close match found for {module.module_name}")
+
+    print("Refined Modules Done")
+
+    # DB Schemas
+    reply = ""
+    db_table_names: list[str] = [
+        table.name or "" for table in running_state_obj.database.tables
+    ]
+    for i, module in enumerate(running_state_obj.modules):
+        if module.endpoints:
+            for j, endpoint in enumerate(module.endpoints):
+                reply = complete_and_parse(
+                    ENDPOINT_PARAMS_GEN.format(
+                        endpoint_and_module_repr=f"{endpoint!r} {module!r}",
+                        spec=running_state_obj.__str__(),
+                        id="{id}",
+                        db_models=f"[{','.join(db_table_names)}]",
+                    ),
+                    return_model=EndpointSchemaRefinementResponse,
+                )
+                # parsed = parse_into_model(reply, EndpointSchemaRefinementResponse)
+                # display(Pretty(parsed.__str__()))
+                converted: Endpoint = convert_endpoint(
+                    input=reply,
+                    existing=endpoint,
+                    database=running_state_obj.database,
+                )
+                running_state_obj.modules[i].endpoints[j] = converted
+
+    print("Endpoints Done")
+
+    # Add support and tracking for models by module and add them to the prompt
 
     # Step 5) Define the request and response models
 
@@ -59,7 +373,39 @@ def generate_requirements(
 
     # Step 7) Compile the application requirements
 
-    full_spec = availability_checker_requirements()
+    api_routes: list[APIRouteRequirement] = []
+    for module in running_state_obj.modules:
+        if module.endpoints:
+            for route in module.endpoints:
+                print(route)
+                api_routes.append(
+                    APIRouteRequirement(
+                        method=route.type,
+                        path=route.path,
+                        description=route.description,
+                        request_model=route.request_model
+                        or RequestModel(
+                            name="None Provided",
+                            description="None Proviced",
+                            params=[],
+                        ),
+                        response_model=route.response_model
+                        or ResponseModel(
+                            name="None Provided",
+                            description="None Proviced",
+                            params=[],
+                        ),
+                        database_schema=route.database_schema,
+                        access_level=AccessLevel.PUBLIC,
+                        data_models=route.data_models,
+                    )
+                )
+
+    full_spec = ApplicationRequirements(
+        name=running_state_obj.product_name,
+        context=running_state_obj.__str__(),
+        api_routes=api_routes,
+    )
     # saved_spec = await create_spec(ids, full_spec, db)
 
     # Step 8) Return the application requirements
@@ -116,3 +462,29 @@ async def populate_database_specs():
         spec = hardcoded_requirements(task)
         ids.app_id = app_id
         await create_spec(ids, spec)
+
+
+if __name__ == "__main__":
+    ids = Indentifiers(user_id=1, app_id=1)
+    db_client = prisma.Prisma(auto_register=True)
+    oai = openai.OpenAI(
+        api_key="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"
+    )
+
+    task = """The Tutor App is an app designed for tutors to manage their clients, schedules, and invoices. 
+
+It must support both the client and tutor scheduling, rescheduling and canceling appointments, and sending invoices after the appointment has passed.
+
+Clients can sign up with OAuth2 or with traditional sign-in authentication. If they sign up with traditional authentication, it must be safe and secure. There will need to be password reset and login capabilities. 
+
+There will need to be authorization for identifying clients vs the tutor.
+
+Additionally, it will have proper management of financials, including invoice management and payment tracking. This includes things like paid/failed invoice notifications, unpaid invoice follow-up, summarizing d/w/m/y income, and generating reports."""
+
+    async def run_gen():
+        output = await generate_requirements(
+            ids=ids, app_name="Tutor", description=task, oai=oai, db=db_client
+        )
+        return output
+
+    run(run_gen())
