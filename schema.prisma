@@ -251,8 +251,6 @@ model CompletedApp {
   compiledRoutes CompiledRoute[]
   spec           Specification?  @relation(fields: [specId], references: [id])
   specId         Int?
-  User           CodexUser?           @relation(fields: [userId], references: [id])
-  userId         Int?
   Deployment     Deployment[]
 }
 
