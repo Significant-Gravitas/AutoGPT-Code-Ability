@@ -323,9 +323,9 @@ class AIBlock:
             logger.error(f"Error invoking AIBlock: {unkown_error}")
             raise LLMFailure(f"Error invoking AIBlock: {unkown_error}")
 
-        await self.create_item(ids, validated_response)
+        stored_obj = await self.create_item(ids, validated_response)
 
-        return validated_response.response
+        return stored_obj if stored_obj else validated_response.response
 
     async def create_item(
         self, ids: Indentifiers, validated_response: ValidatedResponse
