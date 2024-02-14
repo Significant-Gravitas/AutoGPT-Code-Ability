@@ -24,9 +24,6 @@ jobs:
     - name: Run isort
       run: isort .
 
-    - name: Run ruff with auto-fix
-      run: ruff --fix .
-
     - name: Run ruff formatter
       run: ruff format .
       
