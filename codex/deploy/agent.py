@@ -99,7 +99,7 @@ def create_server_code(application: Application) -> Application:
         server_code_imports.append(service_import)
 
         # Write the api endpoint
-        # TODO: pass the request method
+        # TODO: pass the request method from the APIRouteSpec
         route_code = f"""@app.post("{route_path}")
 async def {compiled_route.main_function_name}_route({compiled_route.request_param_str}):
     try:
