@@ -13,6 +13,7 @@ from codex.requirements.ai_clarify import (
     UserPersonaClarificationBlock,
     UserSkillClarificationBlock,
 )
+from codex.requirements.ai_feature import FeatureGenerationBlock
 from codex.requirements.complete import complete_and_parse, complete_anth
 from codex.requirements.database import create_spec
 from codex.requirements.gather_task_info import gather_task_info_loop
@@ -154,25 +155,22 @@ async def generate_requirements(
     print("Question and Answer Based Clarification Done")
 
     # Product Name and Description
-    model = complete_and_parse(
-        CLARIFICATIONS_INTO_NAME_AND_DESC.format(
-            joint_q_and_a=running_state_obj.joint_q_and_a(),
-            project_description=running_state_obj.project_description,
-            project_description_thoughts=running_state_obj.project_description_thoughts.split(
-                "Assistant", 1
-            )[
-                1
-            ],
-        ),
-        return_model=FeaturesSuperObject,
+    feature_block = FeatureGenerationBlock()
+    feature_so: FeaturesSuperObject = await feature_block.invoke(
+        ids=ids,
+        invoke_params={
+            "project_description": running_state_obj.project_description,
+            "project_description_thoughts": running_state_obj.project_description_thoughts,
+            "joint_q_and_a": running_state_obj.joint_q_and_a(),
+        },
     )
 
     # Parsing
-    running_state_obj.product_name = model.project_name
-    running_state_obj.product_description = model.description
+    running_state_obj.product_name = feature_so.project_name
+    running_state_obj.product_description = feature_so.description
     features: list[Feature] = []
 
-    for feature in model.features:
+    for feature in feature_so.features:
         features.append(feature.feature)
 
     running_state_obj.features = features
