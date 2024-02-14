@@ -84,7 +84,7 @@ Thoughts on things that shouldn't be modules
 </think_anti>
 <answer> <module> <name> name of the module </name> <description> a description of the module </description> <command> command to generate the module in the following format `nest g module cats` </command> </module> ... repeat for other modules </answer> <concluding_think> thoughts </concluding_think>
 
-Assistant: 
+Assistant:
 
 """
 # becomes modules

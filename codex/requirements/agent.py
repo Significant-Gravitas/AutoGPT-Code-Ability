@@ -421,11 +421,11 @@ if __name__ == "__main__":
 
     oai = openai.OpenAI()
 
-    task = """The Tutor App is an app designed for tutors to manage their clients, schedules, and invoices. 
+    task = """The Tutor App is an app designed for tutors to manage their clients, schedules, and invoices.
 
 It must support both the client and tutor scheduling, rescheduling and canceling appointments, and sending invoices after the appointment has passed.
 
-Clients can sign up with OAuth2 or with traditional sign-in authentication. If they sign up with traditional authentication, it must be safe and secure. There will need to be password reset and login capabilities. 
+Clients can sign up with OAuth2 or with traditional sign-in authentication. If they sign up with traditional authentication, it must be safe and secure. There will need to be password reset and login capabilities.
 
 There will need to be authorization for identifying clients vs the tutor.
 

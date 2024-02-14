@@ -28,7 +28,7 @@ you will reply in the following format, making sure all fields are fully filled 
                 </endpoint>
                 ... repeat for all related endpoints in a group ie /user GET PUT
             </endoint_group>
-            ... repeat endpoints and groups until ALL requirements are satisfied 
+            ... repeat endpoints and groups until ALL requirements are satisfied
         </endpoints>
     </module>
     ... repeat for each module

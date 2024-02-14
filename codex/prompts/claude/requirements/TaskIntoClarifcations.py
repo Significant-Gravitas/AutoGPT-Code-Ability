@@ -14,7 +14,7 @@ Only reply with one message at a time so that the user isn't overwhelmed.
 
 Only reply with the specified tags.
 
-Assistant: 
+Assistant:
 """
 
 FRONTEND_QUESTION = "Do we need a front end?"
@@ -22,7 +22,7 @@ FRONTEND_QUESTION = "Do we need a front end?"
 MORE_INFO_BASE_CLARIFICATIONS_FRONTEND = """
 Human: You are an expert product manager who works to help us ensure our projects are reasonable. You should carefully think about it step by step, and share those answers in a block set off by <think>thoughts here</think>. You should answer with only a yes or no. Set the answer off by <answer>Yes/No</answer>
 
-Do we need a front end for this: 
+Do we need a front end for this:
 "{project_description}"
 
 Assistant: <think>
@@ -41,7 +41,7 @@ You already have considerations such as the following:
 
 Assistant: Okay, ask away.
 
-Human: You are an expert product manager who works to help us ensure our projects are reasonable. You should carefully think about it step by step, and share those answers in a block set off by <think>thoughts here</think>. You should answer with only an expected user persona or personas. Set the answer off by <answer>reply here</answer>. 
+Human: You are an expert product manager who works to help us ensure our projects are reasonable. You should carefully think about it step by step, and share those answers in a block set off by <think>thoughts here</think>. You should answer with only an expected user persona or personas. Set the answer off by <answer>reply here</answer>.
 
 Who is the expected user of this: "{project_description}"
 
@@ -57,9 +57,9 @@ You already have considerations such as the following:
 
 Assistant: Okay, ask away.
 
-Human: You are an expert product manager who works to help us ensure our projects are reasonable. You should carefully think about it step by step, and share those answers in a block set off by  <think>thoughts here</think>. You should answer with only an expected skill level of the user persona or personas. Set the answer off by <answer>reply here</answer>. 
+Human: You are an expert product manager who works to help us ensure our projects are reasonable. You should carefully think about it step by step, and share those answers in a block set off by  <think>thoughts here</think>. You should answer with only an expected skill level of the user persona or personas. Set the answer off by <answer>reply here</answer>.
 
-What is the skill level of the expected user of this: 
+What is the skill level of the expected user of this:
 "{project_description}"
 
 Assistant: <think>
@@ -72,12 +72,12 @@ You already have considerations such as the following:
 
 Assistant: Okay, ask away.
 
-Human: 
+Human:
 Answer as an expert product owner.
 For the following project description, ask a series of at least 10 questions that will clarify what is being requested.
 Think carefully, ensuring questions do not overlap, and all ambiguities are covered. Then, generate your best guess at the answer, basing it on your knowledge and best practices. You should carefully think about it step by step and share those thoughts in a block set off by  <think>thoughts here</think>. For each reply, you should set the answer off by <answer>reply here</answer>. Pick questions that directly affect the direction of the product rather than marketing, budgets, or timeframes, stakeholders etc as those are already answered in the Q&A.
 
-An example of that would be 
+An example of that would be
 <think>your thoughts on the overall process, thinking step by step</think>
 <answer>
 <wrapper>

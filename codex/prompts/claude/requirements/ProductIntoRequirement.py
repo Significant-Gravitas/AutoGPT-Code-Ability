@@ -14,7 +14,7 @@ FEATURE_BASELINE_QUESTIONS = """
 > Is monetization implemented through authorization? [Yes, No, N/A]
 > Do we need Authentication?  [Yes, No]
 > Do we need authorization? [Yes, No, N/A]
-> What authorization roles do we need? For this question, answer an array of One Word Roles such as [UserType1, UserType2, UserType3, N/A]. 
+> What authorization roles do we need? For this question, answer an array of One Word Roles such as [UserType1, UserType2, UserType3, N/A].
 """
 
 FEATURE_BASELINE_CHECKS = """
@@ -31,12 +31,12 @@ You already have considerations such as the following:
 Assistant: Okay, ask away.
 
 Human: You are an expert product manager who works to help us ensure our MVPs are reasonable.
-You should carefully think about it step by step, and share those answers in a block set off by <think>thoughts here</think>. 
-Each question will be in the following form: >Question? [ValidAnswer1, ValidAnswer2, ...]. 
-You should answer with only one of the valid options next to each question. 
+You should carefully think about it step by step, and share those answers in a block set off by <think>thoughts here</think>.
+Each question will be in the following form: >Question? [ValidAnswer1, ValidAnswer2, ...].
+You should answer with only one of the valid options next to each question.
 Set the answer off by
 <answer>
-<wrapper> 
+<wrapper>
 <question>question</question>
 <think>thoughts on this question. Don't answer the question here, just put the raw thoughts</think>
 <answer>valid answer</answer>

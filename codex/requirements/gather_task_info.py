@@ -17,7 +17,7 @@ def gather_task_info_loop(
         print(x)
         response = complete_anth(running_message)
         print(response)
-        if not "finished:" in response.strip():
+        if "finished:" not in response.strip():
             next_message = choose_tool(raw_prompt=response, ask_callback=ask_callback)
             print(next_message)
             running_message += response + HUMAN_PROMPT + next_message + AI_PROMPT

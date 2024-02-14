@@ -77,7 +77,7 @@ closing thoughts on the matter
 
 
 Example for `GET /user_id_by_discord_id/{id}`:
-<think>I'll need to leverage the context provided to ensure the UserDTO object makes sense. I'll also provide any models needed for my return types if they aren't based on the db model from prisma</think> 
+<think>I'll need to leverage the context provided to ensure the UserDTO object makes sense. I'll also provide any models needed for my return types if they aren't based on the db model from prisma</think>
 <db_models_needed>
   [User]
 </db_models_needed>
