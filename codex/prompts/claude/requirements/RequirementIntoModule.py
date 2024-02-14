@@ -1,10 +1,9 @@
 from codex.prompts.claude.requirements.NestJSDocs import (
     NEST_JS_CRUD_GEN,
+    NEST_JS_FIRST_STEPS,
     NEST_JS_MODULES,
     NEST_JS_SQL,
-    NEST_JS_FIRST_STEPS,
 )
-
 
 # This is a two part prompt!!!
 REQUIREMENTS_INTO_MODULES = """

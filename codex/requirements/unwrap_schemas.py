@@ -1,8 +1,8 @@
 from codex.requirements.model import (
-    DBSchemaResponseWrapper,
-    DBSchemaTableResponseWrapper,
     DatabaseSchema,
     DatabaseTable,
+    DBSchemaResponseWrapper,
+    DBSchemaTableResponseWrapper,
     Endpoint,
     EndpointDataModel,
     EndpointSchemaRefinementResponse,

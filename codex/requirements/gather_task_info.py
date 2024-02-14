@@ -1,9 +1,9 @@
 # Task Breakdown Micro Agent
 from typing import Callable, Optional
+
 from anthropic import AI_PROMPT, HUMAN_PROMPT
-from codex.prompts.claude.requirements.TaskIntoClarifcations import (
-    TASK_INTO_MORE_INFO,
-)
+
+from codex.prompts.claude.requirements.TaskIntoClarifcations import TASK_INTO_MORE_INFO
 from codex.requirements.choose_tool import choose_tool
 from codex.requirements.complete import complete_anth
 

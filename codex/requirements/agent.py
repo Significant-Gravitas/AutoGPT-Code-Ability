@@ -1,11 +1,21 @@
-from asyncio import run
 import logging
+from asyncio import run
 
 import openai
 import prisma
 from prisma.enums import AccessLevel
 
 from codex.common.ai_block import Indentifiers
+from codex.prompts.claude.requirements.AskFunction import *
+from codex.prompts.claude.requirements.ClarificationsIntoProduct import *
+from codex.prompts.claude.requirements.EndpointGeneration import *
+from codex.prompts.claude.requirements.ModuleIntoDatabase import *
+from codex.prompts.claude.requirements.ModuleRefinement import *
+from codex.prompts.claude.requirements.ProductIntoRequirement import *
+from codex.prompts.claude.requirements.QAFormat import *
+from codex.prompts.claude.requirements.RequirementIntoModule import *
+from codex.prompts.claude.requirements.SearchFunction import *
+from codex.prompts.claude.requirements.TaskIntoClarifcations import *
 from codex.requirements import flatten_endpoints
 from codex.requirements.ai_clarify import (
     FrontendClarificationBlock,
@@ -14,6 +24,10 @@ from codex.requirements.ai_clarify import (
     UserSkillClarificationBlock,
 )
 from codex.requirements.ai_feature import FeatureGenerationBlock
+from codex.requirements.build_requirements_refinement_object import (
+    RequirementsRefined,
+    convert_requirements,
+)
 from codex.requirements.complete import complete_and_parse, complete_anth
 from codex.requirements.database import create_spec
 from codex.requirements.gather_task_info import gather_task_info_loop
@@ -44,26 +58,8 @@ from codex.requirements.model import (
     ResponseModel,
     StateObj,
 )
-
-from codex.prompts.claude.requirements.ClarificationsIntoProduct import *
-from codex.prompts.claude.requirements.ProductIntoRequirement import *
-from codex.prompts.claude.requirements.RequirementIntoModule import *
-from codex.prompts.claude.requirements.TaskIntoClarifcations import *
-from codex.prompts.claude.requirements.ModuleRefinement import *
-from codex.prompts.claude.requirements.ModuleIntoDatabase import *
-from codex.prompts.claude.requirements.EndpointGeneration import *
-from codex.prompts.claude.requirements.AskFunction import *
-from codex.prompts.claude.requirements.QAFormat import *
-from codex.prompts.claude.requirements.SearchFunction import *
-from codex.requirements.build_requirements_refinement_object import (
-    convert_requirements,
-    RequirementsRefined,
-)
 from codex.requirements.parser import parse
-from codex.requirements.unwrap_schemas import (
-    convert_endpoint,
-    unwrap_db_schema,
-)
+from codex.requirements.unwrap_schemas import convert_endpoint, unwrap_db_schema
 
 logger = logging.getLogger(__name__)
 

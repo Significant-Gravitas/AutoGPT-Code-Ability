@@ -3,8 +3,12 @@ from typing import List, Type
 
 from pydantic import BaseModel
 
-from codex.common.ai_block import Indentifiers
-from codex.common.ai_block import AIBlock, ValidatedResponse, ValidationError
+from codex.common.ai_block import (
+    AIBlock,
+    Indentifiers,
+    ValidatedResponse,
+    ValidationError,
+)
 from codex.requirements.model import (
     Clarification,
     FeaturesSuperObject,

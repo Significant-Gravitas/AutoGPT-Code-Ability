@@ -1,11 +1,6 @@
-from fuzzywuzzy import fuzz
-from fuzzywuzzy import process
+from fuzzywuzzy import fuzz, process
 
-from codex.requirements.model import (
-    Endpoint,
-    EndpointGroupWrapper,
-    EndpointWrapper,
-)
+from codex.requirements.model import Endpoint, EndpointGroupWrapper, EndpointWrapper
 
 
 def flatten_endpoints(
