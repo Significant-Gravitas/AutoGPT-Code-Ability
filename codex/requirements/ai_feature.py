@@ -113,9 +113,7 @@ if __name__ == "__main__":
                 print(f"\t\tDescription: {f.description}")
                 print(f"\t\tConsiderations: {f.considerations}")
                 print(f"\t\tRisks: {f.risks}")
-                print(
-                    f"\t\tNeeded external tools: {f.needed_external_tools}"
-                )
+                print(f"\t\tNeeded external tools: {f.needed_external_tools}")
                 print(f"\t\tPriority: {f.priority}")
 
         else:

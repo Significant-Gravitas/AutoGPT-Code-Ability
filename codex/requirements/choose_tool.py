@@ -21,9 +21,7 @@ def choose_tool(
                     )
             else:
                 print("Generating Response for Ask")
-                return choose_tool(
-                    f"search: {raw_prompt}", ask_callback=ask_callback
-                )
+                return choose_tool(f"search: {raw_prompt}", ask_callback=ask_callback)
         case s if s.startswith("finished"):
             return "finished"
         case _:

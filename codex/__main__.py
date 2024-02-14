@@ -32,7 +32,7 @@ def populate_db(database):
 
     async def popdb():
         await db.connect()
-        await create_test_data()
+        # await create_test_data()
         await populate_database_specs()
         await db.disconnect()
 

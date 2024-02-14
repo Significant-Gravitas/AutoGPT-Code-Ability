@@ -16,7 +16,7 @@ async def create_test_data():
     await CodexUser.prisma().create_many(
         [
             {
-                "discord_id": "123456789",
+                "discord_id": "123456788",
                 "email": "joe.blogs@example.com",
                 "name": "Joe Blogs",
                 "role": "ADMIN",
@@ -24,7 +24,7 @@ async def create_test_data():
                 "deleted": False,
             },
             {
-                "discord_id": "234567890",
+                "discord_id": "234567891",
                 "email": "jane.doe@example.com",
                 "name": "Jane Doe",
                 "role": "USER",
