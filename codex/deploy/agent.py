@@ -1,15 +1,40 @@
 import ast
+import base64
 import logging
 
 import black
 import isort
 from prisma.models import CompiledRoute as CompiledRouteDBModel
-from prisma.models import CompletedApp
+from prisma.models import CompletedApp, Deployment
 
+from codex.api_model import Indentifiers
 from codex.deploy.model import Application, CompiledRoute
+from codex.deploy.packager import create_zip_file
 from codex.developer.model import Package
 
 logger = logging.getLogger(__name__)
+
+
+async def create_deployment(
+    ids: Indentifiers, completedApp: CompletedApp
+) -> Deployment:
+    app = compile_application(completedApp)
+    zip_file = create_zip_file(app)
+    file_name = completedApp.name.replace(" ", "_")
+    encoded_bytes = base64.b64encode(zip_file).decode(
+        "utf-8"
+    )  # Decode to get a string representation
+
+    deployment = await Deployment.prisma().create(
+        data={
+            "completedApp": {"connect": {"id": completedApp.id}},
+            "User": {"connect": {"id": ids.user_id}},
+            "fileName": f"{file_name}.zip",
+            "fileSize": len(zip_file),
+            "fileBytes": encoded_bytes,
+        }
+    )
+    return deployment
 
 
 def compile_application(app: CompletedApp) -> Application:
