@@ -44,5 +44,7 @@ ENV PORT=8000
 # Just declare the variable, the value will be set when running the container
 ENV OPENAI_API_KEY=""
 
+RUN prisma generate
+
 # This will be the command to run the FastAPI server using uvicorn
-CMD uvicorn codex.app:app --host 0.0.0.0 --port $PORT  --log-level info
+CMD ./run serve

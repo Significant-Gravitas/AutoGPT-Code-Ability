@@ -225,10 +225,9 @@ class DeliverablesListResponse(BaseModel):
 
 class DeploymentMetadata(BaseModel):
     id: int
-    createdAt: datetime
-    fileName: str
-    fileSize: int
-    path: str  # Assuming there's a URL to download the zip file
+    created_at: datetime
+    file_name: str
+    file_size: int
 
 
 class DeploymentResponse(BaseModel):

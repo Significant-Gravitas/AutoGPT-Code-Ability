@@ -1,28 +1,14 @@
 from prisma.models import Deployment
 
-from codex.api_model import (
-    DeliverableResponse,
-    DeploymentMetadata,
-    DeploymentResponse,
-    DeploymentsListResponse,
-    Pagination,
-)
+from codex.api_model import DeploymentMetadata, DeploymentsListResponse, Pagination
 
 
-async def get_deployment(deployment_id: int) -> DeploymentResponse:
+async def get_deployment(deployment_id: int) -> Deployment:
     deployment = await Deployment.prisma().find_unique_or_raise(
         where={"id": deployment_id},
     )
 
-    return DeliverableResponse(
-        deployment=DeploymentMetadata(
-            id=deployment.id,
-            createdAt=deployment.createdAt,
-            fileName=deployment.fileName,
-            fileSize=deployment.fileSize,
-            path=deployment.path,
-        )
-    )
+    return deployment
 
 
 async def delete_deployment(deployment_id: int) -> None:
@@ -62,6 +48,16 @@ async def list_deployments(
         },
     )
 
+    ret_deployments = [
+        DeploymentMetadata(
+            id=deployment.id,
+            createdAt=deployment.createdAt,
+            fileName=deployment.fileName,
+            fileSize=deployment.fileSize,
+        )
+        for deployment in deployments
+    ]
+
     total_pages = (total_items + page_size - 1) // page_size
 
     pagination = Pagination(
@@ -71,4 +67,4 @@ async def list_deployments(
         page_size=page_size,
     )
 
-    return DeploymentsListResponse(deployments=deployments, pagination=pagination)
+    return DeploymentsListResponse(deployments=ret_deployments, pagination=pagination)

@@ -232,8 +232,8 @@ model CompiledRoute {
   embedding      Unsupported("vector(1536)")?
   description    String
   code           String
-  codeGraphId    Int                       @unique
-  codeGraph      CodeGraph                   @relation(fields: [codeGraphId], references: [id])
+  codeGraphId    Int                          @unique
+  codeGraph      CodeGraph                    @relation(fields: [codeGraphId], references: [id])
   apiRouteSpec   APIRouteSpec                 @relation(fields: [apiRouteSpecId], references: [id])
   apiRouteSpecId Int
   functions      Functions[]
@@ -266,7 +266,8 @@ model Deployment {
   deleted        Boolean       @default(false)
   fileName       String
   fileSize       Int
-  path           String
+  path           String?
+  fileBytes      Bytes?
   completedApp   CompletedApp? @relation(fields: [completedAppId], references: [id])
   completedAppId Int?
   User           CodexUser?    @relation(fields: [userId], references: [id])

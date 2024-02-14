@@ -89,12 +89,8 @@ async def generate_requirements(
     running_state_obj = StateObj(task=description)
 
     # User Interview
-    full, completion = gather_task_info_loop(
-        running_state_obj.task, ask_callback=None
-    )
-    running_state_obj.project_description = completion.split("finished: ")[
-        -1
-    ].strip()
+    full, completion = gather_task_info_loop(running_state_obj.task, ask_callback=None)
+    running_state_obj.project_description = completion.split("finished: ")[-1].strip()
     running_state_obj.project_description_thoughts = full
 
     print(running_state_obj.project_description_thoughts)
@@ -102,9 +98,7 @@ async def generate_requirements(
     frontend_clarify = FrontendClarificationBlock()
     frontend_clarification: Clarification = await frontend_clarify.invoke(
         ids=ids,
-        invoke_params={
-            "project_description": running_state_obj.project_description
-        },
+        invoke_params={"project_description": running_state_obj.project_description},
     )
 
     running_state_obj.add_clarifying_question(frontend_clarification)
@@ -184,9 +178,7 @@ async def generate_requirements(
             joint_q_and_a=running_state_obj.joint_q_and_a(),
             product_description=running_state_obj.product_description,
             FEATURE_BASELINE_QUESTIONS=FEATURE_BASELINE_QUESTIONS,
-            features=str(
-                [feature.dict() for feature in running_state_obj.features]
-            ),
+            features=str([feature.dict() for feature in running_state_obj.features]),
         ),
         return_model=RequirementsResponse,
     )
@@ -195,9 +187,7 @@ async def generate_requirements(
     ]
 
     # Requirements conversion
-    refined_requirements = convert_requirements(
-        running_state_obj.requirements_q_and_a
-    )
+    refined_requirements = convert_requirements(running_state_obj.requirements_q_and_a)
     running_state_obj.refined_requirement_q_a = refined_requirements
 
     print("Refined Requirements Done")
@@ -209,9 +199,7 @@ async def generate_requirements(
             joint_q_and_a=running_state_obj.joint_q_and_a(),
             product_description=running_state_obj.product_description,
             FEATURE_BASELINE_QUESTIONS=FEATURE_BASELINE_QUESTIONS,
-            features=str(
-                [feature.dict() for feature in running_state_obj.features]
-            ),
+            features=str([feature.dict() for feature in running_state_obj.features]),
             requirements_q_and_a_string=running_state_obj.requirements_q_and_a_string(),
         ),
         return_model=RequirementsGenResponse,
@@ -233,9 +221,7 @@ async def generate_requirements(
             requirements_q_and_a_string=running_state_obj.requirements_q_and_a_string(),
             requirements=str(running_state_obj.requirements),
             joint_q_and_a=running_state_obj.joint_q_and_a(),
-            features=str(
-                [feature.dict() for feature in running_state_obj.features]
-            ),
+            features=str([feature.dict() for feature in running_state_obj.features]),
         ),
         return_model=ModuleResponse,
     )
@@ -249,9 +235,7 @@ async def generate_requirements(
         MODULE_INTO_INTO_DATABASE.format(
             product_spec=running_state_obj.__str__(),
             needed_auth_roles=running_state_obj.refined_requirement_q_a.authorization_roles,
-            modules={
-                ", ".join(module.name for module in running_state_obj.modules)
-            },
+            modules={", ".join(module.name for module in running_state_obj.modules)},
         ),
         return_model=DBResponse,
     )
@@ -278,9 +262,7 @@ async def generate_requirements(
             existing.name for existing in running_state_obj.modules
         ]
         # Find the best match for module.module_name in existing_module_names
-        match = find_best_match(
-            module.module_name, existing_module_names, threshold=80
-        )
+        match = find_best_match(module.module_name, existing_module_names, threshold=80)
 
         if match:
             best_match, similarity = match[0], match[1]
@@ -291,17 +273,13 @@ async def generate_requirements(
                     running_state_obj.modules[
                         index
                     ].description = module.new_description
-                    endpoints = flatten_endpoints.flatten_endpoints(
-                        module.endpoints
-                    )
+                    endpoints = flatten_endpoints.flatten_endpoints(module.endpoints)
                     running_state_obj.modules[index].endpoints = endpoints
                     requirements = [
                         requirement.requirement
                         for requirement in module.module_requirements_list
                     ]
-                    running_state_obj.modules[
-                        index
-                    ].requirements = requirements
+                    running_state_obj.modules[index].requirements = requirements
         else:
             print(f"No close match found for {module.module_name}")
 

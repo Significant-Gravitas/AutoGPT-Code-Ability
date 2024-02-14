@@ -15,4 +15,4 @@ def parse(text: str):
 def parse_into_model(text: str, model: Type[T]) -> T | list[T]:
     tokens = tokenize(text)
     parser = Parser(tokens)
-    return parser.parse_to_pydantic(model) # type: ignore
+    return parser.parse_to_pydantic(model)  # type: ignore

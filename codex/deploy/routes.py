@@ -1,16 +1,21 @@
+import base64
 import io
 import json
 import logging
 
-from fastapi import APIRouter, Query, Response
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi import APIRouter, HTTPException, Query, Response
+from fastapi.responses import StreamingResponse
 from prisma.models import CompletedApp
 
 import codex.database
 import codex.deploy.agent as deploy_agent
 import codex.deploy.database
-import codex.deploy.packager as packager
-from codex.api_model import DeploymentResponse, DeploymentsListResponse
+from codex.api_model import (
+    DeploymentMetadata,
+    DeploymentResponse,
+    DeploymentsListResponse,
+    Indentifiers,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -46,16 +51,22 @@ async def create_deployment(
             },
         )
         logger.info(f"Creating deployment for {completedApp.name}")
-        app = deploy_agent.compile_application(completedApp)
-        zip_file = packager.create_zip_file(app)
-        bytes_io = io.BytesIO(zip_file)
-
-        return StreamingResponse(
-            bytes_io,
-            media_type="application/octet-stream",
-            headers={"Content-Disposition": "attachment; filename=app.zip"},
+        ids = Indentifiers(
+            user_id=user_id,
+            app_id=app_id,
+            spec_id=spec_id,
+            completed_app_id=deliverable_id,
         )
+        deployment = await deploy_agent.create_deployment(ids, completedApp)
 
+        return DeploymentResponse(
+            deployment=DeploymentMetadata(
+                id=deployment.id,
+                created_at=deployment.createdAt,
+                file_name=deployment.fileName,
+                file_size=deployment.fileSize,
+            )
+        )
     except Exception as e:
         logger.error(f"Error creating deployment: {e}")
         # File upload handling and metadata storage implementation goes here
@@ -83,7 +94,14 @@ async def get_deployment(
         deployment = await codex.deploy.database.get_deployment(
             deployment_id=deployment_id
         )
-        return deployment
+        return DeploymentResponse(
+            deployment=DeploymentMetadata(
+                id=deployment.id,
+                createdAt=deployment.createdAt,
+                fileName=deployment.fileName,
+                fileSize=deployment.fileSize,
+            )
+        )
     except ValueError as e:
         return Response(
             content=json.dumps({"error": str(e)}),
@@ -154,9 +172,32 @@ async def download_deployment(deployment_id: int):
     """
     Download the zip file for a specific deployment.
     """
+    # Retrieve deployment details, assuming this returns an object that includes the file bytes
     deployment_details = await codex.deploy.database.get_deployment(
         deployment_id=deployment_id
     )
+    if not deployment_details:
+        raise HTTPException(status_code=404, detail="Deployment not found")
+
     logger.info(f"Downloading deployment: {deployment_details}")
-    file_path = "path/to/deployment.zip"  # Placeholder path
-    return FileResponse(path=file_path, filename="deployment.zip")
+
+    # Decode the base64-encoded file bytes
+    try:
+        file_bytes = base64.b64decode(str(deployment_details.fileBytes))
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error decoding file content: {str(e)}"
+        )
+
+    # Convert the bytes to a BytesIO object for streaming
+    file_stream = io.BytesIO(file_bytes)
+
+    # Set the correct content-type for zip files
+    headers = {
+        "Content-Disposition": f"attachment; filename={deployment_details.fileName}"
+    }
+
+    # Return the streaming response
+    return StreamingResponse(
+        content=file_stream, media_type="application/zip", headers=headers
+    )

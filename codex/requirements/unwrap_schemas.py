@@ -21,17 +21,15 @@ def unwrap_db_schema(input: DBSchemaResponseWrapper) -> DatabaseSchema:
         input.tables if isinstance(input.tables, list) else [input.tables]
     )
     unwrapped_tables: list[DatabaseTable] = [table.table for table in tables]
-    return DatabaseSchema(
-        name=name, description=description, tables=unwrapped_tables
-    )
+    return DatabaseSchema(name=name, description=description, tables=unwrapped_tables)
 
 
 def unwrap_params(
     input: list[ParameterWrapper] | ParameterWrapper | str | None,
 ) -> list[Parameter]:
-    wrapped_array: list[ParameterWrapper] | list[
-        ParameterWrapper | str | None
-    ] = (input if isinstance(input, list) else [input])
+    wrapped_array: list[ParameterWrapper] | list[ParameterWrapper | str | None] = (
+        input if isinstance(input, list) else [input]
+    )
     params: list[Parameter] = []
     for param in wrapped_array:
         if isinstance(param, str):
@@ -80,8 +78,7 @@ def unwrap_new_models(
 
 
 def convert_endpoint(
-    input: EndpointSchemaRefinementResponse
-    | list[EndpointSchemaRefinementResponse],
+    input: EndpointSchemaRefinementResponse | list[EndpointSchemaRefinementResponse],
     existing: Endpoint,
     database: DatabaseSchema,
 ) -> Endpoint:
@@ -90,9 +87,7 @@ def convert_endpoint(
         raise ValueError("This shouldn't be a list")
     if isinstance(input, EndpointSchemaRefinementResponse):
         request_params = unwrap_params(input.api_endpoint.request_model.params)
-        response_params = unwrap_params(
-            input.api_endpoint.response_model.params
-        )
+        response_params = unwrap_params(input.api_endpoint.response_model.params)
         data_models = unwrap_new_models(input.new_api_models)
 
         request_model = RequestModel(

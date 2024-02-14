@@ -1,6 +1,6 @@
 from typing import Dict, List
 
-from langchain.pydantic_v1 import BaseModel
+from pydantic import BaseModel
 
 from codex.developer.model import Package
 
