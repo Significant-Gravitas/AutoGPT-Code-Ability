@@ -24,11 +24,8 @@ from codex.requirements.ai_clarify import (
     UserSkillClarificationBlock,
 )
 from codex.requirements.ai_feature import FeatureGenerationBlock
-from codex.requirements.build_requirements_refinement_object import (
-    RequirementsRefined,
-    convert_requirements,
-)
-from codex.requirements.complete import complete_and_parse, complete_anth
+from codex.requirements.ai_requirements import BaseRequirementsBlock
+from codex.requirements.complete import complete_and_parse
 from codex.requirements.database import create_spec
 from codex.requirements.gather_task_info import gather_task_info_loop
 from codex.requirements.hardcoded import (
@@ -51,15 +48,16 @@ from codex.requirements.model import (
     ModuleRefinement,
     ModuleResponse,
     QandA,
-    QandAResponses,
     RequestModel,
     RequirementsGenResponse,
-    RequirementsResponse,
+    RequirementsRefined,
     ResponseModel,
     StateObj,
 )
-from codex.requirements.parser import parse
-from codex.requirements.unwrap_schemas import convert_endpoint, unwrap_db_schema
+from codex.requirements.unwrap_schemas import (
+    convert_endpoint,
+    unwrap_db_schema,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -85,8 +83,12 @@ async def generate_requirements(
     running_state_obj = StateObj(task=description)
 
     # User Interview
-    full, completion = gather_task_info_loop(running_state_obj.task, ask_callback=None)
-    running_state_obj.project_description = completion.split("finished: ")[-1].strip()
+    full, completion = gather_task_info_loop(
+        running_state_obj.task, ask_callback=None
+    )
+    running_state_obj.project_description = completion.split("finished: ")[
+        -1
+    ].strip()
     running_state_obj.project_description_thoughts = full
 
     print(running_state_obj.project_description_thoughts)
@@ -94,7 +96,9 @@ async def generate_requirements(
     frontend_clarify = FrontendClarificationBlock()
     frontend_clarification: Clarification = await frontend_clarify.invoke(
         ids=ids,
-        invoke_params={"project_description": running_state_obj.project_description},
+        invoke_params={
+            "project_description": running_state_obj.project_description
+        },
     )
 
     running_state_obj.add_clarifying_question(frontend_clarification)
@@ -102,12 +106,14 @@ async def generate_requirements(
     print("Frontend Clarification Done")
 
     user_persona_clarify = UserPersonaClarificationBlock()
-    user_persona_clarification: Clarification = await user_persona_clarify.invoke(
-        ids=ids,
-        invoke_params={
-            "clarifiying_questions_so_far": running_state_obj.clarifying_questions_as_string(),
-            "project_description": running_state_obj.project_description,
-        },
+    user_persona_clarification: Clarification = (
+        await user_persona_clarify.invoke(
+            ids=ids,
+            invoke_params={
+                "clarifiying_questions_so_far": running_state_obj.clarifying_questions_as_string(),
+                "project_description": running_state_obj.project_description,
+            },
+        )
     )
 
     running_state_obj.add_clarifying_question(user_persona_clarification)
@@ -169,22 +175,23 @@ async def generate_requirements(
 
     # Requirements Start
     # Collect the requirements Q&A
-    requirement_response: RequirementsResponse = complete_and_parse(
-        prompt=FEATURE_BASELINE_CHECKS.format(
-            joint_q_and_a=running_state_obj.joint_q_and_a(),
-            product_description=running_state_obj.product_description,
-            FEATURE_BASELINE_QUESTIONS=FEATURE_BASELINE_QUESTIONS,
-            features=str([feature.dict() for feature in running_state_obj.features]),
-        ),
-        return_model=RequirementsResponse,
+    base_requirements_block = BaseRequirementsBlock()
+    base_requirements: RequirementsRefined = (
+        await base_requirements_block.invoke(
+            ids=ids,
+            invoke_params={
+                "project_description": running_state_obj.project_description,
+                "project_description_thoughts": running_state_obj.project_description_thoughts,
+                "joint_q_and_a": running_state_obj.joint_q_and_a(),
+            },
+        )
     )
-    running_state_obj.requirements_q_and_a = [
-        requirement.wrapper for requirement in requirement_response.answer
-    ]
 
-    # Requirements conversion
-    refined_requirements = convert_requirements(running_state_obj.requirements_q_and_a)
-    running_state_obj.refined_requirement_q_a = refined_requirements
+    running_state_obj.requirements_q_and_a = (
+        base_requirements.dirty_requirements or []
+    )
+
+    running_state_obj.refined_requirement_q_a = base_requirements
 
     print("Refined Requirements Done")
 
@@ -195,7 +202,9 @@ async def generate_requirements(
             joint_q_and_a=running_state_obj.joint_q_and_a(),
             product_description=running_state_obj.product_description,
             FEATURE_BASELINE_QUESTIONS=FEATURE_BASELINE_QUESTIONS,
-            features=str([feature.dict() for feature in running_state_obj.features]),
+            features=str(
+                [feature.dict() for feature in running_state_obj.features]
+            ),
             requirements_q_and_a_string=running_state_obj.requirements_q_and_a_string(),
         ),
         return_model=RequirementsGenResponse,
@@ -217,7 +226,9 @@ async def generate_requirements(
             requirements_q_and_a_string=running_state_obj.requirements_q_and_a_string(),
             requirements=str(running_state_obj.requirements),
             joint_q_and_a=running_state_obj.joint_q_and_a(),
-            features=str([feature.dict() for feature in running_state_obj.features]),
+            features=str(
+                [feature.dict() for feature in running_state_obj.features]
+            ),
         ),
         return_model=ModuleResponse,
     )
@@ -231,7 +242,9 @@ async def generate_requirements(
         MODULE_INTO_INTO_DATABASE.format(
             product_spec=running_state_obj.__str__(),
             needed_auth_roles=running_state_obj.refined_requirement_q_a.authorization_roles,
-            modules={", ".join(module.name for module in running_state_obj.modules)},
+            modules={
+                ", ".join(module.name for module in running_state_obj.modules)
+            },
         ),
         return_model=DBResponse,
     )
@@ -258,7 +271,9 @@ async def generate_requirements(
             existing.name for existing in running_state_obj.modules
         ]
         # Find the best match for module.module_name in existing_module_names
-        match = find_best_match(module.module_name, existing_module_names, threshold=80)
+        match = find_best_match(
+            module.module_name, existing_module_names, threshold=80
+        )
 
         if match:
             best_match, similarity = match[0], match[1]
@@ -266,16 +281,20 @@ async def generate_requirements(
             for index, existing in enumerate(running_state_obj.modules):
                 if existing.name == best_match:
                     print(existing.name)
-                    running_state_obj.modules[
-                        index
-                    ].description = module.new_description
-                    endpoints = flatten_endpoints.flatten_endpoints(module.endpoints)
+                    running_state_obj.modules[index].description = (
+                        module.new_description
+                    )
+                    endpoints = flatten_endpoints.flatten_endpoints(
+                        module.endpoints
+                    )
                     running_state_obj.modules[index].endpoints = endpoints
                     requirements = [
                         requirement.requirement
                         for requirement in module.module_requirements_list
                     ]
-                    running_state_obj.modules[index].requirements = requirements
+                    running_state_obj.modules[index].requirements = (
+                        requirements
+                    )
         else:
             print(f"No close match found for {module.module_name}")
 
@@ -417,15 +436,21 @@ if __name__ == "__main__":
 
     oai = openai.OpenAI()
 
-    task = """The Tutor App is an app designed for tutors to manage their clients, schedules, and invoices.
+    task = """The Tutor App is an app designed for tutors to manage their clients,
+ schedules, and invoices.
 
-It must support both the client and tutor scheduling, rescheduling and canceling appointments, and sending invoices after the appointment has passed.
+It must support both the client and tutor scheduling, rescheduling and canceling
+ appointments, and sending invoices after the appointment has passed.
 
-Clients can sign up with OAuth2 or with traditional sign-in authentication. If they sign up with traditional authentication, it must be safe and secure. There will need to be password reset and login capabilities.
+Clients can sign up with OAuth2 or with traditional sign-in authentication. If they sign
+ up with traditional authentication, it must be safe and secure. There will need to be
+ password reset and login capabilities.
 
 There will need to be authorization for identifying clients vs the tutor.
 
-Additionally, it will have proper management of financials, including invoice management and payment tracking. This includes things like paid/failed invoice notifications, unpaid invoice follow-up, summarizing d/w/m/y income, and generating reports."""
+Additionally, it will have proper management of financials, including invoice management
+ and payment tracking. This includes things like paid/failed invoice notifications,
+ unpaid invoice follow-up, summarizing d/w/m/y income, and generating reports."""
 
     async def run_gen():
         await db_client.connect()
