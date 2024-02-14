@@ -12,7 +12,7 @@
   "notebook.output.textLineLimit": 100,
 
   "[python]": {
-    "editor.rulers": [88],
+    "editor.rulers": [90],
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
       "source.organizeImports": "explicit",
