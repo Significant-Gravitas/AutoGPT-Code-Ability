@@ -87,7 +87,7 @@ class RequirementsGenResponse(BaseModel):
 class RequirementsQA:
     question: str
     think: str
-    answer: str
+    answer: str | list[str]
 
 
 class Feature(BaseModel):
@@ -115,13 +115,13 @@ class FeaturesSuperObject(BaseModel):
     features: list[FeatureWrapper]
 
 
-class WrappedRequirementsQA(BaseModel):
-    wrapper: RequirementsQA
+# class WrappedRequirementsQA(BaseModel):
+#     wrapper: RequirementsQA
 
 
 class RequirementsResponse(BaseModel):
     think: str
-    answer: list[WrappedRequirementsQA]
+    answer: list[RequirementsQA]
 
 
 class ModuleRefinementRequirement(BaseModel):
@@ -212,7 +212,9 @@ class APIEndpointWrapper(BaseModel):
 class EndpointSchemaRefinementResponse(BaseModel):
     think: str
     db_models_needed: Optional[str]
-    new_api_models: Optional[str] | NewAPIModelWrapper | list[NewAPIModelWrapper]
+    new_api_models: (
+        Optional[str] | NewAPIModelWrapper | list[NewAPIModelWrapper]
+    )
     api_endpoint: APIEndpointWrapper
     end_thoughts: Optional[str]
 
@@ -292,7 +294,9 @@ class Module(BaseModel):
 
     def __str__(self):
         text = ""
-        text += f"### Module: {self.name}\n#### Description\n{self.description}\n"
+        text += (
+            f"### Module: {self.name}\n#### Description\n{self.description}\n"
+        )
         if self.requirements:
             text += "#### Requirements\n"
             for requirement in self.requirements:
@@ -362,14 +366,15 @@ class ReplyEnum(enum.Enum):
         return super().__eq__(other)
 
     @classmethod
-    def _missing_(cls, value: str):
-        value = value.replace("/", "").lower()
-        if value.lower() == "yes":
-            return ReplyEnum.YES
-        elif value.lower() == "no":
-            return ReplyEnum.NO
-        elif value.lower() == "na":
-            return ReplyEnum.NA
+    def _missing_(cls, value: object):
+        if isinstance(value, str):
+            value = value.replace("/", "").lower()
+            if value.lower() == "yes":
+                return ReplyEnum.YES
+            elif value.lower() == "no":
+                return ReplyEnum.NO
+            elif value.lower() == "na":
+                return ReplyEnum.NA
         raise ValueError(f"{value} is not a valid ReplyEnum")
 
 
@@ -421,6 +426,8 @@ class RequirementsRefined(BaseModel):
 
     authorization_roles: List[str] = []
     authorization_roles_justification: str = ""
+
+    dirty_requirements: Optional[list[RequirementsQA]]
 
 
 class DatabaseSchemaRequirement(BaseModel):
@@ -530,7 +537,9 @@ class StateObj:
             )
         return output
 
-    def add_clarifying_question(self, clarifying_question: Clarification) -> None:
+    def add_clarifying_question(
+        self, clarifying_question: Clarification
+    ) -> None:
         if not self.clarifying_questions:
             self.clarifying_questions = []
         self.clarifying_questions.append(clarifying_question)
@@ -547,7 +556,8 @@ class StateObj:
 
     def joint_q_and_a(self) -> str:
         return (
-            self.clarifying_questions_as_string() + self.conclusive_q_and_a_as_string()
+            self.clarifying_questions_as_string()
+            + self.conclusive_q_and_a_as_string()
         )
 
     def requirements_q_and_a_string(self) -> str:
@@ -560,13 +570,17 @@ class StateObj:
 
     def __repr__(self):
         # Provide default representations for potentially uninitialized attributes
-        project_description = repr(getattr(self, "project_description", "None"))
+        project_description = repr(
+            getattr(self, "project_description", "None")
+        )
         project_description_thoughts = repr(
             getattr(self, "project_description_thoughts", "None")
         )
         clarifying_questions = repr(getattr(self, "clarifying_questions", []))
         q_and_a = repr(getattr(self, "q_and_a", []))
-        product_description = repr(getattr(self, "product_description", "None"))
+        product_description = repr(
+            getattr(self, "product_description", "None")
+        )
         product_name = repr(getattr(self, "product_name", "None"))
         features = repr(getattr(self, "features", []))
         requirements_q_and_a = repr(getattr(self, "requirements_q_and_a", []))
@@ -584,18 +598,26 @@ class StateObj:
 
     def __str__(self):
         # Provide default values or representations for potentially uninitialized attributes
-        project_description = getattr(self, "project_description", "Not provided")
-        product_description = getattr(self, "product_description", "Not provided")
+        project_description = getattr(
+            self, "project_description", "Not provided"
+        )
+        product_description = getattr(
+            self, "product_description", "Not provided"
+        )
         product_name = getattr(self, "product_name", "Not provided")
         features = getattr(self, "features", [])
         clarifying_questions = getattr(self, "clarifying_questions", [])
         requirements_q_and_a = getattr(self, "requirements_q_and_a", [])
         modules: List[Module] = getattr(self, "modules", [])
 
-        modules_text = "\n".join(module.__str__() for module in modules if module)
+        modules_text = "\n".join(
+            module.__str__() for module in modules if module
+        )
         requirements_text = self.requirements.__str__()
         requirements_q_and_a_text = self.requirements_q_and_a_string()
-        features_text = "\n".join(feature.__str__() for feature in self.features)
+        features_text = "\n".join(
+            feature.__str__() for feature in self.features
+        )
         clarifying_questions_text = self.clarifying_questions_as_string()
         conclusive_q_and_a_text = self.conclusive_q_and_a_as_string()
         if hasattr(self, "database") and self.database:
