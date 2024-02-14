@@ -212,9 +212,7 @@ class APIEndpointWrapper(BaseModel):
 class EndpointSchemaRefinementResponse(BaseModel):
     think: str
     db_models_needed: Optional[str]
-    new_api_models: (
-        Optional[str] | NewAPIModelWrapper | list[NewAPIModelWrapper]
-    )
+    new_api_models: (Optional[str] | NewAPIModelWrapper | list[NewAPIModelWrapper])
     api_endpoint: APIEndpointWrapper
     end_thoughts: Optional[str]
 
@@ -244,17 +242,19 @@ class Endpoint(BaseModel):
         data_model_text = ""
         database_text = ""
         if self.request_model:
-            request_response_text += f"##### Request: `{self.request_model.__str__() or 'Not defined yet'}`\n"
+            request_response_text += (
+                f"##### Request: `{self.request_model.__str__() or 'Not defined yet'}`\n"
+            )
         if self.response_model:
-            request_response_text += f"##### Response:`{self.request_model.__str__() or 'Not defined yet'}`\n"
+            request_response_text += (
+                f"##### Response:`{self.request_model.__str__() or 'Not defined yet'}`\n"
+            )
         if self.data_models:
             data_model_text += "\n\n".join(
                 [data_model.__str__() for data_model in self.data_models]
             )
         if self.database_schema:
-            database_text += (
-                f"##### Database Schema\n\n{self.database_schema.__str__()}"
-            )
+            database_text += f"##### Database Schema\n\n{self.database_schema.__str__()}"
         return f"##### {self.name}: `{self.type} {self.path}`\n\n{self.description}\n\n{request_response_text}\n\n{data_model_text}\n\n{database_text}"
 
 
@@ -294,9 +294,7 @@ class Module(BaseModel):
 
     def __str__(self):
         text = ""
-        text += (
-            f"### Module: {self.name}\n#### Description\n{self.description}\n"
-        )
+        text += f"### Module: {self.name}\n#### Description\n{self.description}\n"
         if self.requirements:
             text += "#### Requirements\n"
             for requirement in self.requirements:
@@ -537,9 +535,7 @@ class StateObj:
             )
         return output
 
-    def add_clarifying_question(
-        self, clarifying_question: Clarification
-    ) -> None:
+    def add_clarifying_question(self, clarifying_question: Clarification) -> None:
         if not self.clarifying_questions:
             self.clarifying_questions = []
         self.clarifying_questions.append(clarifying_question)
@@ -555,37 +551,26 @@ class StateObj:
         return output
 
     def joint_q_and_a(self) -> str:
-        return (
-            self.clarifying_questions_as_string()
-            + self.conclusive_q_and_a_as_string()
-        )
+        return self.clarifying_questions_as_string() + self.conclusive_q_and_a_as_string()
 
     def requirements_q_and_a_string(self) -> str:
         output: str = ""
         for req in self.requirements_q_and_a:
             answer_text = (
-                req.answer
-                if isinstance(req.answer, str)
-                else "\n".join(req.answer)
+                req.answer if isinstance(req.answer, str) else "\n".join(req.answer)
             )
-            output += self.convert_to_q_and_a_format(
-                req.question, answer_text, req.think
-            )
+            output += self.convert_to_q_and_a_format(req.question, answer_text, req.think)
         return output
 
     def __repr__(self):
         # Provide default representations for potentially uninitialized attributes
-        project_description = repr(
-            getattr(self, "project_description", "None")
-        )
+        project_description = repr(getattr(self, "project_description", "None"))
         project_description_thoughts = repr(
             getattr(self, "project_description_thoughts", "None")
         )
         clarifying_questions = repr(getattr(self, "clarifying_questions", []))
         q_and_a = repr(getattr(self, "q_and_a", []))
-        product_description = repr(
-            getattr(self, "product_description", "None")
-        )
+        product_description = repr(getattr(self, "product_description", "None"))
         product_name = repr(getattr(self, "product_name", "None"))
         features = repr(getattr(self, "features", []))
         requirements_q_and_a = repr(getattr(self, "requirements_q_and_a", []))
@@ -603,26 +588,18 @@ class StateObj:
 
     def __str__(self):
         # Provide default values or representations for potentially uninitialized attributes
-        project_description = getattr(
-            self, "project_description", "Not provided"
-        )
-        product_description = getattr(
-            self, "product_description", "Not provided"
-        )
+        project_description = getattr(self, "project_description", "Not provided")
+        product_description = getattr(self, "product_description", "Not provided")
         product_name = getattr(self, "product_name", "Not provided")
         features = getattr(self, "features", [])
         clarifying_questions = getattr(self, "clarifying_questions", [])
         requirements_q_and_a = getattr(self, "requirements_q_and_a", [])
         modules: List[Module] = getattr(self, "modules", [])
 
-        modules_text = "\n".join(
-            module.__str__() for module in modules if module
-        )
+        modules_text = "\n".join(module.__str__() for module in modules if module)
         requirements_text = self.requirements.__str__()
         requirements_q_and_a_text = self.requirements_q_and_a_string()
-        features_text = "\n".join(
-            feature.__str__() for feature in self.features
-        )
+        features_text = "\n".join(feature.__str__() for feature in self.features)
         clarifying_questions_text = self.clarifying_questions_as_string()
         conclusive_q_and_a_text = self.conclusive_q_and_a_as_string()
         if hasattr(self, "database") and self.database:
