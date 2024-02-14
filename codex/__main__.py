@@ -32,7 +32,7 @@ def populate_db(database):
 
     async def popdb():
         await db.connect()
-        # await create_test_data()
+        await create_test_data()
         await populate_database_specs()
         await db.disconnect()
 
@@ -85,7 +85,7 @@ def serve() -> None:
         local=os.environ.get("ENV", "CLOUD").lower() == "local"
     )
 
-    uvicorn.run(app, host="0.0.0.0", port=os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=8000)
 
 
 if __name__ == "__main__":
