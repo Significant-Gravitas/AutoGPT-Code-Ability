@@ -19,14 +19,15 @@ from codex.prompts.claude.requirements.RequirementIntoModule import *
 from codex.prompts.claude.requirements.SearchFunction import *
 from codex.prompts.claude.requirements.TaskIntoClarifcations import *
 from codex.requirements import flatten_endpoints
-from codex.requirements.ai_clarify import (
+from codex.requirements.blocks.ai_clarify import (
     FrontendClarificationBlock,
     QuestionAndAnswerClarificationBlock,
     UserPersonaClarificationBlock,
     UserSkillClarificationBlock,
 )
-from codex.requirements.ai_feature import FeatureGenerationBlock
-from codex.requirements.ai_requirements import (
+from codex.requirements.blocks.ai_feature import FeatureGenerationBlock
+from codex.requirements.blocks.ai_module import ModuleGenerationBlock
+from codex.requirements.blocks.ai_requirements import (
     BaseRequirementsBlock,
     FuncNonFuncRequirementsBlock,
 )
@@ -224,23 +225,27 @@ async def generate_requirements(
 
     # Modules seperation
     # Build the requirements from the Q&A
-    module_response: ModuleResponse = complete_and_parse(
-        prompt=REQUIREMENTS_INTO_MODULES.format(
-            NEST_JS_FIRST_STEPS=NEST_JS_FIRST_STEPS,
-            NEST_JS_MODULES=NEST_JS_MODULES,
-            NEST_JS_SQL=NEST_JS_SQL,
-            NEST_JS_CRUD_GEN=NEST_JS_CRUD_GEN,
-            product_description=running_state_obj.product_description,
-            requirements_q_and_a_string=running_state_obj.requirements_q_and_a_string(),
-            requirements=str(running_state_obj.requirements),
-            joint_q_and_a=running_state_obj.joint_q_and_a(),
-            features=str(
-                [feature.dict() for feature in running_state_obj.features]
+    module_block = ModuleGenerationBlock()
+    module_response: ModuleResponse = await module_block.invoke(
+        ids=ids,
+        invoke_params={
+            "NEST_JS_FIRST_STEPS": NEST_JS_FIRST_STEPS,
+            "NEST_JS_MODULES": NEST_JS_MODULES,
+            "NEST_JS_SQL": NEST_JS_SQL,
+            "NEST_JS_CRUD_GEN": NEST_JS_CRUD_GEN,
+            "product_description": running_state_obj.product_description,
+            "requirements_q_and_a": running_state_obj.requirements_q_and_a_string(),
+            "requirements": json.dumps(
+                running_state_obj.requirements, default=pydantic_encoder
             ),
-        ),
-        return_model=ModuleResponse,
+            "joint_q_and_a": running_state_obj.joint_q_and_a(),
+            "features": json.dumps(
+                running_state_obj.features, default=pydantic_encoder
+            ),
+        },
     )
-    running_state_obj.modules = [x.module for x in module_response.answer]
+
+    running_state_obj.modules = module_response.modules
 
     print("Modules 1st Step Done")
 
