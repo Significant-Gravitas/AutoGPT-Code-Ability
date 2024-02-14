@@ -11,16 +11,7 @@ from codex.prompts.claude.requirements.QAFormat import (
 )
 
 
-# Data Models
-
-
-@dataclass
-class Clarfication:
-    question: str
-    answer: str
-    thoughts: str
-
-
+# Data Model
 @dataclass
 class QandA:
     question: str
@@ -43,7 +34,7 @@ class QandAResponses(BaseModel):
 
 
 @dataclass
-class Clarficatio(BaseModel):
+class Clarification(BaseModel):
     question: str
     answer: str
     thoughts: str
@@ -504,7 +495,7 @@ class StateObj:
         self.task = task
         self.project_description: str
         self.project_description_thoughts: str
-        self.clarifying_questions: list[Clarfication] = []
+        self.clarifying_questions: list[Clarification] = []
         self.q_and_a: list[QandA] = []
         self.product_description: str
         self.product_name: str
@@ -544,7 +535,7 @@ class StateObj:
         return output
 
     def add_clarifying_question(
-        self, clarifying_question: Clarfication
+        self, clarifying_question: Clarification
     ) -> None:
         if not self.clarifying_questions:
             self.clarifying_questions = []

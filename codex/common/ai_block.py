@@ -3,7 +3,7 @@ import json
 import logging
 import os
 import pathlib
-from typing import Any
+from typing import Any, Generic, Type, TypeVar
 
 from jinja2 import Environment, FileSystemLoader
 from openai import OpenAI
@@ -97,9 +97,12 @@ class AIBlock:
         """
         self.oai_client = oai_client
         self.template_base_path = os.path.join(
-            os.path.dirname(__file__), f"../{self.template_base_path}/{self.model}"
+            os.path.dirname(__file__),
+            f"../{self.template_base_path}/{self.model}",
         )
-        self.templates_dir = pathlib.Path(self.template_base_path).resolve(strict=True)
+        self.templates_dir = pathlib.Path(self.template_base_path).resolve(
+            strict=True
+        )
         self.call_template_id = None
 
     async def store_call_template(self):
@@ -108,19 +111,22 @@ class AIBlock:
         if self.langauge:
             lang_str = f"{self.langauge}."
         with open(
-            f"{self.templates_dir}/{self.prompt_template_name}/{lang_str}system.j2", "r"
+            f"{self.templates_dir}/{self.prompt_template_name}/{lang_str}system.j2",
+            "r",
         ) as f:
             system_prompt = f.read()
             template_str += system_prompt
 
         with open(
-            f"{self.templates_dir}/{self.prompt_template_name}/{lang_str}user.j2", "r"
+            f"{self.templates_dir}/{self.prompt_template_name}/{lang_str}user.j2",
+            "r",
         ) as f:
             user_prompt = f.read()
             template_str += user_prompt
 
         with open(
-            f"{self.templates_dir}/{self.prompt_template_name}/{lang_str}retry.j2", "r"
+            f"{self.templates_dir}/{self.prompt_template_name}/{lang_str}retry.j2",
+            "r",
         ) as f:
             retry_prompt = f.read()
             template_str += retry_prompt
@@ -173,7 +179,9 @@ class AIBlock:
                 "promptTokens": response.usage_statistics.prompt_tokens,
                 "totalTokens": response.usage_statistics.total_tokens,
                 "attempt": attempt,
-                "prompt": json.dumps(prompt) if not isinstance(prompt, str) else prompt,
+                "prompt": json.dumps(prompt)
+                if not isinstance(prompt, str)
+                else prompt,
                 "response": response.message,
                 "model": self.model,
             }
@@ -186,7 +194,9 @@ class AIBlock:
             lang_str = ""
             if self.langauge:
                 lang_str = f"{self.langauge}."
-            templates_env = Environment(loader=FileSystemLoader(self.templates_dir))
+            templates_env = Environment(
+                loader=FileSystemLoader(self.templates_dir)
+            )
             prompt_template = templates_env.get_template(
                 f"{self.prompt_template_name}/{lang_str}{template}.j2"
             )
@@ -258,7 +268,9 @@ class AIBlock:
         retries = 0
         try:
             if self.is_json_response:
-                invoke_params["format_instructions"] = self.get_format_instructions()
+                invoke_params[
+                    "format_instructions"
+                ] = self.get_format_instructions()
             system_prompt = self.load_temaplate("system", invoke_params)
             user_prompt = self.load_temaplate("user", invoke_params)
 
@@ -277,7 +289,9 @@ class AIBlock:
             logger.error(f"Error creating request params: {e}")
             raise LLMFailure(f"Error creating request params: {e}")
         try:
-            response = self.oai_client.chat.completions.create(**request_params)
+            response = self.oai_client.chat.completions.create(
+                **request_params
+            )
 
             presponse = self.parse(response)
 
@@ -291,7 +305,9 @@ class AIBlock:
 
             validated_response = self.validate(invoke_params, presponse)
         except ValidationError as validation_error:
-            logger.error(f"Error on initial generation attempt: {validation_error}")
+            logger.error(
+                f"Error on initial generation attempt: {validation_error}"
+            )
             error_message = validation_error
             while retries < max_retries:
                 retries += 1
@@ -306,7 +322,9 @@ class AIBlock:
                             {"role": "user", "content": retry_prompt},
                         ],
                     )
-                    response = self.oai_client.chat.completions.create(**request_params)
+                    response = self.oai_client.chat.completions.create(
+                        **request_params
+                    )
                     presponse = self.parse(response)
 
                     await self.store_call_attempt(
@@ -322,14 +340,15 @@ class AIBlock:
                     )
                     continue
             if not validated_response:
-                raise LLMFailure(f"Error validating response: {validation_error}")
+                raise LLMFailure(
+                    f"Error validating response: {validation_error}"
+                )
         except Exception as unkown_error:
             logger.error(f"Error invoking AIBlock: {unkown_error}")
             raise LLMFailure(f"Error invoking AIBlock: {unkown_error}")
 
         stored_obj = await self.create_item(ids, validated_response)
         return stored_obj if stored_obj else validated_response.response
-    
 
     async def create_item(
         self, ids: Indentifiers, validated_response: ValidatedResponse

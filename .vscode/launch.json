@@ -5,13 +5,20 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python Debugger: Module",
+      "name": "Py: Current File",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Py: Codex",
       "type": "debugpy",
       "request": "launch",
       "module": "codex"
     },
     {
-      "name": "Requirement Gen",
+      "name": "Py: Requirement Gen",
       "type": "debugpy",
       "request": "launch",
       "program": "codex/requirements/agent.py",
