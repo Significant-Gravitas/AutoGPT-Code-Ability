@@ -205,7 +205,6 @@ class CompiledRouteModel(BaseModel):
     createdAt: datetime
     description: str
     code: str
-    # codeGraphId: Optional[int] = None  # Omitted to simplify, can be included if needed
 
 
 class DeliverableResponse(BaseModel):
@@ -216,7 +215,7 @@ class DeliverableResponse(BaseModel):
 
 
 class DeliverablesListResponse(BaseModel):
-    completedApps: List[DeliverableResponse]
+    deliverables: List[DeliverableResponse]
     pagination: Optional[Pagination] = None
 
 

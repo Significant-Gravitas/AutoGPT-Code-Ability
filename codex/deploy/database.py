@@ -25,7 +25,7 @@ async def list_deployments(
 ) -> DeploymentsListResponse:
     skip = (page - 1) * page_size
 
-    total_items = await Deployment.count(
+    total_items = await Deployment.prisma().count(
         where={
             "deliverable_id": deliverable_id,
             "userId": user_id,
@@ -39,7 +39,7 @@ async def list_deployments(
             ),
         )
 
-    deployments = await Deployment.find_many(
+    deployments = await Deployment.prisma().find_many(
         skip=skip,
         take=page_size,
         where={

@@ -71,7 +71,7 @@ def test() -> None:
     with ThreadPoolExecutor() as executor:
         futures = [executor.submit(process_app, app_name) for app_name in apps]
         for future in as_completed(futures):
-            future.result()  # Waiting for each future to complete, you can handle exceptions here if needed
+            future.result()
 
 
 @cli.command()
