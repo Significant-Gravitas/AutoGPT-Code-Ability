@@ -252,9 +252,7 @@ class AIBlock:
 
         return PYDANTIC_FORMAT_INSTRUCTIONS.format(schema=schema_str)
 
-    async def invoke(
-        self, ids: Indentifiers, invoke_params: dict, max_retries=3
-    ) -> Any:
+    async def invoke(self, ids: Indentifiers, invoke_params: dict, max_retries=3) -> Any:
         validated_response = None
         if not self.call_template_id:
             await self.store_call_template()
@@ -334,9 +332,7 @@ class AIBlock:
         stored_obj = await self.create_item(ids, validated_response)
         return stored_obj if stored_obj else validated_response.response
 
-    async def create_item(
-        self, ids: Indentifiers, validated_response: ValidatedResponse
-    ):
+    async def create_item(self, ids: Indentifiers, validated_response: ValidatedResponse):
         """
         Create an item from the validated response
 

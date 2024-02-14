@@ -197,9 +197,7 @@ async def delete_app(user_id: int, app_id: int) -> None:
     )
 
 
-async def list_apps(
-    user_id: int, page: int, page_size: int
-) -> ApplicationsListResponse:
+async def list_apps(user_id: int, page: int, page_size: int) -> ApplicationsListResponse:
     skip = (page - 1) * page_size
     total_items = await Application.prisma().count(
         where={"userId": user_id, "deleted": False}

@@ -26,9 +26,7 @@ def complete_anth(
     """Make sure you do your own management of including human and assistant"""
     depth = depth + 1
     if depth >= 3:
-        raise ValueError(
-            "Too many completions deep. This will cost you some money honey"
-        )
+        raise ValueError("Too many completions deep. This will cost you some money honey")
     if make_sendable:
         sendable_prompt = f"{HUMAN_PROMPT} {prompt} {AI_PROMPT}"
     else:

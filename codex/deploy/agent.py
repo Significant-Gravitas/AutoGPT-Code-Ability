@@ -15,9 +15,7 @@ from codex.developer.model import Package
 logger = logging.getLogger(__name__)
 
 
-async def create_deployment(
-    ids: Indentifiers, completedApp: CompletedApp
-) -> Deployment:
+async def create_deployment(ids: Indentifiers, completedApp: CompletedApp) -> Deployment:
     app = compile_application(completedApp)
     zip_file = create_zip_file(app)
     file_name = completedApp.name.replace(" ", "_")
@@ -95,7 +93,9 @@ def create_server_code(application: Application) -> Application:
     for route_path, compiled_route in application.routes.items():
         logger.info(f"Creating route for {route_path}")
         # import the main function from the service file
-        service_import = f"from project.{compiled_route.service_file_name.replace('.py', '')} import *"
+        service_import = (
+            f"from project.{compiled_route.service_file_name.replace('.py', '')} import *"
+        )
         server_code_imports.append(service_import)
 
         # Write the api endpoint
@@ -161,9 +161,7 @@ def compile_route(compiled_route: CompiledRouteDBModel) -> CompiledRoute:
 
     return CompiledRoute(
         service_code=formatted_code,
-        service_file_name=compiled_route.codeGraph.function_name.strip().replace(
-            " ", "_"
-        )
+        service_file_name=compiled_route.codeGraph.function_name.strip().replace(" ", "_")
         + "_service.py",
         main_function_name=compiled_route.codeGraph.function_name,
         request_param_str=req_param_str,

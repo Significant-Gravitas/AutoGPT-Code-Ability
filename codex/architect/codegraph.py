@@ -100,9 +100,7 @@ class CodeGraphAIBlock(AIBlock):
         except Exception as e:
             raise ValidationError(f"Error validating response: {e}")
 
-    async def create_item(
-        self, ids: Indentifiers, validated_response: ValidatedResponse
-    ):
+    async def create_item(self, ids: Indentifiers, validated_response: ValidatedResponse):
         """This is just a temporary that doesnt have a database model"""
         try:
             funciton_defs = []
