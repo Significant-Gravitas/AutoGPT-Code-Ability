@@ -1,0 +1,35 @@
+name: Python Code Quality
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.11
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install isort ruff
+
+    - name: Run isort
+      run: isort .
+
+    - name: Run ruff with auto-fix
+      run: ruff --fix .
+
+    - name: Run ruff formatter
+      run: ruff format .
+      
+    - uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        commit_message: 'style fixes by ruff'
