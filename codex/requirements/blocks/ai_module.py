@@ -113,9 +113,6 @@ if __name__ == "__main__":
                 "joint_q_and_a": joint_q_and_a,
                 "requirements_q_and_a_string": requirements_q_and_a_string,
                 "requirements": requirements_as_string,
-                # "features": features_str,
-                # "project_description": project_description,
-                # "project_description_thoughts": thoughts,
             },
         )
 
