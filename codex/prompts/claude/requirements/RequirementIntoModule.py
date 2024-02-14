@@ -1,10 +1,9 @@
 from codex.prompts.claude.requirements.NestJSDocs import (
     NEST_JS_CRUD_GEN,
+    NEST_JS_FIRST_STEPS,
     NEST_JS_MODULES,
     NEST_JS_SQL,
-    NEST_JS_FIRST_STEPS,
 )
-
 
 # This is a two part prompt!!!
 REQUIREMENTS_INTO_MODULES = """
@@ -84,7 +83,7 @@ Thoughts on things that shouldn't be modules
 </think_anti>
 <answer> <module> <name> name of the module </name> <description> a description of the module </description> <command> command to generate the module in the following format `nest g module cats` </command> </module> ... repeat for other modules </answer> <concluding_think> thoughts </concluding_think>
 
-Assistant: 
+Assistant:
 
 """
 # becomes modules

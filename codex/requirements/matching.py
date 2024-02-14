@@ -1,4 +1,4 @@
-from fuzzywuzzy import process, fuzz
+from fuzzywuzzy import fuzz, process
 
 
 def find_best_match(target: str, choices: list[str], threshold: int = 80):

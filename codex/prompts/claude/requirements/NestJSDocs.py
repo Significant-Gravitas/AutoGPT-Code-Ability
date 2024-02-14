@@ -1818,7 +1818,7 @@ export class UsersResolver {
 
 """
 
-NEST_JS_CLI_RULES = """
+NEST_JS_CLI_RULES = r"""
 ### CLI command reference
 
 #### nest new

@@ -1,7 +1,8 @@
 # Anthropic Completion
 from enum import Enum
 from typing import Type, TypeVar
-from anthropic import Anthropic, HUMAN_PROMPT, AI_PROMPT
+
+from anthropic import AI_PROMPT, HUMAN_PROMPT, Anthropic
 from anthropic.types import Completion as ACompletion
 from pydantic import BaseModel, ValidationError
 

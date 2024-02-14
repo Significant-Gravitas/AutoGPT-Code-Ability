@@ -77,10 +77,10 @@ def test() -> None:
 @cli.command()
 def serve() -> None:
     import uvicorn
+
     from codex.app import app
 
     uvicorn.run(app, host="0.0.0.0", port=os.environ.get("PORT", 8000))
-
 
 
 if __name__ == "__main__":

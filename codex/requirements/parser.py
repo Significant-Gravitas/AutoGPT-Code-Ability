@@ -1,6 +1,7 @@
 from typing import Type, TypeVar
-from gravitasml.token import tokenize, Token
+
 from gravitasml.parser import Parser
+from gravitasml.token import Token, tokenize
 from pydantic import BaseModel
 
 T = TypeVar("T", bound=BaseModel)

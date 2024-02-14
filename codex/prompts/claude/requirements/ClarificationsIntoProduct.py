@@ -6,9 +6,9 @@ You already have considerations such as the following:
 
 Assistant: Okay, ask away.
 
-Human: You are an expert product owner. 
+Human: You are an expert product owner.
 
-Given the basic project description and the clarification, Q&A write a detailed product description. 
+Given the basic project description and the clarification, Q&A write a detailed product description.
 The project description should be at least 750 words. Be clear and exhaustive such that it is easy to determine the functional and non-functional requirements of the product.
 You should carefully think about it step by step and share those answers in a block set off by  <think>thoughts here</think>.
 

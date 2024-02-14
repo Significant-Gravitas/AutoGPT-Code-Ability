@@ -1,11 +1,10 @@
 import enum
 from typing import List
+
+from fuzzywuzzy import fuzz, process
 from pydantic import BaseModel
-from pydantic import BaseModel
-import enum
+
 from codex.requirements.model import ReplyEnum, RequirementsRefined
-from fuzzywuzzy import fuzz
-from fuzzywuzzy import process
 
 
 def convert_requirements(requirements_qa) -> RequirementsRefined:

@@ -1,11 +1,21 @@
-from asyncio import run
 import logging
+from asyncio import run
 
 import openai
 import prisma
 from prisma.enums import AccessLevel
 
 from codex.common.ai_block import Indentifiers
+from codex.prompts.claude.requirements.AskFunction import *
+from codex.prompts.claude.requirements.ClarificationsIntoProduct import *
+from codex.prompts.claude.requirements.EndpointGeneration import *
+from codex.prompts.claude.requirements.ModuleIntoDatabase import *
+from codex.prompts.claude.requirements.ModuleRefinement import *
+from codex.prompts.claude.requirements.ProductIntoRequirement import *
+from codex.prompts.claude.requirements.QAFormat import *
+from codex.prompts.claude.requirements.RequirementIntoModule import *
+from codex.prompts.claude.requirements.SearchFunction import *
+from codex.prompts.claude.requirements.TaskIntoClarifcations import *
 from codex.requirements import flatten_endpoints
 from codex.requirements.ai_clarify import (
     FrontendClarificationBlock,
@@ -14,6 +24,10 @@ from codex.requirements.ai_clarify import (
     UserSkillClarificationBlock,
 )
 from codex.requirements.ai_feature import FeatureGenerationBlock
+from codex.requirements.build_requirements_refinement_object import (
+    RequirementsRefined,
+    convert_requirements,
+)
 from codex.requirements.complete import complete_and_parse, complete_anth
 from codex.requirements.database import create_spec
 from codex.requirements.gather_task_info import gather_task_info_loop
@@ -44,26 +58,8 @@ from codex.requirements.model import (
     ResponseModel,
     StateObj,
 )
-
-from codex.prompts.claude.requirements.ClarificationsIntoProduct import *
-from codex.prompts.claude.requirements.ProductIntoRequirement import *
-from codex.prompts.claude.requirements.RequirementIntoModule import *
-from codex.prompts.claude.requirements.TaskIntoClarifcations import *
-from codex.prompts.claude.requirements.ModuleRefinement import *
-from codex.prompts.claude.requirements.ModuleIntoDatabase import *
-from codex.prompts.claude.requirements.EndpointGeneration import *
-from codex.prompts.claude.requirements.AskFunction import *
-from codex.prompts.claude.requirements.QAFormat import *
-from codex.prompts.claude.requirements.SearchFunction import *
-from codex.requirements.build_requirements_refinement_object import (
-    convert_requirements,
-    RequirementsRefined,
-)
 from codex.requirements.parser import parse
-from codex.requirements.unwrap_schemas import (
-    convert_endpoint,
-    unwrap_db_schema,
-)
+from codex.requirements.unwrap_schemas import convert_endpoint, unwrap_db_schema
 
 logger = logging.getLogger(__name__)
 
@@ -421,11 +417,11 @@ if __name__ == "__main__":
 
     oai = openai.OpenAI()
 
-    task = """The Tutor App is an app designed for tutors to manage their clients, schedules, and invoices. 
+    task = """The Tutor App is an app designed for tutors to manage their clients, schedules, and invoices.
 
 It must support both the client and tutor scheduling, rescheduling and canceling appointments, and sending invoices after the appointment has passed.
 
-Clients can sign up with OAuth2 or with traditional sign-in authentication. If they sign up with traditional authentication, it must be safe and secure. There will need to be password reset and login capabilities. 
+Clients can sign up with OAuth2 or with traditional sign-in authentication. If they sign up with traditional authentication, it must be safe and secure. There will need to be password reset and login capabilities.
 
 There will need to be authorization for identifying clients vs the tutor.
 
