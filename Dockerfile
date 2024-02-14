@@ -45,4 +45,4 @@ ENV PORT=8000
 ENV OPENAI_API_KEY=""
 
 # This will be the command to run the FastAPI server using uvicorn
-CMD uvicorn codex.app:app --host 0.0.0.0 --port $PORT  --log-level info
+CMD ./run serve
