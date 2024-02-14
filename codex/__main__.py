@@ -77,15 +77,8 @@ def test() -> None:
 @cli.command()
 def serve() -> None:
     import uvicorn
-
-    import codex.common.logging_config
     from codex.app import app
 
-    codex.common.logging_config.setup_logging(
-        local=os.environ.get("ENV", "CLOUD").lower() == "local"
-    )
-    logger = codex.common.logging_config.get_logger(__name__)
-    logger.info("Starting codex server...")
     uvicorn.run(app, host="0.0.0.0", port=os.environ.get("PORT", 8000))
 
 
