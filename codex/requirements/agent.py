@@ -224,9 +224,7 @@ async def generate_requirements(
                 running_state_obj.requirements, default=pydantic_encoder
             ),
             "joint_q_and_a": running_state_obj.joint_q_and_a(),
-            "features": json.dumps(
-                running_state_obj.features, default=pydantic_encoder
-            ),
+            "features": json.dumps(running_state_obj.features, default=pydantic_encoder),
         },
     )
 
