@@ -9,21 +9,14 @@ from jinja2 import Environment, FileSystemLoader
 from openai import OpenAI
 from openai.types import CompletionUsage
 from openai.types.chat import ChatCompletion
+from prisma.fields import Json
 from prisma.models import LLMCallAttempt, LLMCallTemplate
+from prisma.types import LLMCallAttemptCreateInput, LLMCallTemplateCreateInput
 from pydantic import BaseModel
 
+from codex.api_model import Indentifiers
+
 logger = logging.getLogger(__name__)
-
-# From Langchain
-PYDANTIC_FORMAT_INSTRUCTIONS = """The output should be formatted as a JSON instance that conforms to the JSON schema below.
-
-As an example, for the schema {{"properties": {{"foo": {{"title": "Foo", "description": "a list of strings", "type": "array", "items": {{"type": "string"}}}}}}, "required": ["foo"]}}
-the object {{"foo": ["bar", "baz"]}} is a well-formatted instance of the schema. The object {{"properties": {{"foo": ["bar", "baz"]}}}} is not well-formatted.
-
-Here is the output schema:
-```
-{schema}
-```"""
 
 
 class LLMFailure(Exception):
@@ -51,14 +44,6 @@ class ValidatedResponse(BaseModel):
         arbitrary_types_allowed = True
 
 
-class Indentifiers(BaseModel):
-    user_id: int
-    app_id: int
-    spec_id: int | None = None
-    completed_app_id: int | None = None
-    deployment_id: int | None = None
-
-
 class AIBlock:
     """
     The AI BLock is a base class for all AI Blocks. It provides a common interface for
@@ -69,7 +54,11 @@ class AIBlock:
     objects generated from the AI Block.
 
     YOU MUST IMPLEMENT THE FOLLOWING METHODS:
-        - def validate(self, invoke_params: dict, response: ValidatedResponse) -> ValidatedResponse:
+        - def validate(
+            self,
+            invoke_params: dict,
+            response: ValidatedResponse
+            ) -> ValidatedResponse:
         - async def create_item(self, validated_response: ValidatedResponse):
 
     You should also implement theses methods if you want to use the database logic:
@@ -102,6 +91,27 @@ class AIBlock:
         )
         self.templates_dir = pathlib.Path(self.template_base_path).resolve(strict=True)
         self.call_template_id = None
+
+    async def load_pydantic_format_instructions(self):
+        if self.pydantic_object:
+            schema = self.pydantic_object.schema()
+
+            template_dir = os.path.join(
+                os.path.dirname(__file__),
+                f"../{self.template_base_path}/techniques/",
+            )
+
+            try:
+                templates_env = Environment(loader=FileSystemLoader(template_dir))
+                prompt_template = templates_env.get_template(
+                    "pydantic_format_instruction.j2"
+                )
+                self.PYDANTIC_FORMAT_INSTRUCTIONS = prompt_template.render(
+                    {"schema": schema}
+                )
+            except Exception as e:
+                logger.error(f"Error loading template: {e}")
+                raise PromptTemplateInvocationError(f"Error loading template: {e}")
 
     async def store_call_template(self):
         template_str = ""
@@ -164,23 +174,23 @@ class AIBlock:
         app_id: int,
         response: ValidatedResponse,
         attempt: int,
-        prompt: str,
+        prompt: Json,
     ):
         assert self.call_template_id, "Call template ID not set"
 
         call_attempt = await LLMCallAttempt.prisma().create(
-            data={
-                "userId": user_id,
-                "appId": app_id,
-                "callTemplateId": self.call_template_id,
-                "completionTokens": response.usage_statistics.completion_tokens,
-                "promptTokens": response.usage_statistics.prompt_tokens,
-                "totalTokens": response.usage_statistics.total_tokens,
-                "attempt": attempt,
-                "prompt": json.dumps(prompt) if not isinstance(prompt, str) else prompt,
-                "response": response.message,
-                "model": self.model,
-            }
+            data=LLMCallAttemptCreateInput(
+                userId=user_id,
+                appId=app_id,
+                callTemplateId=self.call_template_id,
+                completionTokens=response.usage_statistics.completion_tokens,
+                promptTokens=response.usage_statistics.prompt_tokens,
+                totalTokens=response.usage_statistics.total_tokens,
+                attempt=attempt,
+                prompt=Json(prompt),
+                response=response.message,
+                model=self.model,
+            )
         )
 
         return call_attempt
@@ -215,6 +225,12 @@ class AIBlock:
         elif message.function_call is not None:
             raise NotImplementedError("Function calls are not supported")
 
+        if usage_statistics is None:
+            raise ParsingError("Usage statistics are missing")
+
+        if message.content is None:
+            raise ParsingError("Message content is missing")
+
         return ValidatedResponse(
             response=message.content,
             usage_statistics=usage_statistics,
@@ -239,6 +255,9 @@ class AIBlock:
         raise NotImplementedError("Validate Method not implemented")
 
     def get_format_instructions(self) -> str:
+        if not self.pydantic_object:
+            raise ValueError("pydantic_object not set")
+
         schema = self.pydantic_object.schema()
 
         # Remove extraneous fields.
@@ -250,7 +269,7 @@ class AIBlock:
         # Ensure json in context is well-formed with double quotes.
         schema_str = json.dumps(reduced_schema)
 
-        return PYDANTIC_FORMAT_INSTRUCTIONS.format(schema=schema_str)
+        return self.PYDANTIC_FORMAT_INSTRUCTIONS.format(schema=schema_str)
 
     async def invoke(
         self, ids: Indentifiers, invoke_params: dict, max_retries=3
@@ -258,7 +277,7 @@ class AIBlock:
         validated_response = None
         if not self.call_template_id:
             await self.store_call_template()
-
+        presponse = None
         retries = 0
         try:
             if self.is_json_response:
@@ -290,7 +309,7 @@ class AIBlock:
                 ids.app_id,
                 presponse,
                 retries,
-                request_params["messages"],
+                Json(request_params["messages"]),
             )
 
             validated_response = self.validate(invoke_params, presponse)
@@ -300,29 +319,34 @@ class AIBlock:
             while retries < max_retries:
                 retries += 1
                 try:
-                    invoke_params["generation"] = presponse.message
+                    if presponse:
+                        invoke_params["generation"] = presponse.message
+                    else:
+                        invoke_params["generation"] = "Error generating response"
                     invoke_params["error"] = str(error_message)
 
                     retry_prompt = self.load_temaplate("retry", invoke_params)
-                    request_params["messages"] = (
-                        [
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": retry_prompt},
-                        ],
-                    )
+                    request_params["messages"] = [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": retry_prompt},
+                    ]
                     response = self.oai_client.chat.completions.create(**request_params)
                     presponse = self.parse(response)
+                    assert request_params["messages"], "Messages not set"
 
                     await self.store_call_attempt(
+                        ids.user_id,
+                        ids.app_id,
                         presponse,
                         retries,
-                        request_params["messages"],
+                        Json(request_params["messages"]),
                     )
-                    validated_response = self.validate(ids, presponse)
+                    validated_response = self.validate(invoke_params, presponse)
                     break
                 except Exception as retry_error:
                     logger.error(
-                        f"{retries}/{max_retries} Error validating response: {retry_error}"
+                        f"{retries}/{max_retries}"
+                        + f" Error validating response: {retry_error}"
                     )
                     continue
             if not validated_response:
