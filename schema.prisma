@@ -19,19 +19,22 @@ generator db {
 // ---------------------------------------------------------------------- //
 // ------------------------- Common Models ------------------------------ //
 // ---------------------------------------------------------------------- //
-model CodexUser {
-  id             Int              @id @default(autoincrement())
-  discord_id     String           @unique
-  createdAt      DateTime         @default(now())
-  email          String?
-  name           String?
-  role           Role             @default(USER)
-  password       String?
-  deleted        Boolean          @default(false)
-  apps           Application[]
-  spes           Specification[]
-  LLMCallAttempt LLMCallAttempt[]
-  Deployment     Deployment[]
+
+model User {
+  id              String    @id @default(dbgenerated("gen_random_uuid()"))
+  // This should probably have a shared id with Cloud Services so that we can look up users across them
+  cloudServicesId String?   @unique
+  discordId       String    @unique
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  lastSeen        DateTime?
+  role            Role      @default(USER)
+  deleted         Boolean   @default(false)
+
+  applications    Application[]
+  specifications  Specification[]
+  llmCallAttempts LLMCallAttempt[]
+  deployments     Deployment[]
 }
 
 enum Role {
@@ -40,16 +43,17 @@ enum Role {
 }
 
 model Application {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  name      String
-  deleted   Boolean  @default(false)
+  id          String   @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  name        String
+  description String?
+  deleted     Boolean  @default(false)
 
-  userId         Int
-  user           CodexUser        @relation(fields: [userId], references: [id])
-  specs          Specification[]
-  LLMCallAttempt LLMCallAttempt[]
+  specifications  Specification[]
+  llmCallAttempts LLMCallAttempt[]
+  User            User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String?
 }
 
 // ------------------------- Requirements Models ------------------------------ //
@@ -57,19 +61,19 @@ model Application {
 // ------------------------- -------------------------------------------------- //
 
 model Specification {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @default(dbgenerated("gen_random_uuid()"))
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   deleted   Boolean  @default(false)
+  name      String
+  context   String
 
-  name          String
-  context       String
-  apiRoutes     APIRouteSpec[]
-  completedApp  CompletedApp[]
-  app           Application?   @relation(fields: [applicationId], references: [id])
-  applicationId Int?
-  User          CodexUser?     @relation(fields: [userId], references: [id])
-  userId        Int?
+  apiRouteSpecs APIRouteSpec[]
+  completedApps CompletedApp[]
+  User          User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String?
+  Application   Application?   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId String?
 }
 
 enum AccessLevel {
@@ -78,80 +82,114 @@ enum AccessLevel {
   ADMIN
 }
 
+enum HTTPVerb {
+  GET
+  POST
+  PUT
+  PATCH
+  DELETE
+  OPTIONS
+  HEAD
+  CONNECT
+  TRACE
+}
+
+model DataModel {
+  id             String        @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt      DateTime      @default(now())
+  name           String
+  description    String?
+  params         Param[]
+  APIRouteSpec   APIRouteSpec? @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
+  apiRouteSpecId String?
+}
+
 model APIRouteSpec {
-  id               Int             @id @default(autoincrement())
-  createdAt        DateTime        @default(now())
-  functionName     String
-  method           String
-  path             String
-  description      String
-  accessLevel      AccessLevel
-  schemas          DatabaseSchema? @relation(fields: [databaseSchemaId], references: [id])
-  databaseSchemaId Int?
-  spec             Specification?  @relation(fields: [specId], references: [id])
-  specId           Int?
-  requestObjects   RequestObject?  @relation(fields: [requestObjectId], references: [id])
-  requestObjectId  Int?
-  responseObject   ResponseObject? @relation(fields: [responseObjectId], references: [id])
-  responseObjectId Int?
-  CodeGraph        CodeGraph[]
-  CompiledRoute    CompiledRoute[]
+  id           String      @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt    DateTime    @default(now())
+  functionName String
+  method       HTTPVerb
+  path         String
+  description  String
+  accessLevel  AccessLevel
+
+  codeGraphs     CodeGraph[]
+  compiledRoutes CompiledRoute[]
+  dataModels     DataModel[]
+
+  Specification    Specification?  @relation(fields: [specificationId], references: [id], onDelete: Cascade)
+  specificationId  String?
+  ResponseObject   ResponseObject? @relation(fields: [responseObjectId], references: [id], onDelete: Cascade)
+  responseObjectId String?
+  RequestObject    RequestObject?  @relation(fields: [requestObjectId], references: [id], onDelete: Cascade)
+  requestObjectId  String?
+  DatabaseSchema   DatabaseSchema? @relation(fields: [databaseSchemaId], references: [id], onDelete: Cascade)
+  databaseSchemaId String?
 }
 
 model ResponseObject {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-
+  id          String   @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt   DateTime @default(now())
   name        String
   description String
-  apiRoutes   APIRouteSpec[]
-  params      Param[]
+
+  apiRouteSpecs APIRouteSpec[]
+  params        Param[]
 }
 
 model RequestObject {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-
+  id          String   @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt   DateTime @default(now())
   name        String
   description String
-  apiRoutes   APIRouteSpec[]
-  params      Param[]
+
+  apiRouteSpecs APIRouteSpec[]
+  params        Param[]
 }
 
 model Param {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
+  id          String   @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt   DateTime @default(now())
+  name        String
+  description String
+  paramType   String
 
-  name            String
-  description     String
-  param_type      String
-  requestObjects  RequestObject[]
-  responseObjects ResponseObject[]
+  DataModel        DataModel?      @relation(fields: [dataModelId], references: [id])
+  dataModelId      String?
+  ResponseObject   ResponseObject? @relation(fields: [responseObjectId], references: [id])
+  responseObjectId String?
+  RequestObject    RequestObject?  @relation(fields: [requestObjectId], references: [id])
+  requestObjectId  String?
 }
 
 // DatabaseSchema represents the schema of a database.
 // It includes a description and relationships to database tables and code graphs.
 model DatabaseSchema {
-  id          Int                          @id @default(autoincrement())
-  createdAt   DateTime                     @default(now())
-  embedding   Unsupported("vector(1536)")?
-  description String
-  tables      DatabaseTable[]
-  codeGraphs  CodeGraph[] // Link to multiple CodeGraphs
-  routeSpec   APIRouteSpec[]
+  id            String                       @id @default(dbgenerated("gen_random_uuid()"))
+  name          String?
+  createdAt     DateTime                     @default(now())
+  embedding     Unsupported("vector(1536)")?
+  description   String
+  DatabaseTable DatabaseTable[]
+  codeGraphs    CodeGraph[]
+  apiRouteSpecs APIRouteSpec[]
 }
 
 // DatabaseTable represents a table within a database schema.
 // It includes details about the table and relationships to schemas and other tables.
 model DatabaseTable {
-  id                Int                          @id @default(autoincrement())
-  createdAt         DateTime                     @default(now())
-  embedding         Unsupported("vector(1536)")?
-  description       String
-  definition        String
-  schemas           DatabaseSchema[]
-  relatedFromTables DatabaseTable[]              @relation("TableRelations")
-  relatedToTables   DatabaseTable[]              @relation("TableRelations")
+  id          String                       @id @default(dbgenerated("gen_random_uuid()"))
+  name        String?
+  createdAt   DateTime                     @default(now())
+  embedding   Unsupported("vector(1536)")?
+  description String
+  definition  String
+
+  // This seems like its gonna be a nightmare to keep track of for 1-1 1-M and M-M relationships
+  relatedFromTables DatabaseTable[] @relation("TableRelations")
+  relatedToTables   DatabaseTable[] @relation("TableRelations")
+  DatabaseSchema    DatabaseSchema? @relation(fields: [databaseSchemaId], references: [id])
+  databaseSchemaId  String?
 }
 
 // ------------------------- Architect Models ---------------------------- //
@@ -161,34 +199,37 @@ model DatabaseTable {
 // CodeGraph represents a graph-based representation of code or logic.
 // It is associated with function definitions and can be linked to a database schema.
 model CodeGraph {
-  id               Int                  @id @default(autoincrement())
-  createdAt        DateTime             @default(now())
-  function_name    String
-  apiPath          String
-  imports          String[]
-  code_graph       String
-  functionDefs     FunctionDefinition[]
-  compiledRoute    CompiledRoute?
-  databaseSchemaId Int? // Foreign key for one-to-many relationship
-  databaseSchema   DatabaseSchema?      @relation(fields: [databaseSchemaId], references: [id])
-  routeSpec        APIRouteSpec         @relation(fields: [routeSpecId], references: [id])
-  routeSpecId      Int
+  id           String   @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt    DateTime @default(now())
+  functionName String
+  apiPath      String
+  imports      String[]
+  codeGraph    String
+
+  functionDefinitions FunctionDefinition[]
+  APIRouteSpec        APIRouteSpec?        @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
+  apiRouteSpecId      String?
+  DatabaseSchema      DatabaseSchema?      @relation(fields: [databaseSchemaId], references: [id], onDelete: Cascade)
+  databaseSchemaId    String?
+  CompiledRoute       CompiledRoute?       @relation(fields: [compiledRouteId], references: [id], onDelete: Cascade)
+  compiledRouteId     String?
 }
 
 // FunctionDefinition defines a function, including its input and return types.
 // It links to a specific code graph and function.
 model FunctionDefinition {
-  id                Int        @id @default(autoincrement())
-  createdAt         DateTime   @default(now())
-  name              String
-  doc_string        String
-  args              String
-  return_type       String
-  function_template String
-  codeGraphId       Int
-  codeGraph         CodeGraph  @relation(fields: [codeGraphId], references: [id])
-  functionId        Int?
-  function          Functions? @relation(fields: [functionId], references: [id])
+  id               String   @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt        DateTime @default(now())
+  name             String
+  docString        String
+  args             String
+  returnType       String
+  functionTemplate String
+
+  CodeGraph   CodeGraph? @relation(fields: [codeGraphId], references: [id], onDelete: Cascade)
+  codeGraphId String?
+  Functions   Functions? @relation(fields: [functionsId], references: [id], onDelete: Cascade)
+  functionsId String?
 }
 
 // ------------------------- Developer Models ---------------------------- //
@@ -198,28 +239,32 @@ model FunctionDefinition {
 // Functions represents individual software functions.
 // It includes information about the function and its relationships to packages and compiled routes.
 model Functions {
-  id             Int                          @id @default(autoincrement())
-  createdAt      DateTime                     @default(now())
-  embedding      Unsupported("vector(1536)")?
-  name           String
-  doc_string     String
-  args           String
-  return_type    String
-  code           String
-  functionDefs   FunctionDefinition[]
-  packages       Package[]
-  compiledRoutes CompiledRoute[]
+  id         String                       @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt  DateTime                     @default(now())
+  embedding  Unsupported("vector(1536)")?
+  name       String
+  docString  String
+  args       String
+  returnType String
+  code       String
+
+  functionDefinitions FunctionDefinition[]
+  // Is one function part of many packages?
+  packages            Package[]
+  // Is one function part of many compiled routes?
+  compiledRoutes      CompiledRoute[]
 }
 
 // Package represents a software package, including its version and specifier.
 // It is related to functions that are part of the package.
 model Package {
-  id          Int         @id @default(autoincrement())
-  createdAt   DateTime    @default(now())
+  id          String   @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt   DateTime @default(now())
   packageName String
   version     String
   specifier   String
-  functions   Functions[]
+
+  functions Functions[]
 }
 
 // ------------------------- Delivery Models ----------------------------- //
@@ -227,32 +272,36 @@ model Package {
 // CompiledRoute represents a version of a route that has been processed or compiled.
 // It links to its source code graph and associated functions and applications.
 model CompiledRoute {
-  id             Int                          @id @default(autoincrement())
-  createdAt      DateTime                     @default(now())
-  embedding      Unsupported("vector(1536)")?
-  description    String
-  code           String
-  codeGraphId    Int                          @unique
-  codeGraph      CodeGraph                    @relation(fields: [codeGraphId], references: [id])
-  apiRouteSpec   APIRouteSpec                 @relation(fields: [apiRouteSpecId], references: [id])
-  apiRouteSpecId Int
-  functions      Functions[]
-  completedApp   CompletedApp[]
+  id          String                       @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt   DateTime                     @default(now())
+  embedding   Unsupported("vector(1536)")?
+  description String
+  code        String
+  // Why is this unique and here with the many to many relationship?
+  codeGraphId String                       @unique
+
+  functions     Functions[]
+  completedApps CompletedApp[]
+
+  codeGraphs     CodeGraph[]
+  APIRouteSpec   APIRouteSpec? @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
+  apiRouteSpecId String?
 }
 
 // Application represents the main software application entity.
 // It includes basic metadata and has relationships with compiled routes.
 model CompletedApp {
-  id             Int             @id @default(autoincrement())
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  deleted        Boolean         @default(false)
-  name           String
-  description    String
-  compiledRoutes CompiledRoute[]
-  spec           Specification?  @relation(fields: [specId], references: [id])
-  specId         Int?
-  Deployment     Deployment[]
+  id          String   @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deleted     Boolean  @default(false)
+  name        String
+  description String
+
+  compiledRoutes  CompiledRoute[]
+  deployments     Deployment[]
+  Specification   Specification?  @relation(fields: [specificationId], references: [id], onDelete: Cascade)
+  specificationId String?
 }
 
 // ---------------------------------------------------------------------- //
@@ -260,54 +309,52 @@ model CompletedApp {
 // ---------------------------------------------------------------------- //
 
 model Deployment {
-  id             Int           @id @default(autoincrement())
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  deleted        Boolean       @default(false)
-  fileName       String
-  fileSize       Int
-  path           String?
-  fileBytes      Bytes?
-  completedApp   CompletedApp? @relation(fields: [completedAppId], references: [id])
-  completedAppId Int?
-  User           CodexUser?    @relation(fields: [userId], references: [id])
-  userId         Int?
+  id        String   @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deleted   Boolean  @default(false)
+  fileName  String
+  fileSize  Int
+  path      String?
+  fileBytes Bytes?
+
+  User           User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String?
+  CompletedApp   CompletedApp? @relation(fields: [completedAppId], references: [id], onDelete: Cascade)
+  completedAppId String?
 }
 
 // ------------------------- LLM Models ----------------------------- //
 
 model LLMCallTemplate {
-  id           Int              @id @default(autoincrement())
-  createdAt    DateTime         @default(now())
+  id           String   @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt    DateTime @default(now())
   templateName String
   fileHash     String
   systemPrompt String
   userPrompt   String
   retryPrompt  String
-  uses         LLMCallAttempt[]
+
+  uses LLMCallAttempt[]
 }
 
 model LLMCallAttempt {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-
-  User   CodexUser?   @relation(fields: [userId], references: [id])
-  userId Int?
-  app    Application? @relation(fields: [appId], references: [id])
-  appId  Int?
-
+  id               String   @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt        DateTime @default(now())
   model            String
   completionTokens Int
+  promptTokens     Int
+  totalTokens      Int
+  attempt          Int
+  prompt           Json
+  response         String
 
-  promptTokens Int
-  totalTokens  Int
-  attempt      Int
-
-  prompt   Json
-  response String
-
-  callTemplateId Int
-  callTemplate   LLMCallTemplate @relation(fields: [callTemplateId], references: [id])
+  User              User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String?
+  Application       Application?     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId     String?
+  LLMCallTemplate   LLMCallTemplate? @relation(fields: [llmCallTemplateId], references: [id], onDelete: Cascade)
+  llmCallTemplateId String?
 }
 
 // Application (Task)
