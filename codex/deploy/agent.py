@@ -111,7 +111,7 @@ app = FastAPI(title="{application.name}", description="{application.description}
         logger.info(f"Creating route for {route_path}")
         # import the main function from the service file
         compiled_route_module = compiled_route.service_file_name.replace(".py", "")
-        service_import = "from project.{compiled_route_module} import *"
+        service_import = f"from project.{compiled_route_module} import *"
         server_code_imports.append(service_import)
 
         # Write the api endpoint
