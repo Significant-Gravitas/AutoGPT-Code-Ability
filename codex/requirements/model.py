@@ -56,17 +56,17 @@ class Requirements(BaseModel):
         return f"#### {self.name}\n##### Thoughts\n{self.thoughts}\n##### Description\n{self.description}"
 
 
-class RequirementWrapper(BaseModel):
-    requirement: Requirements
+# class RequirementWrapper(BaseModel):
+#     requirement: Requirements
 
-    def __str__(self) -> str:
-        return self.requirement.__str__()
+#     def __str__(self) -> str:
+#         return self.requirement.__str__()
 
 
 @dataclass(repr=True)
 class ReqObj:
-    functional: list[RequirementWrapper]
-    nonfunctional: list[RequirementWrapper]
+    functional: list[Requirements]
+    nonfunctional: list[Requirements]
 
     def __str__(self) -> str:
         functionals = ""
@@ -87,7 +87,7 @@ class RequirementsGenResponse(BaseModel):
 class RequirementsQA:
     question: str
     think: str
-    answer: str
+    answer: str | list[str]
 
 
 class Feature(BaseModel):
@@ -115,13 +115,13 @@ class FeaturesSuperObject(BaseModel):
     features: list[FeatureWrapper]
 
 
-class WrappedRequirementsQA(BaseModel):
-    wrapper: RequirementsQA
+# class WrappedRequirementsQA(BaseModel):
+#     wrapper: RequirementsQA
 
 
 class RequirementsResponse(BaseModel):
     think: str
-    answer: list[WrappedRequirementsQA]
+    answer: list[RequirementsQA]
 
 
 class ModuleRefinementRequirement(BaseModel):
@@ -212,7 +212,7 @@ class APIEndpointWrapper(BaseModel):
 class EndpointSchemaRefinementResponse(BaseModel):
     think: str
     db_models_needed: Optional[str]
-    new_api_models: Optional[str] | NewAPIModelWrapper | list[NewAPIModelWrapper]
+    new_api_models: (Optional[str] | NewAPIModelWrapper | list[NewAPIModelWrapper])
     api_endpoint: APIEndpointWrapper
     end_thoughts: Optional[str]
 
@@ -308,20 +308,13 @@ class Module(BaseModel):
         return f"{text}"
 
 
-class ModuleWrapper(BaseModel):
-    module: Module
-
-    def __str__(self) -> str:
-        return self.module.__str__()
-
-
 class ModuleResponse(BaseModel):
     think_general: str
     think_anti: str
-    answer: List[ModuleWrapper]
+    modules: List[Module]
 
     def __str__(self) -> str:
-        answer_str = "\n".join(str(x) for x in self.answer)
+        answer_str = "\n".join(str(x) for x in self.modules)
         return f"Thoughts: {self.think_general}\nAnti:{self.think_anti}\n{answer_str}"
 
 
@@ -362,14 +355,15 @@ class ReplyEnum(enum.Enum):
         return super().__eq__(other)
 
     @classmethod
-    def _missing_(cls, value: str):
-        value = value.replace("/", "").lower()
-        if value.lower() == "yes":
-            return ReplyEnum.YES
-        elif value.lower() == "no":
-            return ReplyEnum.NO
-        elif value.lower() == "na":
-            return ReplyEnum.NA
+    def _missing_(cls, value: object):
+        if isinstance(value, str):
+            value = value.replace("/", "").lower()
+            if value.lower() == "yes":
+                return ReplyEnum.YES
+            elif value.lower() == "no":
+                return ReplyEnum.NO
+            elif value.lower() == "na":
+                return ReplyEnum.NA
         raise ValueError(f"{value} is not a valid ReplyEnum")
 
 
@@ -421,6 +415,8 @@ class RequirementsRefined(BaseModel):
 
     authorization_roles: List[str] = []
     authorization_roles_justification: str = ""
+
+    dirty_requirements: Optional[list[RequirementsQA]]
 
 
 class DatabaseSchemaRequirement(BaseModel):
@@ -553,8 +549,11 @@ class StateObj:
     def requirements_q_and_a_string(self) -> str:
         output: str = ""
         for req in self.requirements_q_and_a:
+            answer_text = (
+                req.answer if isinstance(req.answer, str) else "\n".join(req.answer)
+            )
             output += self.convert_to_q_and_a_format(
-                req.question, req.answer, req.think
+                req.question, answer_text, req.think
             )
         return output
 
