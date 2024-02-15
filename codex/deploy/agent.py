@@ -1,11 +1,14 @@
 import ast
 import base64
 import logging
+from typing import Tuple
 
 import black
 import isort
+from prisma.fields import Base64
 from prisma.models import CompiledRoute as CompiledRouteDBModel
 from prisma.models import CompletedApp, Deployment
+from prisma.types import DeploymentCreateInput
 
 from codex.api_model import Indentifiers
 from codex.deploy.model import Application, CompiledRoute
@@ -21,18 +24,15 @@ async def create_deployment(
     app = compile_application(completedApp)
     zip_file = create_zip_file(app)
     file_name = completedApp.name.replace(" ", "_")
-    encoded_bytes = base64.b64encode(zip_file).decode(
-        "utf-8"
-    )  # Decode to get a string representation
 
     deployment = await Deployment.prisma().create(
-        data={
-            "completedApp": {"connect": {"id": completedApp.id}},
-            "User": {"connect": {"id": ids.user_id}},
-            "fileName": f"{file_name}.zip",
-            "fileSize": len(zip_file),
-            "fileBytes": encoded_bytes,
-        }
+        data=DeploymentCreateInput(
+            completedApp={"connect": {"id": completedApp.id}},
+            User={"connect": {"id": ids.user_id}},
+            fileName=f"{file_name}.zip",
+            fileSize=len(zip_file),
+            fileBytes=Base64(zip_file),
+        )
     )
     return deployment
 
@@ -44,9 +44,21 @@ def compile_application(app: CompletedApp) -> Application:
     try:
         compiled_routes = {}
         packages = []
+        if not app.compiledRoutes:
+            raise ValueError("No compiled routes found for application")
+
         for db_compiled_route in app.compiledRoutes:
+            if not db_compiled_route.apiRouteSpec:
+                raise ValueError(
+                    f"No APIRouteSpec found for route {db_compiled_route.id}"
+                )
+
+            if not db_compiled_route.functions:
+                raise ValueError(f"No functions found for route {db_compiled_route.id}")
+
             logger.info(
-                f"Compiling route {db_compiled_route.apiRouteSpec.path}. Num Functions: { len(db_compiled_route.functions)}"
+                f"Compiling route {db_compiled_route.apiRouteSpec.path}."
+                f" Num Functions: { len(db_compiled_route.functions)}"
             )
             for function in db_compiled_route.functions:
                 if function.packages:
@@ -62,7 +74,7 @@ def compile_application(app: CompletedApp) -> Application:
                 db_compiled_route
             )
 
-        app = Application(
+        app_model = Application(
             name=app.name,
             description=app.description,
             server_code="",
@@ -73,7 +85,7 @@ def compile_application(app: CompletedApp) -> Application:
         logger.exception("Error compiling application")
         raise e
 
-    return create_server_code(app)
+    return create_server_code(app_model)
 
 
 def create_server_code(application: Application) -> Application:
@@ -90,16 +102,20 @@ def create_server_code(application: Application) -> Application:
         "import logging",
         "from typing import *",
     ]
-    server_code_header = f"""logger = logging.getLogger(__name__)\n\napp = FastAPI(title="{application.name}", description="{application.description}")"""
+    server_code_header = f"""logger = logging.getLogger(__name__)
+
+app = FastAPI(title="{application.name}", description="{application.description}")"""
+
     service_routes_code = []
     for route_path, compiled_route in application.routes.items():
         logger.info(f"Creating route for {route_path}")
         # import the main function from the service file
-        service_import = f"from project.{compiled_route.service_file_name.replace('.py', '')} import *"
+        compiled_route_module = compiled_route.service_file_name.replace(".py", "")
+        service_import = "from project.{compiled_route_module} import *"
         server_code_imports.append(service_import)
 
         # Write the api endpoint
-        # TODO: pass the request method
+        # TODO: pass the request method from the APIRouteSpec
         route_code = f"""@app.post("{route_path}")
 async def {compiled_route.main_function_name}_route({compiled_route.request_param_str}):
     try:
@@ -133,6 +149,9 @@ def compile_route(compiled_route: CompiledRouteDBModel) -> CompiledRoute:
     packages = []
     imports = []
     rest_of_code_sections = []
+    if not compiled_route.functions:
+        raise ValueError(f"No functions found for route {compiled_route.id}")
+
     for i, function in enumerate(compiled_route.functions):
         logger.info(
             f"{i+1}/{len(compiled_route.functions)} Compiling function {function.name}"
@@ -142,6 +161,9 @@ def compile_route(compiled_route: CompiledRouteDBModel) -> CompiledRoute:
         rest_of_code_sections.append(rest_of_code)
         if function.packages:
             packages.extend(function.packages)
+
+    if not compiled_route.codeGraph:
+        raise ValueError(f"No codeGraph found for route {compiled_route.id}")
 
     import_code, main_function = extract_imports(compiled_route.codeGraph.code_graph)
     req_param_str, param_names_str = extract_request_params(
@@ -159,7 +181,11 @@ def compile_route(compiled_route: CompiledRouteDBModel) -> CompiledRoute:
 
     formatted_code = black.format_str(sorted_content, mode=black.FileMode())
 
+    if not compiled_route.apiRouteSpec:
+        raise ValueError(f"No APIRouteSpec found for route {compiled_route.id}")
+
     return CompiledRoute(
+        method=compiled_route.apiRouteSpec.method,
         service_code=formatted_code,
         service_file_name=compiled_route.codeGraph.function_name.strip().replace(
             " ", "_"
@@ -172,7 +198,7 @@ def compile_route(compiled_route: CompiledRouteDBModel) -> CompiledRoute:
     )
 
 
-def extract_request_params(main_function_code: str) -> str:
+def extract_request_params(main_function_code: str) -> Tuple[str, str]:
     """
     Extracts the request params from the main function code.
 
@@ -201,10 +227,10 @@ def extract_request_params(main_function_code: str) -> str:
     return params_annotations, param_names_str
 
 
-def extract_imports(function_code: str) -> (str, str):
+def extract_imports(function_code: str) -> Tuple[str, str]:
     """
-    Extracts the imports from the function code and returns them along with the rest of the code,
-    excluding the import statements.
+    Extracts the imports from the function code and returns them
+    along with the rest of the code, excluding the import statements.
     """
     # Parse the function code to an AST
     tree = ast.parse(function_code)
