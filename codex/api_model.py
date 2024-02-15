@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
-from prisma.types import Role
+from prisma.enums import Role
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -33,7 +33,7 @@ class UserBase(BaseModel):
     )
     email: Optional[EmailStr] = Field(None, description="The email address of the user")
     name: Optional[str] = Field(None, description="The name of the user")
-    role: Role = Field(default=Role.user, description="The role of the user")
+    role: Role = Field(default=Role.USER, description="The role of the user")
 
 
 class UserCreate(UserBase):
