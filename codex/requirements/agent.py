@@ -25,6 +25,7 @@ from codex.requirements.blocks.ai_clarify import (
     UserPersonaClarificationBlock,
     UserSkillClarificationBlock,
 )
+from codex.requirements.blocks.ai_database import DatabaseGenerationBlock
 from codex.requirements.blocks.ai_feature import FeatureGenerationBlock
 from codex.requirements.blocks.ai_module import ModuleGenerationBlock
 from codex.requirements.blocks.ai_requirements import (
@@ -203,7 +204,6 @@ async def generate_requirements(
         )
     )
 
-    print(requirements_func_nonfunc)
     running_state_obj.requirements = requirements_func_nonfunc.answer
 
     print("Requirements Done")
@@ -235,14 +235,14 @@ async def generate_requirements(
     print("Modules 1st Step Done")
 
     # Database Design
-    running_state_obj.database = None
-    db_response: DBResponse = complete_and_parse(
-        MODULE_INTO_INTO_DATABASE.format(
-            product_spec=running_state_obj.__str__(),
-            needed_auth_roles=running_state_obj.refined_requirement_q_a.authorization_roles,
-            modules={", ".join(module.name for module in running_state_obj.modules)},
-        ),
-        return_model=DBResponse,
+    database_block = DatabaseGenerationBlock()
+    db_response: DBResponse = await database_block.invoke(
+        ids=ids,
+        invoke_params={
+            "product_spec": running_state_obj.__str__(),
+            "needed_auth_roles": running_state_obj.refined_requirement_q_a.authorization_roles,
+            "modules": ", ".join(module.name for module in running_state_obj.modules),
+        },
     )
     running_state_obj.database = unwrap_db_schema(db_response.database_schema)
 
