@@ -18,7 +18,8 @@
       "source.organizeImports": "explicit",
       "source.fixAll": "explicit"
     },
-    "editor.formatOnType": true
+    "editor.formatOnType": true,
+    "editor.defaultFormatter": "charliermarsh.ruff"
   },
   "python.analysis.diagnosticSeverityOverrides": {},
   "python.analysis.typeCheckingMode": "standard",

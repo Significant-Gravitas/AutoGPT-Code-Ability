@@ -308,20 +308,13 @@ class Module(BaseModel):
         return f"{text}"
 
 
-class ModuleWrapper(BaseModel):
-    module: Module
-
-    def __str__(self) -> str:
-        return self.module.__str__()
-
-
 class ModuleResponse(BaseModel):
     think_general: str
     think_anti: str
-    answer: List[ModuleWrapper]
+    modules: List[Module]
 
     def __str__(self) -> str:
-        answer_str = "\n".join(str(x) for x in self.answer)
+        answer_str = "\n".join(str(x) for x in self.modules)
         return f"Thoughts: {self.think_general}\nAnti:{self.think_anti}\n{answer_str}"
 
 
