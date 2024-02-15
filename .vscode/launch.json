@@ -15,7 +15,8 @@
       "name": "Py: Codex",
       "type": "debugpy",
       "request": "launch",
-      "module": "codex"
+      "module": "codex",
+      "args": ["serve"]
     },
     {
       "name": "Py: Requirement Gen",
