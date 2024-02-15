@@ -60,6 +60,7 @@ async def create_deployment(
             spec_id=spec_id,
             completed_app_id=deliverable_id,
         )
+
         deployment = await deploy_agent.create_deployment(ids, completedApp)
 
         return DeploymentResponse(
@@ -175,14 +176,15 @@ async def download_deployment(deployment_id: int):
     """
     Download the zip file for a specific deployment.
     """
-    # Retrieve deployment details, assuming this returns an object that includes the file bytes
+    # Retrieve deployment details, assuming this
+    # returns an object that includes the file bytes
     deployment_details = await codex.deploy.database.get_deployment(
         deployment_id=deployment_id
     )
     if not deployment_details:
         raise HTTPException(status_code=404, detail="Deployment not found")
 
-    logger.info(f"Downloading deployment: {deployment_details}")
+    logger.info(f"Downloading deployment: {deployment_id}")
 
     # Decode the base64-encoded file bytes
     try:

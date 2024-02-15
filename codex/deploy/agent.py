@@ -5,7 +5,6 @@ from typing import Tuple
 
 import black
 import isort
-from prisma.fields import Base64
 from prisma.models import CompiledRoute as CompiledRouteDBModel
 from prisma.models import CompletedApp, Deployment
 from prisma.types import DeploymentCreateInput
@@ -25,15 +24,23 @@ async def create_deployment(
     zip_file = create_zip_file(app)
     file_name = completedApp.name.replace(" ", "_")
 
-    deployment = await Deployment.prisma().create(
-        data=DeploymentCreateInput(
-            completedApp={"connect": {"id": completedApp.id}},
-            User={"connect": {"id": ids.user_id}},
-            fileName=f"{file_name}.zip",
-            fileSize=len(zip_file),
-            fileBytes=Base64(zip_file),
+    try:
+        base64.b64encode(zip_file)
+        logger.info(f"Creating deployment for {completedApp.name}")
+        encoded_file_bytes = base64.b64encode(zip_file).decode("utf-8")
+        deployment = await Deployment.prisma().create(
+            data=DeploymentCreateInput(
+                completedApp={"connect": {"id": completedApp.id}},
+                User={"connect": {"id": ids.user_id}},
+                fileName=f"{file_name}.zip",
+                fileSize=len(zip_file),
+                # I need to do this as the Base64 type in prisma is not working
+                fileBytes=encoded_file_bytes,  # type: ignore
+            )
         )
-    )
+    except Exception as e:
+        logger.exception("Error creating deployment in database")
+        raise ValueError(f"Error creating deployment in database: {e}")
     return deployment
 
 
