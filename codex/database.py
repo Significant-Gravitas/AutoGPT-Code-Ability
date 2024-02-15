@@ -91,7 +91,7 @@ async def create_test_data():
 
 
 async def get_or_create_user_by_discord_id(discord_id: int) -> CodexUser:
-    user = await CodexUser.prisma().find_unique_or_raise(
+    user = await CodexUser.prisma().find_unique(
         where={"discord_id": str(discord_id)}
     )
 
