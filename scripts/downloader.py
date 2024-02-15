@@ -130,7 +130,9 @@ if __name__ == "__main__":
 
     # Extracting the 'descriptionPreview' field
     descriptions = [
-        bounty["descriptionPreview"] for bounty in data if "descriptionPreview" in bounty
+        bounty["descriptionPreview"]
+        for bounty in data
+        if "descriptionPreview" in bounty
     ]
 
     # Using TF-IDF to vectorize the descriptions

@@ -37,11 +37,14 @@ def convert_requirements(requirements_qa) -> RequirementsRefined:
                 if matched_question == "do we need db?":
                     requirements_refined.need_db = ReplyEnum(req_qa.answer)
                     requirements_refined.need_db_justification = req_qa.think
-                elif matched_question == "do we need an api for talking to a front end?":
+                elif (
+                    matched_question == "do we need an api for talking to a front end?"
+                ):
                     requirements_refined.need_frontend_api = ReplyEnum(req_qa.answer)
                     requirements_refined.need_frontend_api_justification = req_qa.think
                 elif (
-                    matched_question == "do we need an api for talking to other services?"
+                    matched_question
+                    == "do we need an api for talking to other services?"
                 ):
                     requirements_refined.need_other_services_api = ReplyEnum(
                         req_qa.answer
@@ -101,7 +104,9 @@ def convert_requirements(requirements_qa) -> RequirementsRefined:
                     )
                 elif matched_question == "do we need authentication?":
                     requirements_refined.need_authentication = ReplyEnum(req_qa.answer)
-                    requirements_refined.need_authentication_justification = req_qa.think
+                    requirements_refined.need_authentication_justification = (
+                        req_qa.think
+                    )
                 elif matched_question == "do we need authorization?":
                     requirements_refined.need_authorization = ReplyEnum(req_qa.answer)
                     requirements_refined.need_authorization_justification = req_qa.think
@@ -109,6 +114,8 @@ def convert_requirements(requirements_qa) -> RequirementsRefined:
                     requirements_refined.authorization_roles = [
                         role.strip("[]'\" ") for role in req_qa.answer.split(",")
                     ]
-                    requirements_refined.authorization_roles_justification = req_qa.think
+                    requirements_refined.authorization_roles_justification = (
+                        req_qa.think
+                    )
 
     return requirements_refined

@@ -49,7 +49,9 @@ class FeatureGenerationBlock(AIBlock):
 
         return response
 
-    async def create_item(self, ids: Indentifiers, validated_response: ValidatedResponse):
+    async def create_item(
+        self, ids: Indentifiers, validated_response: ValidatedResponse
+    ):
         """
         This is where we would store the response in the database
 

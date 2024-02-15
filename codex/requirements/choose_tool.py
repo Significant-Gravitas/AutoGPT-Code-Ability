@@ -17,7 +17,9 @@ def choose_tool(
                     return resp
                 else:
                     print("Generating Response for Ask")
-                    return choose_tool(f"search: {raw_prompt}", ask_callback=ask_callback)
+                    return choose_tool(
+                        f"search: {raw_prompt}", ask_callback=ask_callback
+                    )
             else:
                 print("Generating Response for Ask")
                 return choose_tool(f"search: {raw_prompt}", ask_callback=ask_callback)

@@ -256,7 +256,9 @@ async def generate_requirements(
     for module in refined_data.modules:
         module = module.module
         # Extract module names from running_state_obj.modules for comparison
-        existing_module_names = [existing.name for existing in running_state_obj.modules]
+        existing_module_names = [
+            existing.name for existing in running_state_obj.modules
+        ]
         # Find the best match for module.module_name in existing_module_names
         match = find_best_match(module.module_name, existing_module_names, threshold=80)
 
@@ -266,7 +268,9 @@ async def generate_requirements(
             for index, existing in enumerate(running_state_obj.modules):
                 if existing.name == best_match:
                     print(existing.name)
-                    running_state_obj.modules[index].description = module.new_description
+                    running_state_obj.modules[
+                        index
+                    ].description = module.new_description
                     endpoints = flatten_endpoints.flatten_endpoints(module.endpoints)
                     running_state_obj.modules[index].endpoints = endpoints
                     requirements = [
@@ -433,7 +437,9 @@ Additionally, it will have proper management of financials, including invoice ma
 
     async def run_gen():
         await db_client.connect()
-        output = await generate_requirements(ids=ids, app_name="Tutor", description=task)
+        output = await generate_requirements(
+            ids=ids, app_name="Tutor", description=task
+        )
         return output
 
     run(run_gen())
