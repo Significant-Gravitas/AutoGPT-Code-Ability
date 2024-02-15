@@ -1,4 +1,5 @@
 from prisma.models import Deployment
+from prisma.types import DeploymentCreateInput, DeploymentWhereInput
 
 from codex.api_model import DeploymentMetadata, DeploymentsListResponse, Pagination
 
@@ -24,12 +25,11 @@ async def list_deployments(
     user_id: int, deliverable_id: int, page: int, page_size: int
 ) -> DeploymentsListResponse:
     skip = (page - 1) * page_size
-
     total_items = await Deployment.prisma().count(
-        where={
-            "deliverable_id": deliverable_id,
-            "userId": user_id,
-        }
+        where=DeploymentWhereInput(
+            id=deliverable_id,
+            userId=user_id,
+        )
     )
     if total_items == 0:
         return DeploymentsListResponse(
@@ -42,18 +42,18 @@ async def list_deployments(
     deployments = await Deployment.prisma().find_many(
         skip=skip,
         take=page_size,
-        where={
-            "deliverable_id": deliverable_id,
-            "userId": user_id,
-        },
+        where=DeploymentWhereInput(
+            id=deliverable_id,
+            userId=user_id,
+        ),
     )
 
     ret_deployments = [
         DeploymentMetadata(
             id=deployment.id,
-            createdAt=deployment.createdAt,
-            fileName=deployment.fileName,
-            fileSize=deployment.fileSize,
+            created_at=deployment.createdAt,
+            file_name=deployment.fileName,
+            file_size=deployment.fileSize,
         )
         for deployment in deployments
     ]
