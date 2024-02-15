@@ -91,7 +91,9 @@ async def update_spec(
     Update a specific specification by its ID for a given application and user.
     """
     return Response(
-        content=json.dumps({"error": "Updating a specification is not yet implemented."}),
+        content=json.dumps(
+            {"error": "Updating a specification is not yet implemented."}
+        ),
         status_code=500,
         media_type="application/json",
     )

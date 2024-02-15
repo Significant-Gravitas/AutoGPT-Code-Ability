@@ -53,7 +53,9 @@ class BaseRequirementsBlock(AIBlock):
 
         return response
 
-    async def create_item(self, ids: Indentifiers, validated_response: ValidatedResponse):
+    async def create_item(
+        self, ids: Indentifiers, validated_response: ValidatedResponse
+    ):
         """
         This is where we would store the response in the database
 
@@ -87,8 +89,8 @@ class FuncNonFuncRequirementsBlock(AIBlock):
         blocks this is much more complex. If validation failes it triggers a retry.
         """
         try:
-            model: RequirementsGenResponse = RequirementsGenResponse.model_validate_json(
-                response.response
+            model: RequirementsGenResponse = (
+                RequirementsGenResponse.model_validate_json(response.response)
             )
 
             response.response = model
@@ -97,7 +99,9 @@ class FuncNonFuncRequirementsBlock(AIBlock):
 
         return response
 
-    async def create_item(self, ids: Indentifiers, validated_response: ValidatedResponse):
+    async def create_item(
+        self, ids: Indentifiers, validated_response: ValidatedResponse
+    ):
         """
         This is where we would store the response in the database
 

@@ -13,7 +13,9 @@ client = OpenAI(api_key="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")
 def get_openai_embeddings(texts):
     embeddings = []
     for text in texts:
-        response = client.embeddings.create(input=[text], model="text-embedding-ada-002")
+        response = client.embeddings.create(
+            input=[text], model="text-embedding-ada-002"
+        )
         embeddings.append(response.data[0].embedding)
     return embeddings
 
@@ -29,7 +31,9 @@ descriptions = [
     for bounty in bounties_data
     if "descriptionPreview" in bounty
 ]
-full_desc = [bounty["description"] for bounty in bounties_data if "description" in bounty]
+full_desc = [
+    bounty["description"] for bounty in bounties_data if "description" in bounty
+]
 # # Get OpenAI embeddings
 # embeddings = get_openai_embeddings(descriptions)
 

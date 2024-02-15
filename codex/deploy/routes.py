@@ -71,7 +71,9 @@ async def create_deployment(
         logger.error(f"Error creating deployment: {e}")
         # File upload handling and metadata storage implementation goes here
         return Response(
-            content=json.dumps({"error": "Error creating deployment", "details": str(e)}),
+            content=json.dumps(
+                {"error": "Error creating deployment", "details": str(e)}
+            ),
             status_code=500,
             media_type="application/json",
         )

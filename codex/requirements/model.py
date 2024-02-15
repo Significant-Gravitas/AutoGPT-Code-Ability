@@ -242,19 +242,17 @@ class Endpoint(BaseModel):
         data_model_text = ""
         database_text = ""
         if self.request_model:
-            request_response_text += (
-                f"##### Request: `{self.request_model.__str__() or 'Not defined yet'}`\n"
-            )
+            request_response_text += f"##### Request: `{self.request_model.__str__() or 'Not defined yet'}`\n"
         if self.response_model:
-            request_response_text += (
-                f"##### Response:`{self.request_model.__str__() or 'Not defined yet'}`\n"
-            )
+            request_response_text += f"##### Response:`{self.request_model.__str__() or 'Not defined yet'}`\n"
         if self.data_models:
             data_model_text += "\n\n".join(
                 [data_model.__str__() for data_model in self.data_models]
             )
         if self.database_schema:
-            database_text += f"##### Database Schema\n\n{self.database_schema.__str__()}"
+            database_text += (
+                f"##### Database Schema\n\n{self.database_schema.__str__()}"
+            )
         return f"##### {self.name}: `{self.type} {self.path}`\n\n{self.description}\n\n{request_response_text}\n\n{data_model_text}\n\n{database_text}"
 
 
@@ -544,7 +542,9 @@ class StateObj:
         return output
 
     def joint_q_and_a(self) -> str:
-        return self.clarifying_questions_as_string() + self.conclusive_q_and_a_as_string()
+        return (
+            self.clarifying_questions_as_string() + self.conclusive_q_and_a_as_string()
+        )
 
     def requirements_q_and_a_string(self) -> str:
         output: str = ""
@@ -552,7 +552,9 @@ class StateObj:
             answer_text = (
                 req.answer if isinstance(req.answer, str) else "\n".join(req.answer)
             )
-            output += self.convert_to_q_and_a_format(req.question, answer_text, req.think)
+            output += self.convert_to_q_and_a_format(
+                req.question, answer_text, req.think
+            )
         return output
 
     def __repr__(self):
