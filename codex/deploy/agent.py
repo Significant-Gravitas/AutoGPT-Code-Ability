@@ -1,6 +1,7 @@
 import ast
 import base64
 import logging
+from typing import Tuple
 
 import black
 import isort
@@ -197,7 +198,7 @@ def compile_route(compiled_route: CompiledRouteDBModel) -> CompiledRoute:
     )
 
 
-def extract_request_params(main_function_code: str) -> str:
+def extract_request_params(main_function_code: str) -> Tuple[str, str]:
     """
     Extracts the request params from the main function code.
 
@@ -226,10 +227,10 @@ def extract_request_params(main_function_code: str) -> str:
     return params_annotations, param_names_str
 
 
-def extract_imports(function_code: str) -> (str, str):
+def extract_imports(function_code: str) -> Tuple[str, str]:
     """
-    Extracts the imports from the function code and returns them along with the rest of the code,
-    excluding the import statements.
+    Extracts the imports from the function code and returns them
+    along with the rest of the code, excluding the import statements.
     """
     # Parse the function code to an AST
     tree = ast.parse(function_code)
