@@ -50,6 +50,9 @@ async def create_deployment(
                 }
             },
         )
+        if not completedApp:
+            raise ValueError(f"Completed app {deliverable_id} not found")
+
         logger.info(f"Creating deployment for {completedApp.name}")
         ids = Indentifiers(
             user_id=user_id,
@@ -97,9 +100,9 @@ async def get_deployment(
         return DeploymentResponse(
             deployment=DeploymentMetadata(
                 id=deployment.id,
-                createdAt=deployment.createdAt,
-                fileName=deployment.fileName,
-                fileSize=deployment.fileSize,
+                created_at=deployment.createdAt,
+                file_name=deployment.fileName,
+                file_size=deployment.fileSize,
             )
         )
     except ValueError as e:
