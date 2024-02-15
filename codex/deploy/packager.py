@@ -74,7 +74,7 @@ def create_zip_file(application: Application) -> bytes:
                 )
                 with open(service_file_path, "w") as service_file:
                     service_file.write(compiled_route.service_code)
-
+            logger.info("Created server code")
             # Create a zip file of the directory
             zip_file_path = os.path.join(app_dir, "server.zip")
             with zipfile.ZipFile(zip_file_path, "w") as zipf:
@@ -83,8 +83,10 @@ def create_zip_file(application: Application) -> bytes:
                         if file == "server.zip":
                             continue
                         file_path = os.path.join(root, file)
+                        print(file_path)
                         zipf.write(file_path, os.path.relpath(file_path, temp_dir))
 
+            logger.info("Created zip file")
             # Read and return the bytes of the zip file
             with open(zip_file_path, "rb") as zipf:
                 zip_bytes = zipf.read()

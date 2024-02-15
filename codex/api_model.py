@@ -187,7 +187,6 @@ class SpecificationResponse(BaseModel):
             apiRoutes=routes,
         )
 
-        print("success")
         return ret_obj
 
 
