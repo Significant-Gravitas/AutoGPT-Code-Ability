@@ -2,7 +2,8 @@ import logging
 import os
 import tempfile
 import zipfile
-from typing import List, defaultdict
+from collections import defaultdict
+from typing import List
 
 from codex.deploy.model import Application
 from codex.developer.model import Package
@@ -60,8 +61,12 @@ def create_zip_file(application: Application) -> bytes:
                 server_file.write(application.server_code)
 
             requirements_file_path = os.path.join(app_dir, "requirements.txt")
+            packages = ""
+            if application.packages:
+                packages = generate_requirements_txt(application.packages)
+
             with open(requirements_file_path, "w") as requirements_file:
-                requirements_file.write(generate_requirements_txt(application.packages))
+                requirements_file.write(packages)
 
             for route_name, compiled_route in application.routes.items():
                 service_file_path = os.path.join(
@@ -87,3 +92,4 @@ def create_zip_file(application: Application) -> bytes:
             return zip_bytes
     except Exception as e:
         logger.exception(e)
+        raise e
