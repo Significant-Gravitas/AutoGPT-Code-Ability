@@ -2,6 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
+from prisma.types import Role
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -15,18 +16,15 @@ class Indentifiers(BaseModel):
 
 
 class Pagination(BaseModel):
-    total_items: int = Field(..., description="Total number of items.", example=42)
-    total_pages: int = Field(..., description="Total number of pages.", example=97)
-    current_page: int = Field(..., description="Current_page page number.", example=1)
-    page_size: int = Field(..., description="Number of items per page.", example=25)
+    total_items: int = Field(..., description="Total number of items.", examples=[42])
+    total_pages: int = Field(..., description="Total number of pages.", examples=[97])
+    current_page: int = Field(
+        ..., description="Current_page page number.", examples=[1]
+    )
+    page_size: int = Field(..., description="Number of items per page.", examples=[25])
 
 
 ###### USERS ######
-
-
-class Role(str, Enum):
-    user = "USER"
-    admin = "ADMIN"
 
 
 class UserBase(BaseModel):
@@ -43,6 +41,7 @@ class UserCreate(UserBase):
 
 
 class UserUpdate(BaseModel):
+    id: int = Field(..., description="The unique identifier of the user")
     email: Optional[EmailStr] = Field(
         None, description="The new email address of the user"
     )
