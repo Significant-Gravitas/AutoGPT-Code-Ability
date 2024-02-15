@@ -318,8 +318,8 @@ class ModuleResponse(BaseModel):
         return f"Thoughts: {self.think_general}\nAnti:{self.think_anti}\n{answer_str}"
 
 
-class DBSchemaTableResponseWrapper(BaseModel):
-    table: DatabaseTable
+# class DBSchemaTableResponseWrapper(BaseModel):
+#     table: DatabaseTable
 
 
 class DBSchemaResponseWrapper(BaseModel):
@@ -328,7 +328,12 @@ class DBSchemaResponseWrapper(BaseModel):
     # context on what the database schema is
     description: str
     # list of tables in the database schema
-    tables: List[DBSchemaTableResponseWrapper] | DBSchemaTableResponseWrapper
+    tables: List[DatabaseTable]
+
+
+class PreAnswer(BaseModel):
+    tables: list[dict[str, str]]
+    enums: list[dict[str, str]]
 
 
 class DBResponse(BaseModel):
@@ -336,7 +341,7 @@ class DBResponse(BaseModel):
     anti_think: str
     plan: str
     refine: str
-    pre_answer: str
+    pre_answer: PreAnswer
     pre_answer_issues: str
     full_schema: str
     database_schema: DBSchemaResponseWrapper
