@@ -1,14 +1,10 @@
-import enum
-from typing import List
-
 from fuzzywuzzy import fuzz, process
-from pydantic import BaseModel
 
 from codex.requirements.model import ReplyEnum, RequirementsRefined
 
 
 def convert_requirements(requirements_qa) -> RequirementsRefined:
-    requirements_refined = RequirementsRefined()
+    requirements_refined = RequirementsRefined(dirty_requirements=requirements_qa)
 
     for req_qa in requirements_qa:
         req_qa.question = req_qa.question.lower()
@@ -116,7 +112,7 @@ def convert_requirements(requirements_qa) -> RequirementsRefined:
                     requirements_refined.need_authorization_justification = req_qa.think
                 elif matched_question == "what authorization roles do we need?":
                     requirements_refined.authorization_roles = [
-                        role.strip("[]") for role in req_qa.answer.split(",")
+                        role.strip("[]'\" ") for role in req_qa.answer.split(",")
                     ]
                     requirements_refined.authorization_roles_justification = (
                         req_qa.think

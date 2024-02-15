@@ -1,9 +1,11 @@
+import json
 import logging
 from asyncio import run
 
 import openai
 import prisma
 from prisma.enums import AccessLevel
+from pydantic.json import pydantic_encoder
 
 from codex.common.ai_block import Indentifiers
 from codex.prompts.claude.requirements.AskFunction import *
@@ -24,11 +26,11 @@ from codex.requirements.ai_clarify import (
     UserSkillClarificationBlock,
 )
 from codex.requirements.ai_feature import FeatureGenerationBlock
-from codex.requirements.build_requirements_refinement_object import (
-    RequirementsRefined,
-    convert_requirements,
+from codex.requirements.ai_requirements import (
+    BaseRequirementsBlock,
+    FuncNonFuncRequirementsBlock,
 )
-from codex.requirements.complete import complete_and_parse, complete_anth
+from codex.requirements.complete import complete_and_parse
 from codex.requirements.database import create_spec
 from codex.requirements.gather_task_info import gather_task_info_loop
 from codex.requirements.hardcoded import (
@@ -51,14 +53,12 @@ from codex.requirements.model import (
     ModuleRefinement,
     ModuleResponse,
     QandA,
-    QandAResponses,
     RequestModel,
     RequirementsGenResponse,
-    RequirementsResponse,
+    RequirementsRefined,
     ResponseModel,
     StateObj,
 )
-from codex.requirements.parser import parse
 from codex.requirements.unwrap_schemas import convert_endpoint, unwrap_db_schema
 
 logger = logging.getLogger(__name__)
@@ -169,39 +169,41 @@ async def generate_requirements(
 
     # Requirements Start
     # Collect the requirements Q&A
-    requirement_response: RequirementsResponse = complete_and_parse(
-        prompt=FEATURE_BASELINE_CHECKS.format(
-            joint_q_and_a=running_state_obj.joint_q_and_a(),
-            product_description=running_state_obj.product_description,
-            FEATURE_BASELINE_QUESTIONS=FEATURE_BASELINE_QUESTIONS,
-            features=str([feature.dict() for feature in running_state_obj.features]),
-        ),
-        return_model=RequirementsResponse,
+    base_requirements_block = BaseRequirementsBlock()
+    base_requirements: RequirementsRefined = await base_requirements_block.invoke(
+        ids=ids,
+        invoke_params={
+            "project_description": running_state_obj.project_description,
+            "project_description_thoughts": running_state_obj.project_description_thoughts,
+            "joint_q_and_a": running_state_obj.joint_q_and_a(),
+        },
     )
-    running_state_obj.requirements_q_and_a = [
-        requirement.wrapper for requirement in requirement_response.answer
-    ]
 
-    # Requirements conversion
-    refined_requirements = convert_requirements(running_state_obj.requirements_q_and_a)
-    running_state_obj.refined_requirement_q_a = refined_requirements
+    running_state_obj.requirements_q_and_a = base_requirements.dirty_requirements or []
+
+    running_state_obj.refined_requirement_q_a = base_requirements
 
     print("Refined Requirements Done")
 
     # Requirements QA answers
     # Build the requirements from the Q&A
-    requirement_gen_response: RequirementsGenResponse = complete_and_parse(
-        prompt=REQUIREMENTS.format(
-            joint_q_and_a=running_state_obj.joint_q_and_a(),
-            product_description=running_state_obj.product_description,
-            FEATURE_BASELINE_QUESTIONS=FEATURE_BASELINE_QUESTIONS,
-            features=str([feature.dict() for feature in running_state_obj.features]),
-            requirements_q_and_a_string=running_state_obj.requirements_q_and_a_string(),
-        ),
-        return_model=RequirementsGenResponse,
+    requirements_func_nonfunc_block = FuncNonFuncRequirementsBlock()
+    requirements_func_nonfunc: RequirementsGenResponse = (
+        await requirements_func_nonfunc_block.invoke(
+            ids=ids,
+            invoke_params={
+                "product_description": running_state_obj.product_description,
+                "joint_q_and_a": running_state_obj.joint_q_and_a(),
+                "requirements_q_and_a": running_state_obj.requirements_q_and_a_string(),
+                "features": json.dumps(
+                    running_state_obj.features, default=pydantic_encoder
+                ),
+            },
+        )
     )
-    print(requirement_gen_response)
-    running_state_obj.requirements = requirement_gen_response.answer
+
+    print(requirements_func_nonfunc)
+    running_state_obj.requirements = requirements_func_nonfunc.answer
 
     print("Requirements Done")
 
@@ -417,15 +419,21 @@ if __name__ == "__main__":
 
     oai = openai.OpenAI()
 
-    task = """The Tutor App is an app designed for tutors to manage their clients, schedules, and invoices.
+    task = """The Tutor App is an app designed for tutors to manage their clients,
+ schedules, and invoices.
 
-It must support both the client and tutor scheduling, rescheduling and canceling appointments, and sending invoices after the appointment has passed.
+It must support both the client and tutor scheduling, rescheduling and canceling
+ appointments, and sending invoices after the appointment has passed.
 
-Clients can sign up with OAuth2 or with traditional sign-in authentication. If they sign up with traditional authentication, it must be safe and secure. There will need to be password reset and login capabilities.
+Clients can sign up with OAuth2 or with traditional sign-in authentication. If they sign
+ up with traditional authentication, it must be safe and secure. There will need to be
+ password reset and login capabilities.
 
 There will need to be authorization for identifying clients vs the tutor.
 
-Additionally, it will have proper management of financials, including invoice management and payment tracking. This includes things like paid/failed invoice notifications, unpaid invoice follow-up, summarizing d/w/m/y income, and generating reports."""
+Additionally, it will have proper management of financials, including invoice management
+ and payment tracking. This includes things like paid/failed invoice notifications,
+ unpaid invoice follow-up, summarizing d/w/m/y income, and generating reports."""
 
     async def run_gen():
         await db_client.connect()
