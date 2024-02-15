@@ -135,8 +135,7 @@ class WriteFunctionAIBlock(AIBlock):
             if errors:
                 raise CodeValidationException(
                     f"Function Template: ```\n{formatted_code}\n```\n\n"
-                    "Issues with the code:\n\n"
-                    + "\n".join(errors)
+                    "Issues with the code:\n\n" + "\n".join(errors)
                 )
 
             return Function(
