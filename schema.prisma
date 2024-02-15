@@ -94,16 +94,6 @@ enum HTTPVerb {
   TRACE
 }
 
-model DataModel {
-  id             String        @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt      DateTime      @default(now())
-  name           String
-  description    String?
-  params         Param[]
-  APIRouteSpec   APIRouteSpec? @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
-  apiRouteSpecId String?
-}
-
 model APIRouteSpec {
   id           String      @id @default(dbgenerated("gen_random_uuid()"))
   createdAt    DateTime    @default(now())
@@ -115,7 +105,6 @@ model APIRouteSpec {
 
   codeGraphs     CodeGraph[]
   compiledRoutes CompiledRoute[]
-  dataModels     DataModel[]
 
   Specification    Specification?  @relation(fields: [specificationId], references: [id], onDelete: Cascade)
   specificationId  String?
@@ -154,8 +143,6 @@ model Param {
   description String
   paramType   String
 
-  DataModel        DataModel?      @relation(fields: [dataModelId], references: [id])
-  dataModelId      String?
   ResponseObject   ResponseObject? @relation(fields: [responseObjectId], references: [id])
   responseObjectId String?
   RequestObject    RequestObject?  @relation(fields: [requestObjectId], references: [id])
