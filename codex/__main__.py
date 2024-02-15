@@ -40,47 +40,12 @@ def populate_db(database):
 
 
 @cli.command()
-def test() -> None:
-    def process_app(app_name: str) -> None:
-        from codex.architect.agent import create_code_graphs
-        from codex.deploy.agent import compile_application
-        from codex.deploy.packager import create_zip_file
-        from codex.developer.agent import write_code_graphs
-        from codex.requirements.agent import hardcoded_requirements
-
-        out_filename = f"{app_name.replace(' ', '_').lower()}.zip"
-        # Requirements agent develops the requirements for the application
-        r = hardcoded_requirements(app_name)
-        # Architect agent creates the code graphs for the requirements
-        graphs = create_code_graphs(r)
-        # Developer agent writes the code for the code graphs
-        completed_graphs = write_code_graphs(graphs)
-        # Delivery Agent builds the code and delivers it to the user
-        application = compile_application(r, completed_graphs)
-        zipfile = create_zip_file(application)
-        with open(f"workspace/{out_filename}", "wb") as f:
-            f.write(zipfile)
-
-    apps = [
-        "Availability Checker",
-        "Invoice Generator",
-        "Appointment Optimization Tool",
-        "Distance Calculator",
-    ]
-
-    with ThreadPoolExecutor() as executor:
-        futures = [executor.submit(process_app, app_name) for app_name in apps]
-        for future in as_completed(futures):
-            future.result()
-
-
-@cli.command()
 def serve() -> None:
     import uvicorn
 
     from codex.app import app
 
-    uvicorn.run(app, host="0.0.0.0", port=os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
 
 
 if __name__ == "__main__":
