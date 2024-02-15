@@ -1,6 +1,8 @@
 from datetime import datetime
 
+from prisma.enums import Role
 from prisma.models import Application, CodexUser
+from prisma.types import CodexUserCreateWithoutRelationsInput, CodexUserUpdateInput
 
 from codex.api_model import (
     ApplicationCreate,
@@ -9,28 +11,49 @@ from codex.api_model import (
     Pagination,
     UserResponse,
     UsersListResponse,
+    UserUpdate,
 )
 
 
 async def create_test_data():
+    """
+        [
+        {
+            "discord_id": "123456788",
+            "email": "joe.blogs@example.com",
+            "name": "Joe Blogs",
+            "role": "ADMIN",
+            "password": "password123",
+            "deleted": False,
+        },
+        {
+            "discord_id": "234567891",
+            "email": "jane.doe@example.com",
+            "name": "Jane Doe",
+            "role": "USER",
+            "password": "password123",
+            "deleted": False,
+        },
+    ]
+    """
     await CodexUser.prisma().create_many(
         [
-            {
-                "discord_id": "123456788",
-                "email": "joe.blogs@example.com",
-                "name": "Joe Blogs",
-                "role": "ADMIN",
-                "password": "password123",
-                "deleted": False,
-            },
-            {
-                "discord_id": "234567891",
-                "email": "jane.doe@example.com",
-                "name": "Jane Doe",
-                "role": "USER",
-                "password": "password123",
-                "deleted": False,
-            },
+            CodexUserCreateWithoutRelationsInput(
+                discord_id="123456788",
+                email="joe.blogs@example.com",
+                name="Joe Blogs",
+                role=Role.ADMIN,
+                password="password123",
+                deleted=False,
+            ),
+            CodexUserCreateWithoutRelationsInput(
+                discord_id="234567891",
+                email="jane.doe@example.com",
+                name="Jane Doe",
+                role=Role.USER,
+                password="password123",
+                deleted=False,
+            ),
         ]
     )
 
@@ -94,11 +117,16 @@ async def get_or_create_user_by_discord_id(discord_id: int) -> CodexUser:
     return user
 
 
-async def update_user(CodexUser: CodexUser) -> CodexUser:
+async def update_user(update: UserUpdate) -> CodexUser:
     user = await CodexUser.prisma().update(
-        where={"id": CodexUser.id},
-        data=CodexUser.dict(),
+        where={"id": update.id},
+        data=CodexUserUpdateInput(
+            email=update.email,
+            name=update.name,
+        ),
     )
+    if not user:
+        raise ValueError(f"User with id {update.id} not found")
 
     return user
 
