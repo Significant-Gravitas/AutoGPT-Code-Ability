@@ -2,7 +2,11 @@ from datetime import datetime
 
 from prisma.enums import Role
 from prisma.models import Application, CodexUser
-from prisma.types import CodexUserCreateWithoutRelationsInput, CodexUserUpdateInput
+from prisma.types import (
+    CodexUserCreateInput,
+    CodexUserCreateWithoutRelationsInput,
+    CodexUserUpdateInput,
+)
 
 from codex.api_model import (
     ApplicationCreate,
@@ -16,26 +20,6 @@ from codex.api_model import (
 
 
 async def create_test_data():
-    """
-        [
-        {
-            "discord_id": "123456788",
-            "email": "joe.blogs@example.com",
-            "name": "Joe Blogs",
-            "role": "ADMIN",
-            "password": "password123",
-            "deleted": False,
-        },
-        {
-            "discord_id": "234567891",
-            "email": "jane.doe@example.com",
-            "name": "Jane Doe",
-            "role": "USER",
-            "password": "password123",
-            "deleted": False,
-        },
-    ]
-    """
     await CodexUser.prisma().create_many(
         [
             CodexUserCreateWithoutRelationsInput(
@@ -112,7 +96,11 @@ async def get_or_create_user_by_discord_id(discord_id: int) -> CodexUser:
     )
 
     if not user:
-        user = await CodexUser.prisma().create(discord_id=str(discord_id))
+        user = await CodexUser.prisma().create(
+            data=CodexUserCreateInput(
+                discord_id=str(discord_id),
+            )
+        )
 
     return user
 
