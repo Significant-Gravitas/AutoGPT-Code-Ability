@@ -2,6 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
+from prisma.models import Specification
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -134,10 +135,16 @@ class SpecificationResponse(BaseModel):
     apiRoutes: List[APIRouteSpecModel] = []
 
     @staticmethod
-    def from_specification(specification):
+    def from_specification(specification: Specification) -> "SpecificationResponse":
         print(specification.json())
         routes = []
+        if specification.apiRoutes is None:
+            raise ValueError("No routes found for the specification")
         for route in specification.apiRoutes:
+            if route.requestObjects is None:
+                raise ValueError("No request object found for the route")
+            if route.responseObject is None:
+                raise ValueError("No response object found for the route")
             routes.append(
                 APIRouteSpecModel(
                     id=route.id,
@@ -158,7 +165,7 @@ class SpecificationResponse(BaseModel):
                                 description=param.description,
                                 param_type=param.param_type,
                             )
-                            for param in route.requestObjects.params
+                            for param in route.requestObjects.params or []
                         ],
                     ),
                     responseObject=ResponseObjectModel(
@@ -174,7 +181,7 @@ class SpecificationResponse(BaseModel):
                                 description=param.description,
                                 param_type=param.param_type,
                             )
-                            for param in route.responseObject.params
+                            for param in route.responseObject.params or []
                         ],
                     ),
                 )
