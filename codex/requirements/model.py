@@ -5,10 +5,19 @@ from typing import List, Literal, Optional
 from prisma.enums import AccessLevel
 from pydantic import BaseModel
 
+from codex import requirements
 from codex.prompts.claude.requirements.QAFormat import (
     Q_AND_A_FORMAT,
     Q_AND_A_FORMAT_WITH_THOUGHTS,
 )
+
+
+class DecomposeTask(BaseModel):
+    # Placeholder until so I have something to test the ai_block with
+    thoughts: str
+    project_description: str
+    requirements: List[str]
+    api_routes: List[str]
 
 
 # Data Model

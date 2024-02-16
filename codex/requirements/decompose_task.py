@@ -9,7 +9,7 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
-from codex.requirements.model import FeaturesSuperObject
+from codex.requirements.model import DecomposeTask
 
 
 ## TEMP
@@ -28,7 +28,7 @@ class DecomposeTaskAIBlock(AIBlock):
     prompt_template_name = "decompose_task"
     model = "gpt-4-0125-preview"
     is_json_response = True
-    pydantic_object = FeaturesSuperObject
+    pydantic_object = DecomposeTask
 
     def validate(
         self, invoke_params: dict, response: ValidatedResponse
@@ -36,7 +36,7 @@ class DecomposeTaskAIBlock(AIBlock):
         json_data = json.loads(response.response)
 
         try:
-            model = FeaturesSuperObject(**json_data)
+            model = DecomposeTask(**json_data)
             response.response = model
         except Exception as e:
             raise ValidationError(f"Error validating response: {e}")
@@ -68,7 +68,8 @@ if __name__ == "__main__":
 
     async def run_me():
         await db_client.connect()
-        await test.invoke(ids, {})
+        ans = await test.invoke(ids, {"task": "I want a system to make facebook"})
+        print(ans)
         await db_client.disconnect()
 
     asyncio.run(run_me())

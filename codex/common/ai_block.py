@@ -271,7 +271,7 @@ class AIBlock:
         # Ensure json in context is well-formed with double quotes.
         schema_str = json.dumps(reduced_schema)
 
-        return self.PYDANTIC_FORMAT_INSTRUCTIONS.format(schema=schema_str)
+        return self.PYDANTIC_FORMAT_INSTRUCTIONS
 
     async def invoke(
         self, ids: Indentifiers, invoke_params: dict, max_retries=3
