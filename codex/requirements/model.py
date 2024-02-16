@@ -5,10 +5,11 @@ from typing import List, Literal, Optional
 from prisma.enums import AccessLevel
 from pydantic import BaseModel, ConfigDict
 
-from codex.prompts.claude.requirements.QAFormat import (
-    Q_AND_A_FORMAT,
-    Q_AND_A_FORMAT_WITH_THOUGHTS,
-)
+Q_AND_A_FORMAT = """- "{question}": "{answer}"
+"""
+
+Q_AND_A_FORMAT_WITH_THOUGHTS = """- "{question}": "{answer}" : Reasoning: "{thoughts}"
+"""
 
 
 # Data Model
