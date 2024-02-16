@@ -33,7 +33,6 @@ async def create_spec(user_id: int, app_id: int, description: str):
     try:
         app = await codex.database.get_app_by_id(user_id, app_id)
         ids = Indentifiers(user_id=user_id, app_id=app_id)
-
         spec: Specification = await generate_requirements(ids, app.name, description)
         return SpecificationResponse.from_specification(spec)
     except Exception as e:

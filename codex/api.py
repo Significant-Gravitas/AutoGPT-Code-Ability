@@ -2,6 +2,7 @@ import json
 import logging
 
 from fastapi import APIRouter, Path, Query, Response
+from prisma.models import CodexUser
 
 import codex.database
 from codex.api_model import (
@@ -76,7 +77,8 @@ async def update_user(user_id: int, user_update: UserUpdate):
     Update a user's information by their unique identifier.
     """
     try:
-        user = await codex.database.update_user(user_id, user_update)
+        user_update.id = user_id
+        user = await codex.database.update_user(user_update)
         return UserResponse(
             id=user.id,
             discord_id=user.discord_id,
@@ -96,8 +98,8 @@ async def update_user(user_id: int, user_update: UserUpdate):
 
 @core_routes.get("/user/", response_model=UsersListResponse, tags=["users"])
 async def list_users(
-    page: int | None = Query(1, ge=1),
-    page_size: int | None = Query(10, ge=1),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1),
 ):
     """
     List all users.

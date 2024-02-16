@@ -17,6 +17,7 @@ async def create_code_graphs(
     Create the code graph for a given api route
     """
     code_graphs = []
+    assert spec.apiRoutes, "No api routes found in the spec"
     for api_route in spec.apiRoutes:
         logger.info(f"Creating code graph for {api_route.path}")
         codegraph = CodeGraphAIBlock(
@@ -33,11 +34,3 @@ async def create_code_graphs(
         )
         code_graphs.append(cg)
     return ApplicationGraphs(code_graphs=code_graphs)
-
-
-if __name__ == "__main__":
-    import codex.requirements.hardcoded
-
-    spec = codex.requirements.hardcoded.availability_checker_requirements()
-    ids = Indentifiers(user_id=1, app_id=1)
-    create_code_graphs(ids, spec)

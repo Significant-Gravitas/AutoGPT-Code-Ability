@@ -19,9 +19,12 @@ async def develop_application(
     Develop the application
     """
     completed_graphs = await write_code_graphs(ids, code_graphs, spec)
+    if not completed_graphs:
+        raise ValueError("No code graphs found")
+
     app = await CompletedApp.prisma().create(
         data={
-            "compiledRoutes": {"connect": [{"id": c.id for c in completed_graphs}]},
+            "compiledRoutes": {"connect": [{"id": c.id} for c in completed_graphs]},
             "spec": {"connect": {"id": spec.id}},
             "name": spec.name,
             "description": spec.context,
@@ -41,6 +44,11 @@ async def write_code_graphs(
             where={"id": code_graph.id},
             include={"functionDefs": True, "routeSpec": True},
         )
+        if not cg:
+            raise ValueError(f"CodeGraph {code_graph.id} not found")
+
+        if not cg.routeSpec:
+            raise ValueError(f"No route spec found for code graph {cg.id}")
 
         written_functions = await code_functions(ids, cg)
 
@@ -65,6 +73,9 @@ async def code_functions(
     """
     Code the functions in the code graph
     """
+    if not code_graph.functionDefs:
+        raise ValueError(f"No function defs found for code graph {code_graph.id}")
+
     functions = []
     for i, function_def in enumerate(code_graph.functionDefs):
         logger.info(

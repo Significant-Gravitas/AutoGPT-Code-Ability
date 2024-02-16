@@ -15,7 +15,9 @@ db_client = Prisma(auto_register=True)
 
 app = FastAPI(
     title="Codex",
-    description="Codex is a platform for creating, deploying, and managing web applications.",
+    description=(
+        "Codex is a platform for creating, deploying, and managing web applications."
+    ),
     summary="Codex API",
     version="0.1",
 )

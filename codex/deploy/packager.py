@@ -2,7 +2,8 @@ import logging
 import os
 import tempfile
 import zipfile
-from typing import List, defaultdict
+from collections import defaultdict
+from typing import List
 
 from codex.deploy.model import Application
 from codex.developer.model import Package
@@ -60,8 +61,12 @@ def create_zip_file(application: Application) -> bytes:
                 server_file.write(application.server_code)
 
             requirements_file_path = os.path.join(app_dir, "requirements.txt")
+            packages = ""
+            if application.packages:
+                packages = generate_requirements_txt(application.packages)
+
             with open(requirements_file_path, "w") as requirements_file:
-                requirements_file.write(generate_requirements_txt(application.packages))
+                requirements_file.write(packages)
 
             for route_name, compiled_route in application.routes.items():
                 service_file_path = os.path.join(
@@ -69,7 +74,7 @@ def create_zip_file(application: Application) -> bytes:
                 )
                 with open(service_file_path, "w") as service_file:
                     service_file.write(compiled_route.service_code)
-
+            logger.info("Created server code")
             # Create a zip file of the directory
             zip_file_path = os.path.join(app_dir, "server.zip")
             with zipfile.ZipFile(zip_file_path, "w") as zipf:
@@ -78,8 +83,10 @@ def create_zip_file(application: Application) -> bytes:
                         if file == "server.zip":
                             continue
                         file_path = os.path.join(root, file)
+                        print(file_path)
                         zipf.write(file_path, os.path.relpath(file_path, temp_dir))
 
+            logger.info("Created zip file")
             # Read and return the bytes of the zip file
             with open(zip_file_path, "rb") as zipf:
                 zip_bytes = zipf.read()
@@ -87,3 +94,4 @@ def create_zip_file(application: Application) -> bytes:
             return zip_bytes
     except Exception as e:
         logger.exception(e)
+        raise e
