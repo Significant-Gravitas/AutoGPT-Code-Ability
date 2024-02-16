@@ -1,10 +1,13 @@
 # Anthropic Completion
+import logging
 from enum import Enum
 from typing import TypeVar
 
 from anthropic import AI_PROMPT, HUMAN_PROMPT, Anthropic
 from anthropic.types import Completion as ACompletion
 from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -44,7 +47,7 @@ def complete_anth(
         prompt=sendable_prompt,
     )
     if completion.stop_reason == "max_tokens":
-        print(completion.completion)
+        logger.info(completion.completion)
         continued = completion.completion + complete_anth(
             prompt=sendable_prompt + completion.completion,
             return_mode=ReturnMode.RETURN_ONLY_COMPLETION,

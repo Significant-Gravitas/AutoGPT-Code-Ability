@@ -83,7 +83,7 @@ def create_zip_file(application: Application) -> bytes:
                         if file == "server.zip":
                             continue
                         file_path = os.path.join(root, file)
-                        print(file_path)
+                        logger.info(file_path)
                         zipf.write(file_path, os.path.relpath(file_path, temp_dir))
 
             logger.info("Created zip file")

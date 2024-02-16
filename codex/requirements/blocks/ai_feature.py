@@ -1,7 +1,4 @@
-import json
-from typing import List, Type
-
-from pydantic import BaseModel
+import logging
 
 from codex.common.ai_block import (
     AIBlock,
@@ -9,12 +6,9 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
-from codex.requirements.model import (
-    Clarification,
-    FeaturesSuperObject,
-    QandA,
-    QandAResponses,
-)
+from codex.requirements.model import FeaturesSuperObject
+
+logger = logging.getLogger(__name__)
 
 
 class FeatureGenerationBlock(AIBlock):
@@ -105,23 +99,23 @@ if __name__ == "__main__":
 
     for key, item in features.items():
         if isinstance(item, FeaturesSuperObject):
-            print(f"FeatureSuperObject {key}")
-            print(f"\tThoughts: {item.think}")
-            print(f"\tName: {item.project_name}")
-            print(f"\tDescription: {item.description}")
-            print(f"\tGeneral Feature Thoughts: {item.general_feature_thoughts}")
+            logger.info(f"FeatureSuperObject {key}")
+            logger.info(f"\tThoughts: {item.think}")
+            logger.info(f"\tName: {item.project_name}")
+            logger.info(f"\tDescription: {item.description}")
+            logger.info(f"\tGeneral Feature Thoughts: {item.general_feature_thoughts}")
             for feature in item.features:
                 f = feature.feature
-                print(f"\tFeature Name: {f.name}")
-                print(f"\t\tThoughts: {f.thoughts}")
-                print(f"\t\tDescription: {f.description}")
-                print(f"\t\tConsiderations: {f.considerations}")
-                print(f"\t\tRisks: {f.risks}")
-                print(f"\t\tNeeded external tools: {f.needed_external_tools}")
-                print(f"\t\tPriority: {f.priority}")
+                logger.info(f"\tFeature Name: {f.name}")
+                logger.info(f"\t\tThoughts: {f.thoughts}")
+                logger.info(f"\t\tDescription: {f.description}")
+                logger.info(f"\t\tConsiderations: {f.considerations}")
+                logger.info(f"\t\tRisks: {f.risks}")
+                logger.info(f"\t\tNeeded external tools: {f.needed_external_tools}")
+                logger.info(f"\t\tPriority: {f.priority}")
 
         else:
-            print(f"????")
+            logger.info(f"????")
             breakpoint()
 
     # # If you want to test the block in an interactive environment

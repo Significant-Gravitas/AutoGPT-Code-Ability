@@ -1,3 +1,5 @@
+import logging
+
 from codex.common.ai_block import (
     AIBlock,
     Indentifiers,
@@ -5,6 +7,8 @@ from codex.common.ai_block import (
     ValidationError,
 )
 from codex.requirements.model import DatabaseTable, DBResponse
+
+logger = logging.getLogger(__name__)
 
 
 class DatabaseGenerationBlock(AIBlock):
@@ -94,15 +98,15 @@ if __name__ == "__main__":
 
     for key, item in modules.items():
         if isinstance(item, DBResponse):
-            print(f"ModuleResponse {key}")
-            print(f"\tThought General: {item.think}")
-            print(f"\tThought Anti: {item.anti_think}")
-            print(f"\tPlan: {item.plan}")
-            print(f"\tRefine: {item.refine}")
-            print(f"\tPre Answer: {item.pre_answer}")
-            print(f"\tPre Answer Issues: {item.pre_answer_issues}")
-            print(f"\tFull Schema: {item.full_schema}")
-            print(f"\tConclusions: {item.conclusions}")
+            logger.info(f"ModuleResponse {key}")
+            logger.info(f"\tThought General: {item.think}")
+            logger.info(f"\tThought Anti: {item.anti_think}")
+            logger.info(f"\tPlan: {item.plan}")
+            logger.info(f"\tRefine: {item.refine}")
+            logger.info(f"\tPre Answer: {item.pre_answer}")
+            logger.info(f"\tPre Answer Issues: {item.pre_answer_issues}")
+            logger.info(f"\tFull Schema: {item.full_schema}")
+            logger.info(f"\tConclusions: {item.conclusions}")
 
             # think: str
             # anti_think: str
@@ -115,12 +119,12 @@ if __name__ == "__main__":
             # conclusions: str
             tables: list[DatabaseTable] = item.database_schema.tables
             for t in tables:
-                print(f"\t\tTable Name: {t.name}")
-                print(f"\t\tTable Definition: {t.definition}")
-                print(f"\t\tTable Description: {t.description}")
+                logger.info(f"\t\tTable Name: {t.name}")
+                logger.info(f"\t\tTable Definition: {t.definition}")
+                logger.info(f"\t\tTable Description: {t.description}")
 
         else:
-            print(f"????")
+            logger.info(f"????")
             breakpoint()
 
     # # If you want to test the block in an interactive environment

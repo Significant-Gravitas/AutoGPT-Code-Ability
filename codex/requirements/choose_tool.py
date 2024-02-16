@@ -1,7 +1,10 @@
 # Tools
+import logging
 from typing import Callable, Optional
 
 from codex.requirements.complete import complete_anth
+
+logger = logging.getLogger(__name__)
 
 
 def choose_tool(
@@ -16,12 +19,12 @@ def choose_tool(
                 if resp := input(raw_prompt):
                     return resp
                 else:
-                    print("Generating Response for Ask")
+                    logger.info("Generating Response for Ask")
                     return choose_tool(
                         f"search: {raw_prompt}", ask_callback=ask_callback
                     )
             else:
-                print("Generating Response for Ask")
+                logger.info("Generating Response for Ask")
                 return choose_tool(f"search: {raw_prompt}", ask_callback=ask_callback)
         case s if s.startswith("finished"):
             return "finished"

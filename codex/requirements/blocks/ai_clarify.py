@@ -1,7 +1,5 @@
-import json
-from typing import List, Type
-
-from pydantic import BaseModel
+import logging
+from venv import logger
 
 from codex.common.ai_block import (
     AIBlock,
@@ -10,6 +8,8 @@ from codex.common.ai_block import (
     ValidationError,
 )
 from codex.requirements.model import Clarification, QandA, QandAResponses
+
+logger = logging.getLogger(__name__)
 
 
 class FrontendClarificationBlock(AIBlock):
@@ -252,20 +252,20 @@ if __name__ == "__main__":
 
     for key, clariifcation in qna.items():
         if isinstance(clariifcation, Clarification):
-            print(f"Clarification {key}")
-            print(f"\tThoughts: {clariifcation.thoughts}")
-            print(f"\tQuestion: {clariifcation.question}")
-            print(f"\tAnswer: {clariifcation.answer}")
+            logger.info(f"Clarification {key}")
+            logger.info(f"\tThoughts: {clariifcation.thoughts}")
+            logger.info(f"\tQuestion: {clariifcation.question}")
+            logger.info(f"\tAnswer: {clariifcation.answer}")
         elif isinstance(clariifcation, list):
             for qa in clariifcation:
-                print(f"Q and A")
-                print(f"\tQuestion: {qa.question}")
-                print(f"\tThoughts: {qa.thoughts}")
-                print(f"\tConclusive: {qa.was_conclusive}")
-                print(f"\tAnswer: {qa.team_answer}")
+                logger.info(f"Q and A")
+                logger.info(f"\tQuestion: {qa.question}")
+                logger.info(f"\tThoughts: {qa.thoughts}")
+                logger.info(f"\tConclusive: {qa.was_conclusive}")
+                logger.info(f"\tAnswer: {qa.team_answer}")
 
         else:
-            print(f"????")
+            logger.info(f"????")
 
     # # If you want to test the block in an interactive environment
     # import IPython

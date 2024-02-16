@@ -142,7 +142,7 @@ class CodeGraphAIBlock(AIBlock):
             logger.debug(f"Created CodeGraph: {cg}")
             return cg
         except Exception as e:
-            print(f"Error saving code graph: {e}")
+            logger.info(f"Error saving code graph: {e}")
 
     async def update_item(self, query_params: CodeGraphDBModel):  # type: ignore
         funciton_defs = []
