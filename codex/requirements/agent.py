@@ -27,7 +27,10 @@ from codex.requirements.blocks.ai_clarify import (
 )
 from codex.requirements.blocks.ai_database import DatabaseGenerationBlock
 from codex.requirements.blocks.ai_feature import FeatureGenerationBlock
-from codex.requirements.blocks.ai_module import ModuleGenerationBlock
+from codex.requirements.blocks.ai_module import (
+    ModuleGenerationBlock,
+    ModuleRefinementBlock,
+)
 from codex.requirements.blocks.ai_requirements import (
     BaseRequirementsBlock,
     FuncNonFuncRequirementsBlock,
@@ -138,7 +141,7 @@ async def generate_requirements(
         invoke_params={
             "clarifiying_questions_so_far": running_state_obj.clarifying_questions_as_string(),
             "project_description": running_state_obj.project_description,
-            "task": task,
+            "task": running_state_obj.task,
         },
     )
 
@@ -250,18 +253,21 @@ async def generate_requirements(
 
     # Module Refinement
     # Build the requirements from the Q&A
-    refined_data: ModuleRefinement = complete_and_parse(
-        prompt=MODULE_REFINEMENTS.format(
-            system_requirements=f"{running_state_obj.__str__()}", id=f"{id}"
-        ),
-        return_model=ModuleRefinement,
+    module_ref_block = ModuleRefinementBlock()
+    refined_data: ModuleRefinement = await module_ref_block.invoke(
+        ids=ids,
+        invoke_params={
+            "system_requirements": running_state_obj.__str__(),
+            "modules_list": ", ".join(
+                [module.name for module in running_state_obj.modules]
+            ),
+        },
     )
 
     print("Refined Modules Generated Done")
 
     # Match modules to completions
     for module in refined_data.modules:
-        module = module.module
         # Extract module names from running_state_obj.modules for comparison
         existing_module_names = [
             existing.name for existing in running_state_obj.modules
@@ -278,11 +284,12 @@ async def generate_requirements(
                     running_state_obj.modules[
                         index
                     ].description = module.new_description
-                    endpoints = flatten_endpoints.flatten_endpoints(module.endpoints)
+                    endpoints = flatten_endpoints.flatten_endpoints(
+                        module.endpoint_groups
+                    )
                     running_state_obj.modules[index].endpoints = endpoints
                     requirements = [
-                        requirement.requirement
-                        for requirement in module.module_requirements_list
+                        requirement for requirement in module.module_requirements
                     ]
                     running_state_obj.modules[index].requirements = requirements
         else:
@@ -449,4 +456,5 @@ Additionally, it will have proper management of financials, including invoice ma
         )
         return output
 
-    run(run_gen())
+    out = run(run_gen())
+    print(out)
