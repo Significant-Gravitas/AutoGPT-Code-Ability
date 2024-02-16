@@ -203,7 +203,6 @@ if __name__ == "__main__":
                         print(f"\t\t\tEndpoint Type: {endpoint.type}")
                         print(f"\t\t\tEndpoint Description: {endpoint.description}")
                         print(f"\t\t\tEndpoint Path: {endpoint.path}")
-            print('done')
         else:
             print(f"????")
             breakpoint()
