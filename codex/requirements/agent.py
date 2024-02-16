@@ -5,19 +5,16 @@ from asyncio import run
 import openai
 import prisma
 from prisma.enums import AccessLevel
+from prisma.models import Specification
 from pydantic.json import pydantic_encoder
 
-from codex.common.ai_block import Indentifiers
-from codex.prompts.claude.requirements.AskFunction import *
-from codex.prompts.claude.requirements.ClarificationsIntoProduct import *
-from codex.prompts.claude.requirements.EndpointGeneration import *
-from codex.prompts.claude.requirements.ModuleIntoDatabase import *
-from codex.prompts.claude.requirements.ModuleRefinement import *
-from codex.prompts.claude.requirements.ProductIntoRequirement import *
-from codex.prompts.claude.requirements.QAFormat import *
-from codex.prompts.claude.requirements.RequirementIntoModule import *
-from codex.prompts.claude.requirements.SearchFunction import *
-from codex.prompts.claude.requirements.TaskIntoClarifcations import *
+from codex.api_model import Indentifiers
+from codex.prompts.claude.requirements.NestJSDocs import (
+    NEST_JS_CRUD_GEN,
+    NEST_JS_FIRST_STEPS,
+    NEST_JS_MODULES,
+    NEST_JS_SQL,
+)
 from codex.requirements import flatten_endpoints
 from codex.requirements.blocks.ai_clarify import (
     FrontendClarificationBlock,
@@ -26,6 +23,7 @@ from codex.requirements.blocks.ai_clarify import (
     UserSkillClarificationBlock,
 )
 from codex.requirements.blocks.ai_database import DatabaseGenerationBlock
+from codex.requirements.blocks.ai_endpoint import EndpointSchemaRefinementBlock
 from codex.requirements.blocks.ai_feature import FeatureGenerationBlock
 from codex.requirements.blocks.ai_module import (
     ModuleGenerationBlock,
@@ -35,7 +33,6 @@ from codex.requirements.blocks.ai_requirements import (
     BaseRequirementsBlock,
     FuncNonFuncRequirementsBlock,
 )
-from codex.requirements.complete import complete_and_parse
 from codex.requirements.database import create_spec
 from codex.requirements.gather_task_info import gather_task_info_loop
 from codex.requirements.hardcoded import (
@@ -64,7 +61,7 @@ from codex.requirements.model import (
     ResponseModel,
     StateObj,
 )
-from codex.requirements.unwrap_schemas import convert_endpoint, unwrap_db_schema
+from codex.requirements.unwrap_schemas import convert_db_schema, convert_endpoint
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +70,7 @@ async def generate_requirements(
     ids: Indentifiers,
     app_name: str,
     description: str,
-) -> ApplicationRequirements:
+) -> Specification:
     """
     Runs the Requirements Agent to generate the system requirements based
     upon the provided task
@@ -247,7 +244,8 @@ async def generate_requirements(
             "modules": ", ".join(module.name for module in running_state_obj.modules),
         },
     )
-    running_state_obj.database = unwrap_db_schema(db_response.database_schema)
+
+    running_state_obj.database = convert_db_schema(db_response.database_schema)
 
     print("DB Done")
 
@@ -305,23 +303,25 @@ async def generate_requirements(
     for i, module in enumerate(running_state_obj.modules):
         if module.endpoints:
             for j, endpoint in enumerate(module.endpoints):
-                reply = complete_and_parse(
-                    ENDPOINT_PARAMS_GEN.format(
-                        endpoint_and_module_repr=f"{endpoint!r} {module!r}",
-                        spec=running_state_obj.__str__(),
-                        id="{id}",
-                        db_models=f"[{','.join(db_table_names)}]",
-                    ),
-                    return_model=EndpointSchemaRefinementResponse,
+                endpoint_block = EndpointSchemaRefinementBlock()
+                endpoint_ref: EndpointSchemaRefinementResponse = (
+                    await endpoint_block.invoke(
+                        ids=ids,
+                        invoke_params={
+                            "spec": running_state_obj.__str__(),
+                            "db_models": f"[{','.join(db_table_names)}]",
+                            "module_repr": f"{module!r}",
+                            "endpoint_repr": f"{endpoint!r}",
+                        },
+                    )
                 )
-                # parsed = parse_into_model(reply, EndpointSchemaRefinementResponse)
-                # display(Pretty(parsed.__str__()))
                 converted: Endpoint = convert_endpoint(
-                    input=reply,
+                    input=endpoint_ref,
                     existing=endpoint,
                     database=running_state_obj.database,
                 )
-                running_state_obj.modules[i].endpoints[j] = converted
+                print(f"{converted!r}")
+                running_state_obj.modules[i].endpoints[j] = converted  # type: ignore
 
     print("Endpoints Done")
 

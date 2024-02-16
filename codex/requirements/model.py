@@ -144,7 +144,7 @@ class Parameter(BaseModel):
 class RequestModel(BaseModel):
     name: str
     description: str
-    params: List[Parameter] | Parameter
+    params: List[Parameter]
 
     def __str__(self):
         params_str = "\n".join(param.__str__() for param in self.params)
@@ -154,7 +154,7 @@ class RequestModel(BaseModel):
 class ResponseModel(BaseModel):
     name: str
     description: str
-    params: List[Parameter] | Parameter
+    params: List[Parameter]
 
     def __str__(self):
         params_str = "\n".join(param.__str__() for param in self.params)
@@ -180,10 +180,6 @@ class DatabaseSchema(BaseModel):
         return f"## {self.name}\n**Description**: {self.description}\n**Tables**:\n{tables_str}\n"
 
 
-class ParameterWrapper(BaseModel):
-    param: Parameter
-
-
 class EndpointDataModel(BaseModel):
     name: str
     description: Optional[str]
@@ -193,11 +189,7 @@ class EndpointDataModel(BaseModel):
 class NewAPIModel(BaseModel):
     name: str
     description: Optional[str]
-    params: List[ParameterWrapper] | Optional[ParameterWrapper] | str
-
-
-class NewAPIModelWrapper(BaseModel):
-    model: NewAPIModel
+    params: List[Parameter]
 
 
 class APIEndpointWrapper(BaseModel):
@@ -207,8 +199,8 @@ class APIEndpointWrapper(BaseModel):
 
 class EndpointSchemaRefinementResponse(BaseModel):
     think: str
-    db_models_needed: Optional[str]
-    new_api_models: (Optional[str] | NewAPIModelWrapper | list[NewAPIModelWrapper])
+    db_models_needed: list[str]
+    new_api_models: list[NewAPIModel]
     api_endpoint: APIEndpointWrapper
     end_thoughts: Optional[str]
 
