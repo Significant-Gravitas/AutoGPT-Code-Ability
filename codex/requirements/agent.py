@@ -369,10 +369,10 @@ async def generate_requirements(
         context=running_state_obj.__str__(),
         api_routes=api_routes,
     )
-    # saved_spec = await create_spec(ids, full_spec, db)
+    saved_spec: Specification = await create_spec(ids, full_spec)
 
     # Step 8) Return the application requirements
-    return full_spec
+    return saved_spec
 
 
 def hardcoded_requirements(task: str) -> ApplicationRequirements:
