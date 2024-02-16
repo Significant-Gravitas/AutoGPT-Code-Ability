@@ -260,17 +260,6 @@ class AIBlock:
         if not self.pydantic_object:
             raise ValueError("pydantic_object not set")
 
-        schema = self.pydantic_object.schema()
-
-        # Remove extraneous fields.
-        reduced_schema = schema
-        if "title" in reduced_schema:
-            del reduced_schema["title"]
-        if "type" in reduced_schema:
-            del reduced_schema["type"]
-        # Ensure json in context is well-formed with double quotes.
-        schema_str = json.dumps(reduced_schema)
-
         return self.PYDANTIC_FORMAT_INSTRUCTIONS
 
     async def invoke(
