@@ -9,10 +9,12 @@ from codex.requirements.model import (
     ResponseModel,
 )
 
+
 def convert_db_schema(input: DBSchemaResponseWrapper) -> DatabaseSchema:
     return DatabaseSchema(
         name=input.name, description=input.description, tables=input.tables
     )
+
 
 def unwrap_new_models(
     input: list[NewAPIModel] | None,

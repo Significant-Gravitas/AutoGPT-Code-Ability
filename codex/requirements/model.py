@@ -11,6 +11,7 @@ Q_AND_A_FORMAT = """- "{question}": "{answer}"
 Q_AND_A_FORMAT_WITH_THOUGHTS = """- "{question}": "{answer}" : Reasoning: "{thoughts}"
 """
 
+
 class DecomposeTask(BaseModel):
     # Placeholder until so I have something to test the ai_block with
     thoughts: str

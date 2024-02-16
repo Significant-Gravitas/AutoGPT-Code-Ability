@@ -2,8 +2,8 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
-from prisma.models import Specification
 from prisma.enums import Role
+from prisma.models import Specification
 from pydantic import BaseModel, EmailStr, Field
 
 
