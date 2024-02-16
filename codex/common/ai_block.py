@@ -5,6 +5,7 @@ import os
 import pathlib
 from typing import Any, Generic, Type, TypeVar
 
+import pydantic
 from jinja2 import Environment, FileSystemLoader
 from openai import OpenAI
 from openai.types import CompletionUsage
@@ -95,13 +96,13 @@ class AIBlock:
 
     def load_pydantic_format_instructions(self):
         if self.pydantic_object:
-            schema = self.pydantic_object.schema()
+            schema = self.pydantic_object.schema_json()
 
             template_dir = os.path.join(
                 os.path.dirname(__file__),
-                f"../{self.template_base_path}/techniques/",
+                f"../prompts/techniques/",
             )
-
+            print(template_dir)
             try:
                 templates_env = Environment(loader=FileSystemLoader(template_dir))
                 prompt_template = templates_env.get_template(
