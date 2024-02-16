@@ -91,8 +91,9 @@ class AIBlock:
         )
         self.templates_dir = pathlib.Path(self.template_base_path).resolve(strict=True)
         self.call_template_id = None
+        self.load_pydantic_format_instructions()
 
-    async def load_pydantic_format_instructions(self):
+    def load_pydantic_format_instructions(self):
         if self.pydantic_object:
             schema = self.pydantic_object.schema()
 
