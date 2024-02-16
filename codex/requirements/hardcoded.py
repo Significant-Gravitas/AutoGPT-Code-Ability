@@ -1,3 +1,5 @@
+import logging
+
 from prisma.enums import AccessLevel
 
 from codex.requirements.model import (
@@ -9,6 +11,8 @@ from codex.requirements.model import (
     RequestModel,
     ResponseModel,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def availability_checker_requirements() -> ApplicationRequirements:
@@ -251,7 +255,6 @@ def profile_management() -> ApplicationRequirements:
                 name="preferences",
                 param_type="dict",
                 description="Optional settings specific to the user type",
-                optional=True,
             ),
         ],
     )
@@ -267,7 +270,6 @@ def profile_management() -> ApplicationRequirements:
                 name="profile_details",
                 param_type="dict",
                 description="Details of the created profile",
-                optional=True,
             ),
         ],
     )
@@ -300,7 +302,6 @@ def profile_management() -> ApplicationRequirements:
                 name="updated_profile_details",
                 param_type="dict",
                 description="Details of the updated profile",
-                optional=True,
             ),
         ],
     )
@@ -325,13 +326,11 @@ def profile_management() -> ApplicationRequirements:
                 name="profile_details",
                 param_type="dict",
                 description="Details of the retrieved profile",
-                optional=True,
             ),
             Parameter(
                 name="message",
                 param_type="str",
                 description="Error message if the profile is not found",
-                optional=True,
             ),
         ],
     )
@@ -436,8 +435,11 @@ def profile_management() -> ApplicationRequirements:
 
 
 if __name__ == "__main__":
-    print(availability_checker_requirements())
-    print(invoice_generator_requirements())
-    print(appointment_optimization_requirements())
-    print(distance_calculator_requirements())
-    print(profile_management())
+    from codex.common.logging_config import setup_logging
+
+    setup_logging()
+    logger.info(availability_checker_requirements())
+    logger.info(invoice_generator_requirements())
+    logger.info(appointment_optimization_requirements())
+    logger.info(distance_calculator_requirements())
+    logger.info(profile_management())

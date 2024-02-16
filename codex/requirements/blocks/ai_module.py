@@ -1,3 +1,5 @@
+import logging
+
 from codex.common.ai_block import (
     AIBlock,
     Indentifiers,
@@ -11,6 +13,8 @@ from codex.prompts.claude.requirements.NestJSDocs import (
     NEST_JS_SQL,
 )
 from codex.requirements.model import ModuleRefinement, ModuleResponse
+
+logger = logging.getLogger(__name__)
 
 
 class ModuleGenerationBlock(AIBlock):
@@ -168,43 +172,47 @@ if __name__ == "__main__":
 
     for key, item in modules.items():
         if isinstance(item, ModuleResponse):
-            print(f"ModuleResponse {key}")
-            print(f"\tThought General: {item.think_general}")
-            print(f"\tThought Anti: {item.think_anti}")
+            logger.info(f"ModuleResponse {key}")
+            logger.info(f"\tThought General: {item.think_general}")
+            logger.info(f"\tThought Anti: {item.think_anti}")
 
             for m in item.modules:
-                print(f"\t\tModule Name: {m.name}")
-                print(f"\t\tModule Description: {m.description}")
-                print(f"\t\tModule Requirements: {m.requirements}")
-                print(f"\t\tModule Endpoints: {m.endpoints}")
-                print(f"\t\tModule Related Modules: {m.related_modules}")
+                logger.info(f"\t\tModule Name: {m.name}")
+                logger.info(f"\t\tModule Description: {m.description}")
+                logger.info(f"\t\tModule Requirements: {m.requirements}")
+                logger.info(f"\t\tModule Endpoints: {m.endpoints}")
+                logger.info(f"\t\tModule Related Modules: {m.related_modules}")
         elif isinstance(item, ModuleRefinement):
-            print(f"ModuleRefinement {key}")
+            logger.info(f"ModuleRefinement {key}")
             for module in item.modules:
-                print(f"\tModule Name: {module.module_name}")
-                print(f"\tRough Requirements: {module.rough_requirements}")
-                print(f"\tThoughts: {module.thoughts}")
-                print(f"\tNew Description: {module.new_description}")
-                print(f"\tModule Requirements:")
+                logger.info(f"\tModule Name: {module.module_name}")
+                logger.info(f"\tRough Requirements: {module.rough_requirements}")
+                logger.info(f"\tThoughts: {module.thoughts}")
+                logger.info(f"\tNew Description: {module.new_description}")
+                logger.info(f"\tModule Requirements:")
                 for requirement in module.module_requirements:
-                    print(f"\t\tRequirement Name: {requirement.name}")
-                    print(f"\t\tRequirement Description: {requirement.description}")
-                print(f"\tModule Links: {','.join(module.module_links)}")
-                print(
+                    logger.info(f"\t\tRequirement Name: {requirement.name}")
+                    logger.info(
+                        f"\t\tRequirement Description: {requirement.description}"
+                    )
+                logger.info(f"\tModule Links: {','.join(module.module_links)}")
+                logger.info(
                     f"\tEndpoint Groups List: {', '.join(module.endpoint_groups_list or [])}"
                 )
-                print(f"\tEndpoints: {module.endpoint_groups}")
+                logger.info(f"\tEndpoints: {module.endpoint_groups}")
                 for endpoint_group in module.endpoint_groups:
-                    print(
+                    logger.info(
                         f"\t\tEndpoint Group Category: {endpoint_group.group_category}"
                     )
                     for endpoint in endpoint_group.endpoints:
-                        print(f"\t\t\tEndpoint Name: {endpoint.name}")
-                        print(f"\t\t\tEndpoint Type: {endpoint.type}")
-                        print(f"\t\t\tEndpoint Description: {endpoint.description}")
-                        print(f"\t\t\tEndpoint Path: {endpoint.path}")
+                        logger.info(f"\t\t\tEndpoint Name: {endpoint.name}")
+                        logger.info(f"\t\t\tEndpoint Type: {endpoint.type}")
+                        logger.info(
+                            f"\t\t\tEndpoint Description: {endpoint.description}"
+                        )
+                        logger.info(f"\t\t\tEndpoint Path: {endpoint.path}")
         else:
-            print(f"????")
+            logger.info(f"????")
             breakpoint()
 
     # # If you want to test the block in an interactive environment

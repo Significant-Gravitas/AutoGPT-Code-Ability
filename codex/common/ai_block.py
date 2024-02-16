@@ -102,7 +102,6 @@ class AIBlock:
                 os.path.dirname(__file__),
                 f"../prompts/techniques/",
             )
-            print(template_dir)
             try:
                 templates_env = Environment(loader=FileSystemLoader(template_dir))
                 prompt_template = templates_env.get_template(

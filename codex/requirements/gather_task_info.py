@@ -1,4 +1,5 @@
 # Task Breakdown Micro Agent
+import logging
 from typing import Callable, Optional
 
 from anthropic import AI_PROMPT, HUMAN_PROMPT
@@ -7,6 +8,8 @@ from codex.prompts.claude.requirements.TaskIntoClarifcations import TASK_INTO_MO
 from codex.requirements.choose_tool import choose_tool
 from codex.requirements.complete import complete_anth
 
+logger = logging.getLogger(__name__)
+
 
 def gather_task_info_loop(
     task: str, ask_callback: Optional[Callable[..., str]] = None
@@ -14,12 +17,12 @@ def gather_task_info_loop(
     summary: str = ""
     running_message: str = TASK_INTO_MORE_INFO.format(task=task)
     for x in range(15):
-        print(x)
+        logger.info(x)
         response = complete_anth(running_message)
-        print(response)
+        logger.info(response)
         if "finished:" not in response.strip():
             next_message = choose_tool(raw_prompt=response, ask_callback=ask_callback)
-            print(next_message)
+            logger.info(next_message)
             running_message += response + HUMAN_PROMPT + next_message + AI_PROMPT
         else:
             summary = response
