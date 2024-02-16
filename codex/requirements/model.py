@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import List, Literal, Optional
 
 from prisma.enums import AccessLevel
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from codex.prompts.claude.requirements.QAFormat import (
     Q_AND_A_FORMAT,
@@ -132,10 +132,6 @@ class ModuleRefinementRequirement(BaseModel):
         return f"#### Requirement: {self.name}\n{self.description}\n"
 
 
-class ModuleRefinementRequrirementsWrapper(BaseModel):
-    requirement: ModuleRefinementRequirement
-
-
 class Parameter(BaseModel):
     name: str
     param_type: str
@@ -218,6 +214,8 @@ class EndpointSchemaRefinementResponse(BaseModel):
 
 
 class Endpoint(BaseModel):
+    model_config = ConfigDict(strict=False)
+
     name: str
     type: Literal[
         "GET",
@@ -256,12 +254,9 @@ class Endpoint(BaseModel):
         return f"##### {self.name}: `{self.type} {self.path}`\n\n{self.description}\n\n{request_response_text}\n\n{data_model_text}\n\n{database_text}"
 
 
-class EndpointWrapper(BaseModel):
-    endpoint: Endpoint
-
-
 class EndpointGroupWrapper(BaseModel):
-    endpoint_group: list[EndpointWrapper] | str | EndpointWrapper
+    group_category: str
+    endpoints: list[Endpoint]
 
 
 class ModuleRefinementModule(BaseModel):
@@ -269,18 +264,14 @@ class ModuleRefinementModule(BaseModel):
     rough_requirements: str
     thoughts: str
     new_description: str
-    module_requirements_list: list[ModuleRefinementRequrirementsWrapper]
-    module_links: str
-    endpoint_groups_list: Optional[str]
-    endpoints: list[EndpointGroupWrapper] | EndpointGroupWrapper
-
-
-class ModuleRefinementModuleWrapper(BaseModel):
-    module: ModuleRefinementModule
+    module_requirements: list[ModuleRefinementRequirement]
+    module_links: list[str]
+    endpoint_groups_list: Optional[list[str]]
+    endpoint_groups: list[EndpointGroupWrapper]
 
 
 class ModuleRefinement(BaseModel):
-    modules: list[ModuleRefinementModuleWrapper]
+    modules: list[ModuleRefinementModule]
 
 
 class Module(BaseModel):

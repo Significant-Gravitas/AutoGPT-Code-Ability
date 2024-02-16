@@ -1,31 +1,15 @@
-from fuzzywuzzy import fuzz, process
-
-from codex.requirements.model import Endpoint, EndpointGroupWrapper, EndpointWrapper
+from codex.requirements.model import Endpoint, EndpointGroupWrapper
 
 
 def flatten_endpoints(
-    input: list[EndpointGroupWrapper] | EndpointGroupWrapper,
+    input: list[EndpointGroupWrapper],
 ) -> list[Endpoint]:
-    endpoints = []
+    endpoints: list[Endpoint] = []
     if isinstance(input, list):
-        for i in input:
-            group = i.endpoint_group
-            if isinstance(group, str):
-                print(f"No endpoints here: {group}")
-                continue
-            elif isinstance(group, EndpointWrapper):
-                endpoints.append(group.endpoint)
-            elif isinstance(group, list):
-                for i in group:
-                    endpoints.append(i.endpoint)
+        for group in input:
+            for endpoint in group.endpoints:
+                endpoints.append(endpoint)
     else:
-        group = input.endpoint_group
-        if isinstance(group, str):
-            print(f"No endpoints here: {group}")
-        elif isinstance(group, EndpointWrapper):
-            endpoints.append(group.endpoint)
-        elif isinstance(group, list):
-            for i in group:
-                endpoints.append(i.endpoint)
+        raise ValueError("Invalid input type")
 
     return endpoints
