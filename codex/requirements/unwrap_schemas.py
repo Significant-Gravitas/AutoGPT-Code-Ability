@@ -2,7 +2,6 @@ from codex.requirements.model import (
     DatabaseSchema,
     DatabaseTable,
     DBSchemaResponseWrapper,
-    DBSchemaTableResponseWrapper,
     Endpoint,
     EndpointDataModel,
     EndpointSchemaRefinementResponse,
@@ -17,10 +16,8 @@ from codex.requirements.model import (
 def unwrap_db_schema(input: DBSchemaResponseWrapper) -> DatabaseSchema:
     name = input.name
     description = input.description
-    tables: list[DBSchemaTableResponseWrapper] = (
-        input.tables if isinstance(input.tables, list) else [input.tables]
-    )
-    unwrapped_tables: list[DatabaseTable] = [table.table for table in tables]
+    tables = input.tables
+    unwrapped_tables: list[DatabaseTable] = [table for table in tables]
     return DatabaseSchema(name=name, description=description, tables=unwrapped_tables)
 
 
