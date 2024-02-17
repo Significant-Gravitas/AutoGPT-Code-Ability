@@ -1,10 +1,12 @@
 import enum
 import logging
 from dataclasses import dataclass
-from typing import List, Literal, Optional
+from typing import Callable, List, Literal, Optional, Type
 
 from prisma.enums import AccessLevel
 from pydantic import BaseModel, ConfigDict
+
+from codex.common.ai_block import AIBlock
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +15,29 @@ Q_AND_A_FORMAT = """- "{question}": "{answer}"
 
 Q_AND_A_FORMAT_WITH_THOUGHTS = """- "{question}": "{answer}" : Reasoning: "{thoughts}"
 """
+
+
+class Tool(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    name: str
+    description: str
+    func: Optional[Callable[..., str]] = None
+    block: Type[AIBlock]
+
+
+class InterviewMessage(BaseModel):
+    model_config = ConfigDict(strict=False)
+
+    tool: str
+    content: str
+
+
+class InterviewMessageWithResponse(InterviewMessage):
+    response: str
+
+
+class InterviewMessageUse(BaseModel):
+    uses: List[InterviewMessage | InterviewMessageWithResponse]
 
 
 class DecomposeTask(BaseModel):

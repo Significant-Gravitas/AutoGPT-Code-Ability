@@ -87,11 +87,21 @@ async def generate_requirements(
     running_state_obj = StateObj(task=description)
 
     # User Interview
-    full, completion = gather_task_info_loop(running_state_obj.task, ask_callback=None)
-    running_state_obj.project_description = completion.split("finished: ")[-1].strip()
-    running_state_obj.project_description_thoughts = full
+    project_description, memory = await gather_task_info_loop(
+        task=running_state_obj.task, ask_callback=None, ids=ids
+    )
+    running_state_obj.project_description = project_description
+    # convert the memory to `tool`: `content`: `response` format
+    project_description_thoughts = [
+        f"{item.tool}: {item.content} :{item.response}"
+        for item in memory
+        if item.response
+    ]
+    running_state_obj.project_description_thoughts = "\n".join(
+        project_description_thoughts
+    )
 
-    logger.info(running_state_obj.project_description_thoughts)
+    logger.info("User Interview Done")
 
     frontend_clarify = FrontendClarificationBlock()
     frontend_clarification: Clarification = await frontend_clarify.invoke(
@@ -278,7 +288,7 @@ async def generate_requirements(
             # If a good match is found, proceed to update the module details
             for index, existing in enumerate(running_state_obj.modules):
                 if existing.name == best_match:
-                    logger.info(existing.name)
+                    logger.debug(f"Matched a module {existing.name}")
                     running_state_obj.modules[
                         index
                     ].description = module.new_description
@@ -291,7 +301,7 @@ async def generate_requirements(
                     ]
                     running_state_obj.modules[index].requirements = requirements
         else:
-            logger.info(f"No close match found for {module.module_name}")
+            logger.error(f"No close match found for {module.module_name}")
 
     logger.info("Refined Modules Done")
 
@@ -320,7 +330,8 @@ async def generate_requirements(
                     existing=endpoint,
                     database=running_state_obj.database,
                 )
-                logger.info(f"{converted!r}")
+                logger.debug(f"{converted!r}")
+                logger.info(f"Endpoint {endpoint.type} {endpoint.name} Done")
                 running_state_obj.modules[i].endpoints[j] = converted  # type: ignore
 
     logger.info("Endpoints Done")
@@ -339,7 +350,8 @@ async def generate_requirements(
     for module in running_state_obj.modules:
         if module.endpoints:
             for route in module.endpoints:
-                logger.info(route)
+                logger.debug(route)
+                logger.info(f"Processing route {route.name}")
                 api_routes.append(
                     APIRouteRequirement(
                         function_name=route.name,
@@ -369,8 +381,9 @@ async def generate_requirements(
         context=running_state_obj.__str__(),
         api_routes=api_routes,
     )
+    logger.info(f"Full Spec Done")
     saved_spec: Specification = await create_spec(ids, full_spec)
-
+    logger.info(f"Saved Spec Done")
     # Step 8) Return the application requirements
     return saved_spec
 

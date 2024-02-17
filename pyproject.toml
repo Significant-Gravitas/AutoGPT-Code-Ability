@@ -25,8 +25,6 @@ python-json-logger = "^2.0.7"
 pydantic = { version = "^2.6.1", extras = ["email"] }
 python-multipart = "^0.0.7"
 fuzzywuzzy = "^0.18.0"
-gravitasml = "^0.1.0"
-anthropic = "^0.15.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.3"
