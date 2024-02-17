@@ -1,5 +1,4 @@
 # Task Breakdown Micro Agent
-import asyncio
 import logging
 from typing import Callable, Optional
 
@@ -54,38 +53,49 @@ async def gather_task_info_loop(
             },
         )
 
-        # TODO:
-        # handle the `asks` first, add them to memory, then the searches, then the finished ones.
-        # Each should take the memory of the prior
-
         # async handle for each item in running_message.uses
-        results: list[InterviewMessageWithResponse] = await asyncio.gather(
-            *[
-                use_tool(input=i, available_tools=tools, ids=ids, memory=memory)
-                for i in running_message.uses
-                if i.tool == "ask"
-            ]
-        )
+        # results: list[InterviewMessageWithResponse] = await asyncio.gather(
+        #     *[
+        #         use_tool(input=i, available_tools=tools, ids=ids, memory=memory)
+        #         for i in running_message.uses
+        #         if i.tool == "ask"
+        #     ]
+        # )
+        results: list[InterviewMessageWithResponse] = [
+            await use_tool(input=i, available_tools=tools, ids=ids, memory=memory)
+            for i in running_message.uses
+            if i.tool == "ask"
+        ]
         for result in results:
             memory.append(result)
 
-        results: list[InterviewMessageWithResponse] = await asyncio.gather(
-            *[
-                use_tool(input=i, available_tools=tools, ids=ids, memory=memory)
-                for i in running_message.uses
-                if i.tool == "search"
-            ]
-        )
+        # results: list[InterviewMessageWithResponse] = await asyncio.gather(
+        #     *[
+        #         use_tool(input=i, available_tools=tools, ids=ids, memory=memory)
+        #         for i in running_message.uses
+        #         if i.tool == "search"
+        #     ]
+        # )
+        results: list[InterviewMessageWithResponse] = [
+            await use_tool(input=i, available_tools=tools, ids=ids, memory=memory)
+            for i in running_message.uses
+            if i.tool == "search"
+        ]
         for result in results:
             memory.append(result)
 
-        results: list[InterviewMessageWithResponse] = await asyncio.gather(
-            *[
-                use_tool(input=i, available_tools=tools, ids=ids, memory=memory)
-                for i in running_message.uses
-                if i.tool == "finished"
-            ]
-        )
+        # results: list[InterviewMessageWithResponse] = await asyncio.gather(
+        #     *[
+        #         use_tool(input=i, available_tools=tools, ids=ids, memory=memory)
+        #         for i in running_message.uses
+        #         if i.tool == "finished"
+        #     ]
+        # )
+        results: list[InterviewMessageWithResponse] = [
+            await use_tool(input=i, available_tools=tools, ids=ids, memory=memory)
+            for i in running_message.uses
+            if i.tool == "finished"
+        ]
         for result in results:
             memory.append(result)
 
