@@ -137,7 +137,7 @@ class SpecificationResponse(BaseModel):
 
     @staticmethod
     def from_specification(specification: Specification) -> "SpecificationResponse":
-        logger.info(specification.json())
+        logger.debug(specification.model_dump_json())
         routes = []
         if specification.apiRoutes is None:
             raise ValueError("No routes found for the specification")
