@@ -101,7 +101,7 @@ async def generate_requirements(
         project_description_thoughts
     )
 
-    logger.info(running_state_obj.project_description_thoughts)
+    logger.info("User Interview Done")
 
     frontend_clarify = FrontendClarificationBlock()
     frontend_clarification: Clarification = await frontend_clarify.invoke(
@@ -288,7 +288,7 @@ async def generate_requirements(
             # If a good match is found, proceed to update the module details
             for index, existing in enumerate(running_state_obj.modules):
                 if existing.name == best_match:
-                    logger.info(existing.name)
+                    logger.debug(f"Matched a module {existing.name}")
                     running_state_obj.modules[
                         index
                     ].description = module.new_description
@@ -301,7 +301,7 @@ async def generate_requirements(
                     ]
                     running_state_obj.modules[index].requirements = requirements
         else:
-            logger.info(f"No close match found for {module.module_name}")
+            logger.error(f"No close match found for {module.module_name}")
 
     logger.info("Refined Modules Done")
 
@@ -330,7 +330,8 @@ async def generate_requirements(
                     existing=endpoint,
                     database=running_state_obj.database,
                 )
-                logger.info(f"{converted!r}")
+                logger.debug(f"{converted!r}")
+                logger.info(f"Endpoint {endpoint.type} {endpoint.name} Done")
                 running_state_obj.modules[i].endpoints[j] = converted  # type: ignore
 
     logger.info("Endpoints Done")
@@ -349,7 +350,8 @@ async def generate_requirements(
     for module in running_state_obj.modules:
         if module.endpoints:
             for route in module.endpoints:
-                logger.info(route)
+                logger.debug(route)
+                logger.info(f"Processing route {route.name}")
                 api_routes.append(
                     APIRouteRequirement(
                         function_name=route.name,
@@ -379,8 +381,9 @@ async def generate_requirements(
         context=running_state_obj.__str__(),
         api_routes=api_routes,
     )
+    logger.info(f"Full Spec Done")
     saved_spec: Specification = await create_spec(ids, full_spec)
-
+    logger.info(f"Saved Spec Done")
     # Step 8) Return the application requirements
     return saved_spec
 
