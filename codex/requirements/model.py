@@ -1,15 +1,18 @@
 import enum
+import logging
 from dataclasses import dataclass
 from typing import List, Literal, Optional
 
 from prisma.enums import AccessLevel
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-from codex import requirements
-from codex.prompts.claude.requirements.QAFormat import (
-    Q_AND_A_FORMAT,
-    Q_AND_A_FORMAT_WITH_THOUGHTS,
-)
+logger = logging.getLogger(__name__)
+
+Q_AND_A_FORMAT = """- "{question}": "{answer}"
+"""
+
+Q_AND_A_FORMAT_WITH_THOUGHTS = """- "{question}": "{answer}" : Reasoning: "{thoughts}"
+"""
 
 
 class DecomposeTask(BaseModel):
@@ -141,10 +144,6 @@ class ModuleRefinementRequirement(BaseModel):
         return f"#### Requirement: {self.name}\n{self.description}\n"
 
 
-class ModuleRefinementRequrirementsWrapper(BaseModel):
-    requirement: ModuleRefinementRequirement
-
-
 class Parameter(BaseModel):
     name: str
     param_type: str
@@ -157,7 +156,7 @@ class Parameter(BaseModel):
 class RequestModel(BaseModel):
     name: str
     description: str
-    params: List[Parameter] | Parameter
+    params: List[Parameter]
 
     def __str__(self):
         params_str = "\n".join(param.__str__() for param in self.params)
@@ -167,7 +166,7 @@ class RequestModel(BaseModel):
 class ResponseModel(BaseModel):
     name: str
     description: str
-    params: List[Parameter] | Parameter
+    params: List[Parameter]
 
     def __str__(self):
         params_str = "\n".join(param.__str__() for param in self.params)
@@ -193,10 +192,6 @@ class DatabaseSchema(BaseModel):
         return f"## {self.name}\n**Description**: {self.description}\n**Tables**:\n{tables_str}\n"
 
 
-class ParameterWrapper(BaseModel):
-    param: Parameter
-
-
 class EndpointDataModel(BaseModel):
     name: str
     description: Optional[str]
@@ -206,11 +201,7 @@ class EndpointDataModel(BaseModel):
 class NewAPIModel(BaseModel):
     name: str
     description: Optional[str]
-    params: List[ParameterWrapper] | Optional[ParameterWrapper] | str
-
-
-class NewAPIModelWrapper(BaseModel):
-    model: NewAPIModel
+    params: List[Parameter]
 
 
 class APIEndpointWrapper(BaseModel):
@@ -220,13 +211,15 @@ class APIEndpointWrapper(BaseModel):
 
 class EndpointSchemaRefinementResponse(BaseModel):
     think: str
-    db_models_needed: Optional[str]
-    new_api_models: (Optional[str] | NewAPIModelWrapper | list[NewAPIModelWrapper])
+    db_models_needed: list[str]
+    new_api_models: list[NewAPIModel]
     api_endpoint: APIEndpointWrapper
     end_thoughts: Optional[str]
 
 
 class Endpoint(BaseModel):
+    model_config = ConfigDict(strict=False)
+
     name: str
     type: Literal[
         "GET",
@@ -265,12 +258,9 @@ class Endpoint(BaseModel):
         return f"##### {self.name}: `{self.type} {self.path}`\n\n{self.description}\n\n{request_response_text}\n\n{data_model_text}\n\n{database_text}"
 
 
-class EndpointWrapper(BaseModel):
-    endpoint: Endpoint
-
-
 class EndpointGroupWrapper(BaseModel):
-    endpoint_group: list[EndpointWrapper] | str | EndpointWrapper
+    group_category: str
+    endpoints: list[Endpoint]
 
 
 class ModuleRefinementModule(BaseModel):
@@ -278,18 +268,14 @@ class ModuleRefinementModule(BaseModel):
     rough_requirements: str
     thoughts: str
     new_description: str
-    module_requirements_list: list[ModuleRefinementRequrirementsWrapper]
-    module_links: str
-    endpoint_groups_list: Optional[str]
-    endpoints: list[EndpointGroupWrapper] | EndpointGroupWrapper
-
-
-class ModuleRefinementModuleWrapper(BaseModel):
-    module: ModuleRefinementModule
+    module_requirements: list[ModuleRefinementRequirement]
+    module_links: list[str]
+    endpoint_groups_list: Optional[list[str]]
+    endpoint_groups: list[EndpointGroupWrapper]
 
 
 class ModuleRefinement(BaseModel):
-    modules: list[ModuleRefinementModuleWrapper]
+    modules: list[ModuleRefinementModule]
 
 
 class Module(BaseModel):
@@ -528,7 +514,7 @@ class StateObj:
             if qa.was_conclusive and qa.was_conclusive == "Yes":
                 conclusive.append(qa)
             else:
-                print(f"Maybe an oopsie here? {qa}")
+                logger.info(f"Maybe an oopsie here? {qa}")
         return conclusive
 
     def conclusive_q_and_a_as_string(self) -> str:

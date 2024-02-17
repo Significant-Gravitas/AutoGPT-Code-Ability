@@ -5,19 +5,16 @@ from asyncio import run
 import openai
 import prisma
 from prisma.enums import AccessLevel
+from prisma.models import Specification
 from pydantic.json import pydantic_encoder
 
-from codex.common.ai_block import Indentifiers
-from codex.prompts.claude.requirements.AskFunction import *
-from codex.prompts.claude.requirements.ClarificationsIntoProduct import *
-from codex.prompts.claude.requirements.EndpointGeneration import *
-from codex.prompts.claude.requirements.ModuleIntoDatabase import *
-from codex.prompts.claude.requirements.ModuleRefinement import *
-from codex.prompts.claude.requirements.ProductIntoRequirement import *
-from codex.prompts.claude.requirements.QAFormat import *
-from codex.prompts.claude.requirements.RequirementIntoModule import *
-from codex.prompts.claude.requirements.SearchFunction import *
-from codex.prompts.claude.requirements.TaskIntoClarifcations import *
+from codex.api_model import Indentifiers
+from codex.prompts.claude.requirements.NestJSDocs import (
+    NEST_JS_CRUD_GEN,
+    NEST_JS_FIRST_STEPS,
+    NEST_JS_MODULES,
+    NEST_JS_SQL,
+)
 from codex.requirements import flatten_endpoints
 from codex.requirements.blocks.ai_clarify import (
     FrontendClarificationBlock,
@@ -26,13 +23,16 @@ from codex.requirements.blocks.ai_clarify import (
     UserSkillClarificationBlock,
 )
 from codex.requirements.blocks.ai_database import DatabaseGenerationBlock
+from codex.requirements.blocks.ai_endpoint import EndpointSchemaRefinementBlock
 from codex.requirements.blocks.ai_feature import FeatureGenerationBlock
-from codex.requirements.blocks.ai_module import ModuleGenerationBlock
+from codex.requirements.blocks.ai_module import (
+    ModuleGenerationBlock,
+    ModuleRefinementBlock,
+)
 from codex.requirements.blocks.ai_requirements import (
     BaseRequirementsBlock,
     FuncNonFuncRequirementsBlock,
 )
-from codex.requirements.complete import complete_and_parse
 from codex.requirements.database import create_spec
 from codex.requirements.gather_task_info import gather_task_info_loop
 from codex.requirements.hardcoded import (
@@ -61,7 +61,7 @@ from codex.requirements.model import (
     ResponseModel,
     StateObj,
 )
-from codex.requirements.unwrap_schemas import convert_endpoint, unwrap_db_schema
+from codex.requirements.unwrap_schemas import convert_db_schema, convert_endpoint
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ async def generate_requirements(
     ids: Indentifiers,
     app_name: str,
     description: str,
-) -> ApplicationRequirements:
+) -> Specification:
     """
     Runs the Requirements Agent to generate the system requirements based
     upon the provided task
@@ -91,7 +91,7 @@ async def generate_requirements(
     running_state_obj.project_description = completion.split("finished: ")[-1].strip()
     running_state_obj.project_description_thoughts = full
 
-    print(running_state_obj.project_description_thoughts)
+    logger.info(running_state_obj.project_description_thoughts)
 
     frontend_clarify = FrontendClarificationBlock()
     frontend_clarification: Clarification = await frontend_clarify.invoke(
@@ -101,7 +101,7 @@ async def generate_requirements(
 
     running_state_obj.add_clarifying_question(frontend_clarification)
 
-    print("Frontend Clarification Done")
+    logger.info("Frontend Clarification Done")
 
     user_persona_clarify = UserPersonaClarificationBlock()
     user_persona_clarification: Clarification = await user_persona_clarify.invoke(
@@ -114,7 +114,7 @@ async def generate_requirements(
 
     running_state_obj.add_clarifying_question(user_persona_clarification)
 
-    print("User Persona Clarification Done")
+    logger.info("User Persona Clarification Done")
 
     # User Skill
 
@@ -128,7 +128,7 @@ async def generate_requirements(
     )
     running_state_obj.add_clarifying_question(user_skill_clarification)
 
-    print("User Skill Clarification Done")
+    logger.info("User Skill Clarification Done")
 
     # Clarification Rounds
 
@@ -138,13 +138,13 @@ async def generate_requirements(
         invoke_params={
             "clarifiying_questions_so_far": running_state_obj.clarifying_questions_as_string(),
             "project_description": running_state_obj.project_description,
-            "task": task,
+            "task": running_state_obj.task,
         },
     )
 
     running_state_obj.q_and_a = q_and_a_clarification
 
-    print("Question and Answer Based Clarification Done")
+    logger.info("Question and Answer Based Clarification Done")
 
     # Product Name and Description
     feature_block = FeatureGenerationBlock()
@@ -167,7 +167,7 @@ async def generate_requirements(
 
     running_state_obj.features = features
 
-    print("Features Done")
+    logger.info("Features Done")
 
     # Requirements Start
     # Collect the requirements Q&A
@@ -185,7 +185,7 @@ async def generate_requirements(
 
     running_state_obj.refined_requirement_q_a = base_requirements
 
-    print("Refined Requirements Done")
+    logger.info("Refined Requirements Done")
 
     # Requirements QA answers
     # Build the requirements from the Q&A
@@ -206,7 +206,7 @@ async def generate_requirements(
 
     running_state_obj.requirements = requirements_func_nonfunc.answer
 
-    print("Requirements Done")
+    logger.info("Requirements Done")
 
     # Modules seperation
     # Build the requirements from the Q&A
@@ -232,7 +232,7 @@ async def generate_requirements(
 
     running_state_obj.modules = module_response.modules
 
-    print("Modules 1st Step Done")
+    logger.info("Modules 1st Step Done")
 
     # Database Design
     database_block = DatabaseGenerationBlock()
@@ -244,24 +244,28 @@ async def generate_requirements(
             "modules": ", ".join(module.name for module in running_state_obj.modules),
         },
     )
-    running_state_obj.database = unwrap_db_schema(db_response.database_schema)
 
-    print("DB Done")
+    running_state_obj.database = convert_db_schema(db_response.database_schema)
+
+    logger.info("DB Done")
 
     # Module Refinement
     # Build the requirements from the Q&A
-    refined_data: ModuleRefinement = complete_and_parse(
-        prompt=MODULE_REFINEMENTS.format(
-            system_requirements=f"{running_state_obj.__str__()}", id=f"{id}"
-        ),
-        return_model=ModuleRefinement,
+    module_ref_block = ModuleRefinementBlock()
+    refined_data: ModuleRefinement = await module_ref_block.invoke(
+        ids=ids,
+        invoke_params={
+            "system_requirements": running_state_obj.__str__(),
+            "modules_list": ", ".join(
+                [module.name for module in running_state_obj.modules]
+            ),
+        },
     )
 
-    print("Refined Modules Generated Done")
+    logger.info("Refined Modules Generated Done")
 
     # Match modules to completions
     for module in refined_data.modules:
-        module = module.module
         # Extract module names from running_state_obj.modules for comparison
         existing_module_names = [
             existing.name for existing in running_state_obj.modules
@@ -274,21 +278,22 @@ async def generate_requirements(
             # If a good match is found, proceed to update the module details
             for index, existing in enumerate(running_state_obj.modules):
                 if existing.name == best_match:
-                    print(existing.name)
+                    logger.info(existing.name)
                     running_state_obj.modules[
                         index
                     ].description = module.new_description
-                    endpoints = flatten_endpoints.flatten_endpoints(module.endpoints)
+                    endpoints = flatten_endpoints.flatten_endpoints(
+                        module.endpoint_groups
+                    )
                     running_state_obj.modules[index].endpoints = endpoints
                     requirements = [
-                        requirement.requirement
-                        for requirement in module.module_requirements_list
+                        requirement for requirement in module.module_requirements
                     ]
                     running_state_obj.modules[index].requirements = requirements
         else:
-            print(f"No close match found for {module.module_name}")
+            logger.info(f"No close match found for {module.module_name}")
 
-    print("Refined Modules Done")
+    logger.info("Refined Modules Done")
 
     # DB Schemas
     reply = ""
@@ -298,25 +303,27 @@ async def generate_requirements(
     for i, module in enumerate(running_state_obj.modules):
         if module.endpoints:
             for j, endpoint in enumerate(module.endpoints):
-                reply = complete_and_parse(
-                    ENDPOINT_PARAMS_GEN.format(
-                        endpoint_and_module_repr=f"{endpoint!r} {module!r}",
-                        spec=running_state_obj.__str__(),
-                        id="{id}",
-                        db_models=f"[{','.join(db_table_names)}]",
-                    ),
-                    return_model=EndpointSchemaRefinementResponse,
+                endpoint_block = EndpointSchemaRefinementBlock()
+                endpoint_ref: EndpointSchemaRefinementResponse = (
+                    await endpoint_block.invoke(
+                        ids=ids,
+                        invoke_params={
+                            "spec": running_state_obj.__str__(),
+                            "db_models": f"[{','.join(db_table_names)}]",
+                            "module_repr": f"{module!r}",
+                            "endpoint_repr": f"{endpoint!r}",
+                        },
+                    )
                 )
-                # parsed = parse_into_model(reply, EndpointSchemaRefinementResponse)
-                # display(Pretty(parsed.__str__()))
                 converted: Endpoint = convert_endpoint(
-                    input=reply,
+                    input=endpoint_ref,
                     existing=endpoint,
                     database=running_state_obj.database,
                 )
-                running_state_obj.modules[i].endpoints[j] = converted
+                logger.info(f"{converted!r}")
+                running_state_obj.modules[i].endpoints[j] = converted  # type: ignore
 
-    print("Endpoints Done")
+    logger.info("Endpoints Done")
 
     # Add support and tracking for models by module and add them to the prompt
 
@@ -332,7 +339,7 @@ async def generate_requirements(
     for module in running_state_obj.modules:
         if module.endpoints:
             for route in module.endpoints:
-                print(route)
+                logger.info(route)
                 api_routes.append(
                     APIRouteRequirement(
                         function_name=route.name,
@@ -362,10 +369,10 @@ async def generate_requirements(
         context=running_state_obj.__str__(),
         api_routes=api_routes,
     )
-    # saved_spec = await create_spec(ids, full_spec, db)
+    saved_spec: Specification = await create_spec(ids, full_spec)
 
     # Step 8) Return the application requirements
-    return full_spec
+    return saved_spec
 
 
 def hardcoded_requirements(task: str) -> ApplicationRequirements:
@@ -449,4 +456,5 @@ Additionally, it will have proper management of financials, including invoice ma
         )
         return output
 
-    run(run_gen())
+    out = run(run_gen())
+    logger.info(out)

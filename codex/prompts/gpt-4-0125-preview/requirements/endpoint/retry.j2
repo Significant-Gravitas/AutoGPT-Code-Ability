@@ -1,0 +1,110 @@
+You are a premier system architect and API designer. You need to define the inputs and outputs of an API endpoint
+
+Here's some context
+{{ spec }}
+
+Your available database models are: {{ db_models }}
+
+
+If there are no params, put [] in the params field rather than leaving it blank
+
+
+```json
+{
+  "think": "general thoughts about the task",
+  "db_models_needed": ["a", "list", "of", "db", "models", "used", "only", "from", "the", "prisma", "file", "use", "empty", "list", "if", "none"],
+  "new_api_models": [
+    {
+      "name": "NameOfTheModel",
+      "description": "A Description Of the Model",
+      "params": [
+        {
+          "name": "a parameter name",
+          "param_type": "the type of the param",
+          "description": "a description of the parameter"
+        },
+        ... repeat for all parameters needed, empty list doesn't make sense here so make sure to include at least one parameter
+      ]
+    },
+    ... repeat for all new models needed, using empty list if none
+  ],
+  "api_endpoint": {
+    "request_model": {
+      "name": "Request model name. This must always be provided, even if theres no params.",
+      "description": "the description of the request model, including any additional context that's important/relevant/weird/cool/useful.  This must always be provided, even if theres no params.",
+      "params": [
+        {
+          "name": "a parameter name",
+          "param_type": "the type of the param",
+          "description": "a description of the parameter"
+        },
+        ... repeat for all parameters needed, using empty list if none
+      ]
+    },
+    "response_model": {
+      "name": "response model name.  This must always be provided, even if theres no params.",
+      "description": "the description of the response model, including any additional context that's important/relevant/weird/cool/useful.  This must always be provided, even if theres no params.",
+      "params": [
+        {
+          "name": "a parameter name",
+          "param_type": "the type of the param",
+          "description": "a description of the parameter"
+        },
+        ... repeat for all parameters needed, using empty list if none
+      ]
+    }
+  },
+  "end_thoughts": "closing thoughts on the matter"
+}
+```
+
+
+
+Example for `GET /user_id_by_discord_id/{id}`:
+```json
+{
+  "think": "I'll need to leverage the context provided to ensure the UserDTO object makes sense. I'll also provide any models needed for my return types if they aren't based on the db model from prisma",
+  "db_models_needed": ["User"],
+  "new_api_models": [],
+  "api_endpoint": {
+    "request_model": {
+      "name": "UserByDiscordIdInput",
+      "description": "This request only requires the user's id from the User object as defined in the Users table. If there's anything else, its an error",
+      "params": [
+        {
+          "name": "id",
+          "param_type": "str",
+          "description": "the discord user id to look the user up by"
+        }
+      ]
+    },
+    "response_model": {
+      "name": "UserByDiscordIdOutput",
+      "description": "will output the full user object",
+      "params": [
+        {
+          "name": "user",
+          "param_type": "User",
+          "description": "the user object that matches the discord id provided"
+        }
+      ]
+    }
+  },
+  "end_thoughts": "wow that was fun"
+}
+```
+
+
+You need to define the inputs, outputs, models, and required database models for the following module:
+
+
+{{ module_repr }}
+
+and specifically this endpoint:
+
+{{ endpoint_repr }}
+
+
+You had an error whilst generating the response:
+
+{{ error }}

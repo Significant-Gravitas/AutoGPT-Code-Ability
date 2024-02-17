@@ -1,12 +1,13 @@
 # Anthropic Completion
+import logging
 from enum import Enum
-from typing import Type, TypeVar
+from typing import TypeVar
 
 from anthropic import AI_PROMPT, HUMAN_PROMPT, Anthropic
 from anthropic.types import Completion as ACompletion
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
-from codex.requirements.parser import parse_into_model
+logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -46,7 +47,7 @@ def complete_anth(
         prompt=sendable_prompt,
     )
     if completion.stop_reason == "max_tokens":
-        print(completion.completion)
+        logger.info(completion.completion)
         continued = completion.completion + complete_anth(
             prompt=sendable_prompt + completion.completion,
             return_mode=ReturnMode.RETURN_ONLY_COMPLETION,
@@ -64,41 +65,3 @@ def complete_anth(
         .strip(),
     }
     return switcher.get(return_mode, "Invalid return mode")
-
-
-def complete_and_parse(
-    prompt: str,
-    return_model: Type[T],
-    return_mode: ReturnMode = ReturnMode.RETURN_ONLY_LAST_ASSISTANT_REPLY,
-) -> T:
-    max_tries = 10
-    try_counter = 1
-    reply = ""
-    while True:
-        try:
-            if try_counter >= max_tries:
-                raise ValueError("You did a bad job prompting kid")
-            reply: str = complete_anth(prompt, return_mode=return_mode)
-            parsed: T = parse_into_model(reply, return_model)  # type: ignore
-            return parsed
-        except AttributeError as e:
-            try_counter += 1
-            print(f"{try_counter} {e} {reply}")
-            pass
-        except ValidationError as e:
-            try_counter += 1
-            print(f"{try_counter} {e} {reply}")
-            pass
-        except SyntaxError as e:
-            try_counter += 1
-            print(f"{try_counter} {e} {reply}")
-            pass
-        except ValueError as e:
-            try_counter += 1
-            if try_counter >= max_tries + 1:
-                raise
-            print(f"{try_counter} {e} {reply}")
-        except Exception as e:
-            try_counter += 1
-            print(f"{try_counter} {e} {reply}")
-            pass
