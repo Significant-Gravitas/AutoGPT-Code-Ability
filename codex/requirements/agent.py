@@ -87,9 +87,19 @@ async def generate_requirements(
     running_state_obj = StateObj(task=description)
 
     # User Interview
-    full, completion = gather_task_info_loop(running_state_obj.task, ask_callback=None)
-    running_state_obj.project_description = completion.split("finished: ")[-1].strip()
-    running_state_obj.project_description_thoughts = full
+    project_description, memory = await gather_task_info_loop(
+        task=running_state_obj.task, ask_callback=None, ids=ids
+    )
+    running_state_obj.project_description = project_description
+    # convert the memory to `tool`: `content`: `response` format
+    project_description_thoughts = [
+        f"{item.tool}: {item.content} :{item.response}"
+        for item in memory
+        if item.response
+    ]
+    running_state_obj.project_description_thoughts = "\n".join(
+        project_description_thoughts
+    )
 
     print(running_state_obj.project_description_thoughts)
 

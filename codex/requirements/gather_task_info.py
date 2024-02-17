@@ -1,27 +1,120 @@
 # Task Breakdown Micro Agent
+import asyncio
+import logging
 from typing import Callable, Optional
 
-from anthropic import AI_PROMPT, HUMAN_PROMPT
+from codex.common.ai_block import Indentifiers
+from codex.requirements.blocks.interview.ai_ask import AskBlock
+from codex.requirements.blocks.interview.ai_finish import FinishBlock
+from codex.requirements.blocks.interview.ai_interview import InterviewBlock
+from codex.requirements.blocks.interview.ai_search import SearchBlock
+from codex.requirements.choose_tool import use_tool
+from codex.requirements.model import (
+    InterviewMessageUse,
+    InterviewMessageWithResponse,
+    Tool,
+)
 
-from codex.prompts.claude.requirements.TaskIntoClarifcations import TASK_INTO_MORE_INFO
-from codex.requirements.choose_tool import choose_tool
-from codex.requirements.complete import complete_anth
+logger = logging.getLogger(__name__)
 
 
-def gather_task_info_loop(
-    task: str, ask_callback: Optional[Callable[..., str]] = None
-) -> tuple[str, str]:
-    summary: str = ""
-    running_message: str = TASK_INTO_MORE_INFO.format(task=task)
-    for x in range(15):
-        print(x)
-        response = complete_anth(running_message)
-        print(response)
-        if "finished:" not in response.strip():
-            next_message = choose_tool(raw_prompt=response, ask_callback=ask_callback)
-            print(next_message)
-            running_message += response + HUMAN_PROMPT + next_message + AI_PROMPT
-        else:
-            summary = response
-            break
-    return running_message, summary
+async def gather_task_info_loop(
+    task: str, ids: Indentifiers, ask_callback: Optional[Callable[..., str]] = None
+) -> tuple[str, list[InterviewMessageWithResponse]]:
+    tools: list[Tool] = [
+        Tool(
+            name="ask",
+            description="ask the user a question",
+            func=ask_callback,
+            block=AskBlock,
+        ),
+        Tool(
+            name="search",
+            description="search the web for information",
+            # If we want to integrate opensearch or perplexity, it would be func=perplexity.search or some wrapper around it
+            # func=opensearch.search,
+            block=SearchBlock,
+        ),
+        Tool(
+            name="finished",
+            description="finish the task and provide a comprehensive project to the user. Include the important notes from the task as well. This should be very detailed and comprehensive. Do NOT use this if there are unsettled questions.",
+            block=FinishBlock,
+        ),
+    ]
+
+    memory: list[InterviewMessageWithResponse] = []
+    while True:
+        interview_start = InterviewBlock()
+        running_message: InterviewMessageUse = await interview_start.invoke(
+            ids=ids,
+            invoke_params={
+                "task": task,
+                "tools": {tool.name: tool.description for tool in tools},
+                "memory": memory,
+            },
+        )
+
+        # TODO:
+        # handle the `asks` first, add them to memory, then the searches, then the finished ones.
+        # Each should take the memory of the prior
+
+        # async handle for each item in running_message.uses
+        results: list[InterviewMessageWithResponse] = await asyncio.gather(
+            *[
+                use_tool(input=i, available_tools=tools, ids=ids, memory=memory)
+                for i in running_message.uses
+                if i.tool == "ask"
+            ]
+        )
+        for result in results:
+            memory.append(result)
+
+        results: list[InterviewMessageWithResponse] = await asyncio.gather(
+            *[
+                use_tool(input=i, available_tools=tools, ids=ids, memory=memory)
+                for i in running_message.uses
+                if i.tool == "search"
+            ]
+        )
+        for result in results:
+            memory.append(result)
+
+        results: list[InterviewMessageWithResponse] = await asyncio.gather(
+            *[
+                use_tool(input=i, available_tools=tools, ids=ids, memory=memory)
+                for i in running_message.uses
+                if i.tool == "finished"
+            ]
+        )
+        for result in results:
+            memory.append(result)
+
+        # if there is a finished message, return the summary from that memory.content and the memory
+        for item in memory:
+            if item.tool == "finished":
+                return item.content, memory
+
+
+if __name__ == "__main__":
+    from asyncio import run
+
+    from openai import OpenAI
+    from prisma import Prisma
+
+    ids = Indentifiers(user_id=1, app_id=1)
+    db_client = Prisma(auto_register=True)
+    oai = OpenAI()
+
+    async def main():
+        await db_client.connect()
+        response, memory = await gather_task_info_loop(
+            task="I need to make a website",
+            ids=ids,
+        )
+        logger.info(response)
+        await db_client.disconnect()
+        return response, memory
+
+    resp = run(main())
+    print(resp[0])
+    print(resp[1])
