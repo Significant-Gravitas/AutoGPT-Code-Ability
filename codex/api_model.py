@@ -1,10 +1,12 @@
+import logging
 from datetime import datetime
-from enum import Enum
 from typing import List, Optional
 
 from prisma.enums import Role
 from prisma.models import Specification
 from pydantic import BaseModel, EmailStr, Field
+
+logger = logging.getLogger(__name__)
 
 
 class Indentifiers(BaseModel):
@@ -135,7 +137,7 @@ class SpecificationResponse(BaseModel):
 
     @staticmethod
     def from_specification(specification: Specification) -> "SpecificationResponse":
-        print(specification.json())
+        logger.info(specification.json())
         routes = []
         if specification.apiRoutes is None:
             raise ValueError("No routes found for the specification")

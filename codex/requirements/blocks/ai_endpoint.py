@@ -1,3 +1,5 @@
+import logging
+
 from codex.common.ai_block import (
     AIBlock,
     Indentifiers,
@@ -5,6 +7,8 @@ from codex.common.ai_block import (
     ValidationError,
 )
 from codex.requirements.model import EndpointSchemaRefinementResponse
+
+logger = logging.getLogger(__name__)
 
 
 class EndpointSchemaRefinementBlock(AIBlock):
@@ -96,29 +100,33 @@ if __name__ == "__main__":
 
     for key, item in endpoints.items():
         if isinstance(item, EndpointSchemaRefinementResponse):
-            print(f"Endpoint:")
-            print(f"\tThink: {item.think}")
-            print(f"\tDB Models Needed: {item.db_models_needed}")
-            print(f"\tNew API Models: {item.new_api_models}")
-            print(f"\tEnd Thoughts: {item.end_thoughts}")
-            print(f"\tAPI Endpoint Request: ")
-            print(f"\t\tRequest Model Name: {item.api_endpoint.request_model.name}")
-            print(
+            logger.info(f"Endpoint:")
+            logger.info(f"\tThink: {item.think}")
+            logger.info(f"\tDB Models Needed: {item.db_models_needed}")
+            logger.info(f"\tNew API Models: {item.new_api_models}")
+            logger.info(f"\tEnd Thoughts: {item.end_thoughts}")
+            logger.info(f"\tAPI Endpoint Request: ")
+            logger.info(
+                f"\t\tRequest Model Name: {item.api_endpoint.request_model.name}"
+            )
+            logger.info(
                 f"\t\tRequest Model Description: {item.api_endpoint.request_model.description}"
             )
-            print(
+            logger.info(
                 f"\t\tRequest Model Parameters: {item.api_endpoint.request_model.params}"
             )
-            print(f"\tAPI Endpoint Response:")
-            print(f"\t\tResponse Model Name: {item.api_endpoint.response_model.name}")
-            print(
+            logger.info(f"\tAPI Endpoint Response:")
+            logger.info(
+                f"\t\tResponse Model Name: {item.api_endpoint.response_model.name}"
+            )
+            logger.info(
                 f"\t\tResponse Model Description: {item.api_endpoint.response_model.description}"
             )
-            print(
+            logger.info(
                 f"\t\tResponse Model Parameters: {item.api_endpoint.response_model.params}"
             )
         else:
-            print(f"????")
+            logger.info(f"????")
             breakpoint()
 
     # # If you want to test the block in an interactive environment

@@ -1,4 +1,6 @@
 # Tools
+import logging
+from typing import Callable, Optional
 
 from codex.common.ai_block import Indentifiers
 from codex.requirements.matching import find_best_match
@@ -7,6 +9,8 @@ from codex.requirements.model import (
     InterviewMessageWithResponse,
     Tool,
 )
+
+logger = logging.getLogger(__name__)
 
 
 async def use_tool(

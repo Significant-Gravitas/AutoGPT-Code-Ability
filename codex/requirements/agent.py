@@ -101,7 +101,7 @@ async def generate_requirements(
         project_description_thoughts
     )
 
-    print(running_state_obj.project_description_thoughts)
+    logger.info(running_state_obj.project_description_thoughts)
 
     frontend_clarify = FrontendClarificationBlock()
     frontend_clarification: Clarification = await frontend_clarify.invoke(
@@ -111,7 +111,7 @@ async def generate_requirements(
 
     running_state_obj.add_clarifying_question(frontend_clarification)
 
-    print("Frontend Clarification Done")
+    logger.info("Frontend Clarification Done")
 
     user_persona_clarify = UserPersonaClarificationBlock()
     user_persona_clarification: Clarification = await user_persona_clarify.invoke(
@@ -124,7 +124,7 @@ async def generate_requirements(
 
     running_state_obj.add_clarifying_question(user_persona_clarification)
 
-    print("User Persona Clarification Done")
+    logger.info("User Persona Clarification Done")
 
     # User Skill
 
@@ -138,7 +138,7 @@ async def generate_requirements(
     )
     running_state_obj.add_clarifying_question(user_skill_clarification)
 
-    print("User Skill Clarification Done")
+    logger.info("User Skill Clarification Done")
 
     # Clarification Rounds
 
@@ -154,7 +154,7 @@ async def generate_requirements(
 
     running_state_obj.q_and_a = q_and_a_clarification
 
-    print("Question and Answer Based Clarification Done")
+    logger.info("Question and Answer Based Clarification Done")
 
     # Product Name and Description
     feature_block = FeatureGenerationBlock()
@@ -177,7 +177,7 @@ async def generate_requirements(
 
     running_state_obj.features = features
 
-    print("Features Done")
+    logger.info("Features Done")
 
     # Requirements Start
     # Collect the requirements Q&A
@@ -195,7 +195,7 @@ async def generate_requirements(
 
     running_state_obj.refined_requirement_q_a = base_requirements
 
-    print("Refined Requirements Done")
+    logger.info("Refined Requirements Done")
 
     # Requirements QA answers
     # Build the requirements from the Q&A
@@ -216,7 +216,7 @@ async def generate_requirements(
 
     running_state_obj.requirements = requirements_func_nonfunc.answer
 
-    print("Requirements Done")
+    logger.info("Requirements Done")
 
     # Modules seperation
     # Build the requirements from the Q&A
@@ -242,7 +242,7 @@ async def generate_requirements(
 
     running_state_obj.modules = module_response.modules
 
-    print("Modules 1st Step Done")
+    logger.info("Modules 1st Step Done")
 
     # Database Design
     database_block = DatabaseGenerationBlock()
@@ -257,7 +257,7 @@ async def generate_requirements(
 
     running_state_obj.database = convert_db_schema(db_response.database_schema)
 
-    print("DB Done")
+    logger.info("DB Done")
 
     # Module Refinement
     # Build the requirements from the Q&A
@@ -272,7 +272,7 @@ async def generate_requirements(
         },
     )
 
-    print("Refined Modules Generated Done")
+    logger.info("Refined Modules Generated Done")
 
     # Match modules to completions
     for module in refined_data.modules:
@@ -288,7 +288,7 @@ async def generate_requirements(
             # If a good match is found, proceed to update the module details
             for index, existing in enumerate(running_state_obj.modules):
                 if existing.name == best_match:
-                    print(existing.name)
+                    logger.info(existing.name)
                     running_state_obj.modules[
                         index
                     ].description = module.new_description
@@ -301,9 +301,9 @@ async def generate_requirements(
                     ]
                     running_state_obj.modules[index].requirements = requirements
         else:
-            print(f"No close match found for {module.module_name}")
+            logger.info(f"No close match found for {module.module_name}")
 
-    print("Refined Modules Done")
+    logger.info("Refined Modules Done")
 
     # DB Schemas
     reply = ""
@@ -330,10 +330,10 @@ async def generate_requirements(
                     existing=endpoint,
                     database=running_state_obj.database,
                 )
-                print(f"{converted!r}")
+                logger.info(f"{converted!r}")
                 running_state_obj.modules[i].endpoints[j] = converted  # type: ignore
 
-    print("Endpoints Done")
+    logger.info("Endpoints Done")
 
     # Add support and tracking for models by module and add them to the prompt
 
@@ -349,7 +349,7 @@ async def generate_requirements(
     for module in running_state_obj.modules:
         if module.endpoints:
             for route in module.endpoints:
-                print(route)
+                logger.info(route)
                 api_routes.append(
                     APIRouteRequirement(
                         function_name=route.name,
@@ -467,4 +467,4 @@ Additionally, it will have proper management of financials, including invoice ma
         return output
 
     out = run(run_gen())
-    print(out)
+    logger.info(out)

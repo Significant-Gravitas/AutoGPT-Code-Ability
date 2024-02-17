@@ -1,4 +1,5 @@
 import enum
+import logging
 from dataclasses import dataclass
 from typing import Callable, List, Literal, Optional, Type
 
@@ -6,6 +7,7 @@ from prisma.enums import AccessLevel
 from pydantic import BaseModel, ConfigDict
 
 from codex.common.ai_block import AIBlock
+logger = logging.getLogger(__name__)
 
 Q_AND_A_FORMAT = """- "{question}": "{answer}"
 """
@@ -536,7 +538,7 @@ class StateObj:
             if qa.was_conclusive and qa.was_conclusive == "Yes":
                 conclusive.append(qa)
             else:
-                print(f"Maybe an oopsie here? {qa}")
+                logger.info(f"Maybe an oopsie here? {qa}")
         return conclusive
 
     def conclusive_q_and_a_as_string(self) -> str:

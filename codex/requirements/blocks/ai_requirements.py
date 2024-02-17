@@ -1,3 +1,5 @@
+import logging
+
 from codex.common.ai_block import (
     AIBlock,
     Indentifiers,
@@ -10,6 +12,8 @@ from codex.requirements.model import (
     RequirementsRefined,
     RequirementsResponse,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class BaseRequirementsBlock(AIBlock):
@@ -172,61 +176,65 @@ if __name__ == "__main__":
 
     for key, item in requirements.items():
         if isinstance(item, RequirementsRefined):
-            print(f"Requirement Base {key}")
-            print(f"\tRequirementsRefined:")
-            print(f"\t\tneed_db: {item.need_db}")
-            print(f"\t\t\t{item.need_db_justification}")
-            print(f"\t\tneed_frontend_api: {item.need_frontend_api}")
-            print(f"\t\t\t{item.need_frontend_api_justification}")
-            print(f"\t\tneed_other_services_api: {item.need_other_services_api}")
-            print(f"\t\t\t{item.need_other_services_api_justification}")
-            print(f"\t\tneed_external_api: {item.need_external_api}")
-            print(f"\t\t\t{item.need_external_api_justification}")
-            print(f"\t\tneed_api_keys: {item.need_api_keys}")
-            print(f"\t\t\t{item.need_api_keys_justification}")
-            print(f"\t\tneed_monitoring: {item.need_monitoring}")
-            print(f"\t\t\t{item.need_monitoring_justification}")
-            print(f"\t\tneed_internationalization: {item.need_internationalization}")
-            print(f"\t\t\t{item.need_internationalization_justification}")
-            print(f"\t\tneed_analytics: {item.need_analytics}")
-            print(f"\t\t\t{item.need_analytics_justification}")
-            print(f"\t\tneed_monetization: {item.need_monetization}")
-            print(f"\t\t\t{item.need_monetization_justification}")
-            print(f"\t\tmonetization_model: {item.monetization_model}")
-            print(f"\t\t\t{item.monetization_model_justification}")
+            logger.info(f"Requirement Base {key}")
+            logger.info(f"\tRequirementsRefined:")
+            logger.info(f"\t\tneed_db: {item.need_db}")
+            logger.info(f"\t\t\t{item.need_db_justification}")
+            logger.info(f"\t\tneed_frontend_api: {item.need_frontend_api}")
+            logger.info(f"\t\t\t{item.need_frontend_api_justification}")
+            logger.info(f"\t\tneed_other_services_api: {item.need_other_services_api}")
+            logger.info(f"\t\t\t{item.need_other_services_api_justification}")
+            logger.info(f"\t\tneed_external_api: {item.need_external_api}")
+            logger.info(f"\t\t\t{item.need_external_api_justification}")
+            logger.info(f"\t\tneed_api_keys: {item.need_api_keys}")
+            logger.info(f"\t\t\t{item.need_api_keys_justification}")
+            logger.info(f"\t\tneed_monitoring: {item.need_monitoring}")
+            logger.info(f"\t\t\t{item.need_monitoring_justification}")
+            logger.info(
+                f"\t\tneed_internationalization: {item.need_internationalization}"
+            )
+            logger.info(f"\t\t\t{item.need_internationalization_justification}")
+            logger.info(f"\t\tneed_analytics: {item.need_analytics}")
+            logger.info(f"\t\t\t{item.need_analytics_justification}")
+            logger.info(f"\t\tneed_monetization: {item.need_monetization}")
+            logger.info(f"\t\t\t{item.need_monetization_justification}")
+            logger.info(f"\t\tmonetization_model: {item.monetization_model}")
+            logger.info(f"\t\t\t{item.monetization_model_justification}")
 
-            print(f"\t\tmonetization_type: {item.monetization_type}")
-            print(f"\t\t\t{item.monetization_type_justification}")
+            logger.info(f"\t\tmonetization_type: {item.monetization_type}")
+            logger.info(f"\t\t\t{item.monetization_type_justification}")
 
-            print(f"\t\tmonetization_scope: {item.monetization_scope}")
-            print(f"\t\t\t{item.monetization_scope_justification}")
+            logger.info(f"\t\tmonetization_scope: {item.monetization_scope}")
+            logger.info(f"\t\t\t{item.monetization_scope_justification}")
 
-            print(f"\t\tmonetization_authorization: {item.monetization_authorization}")
-            print(f"\t\t\t{item.monetization_authorization_justification}")
+            logger.info(
+                f"\t\tmonetization_authorization: {item.monetization_authorization}"
+            )
+            logger.info(f"\t\t\t{item.monetization_authorization_justification}")
 
-            print(f"\t\tneed_authentication: {item.need_authentication}")
-            print(f"\t\t\t{item.need_authentication_justification}")
+            logger.info(f"\t\tneed_authentication: {item.need_authentication}")
+            logger.info(f"\t\t\t{item.need_authentication_justification}")
 
-            print(f"\t\tneed_authorization: {item.need_authorization}")
-            print(f"\t\t\t{item.need_authorization_justification}")
+            logger.info(f"\t\tneed_authorization: {item.need_authorization}")
+            logger.info(f"\t\t\t{item.need_authorization_justification}")
 
-            print(f"\t\tauthorization_roles: {item.authorization_roles}")
-            print(f"\t\t\t{item.authorization_roles_justification}")
+            logger.info(f"\t\tauthorization_roles: {item.authorization_roles}")
+            logger.info(f"\t\t\t{item.authorization_roles_justification}")
         elif isinstance(item, RequirementsGenResponse):
-            print(f"Requirement {key}")
-            print(f"\tRequirementsGenResponse:")
+            logger.info(f"Requirement {key}")
+            logger.info(f"\tRequirementsGenResponse:")
             for req in item.answer.functional:
                 requirement = req
-                print(f"\t\tfunctional_requirement: {requirement.name}")
-                print(f"\t\t\t{requirement.thoughts}")
-                print(f"\t\t\t{requirement.description}")
+                logger.info(f"\t\tfunctional_requirement: {requirement.name}")
+                logger.info(f"\t\t\t{requirement.thoughts}")
+                logger.info(f"\t\t\t{requirement.description}")
             for req in item.answer.nonfunctional:
                 requirement = req
-                print(f"\t\tnon_functional_requirement: {requirement.name}")
-                print(f"\t\t\t{requirement.thoughts}")
-                print(f"\t\t\t{requirement.description}")
+                logger.info(f"\t\tnon_functional_requirement: {requirement.name}")
+                logger.info(f"\t\t\t{requirement.thoughts}")
+                logger.info(f"\t\t\t{requirement.description}")
         else:
-            print(f"????")
+            logger.info(f"????")
             breakpoint()
 
     # # If you want to test the block in an interactive environment
