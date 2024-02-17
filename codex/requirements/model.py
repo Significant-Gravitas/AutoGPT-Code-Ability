@@ -7,6 +7,7 @@ from prisma.enums import AccessLevel
 from pydantic import BaseModel, ConfigDict
 
 from codex.common.ai_block import AIBlock
+
 logger = logging.getLogger(__name__)
 
 Q_AND_A_FORMAT = """- "{question}": "{answer}"
