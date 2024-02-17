@@ -126,5 +126,5 @@ if __name__ == "__main__":
         return response, memory
 
     resp = run(main())
-    print(resp[0])
-    print(resp[1])
+    logger.info(resp[0])
+    logger.info(resp[1])

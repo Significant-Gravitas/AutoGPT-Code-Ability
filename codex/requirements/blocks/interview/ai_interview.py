@@ -1,3 +1,5 @@
+import logging
+
 from codex.common.ai_block import (
     AIBlock,
     Indentifiers,
@@ -5,6 +7,8 @@ from codex.common.ai_block import (
     ValidationError,
 )
 from codex.requirements.model import InterviewMessageUse
+
+logger = logging.getLogger(__name__)
 
 
 class InterviewBlock(AIBlock):
@@ -186,15 +190,16 @@ Additionally, it will have proper management of financials, including invoice ma
 
     for key, item in responses.items():
         if isinstance(item, InterviewMessageUse):
-            print(f"{key}:")
+            logger.info(f"{key}:")
             for message in item.uses:
-                print(f"\t{message.tool}: {message.content}")
+                logger.info(f"\t{message.tool}: {message.content}")
         else:
-            print(f"????")
+            logger.info(f"????")
             breakpoint()
 
     # # If you want to test the block in an interactive environment
     # import IPython
 
     # IPython.embed()
+    breakpoint()
     breakpoint()

@@ -1,6 +1,5 @@
 # Tools
 import logging
-from typing import Callable, Optional
 
 from codex.common.ai_block import Indentifiers
 from codex.requirements.matching import find_best_match
@@ -35,7 +34,7 @@ async def use_tool(
                             tool=input.tool, content=input.content, response=resp
                         )
                 # If no function is available, use the block
-                print(f"Generating Response for {tool.name}")
+                logger.info(f"Generating Response for {tool.name}")
                 block = tool.block()
                 response: InterviewMessageWithResponse = await block.invoke(
                     ids=ids,
@@ -50,7 +49,7 @@ async def use_tool(
                     response=response.response,
                 )
 
-    print("No Match Found")
+    logger.error("No Match Found")
     return InterviewMessageWithResponse(
         tool=input.tool,
         content=input.content,

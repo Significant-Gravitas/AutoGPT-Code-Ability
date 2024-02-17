@@ -1,3 +1,5 @@
+import logging
+
 from codex.common.ai_block import (
     AIBlock,
     Indentifiers,
@@ -5,6 +7,8 @@ from codex.common.ai_block import (
     ValidationError,
 )
 from codex.requirements.model import InterviewMessageWithResponse
+
+logger = logging.getLogger(__name__)
 
 
 class SearchBlock(AIBlock):
@@ -89,13 +93,14 @@ if __name__ == "__main__":
 
     for key, item in responses.items():
         if isinstance(item, InterviewMessageWithResponse):
-            print(f"\t{item.tool}: {item.content}: {item.response}")
+            logger.info(f"\t{item.tool}: {item.content}: {item.response}")
         else:
-            print(f"????")
+            logger.info(f"????")
             breakpoint()
 
     # # If you want to test the block in an interactive environment
     # import IPython
 
     # IPython.embed()
+    breakpoint()
     breakpoint()
