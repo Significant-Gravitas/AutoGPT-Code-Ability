@@ -1,5 +1,5 @@
 # Use an official Python runtime as a parent image
-FROM python:3.11-slim-buster as codgegenbase
+FROM python:3.11-slim-buster as codex_base
 
 # Set environment varibles
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -26,25 +26,25 @@ RUN pip3 install poetry
 WORKDIR /app
 COPY pyproject.toml poetry.lock* /app/
 
-RUN mkdir /app/proxy
-RUN touch /app/proxy/__init__.py
+RUN mkdir /app/codex
+RUN touch /app/codex/__init__.py
 RUN touch /app/README.md
-
-FROM codgegenbase as codegendependencies
 
 # Project initialization:
 RUN poetry install --no-interaction --no-ansi
 
+FROM codex_base as codex_db
+COPY schema.prisma /app/
 
-FROM codegendependencies as codegen
+RUN prisma generate
+
+FROM codex_db as codex
 COPY . /app
 # Set a default value (this can be overridden)
 ENV PORT=8000
 
 # Just declare the variable, the value will be set when running the container
 ENV OPENAI_API_KEY=""
-
-RUN prisma generate
 
 # This will be the command to run the FastAPI server using uvicorn
 CMD ./run serve
