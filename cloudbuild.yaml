@@ -82,7 +82,7 @@ steps:
   # Deploy Debug Tool Image to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
-    args: ['run', 'deploy', 'codex', '--image', 'gcr.io/$PROJECT_ID/mvp/codex:$COMMIT_SHA', '--region', 'us-central1', '--platform', 'managed', '--service-account','638488734936-compute@developer.gserviceaccount.com']
+    args: ['run', 'deploy', 'codegen', '--image', 'gcr.io/$PROJECT_ID/mvp/codex:$COMMIT_SHA', '--region', 'us-central1', '--platform', 'managed', '--service-account','638488734936-compute@developer.gserviceaccount.com']
     id: 'deploy-codex'
 
 
