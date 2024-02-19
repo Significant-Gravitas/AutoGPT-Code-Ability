@@ -136,7 +136,7 @@ async def list_specifications(
     )
     if total_items > 0:
         specs = await Specification.prisma().find_many(
-            where={"userId": user_id},
+            where={"userId": user_id, "applicationId": app_id, "deleted": False},
             include={
                 "apiRoutes": {
                     "include": {

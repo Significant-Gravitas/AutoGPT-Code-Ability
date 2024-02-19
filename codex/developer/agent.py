@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import List
 
@@ -71,25 +72,28 @@ async def code_functions(
     ids: Indentifiers, code_graph: CodeGraphDBModel
 ) -> List[FunctionDefDBModel]:
     """
-    Code the functions in the code graph
+    Code the functions in the code graph in parallel.
     """
     if not code_graph.functionDefs:
         raise ValueError(f"No function defs found for code graph {code_graph.id}")
 
-    functions = []
-    for i, function_def in enumerate(code_graph.functionDefs):
-        logger.info(
-            f"{i+1}/{len(code_graph.functionDefs)}  Coding function {function_def.name}"
-        )
-        function_obj = await create_code(ids, code_graph.function_name, function_def)
-        functions.append(function_obj)
+    # Define a local async function that wraps the create_code call
+    async def code_function(function_def):
+        logger.info(f"Coding function {function_def.name}")
+        return await create_code(ids, code_graph.function_name, function_def)
+
+    # Create a list of coroutine objects for each function definition
+    tasks = [code_function(function_def) for function_def in code_graph.functionDefs]
+
+    # Run all the coroutine objects concurrently and collect their results
+    functions = await asyncio.gather(*tasks)
 
     return functions
 
 
 async def create_code(
     ids: Indentifiers, appilcation_context: str, function_def: FunctionDefDBModel
-) -> str:
+) -> FunctionDefDBModel:
     """
     Gets the coding agent to write or lookup the code for a function
     """
