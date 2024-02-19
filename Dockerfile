@@ -34,11 +34,13 @@ RUN touch /app/README.md
 RUN poetry install --no-interaction --no-ansi
 
 FROM codex_base as codex_db
+# Caching prisma generate step
 COPY schema.prisma /app/
 
 RUN prisma generate
 
 FROM codex_db as codex
+# Fast build of codex - only needs to update the python code
 COPY . /app
 # Set a default value (this can be overridden)
 ENV PORT=8000
