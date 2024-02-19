@@ -37,10 +37,10 @@ This spins up the necessary Docker containers as defined in your `docker-compose
 To set up your database, begin by configuring the database URL through an environment variable:
 
 ```
-export DATABASE_URL=postgres://agpt_live:bnfaHGGSDF134345@127.0.0.1/codegen
+cp .env.example .env
 ```
 
-Then, migrate your database schema with:
+Then, update the values to match your configuration, and migrate your database schema with:
 
 ```
 prisma migrate dev --name init
@@ -63,7 +63,6 @@ This command generates or updates the Prisma client, ensuring your application c
 Ensure your database is populated with initial data by adjusting the database URL for the specific port and running the population script:
 
 ```
-export DATABASE_URL=postgres://agpt_live:bnfaHGGSDF134345@127.0.0.1:1234/codegen
 ./run populate-db
 ```
 
@@ -74,8 +73,6 @@ This populates your database with the initial data set required for your applica
 Set your environment to local and start the server:
 
 ```
-export DATABASE_URL=postgres://agpt_live:bnfaHGGSDF134345@127.0.0.1:1234/codegen
-export ENV=local
 ./run serve
 ```
 

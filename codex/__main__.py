@@ -1,6 +1,7 @@
 import asyncio
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dotenv import load_dotenv
 
 import click
 
@@ -27,7 +28,7 @@ def populate_db(database):
     from codex.database import create_test_data
     from codex.requirements.agent import populate_database_specs
 
-    os.environ["DATABASE_URL"] = database
+    os.environ["DATABASE_URL"] = os.environ["DATABASE_URL"] or database
     db = Prisma(auto_register=True)
 
     async def popdb():
@@ -49,5 +50,6 @@ def serve() -> None:
 
 
 if __name__ == "__main__":
+    load_dotenv()
     setup_logging(local=os.environ.get("ENV", "CLOUD").lower() == "local")
     cli()
