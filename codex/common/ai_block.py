@@ -318,7 +318,9 @@ class AIBlock:
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": retry_prompt},
                     ]
-                    response = await self.oai_client.chat.completions.create(**request_params)
+                    response = await self.oai_client.chat.completions.create(
+                        **request_params
+                    )
                     presponse = self.parse(response)
                     assert request_params["messages"], "Messages not set"
 
