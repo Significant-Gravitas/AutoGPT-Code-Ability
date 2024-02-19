@@ -45,7 +45,7 @@ async def fetch_deliverable(session, user_id, app_id, spec_id):
     print(f"Fetching deliverable for {user_id=}, {app_id=}, {spec_id=}")
     url = f"http://127.0.0.1:8000/api/v1/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/"
     async with session.post(url) as response:
-        return await response.json()  # Assuming JSON response
+        return response
 
 
 async def run_benchmark():
