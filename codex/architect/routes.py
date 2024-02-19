@@ -25,36 +25,42 @@ async def create_deliverable(user_id: int, app_id: int, spec_id: int):
     """
     Create a new deliverable (completed app) for a specific specification.
     """
-    specification = await codex.requirements.database.get_specification(
-        user_id, app_id, spec_id
-    )
-    logger.info(f"Creating deliverable for {specification.name}")
-    if specification:
-        ids = Indentifiers(
-            user_id=user_id,
-            app_id=app_id,
-            spec_id=spec_id,
+    try:
+        specification = await codex.requirements.database.get_specification(
+            user_id, app_id, spec_id
         )
-        # Architect agent creates the code graphs for the requirements
-        graphs = await architect_agent.create_code_graphs(ids, specification)
-        # Developer agent writes the code for the code graphs
-        completed_app = await developer_agent.develop_application(
-            ids, graphs.code_graphs, specification
-        )
+        logger.info(f"Creating deliverable for {specification.name}")
+        if specification:
+            ids = Indentifiers(
+                user_id=user_id,
+                app_id=app_id,
+                spec_id=spec_id,
+            )
+            # Architect agent creates the code graphs for the requirements
+            graphs = await architect_agent.create_code_graphs(ids, specification)
+            # Developer agent writes the code for the code graphs
+            completed_app = await developer_agent.develop_application(
+                ids, graphs.code_graphs, specification
+            )
 
-        return DeliverableResponse(
-            id=completed_app.id,
-            created_at=completed_app.createdAt,
-            name=completed_app.name,
-            description=completed_app.description,
-        )
-    else:
+            return DeliverableResponse(
+                id=completed_app.id,
+                created_at=completed_app.createdAt,
+                name=completed_app.name,
+                description=completed_app.description,
+            )
+        else:
+            return Response(
+                content=json.dumps({"error": "Specification not found"}),
+                status_code=500,
+                media_type="application/json",
+            )
+    except Exception as e:
         return Response(
-            content=json.dumps({"error": "Specification not found"}),
+            content=json.dumps({"error": f"Error creating deliverable: {str(e)}"}),
             status_code=500,
             media_type="application/json",
         )
-
 
 @delivery_router.get(
     "/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}",
