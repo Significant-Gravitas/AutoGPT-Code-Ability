@@ -4,14 +4,23 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['pull', 'gcr.io/$PROJECT_ID/mvp/codex_base:latest']
     id: 'pull-image-codex-base'
+    volumes:
+      - name: 'autogpt-docker-layers-dev'
+        path: '/var/lib/docker'
 
   - name: 'gcr.io/cloud-builders/docker'
     args: ['pull', 'gcr.io/$PROJECT_ID/mvp/codex_db:latest']
     id: 'pul-image-codex-db'
+    volumes:
+      - name: 'autogpt-docker-layers-dev'
+        path: '/var/lib/docker'
 
   - name: 'gcr.io/cloud-builders/docker'
     args: ['pull', 'gcr.io/$PROJECT_ID/mvp/codex:latest']
     id: 'pul-image-codex'
+    volumes:
+      - name: 'autogpt-docker-layers-dev'
+        path: '/var/lib/docker'
 
   # Build Base Image
   - name: 'gcr.io/cloud-builders/docker'
@@ -85,5 +94,8 @@ steps:
     entrypoint: gcloud
     args: ['run', 'deploy', 'codegen', '--image', 'gcr.io/$PROJECT_ID/mvp/codex:$COMMIT_SHA', '--region', 'us-central1', '--platform', 'managed', '--service-account','638488734936-compute@developer.gserviceaccount.com']
     id: 'deploy-codex'
+    volumes:
+      - name: 'autogpt-docker-layers-dev'
+        path: '/var/lib/docker'
 
 
