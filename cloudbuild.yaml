@@ -1,0 +1,73 @@
+logsBucket: 'gs://agpt-cloud-build-logs-dev'
+steps:
+
+  # Build Base Image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '-t', 'gcr.io/$PROJECT_ID/mvp/codex_base:latest',
+      '--target', 'codex_base',
+      '.'
+    ]
+    id: 'build-baseimage'
+    volumes:
+      - name: 'autogpt-docker-layers-dev'
+        path: '/var/lib/docker'
+
+  # Push Latest Base Image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/mvp/codex_base:latest']
+    id: 'push-latest-baseimage'
+    volumes:
+      - name: 'autogpt-docker-layers-dev'
+        path: '/var/lib/docker'
+
+  # Build Database client Image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '-t', 'gcr.io/$PROJECT_ID/mvp/codex_db:latest',
+      '--target', 'codex_db',
+      '.'
+    ]
+    id: 'build-codex-db-client'
+    volumes:
+      - name: 'autogpt-docker-layers-dev'
+        path: '/var/lib/docker'
+
+  # Push Latest Database Client Image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/mvp/codex_db:latest']
+    id: 'push-latest-base-image-db-client'
+    volumes:
+      - name: 'autogpt-docker-layers-dev'
+        path: '/var/lib/docker'
+
+
+  # Build Codex Image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', 
+    '-t', 'gcr.io/$PROJECT_ID/mvp/codex:$COMMIT_SHA', 
+    '--target', 'codex', 
+    '.'
+    ]
+    id: 'build-proxy'
+    volumes:
+      - name: 'autogpt-docker-layers-dev'
+        path: '/var/lib/docker'
+
+  # Push Codex Image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/mvp/codex:$COMMIT_SHA']
+    id: 'push-codex'
+    volumes:
+      - name: 'autogpt-docker-layers-dev'
+        path: '/var/lib/docker'
+
+  # Deploy Debug Tool Image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args: ['run', 'deploy', 'codex', '--image', 'gcr.io/$PROJECT_ID/mvp/codex:$COMMIT_SHA', '--region', 'us-central1', '--platform', 'managed', '--service-account','638488734936-compute@developer.gserviceaccount.com']
+    id: 'deploy-codex'
+
+
