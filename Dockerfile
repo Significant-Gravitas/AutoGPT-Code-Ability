@@ -1,5 +1,5 @@
 # Use an official Python runtime as a parent image
-FROM python:3.11-slim-buster as codgegenbase
+FROM python:3.11-slim-buster as codex_base
 
 # Set environment varibles
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -30,17 +30,15 @@ RUN mkdir /app/codex
 RUN touch /app/codex/__init__.py
 RUN touch /app/README.md
 
-FROM codgegenbase as codegendependencies
-
 # Project initialization:
 RUN poetry install --no-interaction --no-ansi
 
-FROM codegendependencies as codegendb
+FROM codex_base as codex_db
 COPY schema.prisma /app/
 
 RUN prisma generate
 
-FROM codegendb as codegen
+FROM codex_db as codex
 COPY . /app
 # Set a default value (this can be overridden)
 ENV PORT=8000
