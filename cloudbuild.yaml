@@ -3,11 +3,11 @@ steps:
 
   - name: 'gcr.io/cloud-builders/docker'
     args: ['pull', 'gcr.io/$PROJECT_ID/mvp/codex_base:latest']
-    id: 'pull-base-cache-image'
+    id: 'pull-image-codex-base'
 
   - name: 'gcr.io/cloud-builders/docker'
     args: ['pull', 'gcr.io/$PROJECT_ID/mvp/codex_db:latest']
-    id: 'pull-db-cache-image'
+    id: 'pul-image-codex-db'
 
   # Build Base Image
   - name: 'gcr.io/cloud-builders/docker'
@@ -18,7 +18,7 @@ steps:
       '--cache-from', 'gcr.io/$PROJECT_ID/mvp/codex_base:latest',
       '.'
     ]
-    id: 'build-baseimage'
+    id: 'build-codex-base'
     volumes:
       - name: 'autogpt-docker-layers-dev'
         path: '/var/lib/docker'
@@ -26,7 +26,7 @@ steps:
   # Push Latest Base Image
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/mvp/codex_base:latest']
-    id: 'push-latest-baseimage'
+    id: 'push-latest-codex-base'
     volumes:
       - name: 'autogpt-docker-layers-dev'
         path: '/var/lib/docker'
@@ -40,7 +40,7 @@ steps:
       '--cache-from', 'gcr.io/$PROJECT_ID/mvp/codex_db:latest',
       '.'
     ]
-    id: 'build-codex-db-client'
+    id: 'build-codex-db'
     volumes:
       - name: 'autogpt-docker-layers-dev'
         path: '/var/lib/docker'
@@ -48,7 +48,7 @@ steps:
   # Push Latest Database Client Image
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/mvp/codex_db:latest']
-    id: 'push-latest-base-image-db-client'
+    id: 'push-latest-codex-db'
     volumes:
       - name: 'autogpt-docker-layers-dev'
         path: '/var/lib/docker'
@@ -61,7 +61,7 @@ steps:
     '--target', 'codex', 
     '.'
     ]
-    id: 'build-proxy'
+    id: 'build-codex'
     volumes:
       - name: 'autogpt-docker-layers-dev'
         path: '/var/lib/docker'
