@@ -427,16 +427,18 @@ async def populate_database_specs():
 
     requirmenets = [
         ("Availability Checker", 1),
-        ("Invoice Generator", 1),
-        ("Appointment Optimization Tool", 1),
-        ("Distance Calculator", 1),
-        ("Profile Management System", 1),
+        ("Invoice Generator", 2),
+        ("Appointment Optimization Tool", 3),
+        ("Distance Calculator", 4),
+        ("Profile Management System", 5),
     ]
     ids = Indentifiers(user_id=1, app_id=1)
 
     for task, app_id in requirmenets:
+        print(f"Creating Spec for {task}, with app_id {app_id}")
         spec = hardcoded_requirements(task)
         ids.app_id = app_id
+        print(ids)
         await create_spec(ids, spec)
 
 
