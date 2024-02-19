@@ -1,9 +1,9 @@
 import asyncio
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dotenv import load_dotenv
 
 import click
+from dotenv import load_dotenv
 
 from codex.common.logging_config import setup_logging
 
