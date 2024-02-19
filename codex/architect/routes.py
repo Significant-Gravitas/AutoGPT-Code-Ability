@@ -56,6 +56,7 @@ async def create_deliverable(user_id: int, app_id: int, spec_id: int):
                 media_type="application/json",
             )
     except Exception as e:
+        logger.error(f"Error creating deliverable: {str(e)}")
         return Response(
             content=json.dumps({"error": f"Error creating deliverable: {str(e)}"}),
             status_code=500,
