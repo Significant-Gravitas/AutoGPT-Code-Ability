@@ -1,18 +1,16 @@
 import hashlib
-import json
 import logging
 import os
 import pathlib
-from typing import Any, Generic, Type, TypeVar
+from typing import Any
 
-import pydantic
 from jinja2 import Environment, FileSystemLoader
-from openai import OpenAI
+from openai import AsyncOpenAI
 from openai.types import CompletionUsage
 from openai.types.chat import ChatCompletion
 from prisma.fields import Json
 from prisma.models import LLMCallAttempt, LLMCallTemplate
-from prisma.types import LLMCallAttemptCreateInput, LLMCallTemplateCreateInput
+from prisma.types import LLMCallAttemptCreateInput
 from pydantic import BaseModel
 
 from codex.api_model import Indentifiers
@@ -78,11 +76,11 @@ class AIBlock:
 
     def __init__(
         self,
-        oai_client: OpenAI = OpenAI(),
+        oai_client: AsyncOpenAI = AsyncOpenAI(),
     ):
         """
         Args:
-            oai_client (OpenAI): The OpenAI client
+            oai_client (AsyncOpenAI): The OpenAI client
             db_client (Prisma): The Prisma Database client
         """
         self.oai_client = oai_client
@@ -290,7 +288,7 @@ class AIBlock:
             logger.error(f"Error creating request params: {e}")
             raise LLMFailure(f"Error creating request params: {e}")
         try:
-            response = self.oai_client.chat.completions.create(**request_params)
+            response = await self.oai_client.chat.completions.create(**request_params)
 
             presponse = self.parse(response)
 
