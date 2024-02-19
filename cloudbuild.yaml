@@ -9,9 +9,9 @@ steps:
     args: ['pull', 'gcr.io/$PROJECT_ID/mvp/codex_db:latest']
     id: 'pul-image-codex-db'
 
-  # - name: 'gcr.io/cloud-builders/docker'
-  #   args: ['pull', 'gcr.io/$PROJECT_ID/mvp/codex:latest']
-  #   id: 'pul-image-codex'
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['pull', 'gcr.io/$PROJECT_ID/mvp/codex:latest']
+    id: 'pul-image-codex'
 
   # Build Base Image
   - name: 'gcr.io/cloud-builders/docker'
@@ -64,7 +64,7 @@ steps:
     '-t', 'gcr.io/$PROJECT_ID/mvp/codex:$COMMIT_SHA', 
     '-t', 'gcr.io/$PROJECT_ID/mvp/codex:latest', 
     '--target', 'codex', 
-    # '--cache-from', 'gcr.io/$PROJECT_ID/mvp/codex:latest',
+    '--cache-from', 'gcr.io/$PROJECT_ID/mvp/codex:latest',
     '.'
     ]
     id: 'build-codex'
