@@ -120,13 +120,13 @@ class WriteFunctionAIBlock(AIBlock):
                     f"Function name {generated_func_name} does not match"
                     f"required function name {function_def.name}"
                 )
-            if args != function_def.args:
+            if args.lower() != function_def.args.lower():
                 errors.append(
                     f"Input parameter {args} does not match required "
                     f"parameter {function_def.args}"
                 )
 
-            if ret != function_def.return_type:
+            if ret.lower() != function_def.return_type.lower():
                 errors.append(
                     f"Return type {ret} does not match required return type "
                     f"{function_def.return_type}"
