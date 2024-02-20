@@ -5,6 +5,7 @@ from typing import List
 import black
 import isort
 from prisma.models import Functions as FunctionsDBModel
+from prisma.types import FunctionsCreateInput, PackageCreateWithoutRelationsInput
 
 from codex.common.ai_block import (
     AIBlock,
@@ -120,13 +121,13 @@ class WriteFunctionAIBlock(AIBlock):
                     f"Function name {generated_func_name} does not match"
                     f"required function name {function_def.name}"
                 )
-            if args != function_def.args:
+            if args.lower() != function_def.args.lower():
                 errors.append(
                     f"Input parameter {args} does not match required "
                     f"parameter {function_def.args}"
                 )
 
-            if ret != function_def.return_type:
+            if ret.lower() != function_def.return_type.lower():
                 errors.append(
                     f"Return type {ret} does not match required return type "
                     f"{function_def.return_type}"
@@ -168,24 +169,44 @@ class WriteFunctionAIBlock(AIBlock):
         """This is just a temporary that doesnt have a database model"""
         genfunc = validated_response.response.code
 
-        func = await FunctionsDBModel.prisma().create(
-            data={
-                "name": genfunc.name,
-                "doc_string": genfunc.doc_string,
-                "args": genfunc.args,
-                "return_type": genfunc.return_type,
-                "code": genfunc.code,
-                "packages": {
-                    "create": [
-                        {
-                            "packageName": package.package_name,
-                            "version": package.version,
-                            "specifier": package.specifier,
-                        }
-                        for package in validated_response.response.packages
-                    ]
-                },
-                "functionDefs": {"connect": {"id": ids.function_def_id}},
-            }
+        create_data = FunctionsCreateInput(
+            name=genfunc.name,
+            doc_string=genfunc.doc_string,
+            args=genfunc.args,
+            return_type=genfunc.return_type,
+            code=genfunc.code,
+            functionDefs={"connect": {"id": ids.function_def_id}},
         )
+
+        if validated_response.response.packages:
+            package_create_data = [
+                PackageCreateWithoutRelationsInput(
+                    packageName=package.package_name,
+                    # TODO: Fix db schema to allow null values
+                    # This is a work around to avoid merg nightmares with the db schema
+                    version=package.version if package.version else " ",
+                    specifier=package.specifier if package.specifier else " ",
+                )
+                for package in validated_response.response.packages
+            ]
+            create_data = FunctionsCreateInput(
+                name=genfunc.name,
+                doc_string=genfunc.doc_string,
+                args=genfunc.args,
+                return_type=genfunc.return_type,
+                code=genfunc.code,
+                packages={"create": package_create_data},
+                functionDefs={"connect": {"id": ids.function_def_id}},
+            )
+        else:
+            create_data = FunctionsCreateInput(
+                name=genfunc.name,
+                doc_string=genfunc.doc_string,
+                args=genfunc.args,
+                return_type=genfunc.return_type,
+                code=genfunc.code,
+                functionDefs={"connect": {"id": ids.function_def_id}},
+            )
+
+        func = await FunctionsDBModel.prisma().create(data=create_data)
         return func
