@@ -62,12 +62,12 @@ if __name__ == "__main__":
     """
     from asyncio import run
 
-    from openai import OpenAI
+    from openai import AsyncOpenAI
     from prisma import Prisma
 
     ids = Indentifiers(user_id=1, app_id=1)
     db_client = Prisma(auto_register=True)
-    oai = OpenAI()
+    oai = AsyncOpenAI()
 
     finish_block = FinishBlock(
         oai_client=oai,

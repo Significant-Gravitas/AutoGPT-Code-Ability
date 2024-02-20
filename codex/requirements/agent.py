@@ -460,7 +460,7 @@ if __name__ == "__main__":
     ids = Indentifiers(user_id=1, app_id=1)
     db_client = prisma.Prisma(auto_register=True)
 
-    oai = openai.OpenAI()
+    oai = openai.AsyncOpenAI()
 
     task = """The Tutor App is an app designed for tutors to manage their clients,
  schedules, and invoices.
