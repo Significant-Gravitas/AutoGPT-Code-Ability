@@ -1,6 +1,5 @@
-import logging
-
 from fastapi import APIRouter
+from codex.common import logging
 
 logger = logging.getLogger(__name__)
 

@@ -110,8 +110,8 @@ async def get_specification(user_id: str, app_id: str, spec_id: str) -> Specific
         include={
             "ApiRouteSpecs": {
                 "include": {
-                    "RequestObject": {"include": {"params": True}},
-                    "ResponseObject": {"include": {"params": True}},
+                    "RequestObject": {"include": {"Params": True}},
+                    "ResponseObject": {"include": {"Params": True}},
                 }
             }
         },
@@ -140,8 +140,8 @@ async def list_specifications(
             include={
                 "ApiRouteSpecs": {
                     "include": {
-                        "RequestObject": {"include": {"params": True}},
-                        "ResponseObject": {"include": {"params": True}},
+                        "RequestObject": {"include": {"Params": True}},
+                        "ResponseObject": {"include": {"Params": True}},
                     }
                 }
             },

@@ -1,5 +1,4 @@
 import json
-import logging
 
 from fastapi import APIRouter, Query, Response
 from prisma.models import Specification
@@ -8,10 +7,12 @@ import codex.database
 import codex.requirements.database
 from codex.api_model import (
     Identifiers,
+    SpecificationCreate,
     SpecificationResponse,
     SpecificationsListResponse,
 )
 from codex.requirements.agent import generate_requirements
+from codex.common import logging
 
 logger = logging.getLogger(__name__)
 
@@ -26,14 +27,14 @@ spec_router = APIRouter()
     tags=["specs"],
     response_model=SpecificationResponse,
 )
-async def create_spec(user_id: str, app_id: str, description: str):
+async def create_spec(user_id: str, app_id: str, spec: SpecificationCreate):
     """
     Create a new specification for a given application and user.
     """
     try:
         app = await codex.database.get_app_by_id(user_id, app_id)
         ids = Identifiers(user_id=user_id, app_id=app_id)
-        spec: Specification = await generate_requirements(ids, app.name, description)
+        spec: Specification = await generate_requirements(ids, app.name, spec.description)
         return SpecificationResponse.from_specification(spec)
     except Exception as e:
         logger.error(f"Error creating a new specification: {e}")

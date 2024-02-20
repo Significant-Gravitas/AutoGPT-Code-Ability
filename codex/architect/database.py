@@ -33,7 +33,7 @@ async def list_deliverables(
     page_size: int = 10,
 ) -> Tuple[List[CompletedApp], Pagination]:
     skip = (page - 1) * page_size
-    total_items = await CompletedApp.prisma().count(where={"specId": spec_id})
+    total_items = await CompletedApp.prisma().count(where={"specificationId": spec_id})
     if total_items == 0:
         return [], Pagination(total_items=0, total_pages=0, current_page=0, page_size=0)
     total_pages = (total_items + page_size - 1) // page_size

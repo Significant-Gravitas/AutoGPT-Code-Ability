@@ -126,6 +126,10 @@ class APIRouteSpecModel(BaseModel):
     responseObject: Optional[ResponseObjectModel] = None
 
 
+class SpecificationCreate(BaseModel):
+    description: str
+
+
 class SpecificationResponse(BaseModel):
     id: str
     createdAt: datetime
@@ -152,7 +156,7 @@ class SpecificationResponse(BaseModel):
                     path=route.path,
                     description=route.description,
                     requestObject=RequestObjectModel(
-                        id=route.requestObjects.id,
+                        id=route.RequestObject.id,
                         createdAt=route.RequestObject.createdAt,
                         name=route.RequestObject.name,
                         description=route.RequestObject.description,

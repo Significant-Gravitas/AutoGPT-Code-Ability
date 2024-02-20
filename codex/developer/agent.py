@@ -43,12 +43,12 @@ async def write_code_graphs(
     for code_graph in code_graphs:
         cg = await CodeGraphDBModel.prisma().find_unique(
             where={"id": code_graph.id},
-            include={"functionDefs": True, "routeSpec": True},
+            include={"FunctionDefinitions": True, "APIRouteSpec": True},
         )
         if not cg:
             raise ValueError(f"CodeGraph {code_graph.id} not found")
 
-        if not cg.routeSpec:
+        if not cg.APIRouteSpec:
             raise ValueError(f"No route spec found for code graph {cg.id}")
 
         written_functions = await code_functions(ids, cg)
@@ -60,7 +60,7 @@ async def write_code_graphs(
                 "code": cg.code_graph,
                 "description": cg.routeSpec.description,
                 "Functions": {"connect": funciton_ids},
-                "ApiRouteSpec": {"connect": {"id": code_graph.routeSpecId}},
+                "ApiRouteSpec": {"connect": {"id": code_graph.apiRouteSpecId}},
             }
         )
 

@@ -178,20 +178,19 @@ class AIBlock:
         assert self.call_template_id, "Call template ID not set"
 
         call_attempt = await LLMCallAttempt.prisma().create(
-            data=LLMCallAttemptCreateInput(
-                userId=user_id,
-                appId=app_id,
-                callTemplateId=self.call_template_id,
-                completionTokens=response.usage_statistics.completion_tokens,
-                promptTokens=response.usage_statistics.prompt_tokens,
-                totalTokens=response.usage_statistics.total_tokens,
-                attempt=attempt,
-                prompt=Json(prompt),
-                response=response.message,
-                model=self.model,
-            )
+            data={
+                "User": {"connect": {"id": user_id}},
+                "Application": {"connect": {"id": app_id}},
+                "LLMCallTemplate": {"connect": {"id": self.call_template_id}},
+                "completionTokens": response.usage_statistics.completion_tokens,
+                "promptTokens": response.usage_statistics.prompt_tokens,
+                "totalTokens": response.usage_statistics.total_tokens,
+                "attempt": attempt,
+                "prompt": prompt,
+                "response": response.message,
+                "model": self.model,
+            }
         )
-
         return call_attempt
 
     def load_temaplate(self, template: str, invoke_params: dict) -> str:

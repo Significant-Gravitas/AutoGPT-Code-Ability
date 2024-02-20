@@ -1,5 +1,4 @@
 import json
-import logging
 
 from fastapi import APIRouter, Query, Response
 
@@ -9,6 +8,7 @@ import codex.database
 import codex.developer.agent as developer_agent
 import codex.requirements.database
 from codex.api_model import DeliverableResponse, DeliverablesListResponse, Identifiers
+from codex.common import logging
 
 logger = logging.getLogger(__name__)
 
