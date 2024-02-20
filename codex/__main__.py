@@ -1,6 +1,7 @@
 import asyncio
 import io
 import os
+import shutil
 import zipfile
 
 import aiohttp
@@ -66,6 +67,10 @@ async def fetch_deliverable(session, user_id, app_id, spec_id):
 
                 # Unzip the file
                 extracted_folder = f"../workspace/{deployment_file_name.split('.')[0]}"
+                if os.path.exists(extracted_folder):
+                    shutil.rmtree(extracted_folder)
+
+                # Create a new directory
                 if not os.path.exists(extracted_folder):
                     os.makedirs(extracted_folder)
                 with zipfile.ZipFile(content, "r") as zip_ref:
