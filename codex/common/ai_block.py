@@ -258,9 +258,7 @@ class AIBlock:
 
         return self.PYDANTIC_FORMAT_INSTRUCTIONS
 
-    async def invoke(
-        self, ids: Identifiers, invoke_params: dict, max_retries=3
-    ) -> Any:
+    async def invoke(self, ids: Identifiers, invoke_params: dict, max_retries=3) -> Any:
         validated_response = None
         if not self.call_template_id:
             await self.store_call_template()

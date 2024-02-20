@@ -17,9 +17,7 @@ from codex.developer.model import Package
 logger = logging.getLogger(__name__)
 
 
-async def create_deployment(
-    ids: Identifiers, completedApp: CompletedApp
-) -> Deployment:
+async def create_deployment(ids: Identifiers, completedApp: CompletedApp) -> Deployment:
     app = compile_application(completedApp)
     zip_file = create_zip_file(app)
     file_name = completedApp.name.replace(" ", "_")
