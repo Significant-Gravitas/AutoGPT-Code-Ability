@@ -1,8 +1,10 @@
 # Task Breakdown Micro Agent
+import asyncio
 import logging
 from typing import Callable, Optional
 
 from codex.common.ai_block import Indentifiers
+from codex.common.logging_config import setup_logging
 from codex.requirements.blocks.interview.ai_ask import AskBlock
 from codex.requirements.blocks.interview.ai_finish import FinishBlock
 from codex.requirements.blocks.interview.ai_interview import InterviewBlock
@@ -54,55 +56,53 @@ async def gather_task_info_loop(
         )
 
         # async handle for each item in running_message.uses
-        # results: list[InterviewMessageWithResponse] = await asyncio.gather(
-        #     *[
-        #         use_tool(input=i, available_tools=tools, ids=ids, memory=memory)
-        #         for i in running_message.uses
-        #         if i.tool == "ask"
-        #     ]
-        # )
-        results: list[InterviewMessageWithResponse] = [
-            await use_tool(input=i, available_tools=tools, ids=ids, memory=memory)
-            for i in running_message.uses
-            if i.tool == "ask"
-        ]
+        results: list[InterviewMessageWithResponse] = await asyncio.gather(
+            *[
+                use_tool(input=i, available_tools=tools, ids=ids, memory=memory)
+                for i in running_message.uses
+                if i.tool == "ask"
+            ]
+        )
+
         for result in results:
+            logging.debug(f"{result.tool} : {result.content} : {result.response}")
             memory.append(result)
 
-        # results: list[InterviewMessageWithResponse] = await asyncio.gather(
-        #     *[
-        #         use_tool(input=i, available_tools=tools, ids=ids, memory=memory)
-        #         for i in running_message.uses
-        #         if i.tool == "search"
-        #     ]
-        # )
-        results: list[InterviewMessageWithResponse] = [
-            await use_tool(input=i, available_tools=tools, ids=ids, memory=memory)
-            for i in running_message.uses
-            if i.tool == "search"
-        ]
+        results: list[InterviewMessageWithResponse] = await asyncio.gather(
+            *[
+                use_tool(input=i, available_tools=tools, ids=ids, memory=memory)
+                for i in running_message.uses
+                if i.tool == "search"
+            ]
+        )
+
         for result in results:
+            logging.info(f"{result.tool} : {result.content} : {result.response}")
             memory.append(result)
 
-        # results: list[InterviewMessageWithResponse] = await asyncio.gather(
-        #     *[
-        #         use_tool(input=i, available_tools=tools, ids=ids, memory=memory)
-        #         for i in running_message.uses
-        #         if i.tool == "finished"
-        #     ]
-        # )
-        results: list[InterviewMessageWithResponse] = [
-            await use_tool(input=i, available_tools=tools, ids=ids, memory=memory)
-            for i in running_message.uses
-            if i.tool == "finished"
-        ]
-        for result in results:
-            memory.append(result)
+        if (
+            any(_.tool == "finished" for _ in running_message.uses)
+            and len(running_message.uses) == 1
+        ):
+            results: list[InterviewMessageWithResponse] = await asyncio.gather(
+                *[
+                    use_tool(input=i, available_tools=tools, ids=ids, memory=memory)
+                    for i in running_message.uses
+                    if i.tool == "finished"
+                ]
+            )
 
-        # if there is a finished message, return the summary from that memory.content and the memory
-        for item in memory:
-            if item.tool == "finished":
-                return item.content, memory
+            for result in results:
+                logging.info(f"{result.tool} : {result.content} : {result.response}")
+                memory.append(result)
+
+            # if there is a finished message, return the summary from that memory.content and the memory
+            for item in memory:
+                if item.tool == "finished":
+                    return item.content, memory
+        else:
+            logging.warning("Tried to finish with pending questions.")
+            continue
 
 
 if __name__ == "__main__":
@@ -110,6 +110,8 @@ if __name__ == "__main__":
 
     from openai import OpenAI
     from prisma import Prisma
+
+    setup_logging(local=True)
 
     ids = Indentifiers(user_id=1, app_id=1)
     db_client = Prisma(auto_register=True)
