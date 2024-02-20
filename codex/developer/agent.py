@@ -7,8 +7,8 @@ from prisma.models import FunctionDefinition as FunctionDefDBModel
 from prisma.models import Specification
 
 from codex.api_model import Identifiers
-from codex.developer.write_function import WriteFunctionAIBlock
 from codex.common import logging
+from codex.developer.write_function import WriteFunctionAIBlock
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +84,9 @@ async def code_functions(
         return await create_code(ids, code_graph.functionName, function_def)
 
     # Create a list of coroutine objects for each function definition
-    tasks = [code_function(function_def) for function_def in code_graph.FunctionDefinitions]
+    tasks = [
+        code_function(function_def) for function_def in code_graph.FunctionDefinitions
+    ]
 
     # Run all the coroutine objects concurrently and collect their results
     functions = await asyncio.gather(*tasks)

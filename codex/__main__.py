@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 import codex.common.test_const as test_const
 from codex.common.logging_config import setup_logging
 
+
 @click.group()
 def cli():
     pass
