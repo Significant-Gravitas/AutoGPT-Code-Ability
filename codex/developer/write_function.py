@@ -183,8 +183,10 @@ class WriteFunctionAIBlock(AIBlock):
             package_create_data = [
                 PackageCreateWithoutRelationsInput(
                     packageName=package.package_name,
-                    version=package.version,
-                    specifier=package.specifier,
+                    # TODO: Fix db schema to allow null values
+                    # This is a work around to avoid merg nightmares with the db schema
+                    version=package.version if package.version else " ",
+                    specifier=package.specifier if package.specifier else " ",
                 )
                 for package in validated_response.response.packages
             ]
