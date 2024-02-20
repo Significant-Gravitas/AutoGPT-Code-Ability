@@ -31,10 +31,10 @@ model User {
   role            Role      @default(USER)
   deleted         Boolean   @default(false)
 
-  applications    Application[]
-  specifications  Specification[]
-  llmCallAttempts LLMCallAttempt[]
-  deployments     Deployment[]
+  Applications    Application[]
+  Specifications  Specification[]
+  LLMCallAttempts LLMCallAttempt[]
+  Deployments     Deployment[]
 }
 
 enum Role {
@@ -50,8 +50,8 @@ model Application {
   description String?
   deleted     Boolean  @default(false)
 
-  specifications  Specification[]
-  llmCallAttempts LLMCallAttempt[]
+  Specifications  Specification[]
+  LLMCallAttempts LLMCallAttempt[]
   User            User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId          String?
 }
@@ -68,8 +68,8 @@ model Specification {
   name      String
   context   String
 
-  apiRouteSpecs APIRouteSpec[]
-  completedApps CompletedApp[]
+  ApiRouteSpecs APIRouteSpec[]
+  CompletedApps CompletedApp[]
   User          User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId        String?
   Application   Application?   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
@@ -101,10 +101,10 @@ model APIRouteSpec {
   method       HTTPVerb
   path         String
   description  String
-  accessLevel  AccessLevel
+  AccessLevel  AccessLevel
 
-  codeGraphs     CodeGraph[]
-  compiledRoutes CompiledRoute[]
+  CodeGraphs     CodeGraph[]
+  CompiledRoutes CompiledRoute[]
 
   Specification    Specification?  @relation(fields: [specificationId], references: [id], onDelete: Cascade)
   specificationId  String?
@@ -122,8 +122,8 @@ model ResponseObject {
   name        String
   description String
 
-  apiRouteSpecs APIRouteSpec[]
-  params        Param[]
+  ApiRouteSpecs APIRouteSpec[]
+  Params        Param[]
 }
 
 model RequestObject {
@@ -132,8 +132,8 @@ model RequestObject {
   name        String
   description String
 
-  apiRouteSpecs APIRouteSpec[]
-  params        Param[]
+  ApiRouteSpecs APIRouteSpec[]
+  Params        Param[]
 }
 
 model Param {
@@ -152,14 +152,14 @@ model Param {
 // DatabaseSchema represents the schema of a database.
 // It includes a description and relationships to database tables and code graphs.
 model DatabaseSchema {
-  id            String                       @id @default(dbgenerated("gen_random_uuid()"))
-  name          String?
-  createdAt     DateTime                     @default(now())
-  embedding     Unsupported("vector(1536)")?
-  description   String
-  DatabaseTable DatabaseTable[]
-  codeGraphs    CodeGraph[]
-  apiRouteSpecs APIRouteSpec[]
+  id             String                       @id @default(dbgenerated("gen_random_uuid()"))
+  name           String?
+  createdAt      DateTime                     @default(now())
+  embedding      Unsupported("vector(1536)")?
+  description    String
+  DatabaseTables DatabaseTable[]
+  CodeGraphs     CodeGraph[]
+  ApiRouteSpecs  APIRouteSpec[]
 }
 
 // DatabaseTable represents a table within a database schema.
@@ -173,8 +173,8 @@ model DatabaseTable {
   definition  String
 
   // This seems like its gonna be a nightmare to keep track of for 1-1 1-M and M-M relationships
-  relatedFromTables DatabaseTable[] @relation("TableRelations")
-  relatedToTables   DatabaseTable[] @relation("TableRelations")
+  RelatedFromTables DatabaseTable[] @relation("TableRelations")
+  RelatedToTables   DatabaseTable[] @relation("TableRelations")
   DatabaseSchema    DatabaseSchema? @relation(fields: [databaseSchemaId], references: [id])
   databaseSchemaId  String?
 }
@@ -193,7 +193,7 @@ model CodeGraph {
   imports      String[]
   codeGraph    String
 
-  functionDefinitions FunctionDefinition[]
+  FunctionDefinitions FunctionDefinition[]
   APIRouteSpec        APIRouteSpec?        @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
   apiRouteSpecId      String?
   DatabaseSchema      DatabaseSchema?      @relation(fields: [databaseSchemaId], references: [id], onDelete: Cascade)
@@ -215,7 +215,7 @@ model FunctionDefinition {
 
   CodeGraph   CodeGraph? @relation(fields: [codeGraphId], references: [id], onDelete: Cascade)
   codeGraphId String?
-  Functions   Functions? @relation(fields: [functionsId], references: [id], onDelete: Cascade)
+  Function   Function? @relation(fields: [functionsId], references: [id], onDelete: Cascade)
   functionsId String?
 }
 
@@ -225,7 +225,7 @@ model FunctionDefinition {
 
 // Functions represents individual software functions.
 // It includes information about the function and its relationships to packages and compiled routes.
-model Functions {
+model Function {
   id         String                       @id @default(dbgenerated("gen_random_uuid()"))
   createdAt  DateTime                     @default(now())
   embedding  Unsupported("vector(1536)")?
@@ -235,11 +235,11 @@ model Functions {
   returnType String
   code       String
 
-  functionDefinitions FunctionDefinition[]
+  FunctionDefinitions FunctionDefinition[]
   // Is one function part of many packages?
-  packages            Package[]
+  Packages            Package[]
   // Is one function part of many compiled routes?
-  compiledRoutes      CompiledRoute[]
+  CompiledRoutes      CompiledRoute[]
 }
 
 // Package represents a software package, including its version and specifier.
@@ -251,7 +251,7 @@ model Package {
   version     String
   specifier   String
 
-  functions Functions[]
+  Functions Function[]
 }
 
 // ------------------------- Delivery Models ----------------------------- //
@@ -267,10 +267,10 @@ model CompiledRoute {
   // Why is this unique and here with the many to many relationship?
   codeGraphId String                       @unique
 
-  functions     Functions[]
-  completedApps CompletedApp[]
+  Functions     Function[]
+  CompletedApps CompletedApp[]
 
-  codeGraphs     CodeGraph[]
+  CodeGraphs     CodeGraph[]
   APIRouteSpec   APIRouteSpec? @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
   apiRouteSpecId String?
 }
@@ -285,8 +285,8 @@ model CompletedApp {
   name        String
   description String
 
-  compiledRoutes  CompiledRoute[]
-  deployments     Deployment[]
+  CompiledRoutes  CompiledRoute[]
+  Deployments     Deployment[]
   Specification   Specification?  @relation(fields: [specificationId], references: [id], onDelete: Cascade)
   specificationId String?
 }
@@ -322,7 +322,7 @@ model LLMCallTemplate {
   userPrompt   String
   retryPrompt  String
 
-  uses LLMCallAttempt[]
+  Uses LLMCallAttempt[]
 }
 
 model LLMCallAttempt {

@@ -1,7 +1,7 @@
 # Tools
 import logging
 
-from codex.common.ai_block import Indentifiers
+from codex.common.ai_block import Identifiers
 from codex.requirements.matching import find_best_match
 from codex.requirements.model import (
     InterviewMessage,
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 async def use_tool(
     input: InterviewMessage | InterviewMessageWithResponse,
-    ids: Indentifiers,
+    ids: Identifiers,
     memory: list[InterviewMessageWithResponse],
     available_tools: list[Tool],
 ) -> InterviewMessageWithResponse:

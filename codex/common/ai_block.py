@@ -13,7 +13,7 @@ from prisma.models import LLMCallAttempt, LLMCallTemplate
 from prisma.types import LLMCallAttemptCreateInput
 from pydantic import BaseModel
 
-from codex.api_model import Indentifiers
+from codex.api_model import Identifiers
 
 logger = logging.getLogger(__name__)
 
@@ -169,8 +169,8 @@ class AIBlock:
 
     async def store_call_attempt(
         self,
-        user_id: int,
-        app_id: int,
+        user_id: str,
+        app_id: str,
         response: ValidatedResponse,
         attempt: int,
         prompt: Json,
@@ -260,7 +260,7 @@ class AIBlock:
         return self.PYDANTIC_FORMAT_INSTRUCTIONS
 
     async def invoke(
-        self, ids: Indentifiers, invoke_params: dict, max_retries=3
+        self, ids: Identifiers, invoke_params: dict, max_retries=3
     ) -> Any:
         validated_response = None
         if not self.call_template_id:
@@ -349,7 +349,7 @@ class AIBlock:
         return stored_obj if stored_obj else validated_response.response
 
     async def create_item(
-        self, ids: Indentifiers, validated_response: ValidatedResponse
+        self, ids: Identifiers, validated_response: ValidatedResponse
     ):
         """
         Create an item from the validated response
