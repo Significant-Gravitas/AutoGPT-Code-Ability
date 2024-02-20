@@ -9,9 +9,7 @@ from codex.api_model import (
 from codex.requirements.model import ApplicationRequirements
 
 
-async def create_spec(
-    ids: Identifiers, spec: ApplicationRequirements
-) -> Specification:
+async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specification:
     routes = []
 
     if not spec.api_routes:
@@ -80,10 +78,6 @@ async def create_spec(
         "Application": {"connect": {"id": ids.app_id}},
         "ApiRouteSpecs": {"create": routes},
     }
-    import json
-
-    with open("create.json", "w") as f:
-        f.write(json.dumps(create_spec, indent=4))
 
     new_spec = await Specification.prisma().create(
         data=create_spec,
@@ -120,7 +114,40 @@ async def get_specification(user_id: str, app_id: str, spec_id: str) -> Specific
     return specification
 
 
-async def delete_specification(spec_id: str) -> Specification:
+async def get_latest_specification(user_id: str, app_id: str) -> Specification:
+    """
+    Gets the latest specification for the given user and app
+
+    Args:
+        user_id (str): uuid of the user
+        app_id (str): uuid of the application
+
+    Returns:
+        str: uuid of the latest specification for the user and app
+    """
+    specification = await Specification.prisma().find_many(
+        where={
+            "userId": user_id,
+            "applicationId": app_id,
+            "deleted": False,
+        },
+        include={
+            "ApiRouteSpecs": {
+                "include": {
+                    "RequestObject": {"include": {"Params": True}},
+                    "ResponseObject": {"include": {"Params": True}},
+                }
+            }
+        },
+        order={"createdAt": "desc"},
+    )
+    if not specification:
+        raise ValueError("No specifications found for the user and app")
+
+    return specification[0]
+
+
+async def delete_specification(spec_id: str) -> None:
     await Specification.prisma().update(
         where={"id": spec_id},
         data={"deleted": True},

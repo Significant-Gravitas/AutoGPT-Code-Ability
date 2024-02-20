@@ -11,8 +11,8 @@ from codex.api_model import (
     SpecificationResponse,
     SpecificationsListResponse,
 )
-from codex.requirements.agent import generate_requirements
 from codex.common import logging
+from codex.requirements.agent import generate_requirements
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,9 @@ async def create_spec(user_id: str, app_id: str, spec: SpecificationCreate):
     try:
         app = await codex.database.get_app_by_id(user_id, app_id)
         ids = Identifiers(user_id=user_id, app_id=app_id)
-        spec: Specification = await generate_requirements(ids, app.name, spec.description)
+        spec: Specification = await generate_requirements(
+            ids, app.name, spec.description
+        )
         return SpecificationResponse.from_specification(spec)
     except Exception as e:
         logger.error(f"Error creating a new specification: {e}")

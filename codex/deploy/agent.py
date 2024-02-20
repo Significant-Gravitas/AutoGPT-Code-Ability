@@ -17,9 +17,7 @@ from codex.developer.model import Package
 logger = logging.getLogger(__name__)
 
 
-async def create_deployment(
-    ids: Identifiers, completedApp: CompletedApp
-) -> Deployment:
+async def create_deployment(ids: Identifiers, completedApp: CompletedApp) -> Deployment:
     app = compile_application(completedApp)
     zip_file = create_zip_file(app)
     file_name = completedApp.name.replace(" ", "_")
@@ -172,17 +170,15 @@ def compile_route(compiled_route: CompiledRouteDBModel) -> CompiledRoute:
     if not compiled_route.CodeGraphs:
         raise ValueError(f"No codeGraph found for route {compiled_route.id}")
 
-    import_code, main_function = extract_imports(compiled_route.CodeGraphs.code_graph)
     req_param_str, param_names_str = extract_request_params(
-        compiled_route.codeGraph.code_graph
+        compiled_route.CodeGraphs.code_graph
     )
-    imports.append(import_code)
-
+    imports.extend(compiled_route.codeGraph.imports)
     output_code = "\n".join(imports)
     output_code += "\n\n"
     output_code += "\n\n".join(rest_of_code_sections)
     output_code += "\n\n"
-    output_code += main_function
+    output_code += compiled_route.CodeGraphs.code_graph
 
     sorted_content = isort.code(output_code)
 
