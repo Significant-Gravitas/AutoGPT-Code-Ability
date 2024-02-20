@@ -302,7 +302,7 @@ class AIBlock:
 
             validated_response = self.validate(invoke_params, presponse)
         except ValidationError as validation_error:
-            logger.error(f"Error on initial generation attempt: {validation_error}")
+            logger.warning(f"Failed initial generation attempt: {validation_error}")
             error_message = validation_error
             while retries < max_retries:
                 retries += 1
@@ -334,9 +334,9 @@ class AIBlock:
                     validated_response = self.validate(invoke_params, presponse)
                     break
                 except Exception as retry_error:
-                    logger.error(
+                    logger.warning(
                         f"{retries}/{max_retries}"
-                        + f" Error validating response: {retry_error}"
+                        + f" Failed validating response: {retry_error}"
                     )
                     continue
             if not validated_response:
