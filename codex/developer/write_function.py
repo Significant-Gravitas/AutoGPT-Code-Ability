@@ -5,6 +5,8 @@ from typing import List
 import black
 import isort
 from prisma.models import Functions as FunctionsDBModel
+from prisma.types import FunctionsCreateInput, PackageCreateWithoutRelationsInput
+from regex import F
 
 from codex.common.ai_block import (
     AIBlock,
@@ -168,24 +170,42 @@ class WriteFunctionAIBlock(AIBlock):
         """This is just a temporary that doesnt have a database model"""
         genfunc = validated_response.response.code
 
-        func = await FunctionsDBModel.prisma().create(
-            data={
-                "name": genfunc.name,
-                "doc_string": genfunc.doc_string,
-                "args": genfunc.args,
-                "return_type": genfunc.return_type,
-                "code": genfunc.code,
-                "packages": {
-                    "create": [
-                        {
-                            "packageName": package.package_name,
-                            "version": package.version,
-                            "specifier": package.specifier,
-                        }
-                        for package in validated_response.response.packages
-                    ]
-                },
-                "functionDefs": {"connect": {"id": ids.function_def_id}},
-            }
+        create_data = FunctionsCreateInput(
+            name=genfunc.name,
+            doc_string=genfunc.doc_string,
+            args=genfunc.args,
+            return_type=genfunc.return_type,
+            code=genfunc.code,
+            functionDefs={"connect": {"id": ids.function_def_id}},
         )
+
+        if validated_response.response.packages:
+            package_create_data = [
+                PackageCreateWithoutRelationsInput(
+                    packageName=package.package_name,
+                    version=package.version,
+                    specifier=package.specifier,
+                )
+                for package in validated_response.response.packages
+            ]
+            create_data = FunctionsCreateInput(
+                name=genfunc.name,
+                doc_string=genfunc.doc_string,
+                args=genfunc.args,
+                return_type=genfunc.return_type,
+                code=genfunc.code,
+                packages={"create": package_create_data},
+                functionDefs={"connect": {"id": ids.function_def_id}},
+            )
+        else:
+            create_data = FunctionsCreateInput(
+                name=genfunc.name,
+                doc_string=genfunc.doc_string,
+                args=genfunc.args,
+                return_type=genfunc.return_type,
+                code=genfunc.code,
+                functionDefs={"connect": {"id": ids.function_def_id}},
+            )
+
+        func = await FunctionsDBModel.prisma().create(data=create_data)
         return func
