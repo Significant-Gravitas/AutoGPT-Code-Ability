@@ -9,9 +9,7 @@ from codex.api_model import (
 from codex.requirements.model import ApplicationRequirements
 
 
-async def create_spec(
-    ids: Identifiers, spec: ApplicationRequirements
-) -> Specification:
+async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specification:
     routes = []
 
     if not spec.api_routes:
@@ -80,10 +78,6 @@ async def create_spec(
         "Application": {"connect": {"id": ids.app_id}},
         "ApiRouteSpecs": {"create": routes},
     }
-    import json
-
-    with open("create.json", "w") as f:
-        f.write(json.dumps(create_spec, indent=4))
 
     new_spec = await Specification.prisma().create(
         data=create_spec,
