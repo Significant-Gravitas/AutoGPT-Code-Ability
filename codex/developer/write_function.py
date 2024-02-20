@@ -171,11 +171,11 @@ class WriteFunctionAIBlock(AIBlock):
         func = await FunctionDBModel.prisma().create(
             data={
                 "name": genfunc.name,
-                "doc_string": genfunc.doc_string,
+                "docString": genfunc.doc_string,
                 "args": genfunc.args,
-                "return_type": genfunc.return_type,
+                "returnType": genfunc.return_type,
                 "code": genfunc.code,
-                "packages": {
+                "Packages": {
                     "create": [
                         {
                             "packageName": package.package_name,
@@ -185,7 +185,7 @@ class WriteFunctionAIBlock(AIBlock):
                         for package in validated_response.response.packages
                     ]
                 },
-                "functionDefs": {"connect": {"id": ids.function_def_id}},
+                "FunctionDefinitions": {"connect": {"id": ids.function_def_id}},
             }
         )
         return func

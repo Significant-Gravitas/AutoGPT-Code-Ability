@@ -74,7 +74,7 @@ async def code_functions(
     """
     Code the functions in the code graph in parallel.
     """
-    if not code_graph.functionDefs:
+    if not code_graph.FunctionDefinitions:
         raise ValueError(f"No function defs found for code graph {code_graph.id}")
 
     # Define a local async function that wraps the create_code call
