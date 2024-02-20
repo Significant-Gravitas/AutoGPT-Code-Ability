@@ -6,6 +6,7 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
+from codex.common.logging_config import setup_logging
 from codex.prompts.claude.requirements.NestJSDocs import (
     NEST_JS_CRUD_GEN,
     NEST_JS_FIRST_STEPS,
@@ -111,12 +112,14 @@ if __name__ == "__main__":
     """
     from asyncio import run
 
-    from openai import OpenAI
+    from openai import AsyncOpenAI
     from prisma import Prisma
+
+    setup_logging(local=True)
 
     ids = Indentifiers(user_id=1, app_id=1)
     db_client = Prisma(auto_register=True)
-    oai = OpenAI()
+    oai = AsyncOpenAI()
 
     task: str = "'The Tutor App is an app designed for tutors to manage their clients, schedules, and invoices. \n\nIt must support both the client and tutor scheduling, rescheduling and canceling appointments, and sending invoices after the appointment has passed.\n\nClients can sign up with OAuth2 or with traditional sign-in authentication. If they sign up with traditional authentication, it must be safe and secure. There will need to be password reset and login capabilities. \n\nThere will need to be authorization for identifying clients vs the tutor.\n\nAdditionally, it will have proper management of financials, including invoice management and payment tracking. This includes things like paid/failed invoice notifications, unpaid invoice follow-up, summarizing d/w/m/y income, and generating reports.'"
     project_description: str = "The Tutor App is an application designed to help tutors manage their tutoring business and clients manage their tutoring sessions. The key users are both tutors and clients. Tutors need features to set availability, manage clients, schedule sessions, send invoices and track payments. Clients need to find tutors, book and manage appointments, communicate with tutors, and pay invoices. Core features like user accounts, authentication, notifications span both groups. But the functionality aims to let tutors run their services smoothly while giving clients control over their tutoring.'"

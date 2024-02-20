@@ -3,6 +3,7 @@ import logging
 from pydantic import ValidationError
 
 from codex.common.ai_block import AIBlock, Indentifiers, ValidatedResponse
+from codex.common.logging_config import setup_logging
 from codex.requirements.model import InterviewMessageWithResponse
 
 logger = logging.getLogger(__name__)
@@ -59,12 +60,14 @@ if __name__ == "__main__":
     """
     from asyncio import run
 
-    from openai import OpenAI
+    from openai import AsyncOpenAI
     from prisma import Prisma
+
+    setup_logging(local=True)
 
     ids = Indentifiers(user_id=1, app_id=1)
     db_client = Prisma(auto_register=True)
-    oai = OpenAI()
+    oai = AsyncOpenAI()
 
     ask_block = AskBlock(
         oai_client=oai,

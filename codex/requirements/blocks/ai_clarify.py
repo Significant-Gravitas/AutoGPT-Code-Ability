@@ -1,5 +1,4 @@
 import logging
-from venv import logger
 
 from codex.common.ai_block import (
     AIBlock,
@@ -7,6 +6,7 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
+from codex.common.logging_config import setup_logging
 from codex.requirements.model import Clarification, QandA, QandAResponses
 
 logger = logging.getLogger(__name__)
@@ -194,12 +194,14 @@ if __name__ == "__main__":
     """
     from asyncio import run
 
-    from openai import OpenAI
+    from openai import AsyncOpenAI
     from prisma import Prisma
+
+    setup_logging(local=True)
 
     ids = Indentifiers(user_id=1, app_id=1)
     db_client = Prisma(auto_register=True)
-    oai = OpenAI()
+    oai = AsyncOpenAI()
 
     task: str = "Write a function to return the availability of a professional from their calendar"
     project_description: str = "Function that returns the availability of professionals, updating based on current activity or schedule."

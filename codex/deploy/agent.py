@@ -111,19 +111,19 @@ def create_server_code(application: Application) -> Application:
     ]
     server_code_header = f"""logger = logging.getLogger(__name__)
 
-app = FastAPI(title="{application.name}", description="{application.description}")"""
+app = FastAPI(title="{application.name}", description='''{application.description}''')"""
 
     service_routes_code = []
     for route_path, compiled_route in application.routes.items():
         logger.info(f"Creating route for {route_path}")
         # import the main function from the service file
         compiled_route_module = compiled_route.service_file_name.replace(".py", "")
-        service_import = f"from project.{compiled_route_module} import *"
+        service_import = f"from {compiled_route_module} import *"
         server_code_imports.append(service_import)
 
         # Write the api endpoint
         # TODO: pass the request method from the APIRouteSpec
-        route_code = f"""@app.post("{route_path}")
+        route_code = f"""@app.{compiled_route.method.lower()}("{route_path}")
 async def {compiled_route.main_function_name}_route({compiled_route.request_param_str}):
     try:
         response = {compiled_route.main_function_name}({compiled_route.param_names_str})
