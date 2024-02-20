@@ -1,6 +1,8 @@
 import asyncio
+import io
 import os
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import shutil
+import zipfile
 
 import aiohttp
 import click
@@ -51,7 +53,40 @@ async def fetch_deliverable(session, user_id, app_id):
     print(f"Fetching deliverable for {spec.name}")
     url = f"http://127.0.0.1:8000/api/v1/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/"
     async with session.post(url) as response:
-        return response
+        try:
+            data = await response.json()
+            deliverable_id = data["id"]
+            deploy_url = f"http://127.0.0.1:8000/api/v1/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/"
+            async with session.post(deploy_url) as dresponse:
+                deploy_data = await dresponse.json()
+                deployment_id = deploy_data["deployment"]["id"]
+                deployment_file_name = deploy_data["deployment"]["file_name"]
+
+                # Download the zip file
+                download_url = (
+                    f"http://127.0.0.1:8000/api/v1/deployments/{deployment_id}/download"
+                )
+                async with session.get(download_url) as download_response:
+                    content = await download_response.read()
+                    content = io.BytesIO(content)
+
+                # Unzip the file
+                extracted_folder = f"workspace/{deployment_file_name.split('.')[0]}"
+                if os.path.exists(extracted_folder):
+                    shutil.rmtree(extracted_folder)
+
+                # Create a new directory
+                if not os.path.exists(extracted_folder):
+                    os.makedirs(extracted_folder)
+                with zipfile.ZipFile(content, "r") as zip_ref:
+                    zip_ref.extractall(extracted_folder)
+
+                click.echo(f"Downloaded and extracted: {extracted_folder}")
+
+                return deploy_data
+        except Exception as e:
+            click.echo(f"Error fetching deliverable: {e}")
+            return
 
 
 async def run_benchmark():
