@@ -9,13 +9,13 @@ from pydantic import BaseModel, EmailStr, Field
 logger = logging.getLogger(__name__)
 
 
-class Indentifiers(BaseModel):
-    user_id: int
-    app_id: int
-    spec_id: int | None = None
-    completed_app_id: int | None = None
-    deployment_id: int | None = None
-    function_def_id: int | None = None
+class Identifiers(BaseModel):
+    user_id: str
+    app_id: str
+    spec_id: str | None = None
+    completed_app_id: str | None = None
+    deployment_id: str | None = None
+    function_def_id: str | None = None
 
 
 class Pagination(BaseModel):
@@ -44,7 +44,7 @@ class UserCreate(UserBase):
 
 
 class UserUpdate(BaseModel):
-    id: int = Field(..., description="The unique identifier of the user")
+    id: str = Field(..., description="The unique identifier of the user")
     email: Optional[EmailStr] = Field(
         None, description="The new email address of the user"
     )
@@ -54,11 +54,9 @@ class UserUpdate(BaseModel):
 
 
 class UserResponse(BaseModel):
-    id: int
+    id: str
     discord_id: str
     createdAt: datetime
-    email: Optional[EmailStr]
-    name: Optional[str]
     role: Role
 
 
@@ -79,11 +77,11 @@ class ApplicationCreate(ApplicationBase):
 
 
 class ApplicationResponse(BaseModel):
-    id: int
+    id: str
     createdAt: datetime
     updatedAt: datetime
     name: str
-    userid: int
+    userid: str
 
 
 class ApplicationsListResponse(BaseModel):
@@ -95,7 +93,7 @@ class ApplicationsListResponse(BaseModel):
 
 
 class ParamModel(BaseModel):
-    id: int
+    id: str
     createdAt: datetime
     name: str
     description: str
@@ -103,7 +101,7 @@ class ParamModel(BaseModel):
 
 
 class RequestObjectModel(BaseModel):
-    id: int
+    id: str
     createdAt: datetime
     name: str
     description: str
@@ -111,7 +109,7 @@ class RequestObjectModel(BaseModel):
 
 
 class ResponseObjectModel(BaseModel):
-    id: int
+    id: str
     createdAt: datetime
     name: str
     description: str
@@ -119,7 +117,7 @@ class ResponseObjectModel(BaseModel):
 
 
 class APIRouteSpecModel(BaseModel):
-    id: int
+    id: str
     createdAt: datetime
     method: str
     path: str
@@ -128,23 +126,27 @@ class APIRouteSpecModel(BaseModel):
     responseObject: Optional[ResponseObjectModel] = None
 
 
+class SpecificationCreate(BaseModel):
+    description: str
+
+
 class SpecificationResponse(BaseModel):
-    id: int
+    id: str
     createdAt: datetime
     name: str
     context: str
-    apiRoutes: List[APIRouteSpecModel] = []
+    apiRouteSpecs: List[APIRouteSpecModel] = []
 
     @staticmethod
     def from_specification(specification: Specification) -> "SpecificationResponse":
         logger.debug(specification.model_dump_json())
         routes = []
-        if specification.apiRoutes is None:
+        if specification.ApiRouteSpecs is None:
             raise ValueError("No routes found for the specification")
-        for route in specification.apiRoutes:
-            if route.requestObjects is None:
+        for route in specification.ApiRouteSpecs:
+            if route.RequestObject is None:
                 raise ValueError("No request object found for the route")
-            if route.responseObject is None:
+            if route.ResponseObject is None:
                 raise ValueError("No response object found for the route")
             routes.append(
                 APIRouteSpecModel(
@@ -154,35 +156,35 @@ class SpecificationResponse(BaseModel):
                     path=route.path,
                     description=route.description,
                     requestObject=RequestObjectModel(
-                        id=route.requestObjects.id,
-                        createdAt=route.requestObjects.createdAt,
-                        name=route.requestObjects.name,
-                        description=route.requestObjects.description,
+                        id=route.RequestObject.id,
+                        createdAt=route.RequestObject.createdAt,
+                        name=route.RequestObject.name,
+                        description=route.RequestObject.description,
                         params=[
                             ParamModel(
                                 id=param.id,
                                 createdAt=param.createdAt,
                                 name=param.name,
                                 description=param.description,
-                                param_type=param.param_type,
+                                param_type=param.paramType,
                             )
-                            for param in route.requestObjects.params or []
+                            for param in route.RequestObject.Params or []
                         ],
                     ),
                     responseObject=ResponseObjectModel(
-                        id=route.responseObject.id,
-                        createdAt=route.responseObject.createdAt,
-                        name=route.responseObject.name,
-                        description=route.responseObject.description,
+                        id=route.ResponseObject.id,
+                        createdAt=route.ResponseObject.createdAt,
+                        name=route.ResponseObject.name,
+                        description=route.ResponseObject.description,
                         params=[
                             ParamModel(
                                 id=param.id,
                                 createdAt=param.createdAt,
                                 name=param.name,
                                 description=param.description,
-                                param_type=param.param_type,
+                                param_type=param.paramType,
                             )
-                            for param in route.responseObject.params or []
+                            for param in route.ResponseObject.Params or []
                         ],
                     ),
                 )
@@ -193,7 +195,7 @@ class SpecificationResponse(BaseModel):
             createdAt=specification.createdAt,
             name=specification.name,
             context=specification.context,
-            apiRoutes=routes,
+            apiRouteSpecs=routes,
         )
 
         return ret_obj
@@ -208,14 +210,14 @@ class SpecificationsListResponse(BaseModel):
 
 
 class CompiledRouteModel(BaseModel):
-    id: int
+    id: str
     createdAt: datetime
     description: str
     code: str
 
 
 class DeliverableResponse(BaseModel):
-    id: int
+    id: str
     created_at: datetime
     name: str
     description: str
@@ -230,7 +232,7 @@ class DeliverablesListResponse(BaseModel):
 
 
 class DeploymentMetadata(BaseModel):
-    id: int
+    id: str
     created_at: datetime
     file_name: str
     file_size: int

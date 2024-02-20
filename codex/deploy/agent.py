@@ -9,7 +9,7 @@ from prisma.models import CompiledRoute as CompiledRouteDBModel
 from prisma.models import CompletedApp, Deployment
 from prisma.types import DeploymentCreateInput
 
-from codex.api_model import Indentifiers
+from codex.api_model import Identifiers
 from codex.deploy.model import Application, CompiledRoute
 from codex.deploy.packager import create_zip_file
 from codex.developer.model import Package
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 async def create_deployment(
-    ids: Indentifiers, completedApp: CompletedApp
+    ids: Identifiers, completedApp: CompletedApp
 ) -> Deployment:
     app = compile_application(completedApp)
     zip_file = create_zip_file(app)
@@ -51,11 +51,11 @@ def compile_application(app: CompletedApp) -> Application:
     try:
         compiled_routes = {}
         packages = []
-        if not app.compiledRoutes:
+        if not app.CompiledRoutes:
             raise ValueError("No compiled routes found for application")
 
-        for db_compiled_route in app.compiledRoutes:
-            if not db_compiled_route.apiRouteSpec:
+        for db_compiled_route in app.CompiledRoutes:
+            if not db_compiled_route.ApiRouteSpec:
                 raise ValueError(
                     f"No APIRouteSpec found for route {db_compiled_route.id}"
                 )
@@ -64,12 +64,12 @@ def compile_application(app: CompletedApp) -> Application:
                 raise ValueError(f"No functions found for route {db_compiled_route.id}")
 
             logger.info(
-                f"Compiling route {db_compiled_route.apiRouteSpec.path}."
-                f" Num Functions: { len(db_compiled_route.functions)}"
+                f"Compiling route {db_compiled_route.ApiRouteSpec.path}."
+                f" Num Functions: { len(db_compiled_route.Functions)}"
             )
-            for function in db_compiled_route.functions:
-                if function.packages:
-                    for pack in function.packages:
+            for function in db_compiled_route.Functions:
+                if function.Packages:
+                    for pack in function.Packages:
                         packages.append(
                             Package(
                                 package_name=pack.packageName,
@@ -77,7 +77,7 @@ def compile_application(app: CompletedApp) -> Application:
                                 specifier=pack.specifier,
                             )
                         )
-            compiled_routes[db_compiled_route.apiRouteSpec.path] = compile_route(
+            compiled_routes[db_compiled_route.ApiRouteSpec.path] = compile_route(
                 db_compiled_route
             )
 

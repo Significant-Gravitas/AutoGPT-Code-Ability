@@ -70,10 +70,9 @@ def benchmark():
 @cli.command()
 def serve() -> None:
     import uvicorn
-
-    from codex.app import app
-
-    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
+    reload = os.environ.get("ENV", "CLOUD").lower() == "local"
+    log_level = "debug" if reload else "info"
+    uvicorn.run("codex.app:app", host="0.0.0.0", port=int(os.environ.get("PORT", 8000)), reload=reload, log_level=log_level)
 
 
 if __name__ == "__main__":

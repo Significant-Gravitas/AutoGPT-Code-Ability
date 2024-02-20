@@ -2,7 +2,6 @@ import json
 import logging
 
 from fastapi import APIRouter, Path, Query, Response
-from prisma.models import CodexUser
 
 import codex.database
 from codex.api_model import (
@@ -11,7 +10,6 @@ from codex.api_model import (
     ApplicationsListResponse,
     UserResponse,
     UsersListResponse,
-    UserUpdate,
 )
 
 logger = logging.getLogger(__name__)
@@ -21,7 +19,7 @@ core_routes = APIRouter()
 
 # User endpoints
 @core_routes.get("/discord/{discord_id}", response_model=UserResponse, tags=["users"])
-async def get_discord_user(discord_id: int):
+async def get_discord_user(discord_id: str):
     """
     This is intended to be used by the Discord bot to retrieve user information.
     The user_id that is retrived can then be used for other API calls.
@@ -30,10 +28,8 @@ async def get_discord_user(discord_id: int):
         user = await codex.database.get_or_create_user_by_discord_id(discord_id)
         return UserResponse(
             id=user.id,
-            discord_id=user.discord_id,
+            discord_id=user.discordId,
             createdAt=user.createdAt,
-            email=user.email,
-            name=user.name,
             role=user.role,
         )
     except Exception as e:
@@ -47,7 +43,7 @@ async def get_discord_user(discord_id: int):
 
 @core_routes.get("/user/{user_id}", response_model=UserResponse, tags=["users"])
 async def get_user(
-    user_id: int = Path(..., description="The unique identifier of the user"),
+    user_id: str = Path(..., description="The unique identifier of the user"),
 ):
     """
     Retrieve a user by their unique identifier.
@@ -56,41 +52,14 @@ async def get_user(
         user = await codex.database.get_user(user_id)
         return UserResponse(
             id=user.id,
-            discord_id=user.discord_id,
+            discord_id=user.discordId,
             createdAt=user.createdAt,
-            email=user.email,
-            name=user.name,
             role=user.role,
         )
     except Exception as e:
         logger.error(f"Error retrieving user: {e}")
         return Response(
             content=json.dumps({"error": f"Error retrieving user by id {e}"}),
-            status_code=500,
-            media_type="application/json",
-        )
-
-
-@core_routes.put("/user/{user_id}", response_model=UserResponse, tags=["users"])
-async def update_user(user_id: int, user_update: UserUpdate):
-    """
-    Update a user's information by their unique identifier.
-    """
-    try:
-        user_update.id = user_id
-        user = await codex.database.update_user(user_update)
-        return UserResponse(
-            id=user.id,
-            discord_id=user.discord_id,
-            createdAt=user.createdAt,
-            email=user.email,
-            name=user.name,
-            role=user.role,
-        )
-    except Exception as e:
-        logger.error(f"Error updating user: {e}")
-        return Response(
-            content=json.dumps({"error": f"Error updating user {e}"}),
             status_code=500,
             media_type="application/json",
         )
@@ -121,8 +90,8 @@ async def list_users(
     "/user/{user_id}/apps/{app_id}", response_model=ApplicationResponse, tags=["apps"]
 )
 async def get_app(
-    user_id: int = Path(..., description="The unique identifier of the user"),
-    app_id: int = Path(..., description="The unique identifier of the application"),
+    user_id: str = Path(..., description="The unique identifier of the user"),
+    app_id: str = Path(..., description="The unique identifier of the application"),
 ):
     """
     Retrieve a specific application by its ID for a given user.
@@ -149,7 +118,7 @@ async def get_app(
 @core_routes.post(
     "/user/{user_id}/apps/", response_model=ApplicationResponse, tags=["apps"]
 )
-async def create_app(user_id: int, app: ApplicationCreate):
+async def create_app(user_id: str, app: ApplicationCreate):
     """
     Create a new application for a user.
     """
@@ -166,7 +135,7 @@ async def create_app(user_id: int, app: ApplicationCreate):
 
 
 @core_routes.delete("/user/{user_id}/apps/{app_id}", tags=["apps"])
-async def delete_app(user_id: int, app_id: int):
+async def delete_app(user_id: str, app_id: str):
     """
     Delete a specific application by its ID for a given user.
     """
@@ -190,7 +159,7 @@ async def delete_app(user_id: int, app_id: int):
     "/user/{user_id}/apps/", response_model=ApplicationsListResponse, tags=["apps"]
 )
 async def list_apps(
-    user_id: int,
+    user_id: str,
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1),
 ):

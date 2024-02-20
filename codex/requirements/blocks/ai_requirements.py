@@ -2,7 +2,7 @@ import logging
 
 from codex.common.ai_block import (
     AIBlock,
-    Indentifiers,
+    Identifiers,
     ValidatedResponse,
     ValidationError,
 )
@@ -58,7 +58,7 @@ class BaseRequirementsBlock(AIBlock):
         return response
 
     async def create_item(
-        self, ids: Indentifiers, validated_response: ValidatedResponse
+        self, ids: Identifiers, validated_response: ValidatedResponse
     ):
         """
         This is where we would store the response in the database
@@ -104,7 +104,7 @@ class FuncNonFuncRequirementsBlock(AIBlock):
         return response
 
     async def create_item(
-        self, ids: Indentifiers, validated_response: ValidatedResponse
+        self, ids: Identifiers, validated_response: ValidatedResponse
     ):
         """
         This is where we would store the response in the database
@@ -122,8 +122,9 @@ if __name__ == "__main__":
 
     from openai import OpenAI
     from prisma import Prisma
+    from codex.common.test_const import identifier_1
 
-    ids = Indentifiers(user_id=1, app_id=1)
+    ids = identifier_1
     db_client = Prisma(auto_register=True)
     oai = OpenAI()
 

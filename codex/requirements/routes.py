@@ -1,5 +1,4 @@
 import json
-import logging
 
 from fastapi import APIRouter, Query, Response
 from prisma.models import Specification
@@ -7,11 +6,13 @@ from prisma.models import Specification
 import codex.database
 import codex.requirements.database
 from codex.api_model import (
-    Indentifiers,
+    Identifiers,
+    SpecificationCreate,
     SpecificationResponse,
     SpecificationsListResponse,
 )
 from codex.requirements.agent import generate_requirements
+from codex.common import logging
 
 logger = logging.getLogger(__name__)
 
@@ -26,14 +27,14 @@ spec_router = APIRouter()
     tags=["specs"],
     response_model=SpecificationResponse,
 )
-async def create_spec(user_id: int, app_id: int, description: str):
+async def create_spec(user_id: str, app_id: str, spec: SpecificationCreate):
     """
     Create a new specification for a given application and user.
     """
     try:
         app = await codex.database.get_app_by_id(user_id, app_id)
-        ids = Indentifiers(user_id=user_id, app_id=app_id)
-        spec: Specification = await generate_requirements(ids, app.name, description)
+        ids = Identifiers(user_id=user_id, app_id=app_id)
+        spec: Specification = await generate_requirements(ids, app.name, spec.description)
         return SpecificationResponse.from_specification(spec)
     except Exception as e:
         logger.error(f"Error creating a new specification: {e}")
@@ -51,7 +52,7 @@ async def create_spec(user_id: int, app_id: int, description: str):
     response_model=SpecificationResponse,
     tags=["specs"],
 )
-async def get_spec(user_id: int, app_id: int, spec_id: int):
+async def get_spec(user_id: str, app_id: str, spec_id: str):
     """
     Retrieve a specific specification by its ID for a given application and user.
     """
@@ -82,9 +83,9 @@ async def get_spec(user_id: int, app_id: int, spec_id: int):
     tags=["specs"],
 )
 async def update_spec(
-    user_id: int,
-    app_id: int,
-    spec_id: int,
+    user_id: str,
+    app_id: str,
+    spec_id: str,
     spec_update: SpecificationResponse,
 ):
     """
@@ -101,7 +102,7 @@ async def update_spec(
 
 
 @spec_router.delete("/user/{user_id}/apps/{app_id}/specs/{spec_id}", tags=["specs"])
-async def delete_spec(user_id: int, app_id: int, spec_id: int):
+async def delete_spec(user_id: str, app_id: str, spec_id: str):
     """
     Delete a specific specification by its ID for a given application and user.
     """
@@ -127,8 +128,8 @@ async def delete_spec(user_id: int, app_id: int, spec_id: int):
     tags=["specs"],
 )
 async def list_specs(
-    user_id: int,
-    app_id: int,
+    user_id: str,
+    app_id: str,
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1),
 ):

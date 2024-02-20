@@ -4,11 +4,11 @@ from typing import List
 
 import black
 import isort
-from prisma.models import Functions as FunctionsDBModel
+from prisma.models import Function as FunctionDBModel
 
 from codex.common.ai_block import (
     AIBlock,
-    Indentifiers,
+    Identifiers,
     ValidatedResponse,
     ValidationError,
 )
@@ -163,12 +163,12 @@ class WriteFunctionAIBlock(AIBlock):
         return response
 
     async def create_item(
-        self, ids: Indentifiers, validated_response: ValidatedResponse
+        self, ids: Identifiers, validated_response: ValidatedResponse
     ):
         """This is just a temporary that doesnt have a database model"""
         genfunc = validated_response.response.code
 
-        func = await FunctionsDBModel.prisma().create(
+        func = await FunctionDBModel.prisma().create(
             data={
                 "name": genfunc.name,
                 "doc_string": genfunc.doc_string,

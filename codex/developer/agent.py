@@ -7,14 +7,14 @@ from prisma.models import CompiledRoute, CompletedApp
 from prisma.models import FunctionDefinition as FunctionDefDBModel
 from prisma.models import Specification
 
-from codex.api_model import Indentifiers
+from codex.api_model import Identifiers
 from codex.developer.write_function import WriteFunctionAIBlock
 
 logger = logging.getLogger(__name__)
 
 
 async def develop_application(
-    ids: Indentifiers, code_graphs: List[CodeGraphDBModel], spec: Specification
+    ids: Identifiers, code_graphs: List[CodeGraphDBModel], spec: Specification
 ) -> CompletedApp:
     """
     Develop the application
@@ -25,8 +25,8 @@ async def develop_application(
 
     app = await CompletedApp.prisma().create(
         data={
-            "compiledRoutes": {"connect": [{"id": c.id} for c in completed_graphs]},
-            "spec": {"connect": {"id": spec.id}},
+            "CompiledRoutes": {"connect": [{"id": c.id} for c in completed_graphs]},
+            "Specification": {"connect": {"id": spec.id}},
             "name": spec.name,
             "description": spec.context,
         }
@@ -35,7 +35,7 @@ async def develop_application(
 
 
 async def write_code_graphs(
-    ids: Indentifiers,
+    ids: Identifiers,
     code_graphs: List[CodeGraphDBModel],
     spec: Specification,
 ) -> List[CompiledRoute]:
@@ -43,12 +43,12 @@ async def write_code_graphs(
     for code_graph in code_graphs:
         cg = await CodeGraphDBModel.prisma().find_unique(
             where={"id": code_graph.id},
-            include={"functionDefs": True, "routeSpec": True},
+            include={"FunctionDefinitions": True, "APIRouteSpec": True},
         )
         if not cg:
             raise ValueError(f"CodeGraph {code_graph.id} not found")
 
-        if not cg.routeSpec:
+        if not cg.APIRouteSpec:
             raise ValueError(f"No route spec found for code graph {cg.id}")
 
         written_functions = await code_functions(ids, cg)
@@ -56,11 +56,11 @@ async def write_code_graphs(
         funciton_ids = [{"id": f.id} for f in written_functions]
         croute = await CompiledRoute.prisma().create(
             data={
-                "codeGraph": {"connect": {"id": cg.id}},
+                "CodeGraph": {"connect": {"id": cg.id}},
                 "code": cg.code_graph,
                 "description": cg.routeSpec.description,
-                "functions": {"connect": funciton_ids},
-                "apiRouteSpec": {"connect": {"id": code_graph.routeSpecId}},
+                "Functions": {"connect": funciton_ids},
+                "ApiRouteSpec": {"connect": {"id": code_graph.apiRouteSpecId}},
             }
         )
 
@@ -69,7 +69,7 @@ async def write_code_graphs(
 
 
 async def code_functions(
-    ids: Indentifiers, code_graph: CodeGraphDBModel
+    ids: Identifiers, code_graph: CodeGraphDBModel
 ) -> List[FunctionDefDBModel]:
     """
     Code the functions in the code graph in parallel.
@@ -92,7 +92,7 @@ async def code_functions(
 
 
 async def create_code(
-    ids: Indentifiers, appilcation_context: str, function_def: FunctionDefDBModel
+    ids: Identifiers, appilcation_context: str, function_def: FunctionDefDBModel
 ) -> FunctionDefDBModel:
     """
     Gets the coding agent to write or lookup the code for a function

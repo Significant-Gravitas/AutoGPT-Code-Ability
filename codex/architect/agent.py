@@ -4,7 +4,7 @@ import logging
 from openai import AsyncOpenAI
 from prisma.models import Specification
 
-from codex.api_model import Indentifiers
+from codex.api_model import Identifiers
 from codex.architect.codegraph import CodeGraphAIBlock
 from codex.architect.model import ApplicationGraphs
 
@@ -12,12 +12,12 @@ logger = logging.getLogger(__name__)
 
 
 async def create_code_graphs(
-    ids: Indentifiers, spec: Specification, oai_client: AsyncOpenAI = AsyncOpenAI()
+    ids: Identifiers, spec: Specification, oai_client: AsyncOpenAI = AsyncOpenAI()
 ) -> ApplicationGraphs:
     """
     Create the code graphs for given api routes in parallel
     """
-    assert spec.apiRoutes, "No api routes found in the spec"
+    assert spec.ApiRouteSpecs, "No api routes found in the spec"
 
     async def create_graph(api_route):
         logger.info(f"Creating code graph for {api_route.path}")
@@ -31,6 +31,6 @@ async def create_code_graphs(
             },
         )
 
-    tasks = [create_graph(api_route) for api_route in spec.apiRoutes]
+    tasks = [create_graph(api_route) for api_route in spec.ApiRouteSpecs]
     code_graphs = await asyncio.gather(*tasks)
     return ApplicationGraphs(code_graphs=code_graphs)

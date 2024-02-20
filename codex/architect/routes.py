@@ -1,5 +1,4 @@
 import json
-import logging
 
 from fastapi import APIRouter, Query, Response
 
@@ -8,7 +7,8 @@ import codex.architect.database
 import codex.database
 import codex.developer.agent as developer_agent
 import codex.requirements.database
-from codex.api_model import DeliverableResponse, DeliverablesListResponse, Indentifiers
+from codex.api_model import DeliverableResponse, DeliverablesListResponse, Identifiers
+from codex.common import logging
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ delivery_router = APIRouter()
     tags=["deliverables"],
     response_model=DeliverableResponse,
 )
-async def create_deliverable(user_id: int, app_id: int, spec_id: int):
+async def create_deliverable(user_id: str, app_id: str, spec_id: str):
     """
     Create a new deliverable (completed app) for a specific specification.
     """
@@ -31,7 +31,7 @@ async def create_deliverable(user_id: int, app_id: int, spec_id: int):
         )
         logger.info(f"Creating deliverable for {specification.name}")
         if specification:
-            ids = Indentifiers(
+            ids = Identifiers(
                 user_id=user_id,
                 app_id=app_id,
                 spec_id=spec_id,
@@ -69,7 +69,7 @@ async def create_deliverable(user_id: int, app_id: int, spec_id: int):
     response_model=DeliverableResponse,
     tags=["deliverables"],
 )
-async def get_deliverable(user_id: int, app_id: int, spec_id: int, deliverable_id: int):
+async def get_deliverable(user_id: str, app_id: str, spec_id: str, deliverable_id: str):
     """
     Retrieve a specific deliverable (completed app) including its compiled routes by ID.
     """
@@ -96,7 +96,7 @@ async def get_deliverable(user_id: int, app_id: int, spec_id: int, deliverable_i
     tags=["deliverables"],
 )
 async def delete_deliverable(
-    user_id: int, app_id: int, spec_id: int, deliverable_id: int
+    user_id: str, app_id: str, spec_id: str, deliverable_id: str
 ):
     """
     Delete a specific deliverable (completed app) by ID.
@@ -124,9 +124,9 @@ async def delete_deliverable(
     tags=["deliverables"],
 )
 async def list_deliverables(
-    user_id: int,
-    app_id: int,
-    spec_id: int,
+    user_id: str,
+    app_id: str,
+    spec_id: str,
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1),
 ):
