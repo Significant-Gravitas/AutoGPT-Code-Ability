@@ -30,7 +30,7 @@ async def create_deployment(
         encoded_file_bytes = base64.b64encode(zip_file).decode("utf-8")
         deployment = await Deployment.prisma().create(
             data=DeploymentCreateInput(
-                completedApp={"connect": {"id": completedApp.id}},
+                CompletedApp={"connect": {"id": completedApp.id}},
                 User={"connect": {"id": ids.user_id}},
                 fileName=f"{file_name}.zip",
                 fileSize=len(zip_file),
@@ -60,7 +60,7 @@ def compile_application(app: CompletedApp) -> Application:
                     f"No APIRouteSpec found for route {db_compiled_route.id}"
                 )
 
-            if not db_compiled_route.functions:
+            if not db_compiled_route.Functions:
                 raise ValueError(f"No functions found for route {db_compiled_route.id}")
 
             logger.info(
@@ -156,12 +156,12 @@ def compile_route(compiled_route: CompiledRouteDBModel) -> CompiledRoute:
     packages = []
     imports = []
     rest_of_code_sections = []
-    if not compiled_route.functions:
+    if not compiled_route.Functions:
         raise ValueError(f"No functions found for route {compiled_route.id}")
 
-    for i, function in enumerate(compiled_route.functions):
+    for i, function in enumerate(compiled_route.Functions):
         logger.info(
-            f"{i+1}/{len(compiled_route.functions)} Compiling function {function.name}"
+            f"{i+1}/{len(compiled_route.Functions)} Compiling function {function.name}"
         )
         import_code, rest_of_code = extract_imports(function.code)
         imports.append(import_code)
@@ -169,10 +169,10 @@ def compile_route(compiled_route: CompiledRouteDBModel) -> CompiledRoute:
         if function.packages:
             packages.extend(function.packages)
 
-    if not compiled_route.codeGraph:
+    if not compiled_route.CodeGraphs:
         raise ValueError(f"No codeGraph found for route {compiled_route.id}")
 
-    import_code, main_function = extract_imports(compiled_route.codeGraph.code_graph)
+    import_code, main_function = extract_imports(compiled_route.CodeGraphs.code_graph)
     req_param_str, param_names_str = extract_request_params(
         compiled_route.codeGraph.code_graph
     )
