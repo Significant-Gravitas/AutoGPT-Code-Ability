@@ -1,6 +1,5 @@
 import ast
 import base64
-import logging
 from typing import Tuple
 
 import black
@@ -13,6 +12,7 @@ from codex.api_model import Identifiers
 from codex.deploy.model import Application, CompiledRoute
 from codex.deploy.packager import create_zip_file
 from codex.developer.model import Package
+from codex.common import logging
 
 logger = logging.getLogger(__name__)
 
@@ -164,37 +164,37 @@ def compile_route(compiled_route: CompiledRouteDBModel) -> CompiledRoute:
         import_code, rest_of_code = extract_imports(function.code)
         imports.append(import_code)
         rest_of_code_sections.append(rest_of_code)
-        if function.packages:
-            packages.extend(function.packages)
+        if function.Packages:
+            packages.extend(function.Packages)
 
-    if not compiled_route.CodeGraphs:
+    if not compiled_route.CodeGraph:
         raise ValueError(f"No codeGraph found for route {compiled_route.id}")
 
     req_param_str, param_names_str = extract_request_params(
-        compiled_route.CodeGraphs.code_graph
+        compiled_route.CodeGraph.codeGraph
     )
-    imports.extend(compiled_route.codeGraph.imports)
+    imports.extend(compiled_route.CodeGraph.imports)
     output_code = "\n".join(imports)
     output_code += "\n\n"
     output_code += "\n\n".join(rest_of_code_sections)
     output_code += "\n\n"
-    output_code += compiled_route.CodeGraphs.code_graph
+    output_code += compiled_route.CodeGraph.codeGraph
 
     sorted_content = isort.code(output_code)
 
     formatted_code = black.format_str(sorted_content, mode=black.FileMode())
 
-    if not compiled_route.apiRouteSpec:
+    if not compiled_route.ApiRouteSpec:
         raise ValueError(f"No APIRouteSpec found for route {compiled_route.id}")
 
     return CompiledRoute(
-        method=compiled_route.apiRouteSpec.method,
+        method=compiled_route.ApiRouteSpec.method,
         service_code=formatted_code,
-        service_file_name=compiled_route.codeGraph.function_name.strip().replace(
+        service_file_name=compiled_route.CodeGraph.functionName.strip().replace(
             " ", "_"
         )
         + "_service.py",
-        main_function_name=compiled_route.codeGraph.function_name,
+        main_function_name=compiled_route.CodeGraph.functionName,
         request_param_str=req_param_str,
         param_names_str=param_names_str,
         packages=packages,

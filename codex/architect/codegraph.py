@@ -125,16 +125,16 @@ class CodeGraphAIBlock(AIBlock):
                     "codeGraph": validated_response.response.code_graph,
                     "imports": validated_response.response.imports,
                     "FunctionDefinitions": {"create": function_defs},
-                    "APIRouteSpec": {
+                    "ApiRouteSpec": {
                         "connect": {"id": validated_response.response.api_route_spec.id}
                     },
                 }
             )
 
-            if validated_response.response.api_route_spec.schemas:
+            if validated_response.response.api_route_spec.DatabaseSchema:
                 create_input["databaseSchema"] = {
                     "connect": {
-                        "id": validated_response.response.api_route_spec.schemas.id
+                        "id": validated_response.response.api_route_spec.DatabaseSchema.id
                     }
                 }
 
@@ -146,24 +146,24 @@ class CodeGraphAIBlock(AIBlock):
 
     async def update_item(self, query_params: CodeGraphDBModel):  # type: ignore
         function_defs = []
-        if query_params.functionDefs:
-            for value in query_params.functionDefs:
+        if query_params.FunctionDefinitions:
+            for value in query_params.FunctionDefinitions:
                 function_defs.append(
                     {
                         "name": value.name,
-                        "docString": value.doc_string,
+                        "docString": value.docString,
                         "args": value.args,
-                        "returnType": value.return_type,
-                        "functionTemplate": value.function_template,
+                        "returnType": value.returnType,
+                        "functionTemplate": value.functionTemplate,
                     }
                 )
 
         cg = await CodeGraphDBModel.prisma().update(
             where={"id": query_params.id},
             data={
-                "functionName": query_params.function_name,
+                "functionName": query_params.functionName,
                 "apiPath": query_params.apiPath,
-                "codeGraph": query_params.code_graph,
+                "codeGraph": query_params.codeGraph,
                 "imports": query_params.imports,
                 "FunctionDefinitions": {"create": function_defs},
             },

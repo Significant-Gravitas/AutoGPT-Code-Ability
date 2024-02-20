@@ -1,5 +1,4 @@
 import json
-import logging
 from asyncio import run
 
 import openai
@@ -63,6 +62,7 @@ from codex.requirements.model import (
     StateObj,
 )
 from codex.requirements.unwrap_schemas import convert_db_schema, convert_endpoint
+from codex.common import logging
 
 logger = logging.getLogger(__name__)
 
