@@ -175,8 +175,7 @@ def compile_route(compiled_route: CompiledRouteDBModel) -> CompiledRoute:
     req_param_str, param_names_str = extract_request_params(
         compiled_route.codeGraph.code_graph
     )
-    imports.append(compiled_route.codeGraph.imports)
-
+    imports.extend(compiled_route.codeGraph.imports)
     output_code = "\n".join(imports)
     output_code += "\n\n"
     output_code += "\n\n".join(rest_of_code_sections)
