@@ -194,12 +194,12 @@ model CodeGraph {
   codeGraph    String
 
   FunctionDefinitions FunctionDefinition[]
-  APIRouteSpec        APIRouteSpec?        @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
+  ApiRouteSpec        APIRouteSpec?        @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
   apiRouteSpecId      String?
   DatabaseSchema      DatabaseSchema?      @relation(fields: [databaseSchemaId], references: [id], onDelete: Cascade)
   databaseSchemaId    String?
   CompiledRoute       CompiledRoute?       @relation(fields: [compiledRouteId], references: [id], onDelete: Cascade)
-  compiledRouteId     String?
+  compiledRouteId     String?              @unique
 }
 
 // FunctionDefinition defines a function, including its input and return types.
@@ -264,14 +264,14 @@ model CompiledRoute {
   embedding   Unsupported("vector(1536)")?
   description String
   code        String
-  // Why is this unique and here with the many to many relationship?
-  codeGraphId String                       @unique
 
   Functions     Function[]
   CompletedApps CompletedApp[]
 
-  CodeGraphs     CodeGraph[]
-  APIRouteSpec   APIRouteSpec? @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
+  CodeGraph      CodeGraph?
+  // Why is this unique and here with the many to many relationship? This is a 1-1 relationship, and this field might not even required.
+  codeGraphId    String @unique
+  ApiRouteSpec   APIRouteSpec? @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
   apiRouteSpecId String?
 }
 

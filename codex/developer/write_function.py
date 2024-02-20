@@ -98,7 +98,7 @@ class WriteFunctionAIBlock(AIBlock):
 
     def validate_code(self, invoke_params: dict, code: str) -> Function:
         try:
-            function_def = invoke_params["function_def"]
+            function_def: FunctionDBModel = invoke_params["function_def"]
 
             sorted_content = isort.code(code)
             formatted_code = black.format_str(sorted_content, mode=black.FileMode())
@@ -127,10 +127,10 @@ class WriteFunctionAIBlock(AIBlock):
                     f"parameter {function_def.args}"
                 )
 
-            if ret.lower() != function_def.return_type.lower():
+            if ret.lower() != function_def.returnType.lower():
                 errors.append(
                     f"Return type {ret} does not match required return type "
-                    f"{function_def.return_type}"
+                    f"{function_def.returnType}"
                 )
 
             if errors:
@@ -141,7 +141,7 @@ class WriteFunctionAIBlock(AIBlock):
 
             return Function(
                 name=function_def.name,
-                doc_string=docstring if docstring else function_def.doc_string,
+                doc_string=docstring if docstring else function_def.docString,
                 args=args,
                 return_type=ret,
                 code=formatted_code,
@@ -168,15 +168,6 @@ class WriteFunctionAIBlock(AIBlock):
     ):
         """This is just a temporary that doesnt have a database model"""
         genfunc = validated_response.response.code
-
-        create_data = FunctionCreateInput(
-            name=genfunc.name,
-            docString=genfunc.doc_string,
-            args=genfunc.args,
-            returnType=genfunc.return_type,
-            code=genfunc.code,
-            FunctionDefinitions={"connect": {"id": ids.function_def_id}},
-        )
 
         if validated_response.response.packages:
             package_create_data = [

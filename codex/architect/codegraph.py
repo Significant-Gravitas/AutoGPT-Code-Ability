@@ -106,35 +106,35 @@ class CodeGraphAIBlock(AIBlock):
     ):
         """This is just a temporary that doesnt have a database model"""
         try:
-            funciton_defs = []
+            function_defs = []
             for key, value in validated_response.response.function_defs.items():
-                funciton_defs.append(
+                function_defs.append(
                     {
                         "name": value.name,
-                        "doc_string": value.doc_string,
+                        "docString": value.doc_string,
                         "args": value.args,
-                        "return_type": value.return_type,
-                        "function_template": value.function_template,
+                        "returnType": value.return_type,
+                        "functionTemplate": value.function_template,
                     }
                 )
 
             create_input = CodeGraphCreateInput(
                 **{
-                    "function_name": validated_response.response.function_name,
+                    "functionName": validated_response.response.function_name,
                     "apiPath": validated_response.response.api_route_spec.path,
-                    "code_graph": validated_response.response.code_graph,
+                    "codeGraph": validated_response.response.code_graph,
                     "imports": validated_response.response.imports,
-                    "functionDefs": {"create": funciton_defs},
-                    "routeSpec": {
+                    "FunctionDefinitions": {"create": function_defs},
+                    "ApiRouteSpec": {
                         "connect": {"id": validated_response.response.api_route_spec.id}
                     },
                 }
             )
 
-            if validated_response.response.api_route_spec.schemas:
+            if validated_response.response.api_route_spec.DatabaseSchema:
                 create_input["databaseSchema"] = {
                     "connect": {
-                        "id": validated_response.response.api_route_spec.schemas.id
+                        "id": validated_response.response.api_route_spec.DatabaseSchema.id
                     }
                 }
 
@@ -145,27 +145,27 @@ class CodeGraphAIBlock(AIBlock):
             logger.info(f"Error saving code graph: {e}")
 
     async def update_item(self, query_params: CodeGraphDBModel):  # type: ignore
-        funciton_defs = []
-        if query_params.functionDefs:
-            for value in query_params.functionDefs:
-                funciton_defs.append(
+        function_defs = []
+        if query_params.FunctionDefinitions:
+            for value in query_params.FunctionDefinitions:
+                function_defs.append(
                     {
                         "name": value.name,
-                        "doc_string": value.doc_string,
+                        "docString": value.docString,
                         "args": value.args,
-                        "return_type": value.return_type,
-                        "function_template": value.function_template,
+                        "returnType": value.returnType,
+                        "functionTemplate": value.functionTemplate,
                     }
                 )
 
         cg = await CodeGraphDBModel.prisma().update(
             where={"id": query_params.id},
             data={
-                "function_name": query_params.function_name,
+                "functionName": query_params.functionName,
                 "apiPath": query_params.apiPath,
-                "code_graph": query_params.code_graph,
+                "codeGraph": query_params.codeGraph,
                 "imports": query_params.imports,
-                "functionDefs": {"create": funciton_defs},
+                "FunctionDefinitions": {"create": function_defs},
             },
         )
 

@@ -7,11 +7,9 @@ import zipfile
 import aiohttp
 import click
 from dotenv import load_dotenv
-from regex import P
 
 import codex.common.test_const as test_const
 from codex.common.logging_config import setup_logging
-
 
 @click.group()
 def cli():
@@ -130,5 +128,5 @@ def serve() -> None:
 
 if __name__ == "__main__":
     load_dotenv()
-    setup_logging(local=os.environ.get("ENV", "CLOUD").lower() == "local")
+    setup_logging()
     cli()

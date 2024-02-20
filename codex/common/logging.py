@@ -1,5 +1,7 @@
 import logging
 
+from codex.common.logging_config import setup_logging
+
 
 # This is a custom logger that prints the exception stack trace on error by default
 class Logger(logging.Logger):
@@ -7,8 +9,10 @@ class Logger(logging.Logger):
         super().__init__(name)
 
     def error(self, msg, *args, **kwargs):
-        super().error(msg, *args, **kwargs, exc_info=True)
+        if not kwargs.get("exc_info"):
+            kwargs["exc_info"] = True
+        super().error(msg, *args, **kwargs)
 
 
 def getLogger(name):
-    return Logger(name)
+    return setup_logging(Logger(name))
