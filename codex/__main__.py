@@ -65,7 +65,7 @@ async def fetch_deliverable(session, user_id, app_id, spec_id):
                     content = io.BytesIO(content)
 
                 # Unzip the file
-                extracted_folder = f"../workspace/{deployment_file_name.split('.')[0]}"
+                extracted_folder = f"workspace/{deployment_file_name.split('.')[0]}"
                 if os.path.exists(extracted_folder):
                     shutil.rmtree(extracted_folder)
 
