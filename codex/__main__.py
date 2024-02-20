@@ -55,7 +55,6 @@ async def fetch_deliverable(session, user_id, app_id, spec_id):
                 deploy_data = await dresponse.json()
                 deployment_id = deploy_data["deployment"]["id"]
                 deployment_file_name = deploy_data["deployment"]["file_name"]
-                click.echo(f"Deployed: {deploy_data}")
 
                 # Download the zip file
                 download_url = (
@@ -75,6 +74,8 @@ async def fetch_deliverable(session, user_id, app_id, spec_id):
                     os.makedirs(extracted_folder)
                 with zipfile.ZipFile(content, "r") as zip_ref:
                     zip_ref.extractall(extracted_folder)
+
+                click.echo(f"Downloaded and extracted: {extracted_folder}")
 
                 return deploy_data
         except Exception as e:
