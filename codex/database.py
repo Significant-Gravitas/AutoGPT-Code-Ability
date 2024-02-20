@@ -2,10 +2,7 @@ from datetime import datetime
 
 from prisma.enums import Role
 from prisma.models import Application, User
-from prisma.types import (
-    UserCreateInput,
-    UserCreateWithoutRelationsInput,
-)
+from prisma.types import UserCreateInput, UserCreateWithoutRelationsInput
 
 from codex.api_model import (
     ApplicationCreate,

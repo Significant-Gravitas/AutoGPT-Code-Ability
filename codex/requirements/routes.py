@@ -11,8 +11,8 @@ from codex.api_model import (
     SpecificationResponse,
     SpecificationsListResponse,
 )
-from codex.requirements.agent import generate_requirements
 from codex.common import logging
+from codex.requirements.agent import generate_requirements
 
 logger = logging.getLogger(__name__)
 

@@ -7,7 +7,6 @@ import isort
 from prisma.models import Function as FunctionDBModel
 from prisma.types import FunctionCreateInput, PackageCreateWithoutRelationsInput
 
-
 from codex.common.ai_block import (
     AIBlock,
     Identifiers,
