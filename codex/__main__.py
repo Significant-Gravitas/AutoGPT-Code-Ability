@@ -2,7 +2,9 @@ import asyncio
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+import aiohttp
 import click
+from dotenv import load_dotenv
 
 from codex.common.logging_config import setup_logging
 
@@ -27,7 +29,7 @@ def populate_db(database):
     from codex.database import create_test_data
     from codex.requirements.agent import populate_database_specs
 
-    os.environ["DATABASE_URL"] = database
+    os.environ["DATABASE_URL"] = os.environ["DATABASE_URL"] or database
     db = Prisma(auto_register=True)
 
     async def popdb():
@@ -39,39 +41,30 @@ def populate_db(database):
     asyncio.run(popdb())
 
 
+async def fetch_deliverable(session, user_id, app_id, spec_id):
+    print(f"Fetching deliverable for {user_id=}, {app_id=}, {spec_id=}")
+    url = f"http://127.0.0.1:8000/api/v1/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/"
+    async with session.post(url) as response:
+        return response
+
+
+async def run_benchmark():
+    async with aiohttp.ClientSession() as session:
+        tasks = [
+            fetch_deliverable(session, 1, 1, 1),
+            fetch_deliverable(session, 1, 2, 2),
+            fetch_deliverable(session, 1, 3, 3),
+            fetch_deliverable(session, 1, 4, 4),
+            fetch_deliverable(session, 1, 5, 5),
+        ]
+        results = await asyncio.gather(*tasks)
+        print(results)
+
+
 @cli.command()
-def test() -> None:
-    def process_app(app_name: str) -> None:
-        from codex.architect.agent import create_code_graphs
-        from codex.deploy.agent import compile_application
-        from codex.deploy.packager import create_zip_file
-        from codex.developer.agent import write_code_graphs
-        from codex.requirements.agent import hardcoded_requirements
-
-        out_filename = f"{app_name.replace(' ', '_').lower()}.zip"
-        # Requirements agent develops the requirements for the application
-        r = hardcoded_requirements(app_name)
-        # Architect agent creates the code graphs for the requirements
-        graphs = create_code_graphs(r)
-        # Developer agent writes the code for the code graphs
-        completed_graphs = write_code_graphs(graphs)
-        # Delivery Agent builds the code and delivers it to the user
-        application = compile_application(r, completed_graphs)
-        zipfile = create_zip_file(application)
-        with open(f"workspace/{out_filename}", "wb") as f:
-            f.write(zipfile)
-
-    apps = [
-        "Availability Checker",
-        "Invoice Generator",
-        "Appointment Optimization Tool",
-        "Distance Calculator",
-    ]
-
-    with ThreadPoolExecutor() as executor:
-        futures = [executor.submit(process_app, app_name) for app_name in apps]
-        for future in as_completed(futures):
-            future.result()  # Waiting for each future to complete, you can handle exceptions here if needed
+def benchmark():
+    """Run the benchmark tests"""
+    asyncio.run(run_benchmark())
 
 
 @cli.command()
@@ -80,9 +73,10 @@ def serve() -> None:
 
     from codex.app import app
 
-    uvicorn.run(app, host="0.0.0.0", port=os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
 
 
 if __name__ == "__main__":
+    load_dotenv()
     setup_logging(local=os.environ.get("ENV", "CLOUD").lower() == "local")
     cli()

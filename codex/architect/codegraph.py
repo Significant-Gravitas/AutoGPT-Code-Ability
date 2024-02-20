@@ -2,6 +2,7 @@ import ast
 import logging
 
 from prisma.models import CodeGraph as CodeGraphDBModel
+from prisma.types import CodeGraphCreateInput
 
 from codex.architect.model import CodeGraph, FunctionDef
 from codex.common.ai_block import (
@@ -117,65 +118,69 @@ class CodeGraphAIBlock(AIBlock):
                     }
                 )
 
-            add_database_data = {
-                "function_name": validated_response.response.function_name,
-                "apiPath": validated_response.response.api_route_spec.path,
-                "code_graph": validated_response.response.code_graph,
-                "imports": validated_response.response.imports,
-                "functionDefs": {"create": funciton_defs},
-                "routeSpec": {
-                    "connect": {"id": validated_response.response.api_route_spec.id}
-                },
-            }
+            create_input = CodeGraphCreateInput(
+                **{
+                    "function_name": validated_response.response.function_name,
+                    "apiPath": validated_response.response.api_route_spec.path,
+                    "code_graph": validated_response.response.code_graph,
+                    "imports": validated_response.response.imports,
+                    "functionDefs": {"create": funciton_defs},
+                    "routeSpec": {
+                        "connect": {"id": validated_response.response.api_route_spec.id}
+                    },
+                }
+            )
 
             if validated_response.response.api_route_spec.schemas:
-                add_database_data["databaseSchema"] = {
+                create_input["databaseSchema"] = {
                     "connect": {
                         "id": validated_response.response.api_route_spec.schemas.id
                     }
                 }
 
-            cg = await CodeGraphDBModel.prisma().create(data=add_database_data)
+            cg = await CodeGraphDBModel.prisma().create(data=create_input)
             logger.debug(f"Created CodeGraph: {cg}")
             return cg
         except Exception as e:
-            print(f"Error saving code graph: {e}")
+            logger.info(f"Error saving code graph: {e}")
 
-    async def update_item(self, item: CodeGraph):
+    async def update_item(self, query_params: CodeGraphDBModel):  # type: ignore
         funciton_defs = []
-        for key, value in item.function_defs.items():
-            funciton_defs.append(
-                {
-                    "name": value.name,
-                    "doc_string": value.doc_string,
-                    "args": value.args,
-                    "return_type": value.return_type,
-                    "function_template": value.function_template,
-                }
-            )
+        if query_params.functionDefs:
+            for value in query_params.functionDefs:
+                funciton_defs.append(
+                    {
+                        "name": value.name,
+                        "doc_string": value.doc_string,
+                        "args": value.args,
+                        "return_type": value.return_type,
+                        "function_template": value.function_template,
+                    }
+                )
 
         cg = await CodeGraphDBModel.prisma().update(
-            where={"id": item.id},
+            where={"id": query_params.id},
             data={
-                "function_name": item.function_name,
-                "apiPath": item.api_route,
-                "code_graph": item.code_graph,
-                "imports": item.imports,
+                "function_name": query_params.function_name,
+                "apiPath": query_params.apiPath,
+                "code_graph": query_params.code_graph,
+                "imports": query_params.imports,
                 "functionDefs": {"create": funciton_defs},
             },
         )
 
         return cg
 
-    async def get_item(self, item_id: str):
+    async def get_item(self, item_id: str):  # type: ignore
         cg = await CodeGraphDBModel.prisma().find_unique(where={"id": item_id})
 
         return cg
 
-    async def delete_item(self, item_id: str):
+    # type: ignore
+    async def delete_item(self, item_id: str):  # type: ignore
         await CodeGraphDBModel.prisma().delete(where={"id": item_id})
 
-    async def list_items(self, item_id: str, page: int, page_size: int):
+    async def list_items(self, item_id: str, page: int, page_size: int):  # type: ignore
         cg = await CodeGraphDBModel.prisma().find_many(
             skip=(page - 1) * page_size, take=page_size
         )

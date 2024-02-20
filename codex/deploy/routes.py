@@ -50,6 +50,9 @@ async def create_deployment(
                 }
             },
         )
+        if not completedApp:
+            raise ValueError(f"Completed app {deliverable_id} not found")
+
         logger.info(f"Creating deployment for {completedApp.name}")
         ids = Indentifiers(
             user_id=user_id,
@@ -57,6 +60,7 @@ async def create_deployment(
             spec_id=spec_id,
             completed_app_id=deliverable_id,
         )
+
         deployment = await deploy_agent.create_deployment(ids, completedApp)
 
         return DeploymentResponse(
@@ -97,9 +101,9 @@ async def get_deployment(
         return DeploymentResponse(
             deployment=DeploymentMetadata(
                 id=deployment.id,
-                createdAt=deployment.createdAt,
-                fileName=deployment.fileName,
-                fileSize=deployment.fileSize,
+                created_at=deployment.createdAt,
+                file_name=deployment.fileName,
+                file_size=deployment.fileSize,
             )
         )
     except ValueError as e:
@@ -172,14 +176,15 @@ async def download_deployment(deployment_id: int):
     """
     Download the zip file for a specific deployment.
     """
-    # Retrieve deployment details, assuming this returns an object that includes the file bytes
+    # Retrieve deployment details, assuming this
+    # returns an object that includes the file bytes
     deployment_details = await codex.deploy.database.get_deployment(
         deployment_id=deployment_id
     )
     if not deployment_details:
         raise HTTPException(status_code=404, detail="Deployment not found")
 
-    logger.info(f"Downloading deployment: {deployment_details}")
+    logger.info(f"Downloading deployment: {deployment_id}")
 
     # Decode the base64-encoded file bytes
     try:

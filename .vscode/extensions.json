@@ -1,0 +1,16 @@
+{
+  "recommendations": [
+    "charliermarsh.ruff",
+    "ms-python.python",
+    "ms-python.debugpy",
+    "ms-azuretools.vscode-docker",
+    "bierner.markdown-mermaid",
+    "prisma.prisma",
+    "editorconfig.editorconfig",
+    "visualstudioexptteam.vscodeintellicode",
+    "visualstudioexptteam.intellicode-api-usage-examples",
+    "ms-toolsai.jupyter",
+    "ms-vsliveshare.vsliveshare",
+    "ms-python.vscode-pylance"
+  ]
+}

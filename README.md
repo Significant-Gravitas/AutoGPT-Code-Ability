@@ -6,6 +6,92 @@
 
 The Codex System is an innovative coding agent designed to streamline the software development process. It consists of four key sub-agents, each specialized in a different aspect of software development. These sub-agents work in harmony to ensure efficient and effective delivery of software applications. This README provides an overview of the Codex System and its components.
 
+
+## Getting Started
+
+Welcome to the initial setup guide for your project. Follow these easy steps to get everything up and running.
+
+### Step 1: Install Dependencies
+
+Start by installing all necessary dependencies. In your terminal, run:
+
+```
+poetry install
+poetry shell
+```
+
+This command installs all Python package dependencies required by your project.
+
+### Step 2: Initialize Containers
+
+Next, set up the Docker containers by executing:
+
+```
+docker compose up
+```
+
+This spins up the necessary Docker containers as defined in your `docker-compose.yml`, ensuring your environment is correctly isolated.
+
+### Step 3: Configure and Migrate Database
+
+To set up your database, begin by configuring the database URL through an environment variable:
+
+```
+cp .env.example .env
+```
+
+Then, update the values to match your configuration, and migrate your database schema with:
+
+```
+prisma migrate dev --name init
+```
+
+This initializes your database with the required schema.
+
+### Step 4: Generate Prisma Client
+
+After migrating your database, generate the Prisma client to interact with your database in your application:
+
+```
+prisma generate
+```
+
+This command generates or updates the Prisma client, ensuring your application can communicate effectively with the database.
+
+### Step 5: Populate the Database
+
+Ensure your database is populated with initial data by adjusting the database URL for the specific port and running the population script:
+
+```
+./run populate-db
+```
+
+This populates your database with the initial data set required for your application.
+
+### Step 6: Launch the Application
+
+Set your environment to local and start the server:
+
+```
+./run serve
+```
+
+This starts your application's server, making it available for development use.
+
+### Step 7: Access the Documentation
+
+Access your application's documentation at:
+
+```
+http://127.0.0.1:8000/docs
+```
+
+Here, you'll find detailed guides and references on interacting with your application.
+
+### What's Next?
+
+With your environment set up, head over to the **Interaction Flow** section for insights on how interactions within the application work, further exploring its functionality and features.
+
 ## Components of Codex
 
 The Codex System is an advanced software development framework comprised of various specialized sub-agents and components. Each component plays a critical role in the software development lifecycle, from conception to deployment. In addition to the primary sub-agents, the Codex System includes essential supportive components: the Common Module, Chains Module, and Prompts Module.
@@ -20,13 +106,9 @@ The Codex System is an advanced software development framework comprised of vari
 
 5. **Common Module**: A fundamental component used across all stages of development. It provides shared functionalities and resources, such as libraries and tools, that are essential for the Design, Architect, Coding, and Delivery modules. This module ensures consistency and efficiency in the development process.
 
-6. **Chains Module**: A specialized component used by all sub-agents for making Language Learning Model (LLM) calls. The Chains Module contains a seperate file for each llm call. The file must include loading the prompt templates, configuring the prompt, calling the llm, validation of resposne and retry logic.
+6. **Prompts**: This component works closely with the Chains Module to generate and manage prompts for LLM interactions. It holds all the prompt templates allowing us to easily itterate prompt design without needing to modify the code.
 
-7. **Prompts**: This component works closely with the Chains Module to generate and manage prompts for LLM interactions. It holds all the prompt templates allowing us to easily itterate prompt design without needing to modify the code.
-
-## Mermaid Diagram
-
-Below is a Mermaid diagram illustrating the structure of the Codex System and the interaction between its components:
+Below is a diagram illustrating the structure of the Codex System and the interaction between its components:
 
 ```mermaid
 erDiagram
@@ -38,15 +120,10 @@ erDiagram
     ARCHITECT ||--|| COMMON-MODULE : uses
     DEVELOPER ||--|| COMMON-MODULE : uses
     DEPLOY ||--|| COMMON-MODULE : uses
-    REQUIREMENTS ||--|| CHAINS-MODULE : "uses for LLM calls"
-    ARCHITECT ||--|| CHAINS-MODULE : "uses for LLM calls"
-    DEVELOPER ||--|| CHAINS-MODULE : "uses for LLM calls"
-    DEPLOY ||--|| CHAINS-MODULE : "uses for LLM calls"
     REQUIREMENTS ||--|| ARCHITECT : "defines requirements for"
     ARCHITECT ||--|| DEVELOPER : "architects solution for"
     DEVELOPER ||--|| DEPLOY : "develops code for"
     DEPLOY ||--o{ CODEX : "deploys application to"
-    CHAINS-MODULE ||--|| PROMPTS : "manges all prompt templates"
 
     CODEX {
         string name
@@ -65,12 +142,6 @@ erDiagram
     }
     COMMON-MODULE {
         string function
-    }
-    CHAINS-MODULE {
-        string purpose "LLM Calls"
-    }
-    PROMPTS {
-        string purpose "Prompt Templates"
     }
 
 ```

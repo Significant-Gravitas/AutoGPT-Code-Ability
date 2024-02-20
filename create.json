@@ -1,6 +1,6 @@
 {
-    "name": "Profile Management System",
-    "context": "This system manages client and professional profiles, including operations for creating, updating, retrieving, and deleting profiles.",
+    "name": "TutorMaster",
+    "context": "# TutorMaster\n\n## Task \nThe Tutor App is an app designed for tutors to manage their clients,\n schedules, and invoices.\n\nIt must support both the client and tutor scheduling, rescheduling and canceling\n appointments, and sending invoices after the appointment has passed.\n\nClients can sign up with OAuth2 or with traditional sign-in authentication. If they sign\n up with traditional authentication, it must be safe and secure. There will need to be\n password reset and login capabilities.\n\nThere will need to be authorization for identifying clients vs the tutor.\n\nAdditionally, it will have proper management of financials, including invoice management\n and payment tracking. This includes things like paid/failed invoice notifications,\n unpaid invoice follow-up, summarizing d/w/m/y income, and generating reports.\n\n### Project Description\nBased on the information gathered, the Tutor App is envisioned as a comprehensive management tool tailored for tutors. It aims to streamline client and tutor interactions, scheduling, invoicing, and financial management. Key features and requirements for the app include:\n\n1. Support for managing both clients and tutors, facilitating the scheduling, rescheduling, and cancellation of appointments directly within the app.\n\n2. The app needs to provide a robust invoicing system. After an appointment, the system should automatically generate and send invoices to clients. It must also manage payment tracking, include notifications for paid or failed invoices, and facilitate follow-ups on unpaid invoices.\n\n3. Financial management is a pivotal aspect. The app should be capable of summarizing income on a daily, weekly, monthly, and yearly basis. Additionally, it needs to support generating detailed financial reports to help tutors understand their business's financial health more clearly.\n\n4. On the security front, the app must offer reliable and safe authentication mechanisms. Clients should be able to sign up using OAuth2 or traditional sign-in methods. In the case of traditional authentication, ensuring the system's safety and security is paramount, necessitating features like secure password resets and login capabilities.\n\n5. The app will require defined authorization mechanisms to differentiate between client and tutor roles, ensuring that users have access to appropriate functionalities based on their role.\n\nThe input from the user highlights the desire for advanced features such as personalized learning path generation based on data analytics, hinting at the potential for further innovation in tutor-client engagement and management.\n\nThe requirements for security and privacy are stringent, particularly concerning financial transactions and personal data. The app must incorporate encryption for data at rest and in transit, robust access control policies, continuous monitoring, regular security audits, and compliance with international standards like GDPR and PCI DSS. Additionally, raising user awareness about security practices is vital.\n\nIn summary, the Tutor App should be a versatile, secure, and efficient platform that addresses the specific needs and challenges faced by tutors in managing their tutoring business.\n\n### Product Description\nTutorMaster is designed to redefine how tutors manage their businesses, streamlining crucial aspects such as client and tutor interactions, scheduling, and financial operations. Key features include client and tutor management for streamlined scheduling processes, automated invoicing and notifications post-appointments, comprehensive financial summaries and reporting, secure sign-in mechanisms supporting OAuth2 and traditional methods, role-based access control, and encryption for both data at rest and in transit. Addressing the specific needs of the tutoring business, TutorMaster focuses on efficiency, security, and providing a superior user experience to both tutors and their clients. Additionally, TutorMaster aims to innovate with personalized learning paths to enhance tutor-client engagement.\n\n### Features\n#### Client and Tutor Management\n##### Description\nEnables efficient management of client and tutor profiles, including scheduling, rescheduling, and cancellation of appointments.\n##### Considerations\nUser experience is key; workflows must be logical and streamlined.\n##### Risks\nComplexity in handling diverse scheduling scenarios.\n##### External Tools Required\nCalendar integration tools (e.g., Google Calendar API).\n##### Priority: CRITICAL\n#### Automated Invoicing System\n##### Description\nAutomatically generates and sends invoices post-appointment, manages payments, and tracks invoice status.\n##### Considerations\nMust support various payment methods and be highly reliable.\n##### Risks\nIssues with payment processing could affect user trust.\n##### External Tools Required\nPayment gateways integration (e.g., Stripe, PayPal).\n##### Priority: HIGH\n#### Financial Management and Reporting\n##### Description\nProvides summaries and detailed reports of income and expenditures.\n##### Considerations\nAccuracy and comprehensive reporting capabilities are necessary.\n##### Risks\nComplex user interface could deter user interaction.\n##### External Tools Required\nNone specifically, though advanced data analytics tools may enhance functionality.\n##### Priority: HIGH\n#### Secure Authentication\n##### Description\nSupports OAuth2 and traditional login methods with added security features like secure password resets.\n##### Considerations\nBalancing ease of use and security.\n##### Risks\nPotential user frustration with complex security measures.\n##### External Tools Required\nOAuth2 providers, Secure email service for password resets.\n##### Priority: CRITICAL\n#### Personalized Learning Paths\n##### Description\nGenerates tailored learning plans based on student performance, preferences, and feedback.\n##### Considerations\nRequires sophisticated data analytics and user input.\n##### Risks\nMisinterpretation of data could lead to ineffective learning paths.\n##### External Tools Required\nData analytics platforms, possibly Machine Learning as a Service (MLaaS) providers.\n##### Priority: HIGH\n\n### Clarifiying Questions\n- \"Do we need a front end for this: Based on the information gathered, the Tutor App is envisioned as a comprehensive management tool tailored for tutors. It aims to streamline client and tutor interactions, scheduling, invoicing, and financial management. Key features and requirements for the app include: 1. Support for managing both clients and tutors, facilitating the scheduling, rescheduling, and cancellation of appointments directly within the app. 2. The app needs to provide a robust invoicing system. After an appointment, the system should automatically generate and send invoices to clients. It must also manage payment tracking, include notifications for paid or failed invoices, and facilitate follow-ups on unpaid invoices. 3. Financial management is a pivotal aspect. The app should be capable of summarizing income on a daily, weekly, monthly, and yearly basis. Additionally, it needs to support generating detailed financial reports to help tutors understand their business's financial health more clearly. 4. On the security front, the app must offer reliable and safe authentication mechanisms. Clients should be able to sign up using OAuth2 or traditional sign-in methods. In the case of traditional authentication, ensuring the system's safety and security is paramount, necessitating features like secure password resets and login capabilities. 5. The app will require defined authorization mechanisms to differentiate between client and tutor roles, ensuring that users have access to appropriate functionalities based on their role. The input from the user highlights the desire for advanced features such as personalized learning path generation based on data analytics, hinting at the potential for further innovation in tutor-client engagement and management. The requirements for security and privacy are stringent, particularly concerning financial transactions and personal data. The app must incorporate encryption for data at rest and in transit, robust access control policies, continuous monitoring, regular security audits, and compliance with international standards like GDPR and PCI DSS. Additionally, raising user awareness about security practices is vital. In summary, the Tutor App should be a versatile, secure, and efficient platform that addresses the specific needs and challenges faced by tutors in managing their tutoring business.\": \"Yes\" : Reasoning: \"The requirement clearly outlines several interactions and functionalities aimed at end-users, including scheduling, invoicing, financial management, and personal data security. Providing a front end is essential to facilitate these interactions through a user-friendly interface, allowing both tutors and clients to easily access, manage, and utilize the outlined features. Additionally, considering the complex data analytics features and personalized learning paths, a front end will help in presenting this information in an accessible and understandable manner to the users. The sophisticated nature of the functionalities discussed, alongside security measures like OAuth2 authentication, also implies that user interaction takes place on a platform, necessitating front-end development to support the overall user experience and functional access.\"\n- \"Who is the expected user of this: \"Based on the information gathered, the Tutor App is envisioned as a comprehensive management tool tailored for tutors. It aims to streamline client and tutor interactions, scheduling, invoicing, and financial management. Key features and requirements for the app include:\n\n1. Support for managing both clients and tutors, facilitating the scheduling, rescheduling, and cancellation of appointments directly within the app.\n\n2. The app needs to provide a robust invoicing system. After an appointment, the system should automatically generate and send invoices to clients. It must also manage payment tracking, include notifications for paid or failed invoices, and facilitate follow-ups on unpaid invoices.\n\n3. Financial management is a pivotal aspect. The app should be capable of summarizing income on a daily, weekly, monthly, and yearly basis. Additionally, it needs to support generating detailed financial reports to help tutors understand their business's financial health more clearly.\n\n4. On the security front, the app must offer reliable and safe authentication mechanisms. Clients should be able to sign up using OAuth2 or traditional sign-in methods. In the case of traditional authentication, ensuring the system's safety and security is paramount, necessitating features like secure password resets and login capabilities.\n\n5. The app will require defined authorization mechanisms to differentiate between client and tutor roles, ensuring that users have access to appropriate functionalities based on their role.\n\nThe input from the user highlights the desire for advanced features such as personalized learning path generation based on data analytics, hinting at the potential for further innovation in tutor-client engagement and management.\n\nThe requirements for security and privacy are stringent, particularly concerning financial transactions and personal data. The app must incorporate encryption for data at rest and in transit, robust access control policies, continuous monitoring, regular security audits, and compliance with international standards like GDPR and PCI DSS. Additionally, raising user awareness about security practices is vital.\n\nIn summary, the Tutor App should be a versatile, secure, and efficient platform that addresses the specific needs and challenges faced by tutors in managing their tutoring business.\"\": \"Tutors and their clients\" : Reasoning: \"The comprehensive description of the Tutor App makes it clear that the primary users of the app are both tutors and their clients. Tutors are the main operators, utilizing the app for managing appointments, financial transactions, and engaging with clients. Clients are also integral users, as they will interact with the app to schedule or reschedule appointments, view and pay invoices, and possibly engage in learning paths tailored to them. This dual user base requires a design that caters to both the functional needs of tutors for business management and the needs of clients for accessing and managing their tutoring services. The app's focus on security and privacy highlights the importance of keeping both tutors' and clients' data safe, which further emphasizes the dual nature of the user base. Moreover, the mention of personalized learning paths and the need for a user-friendly interface for financial and scheduling interactions underscores the necessity for a diverse set of functionalities that cater to both groups effectively.\"\n- \"What is the skill level of the expected user of this: \"Based on the information gathered, the Tutor App is envisioned as a comprehensive management tool tailored for tutors. It aims to streamline client and tutor interactions, scheduling, invoicing, and financial management. Key features and requirements for the app include:\n\n1. Support for managing both clients and tutors, facilitating the scheduling, rescheduling, and cancellation of appointments directly within the app.\n\n2. The app needs to provide a robust invoicing system. After an appointment, the system should automatically generate and send invoices to clients. It must also manage payment tracking, include notifications for paid or failed invoices, and facilitate follow-ups on unpaid invoices.\n\n3. Financial management is a pivotal aspect. The app should be capable of summarizing income on a daily, weekly, monthly, and yearly basis. Additionally, it needs to support generating detailed financial reports to help tutors understand their business's financial health more clearly.\n\n4. On the security front, the app must offer reliable and safe authentication mechanisms. Clients should be able to sign up using OAuth2 or traditional sign-in methods. In the case of traditional authentication, ensuring the system's safety and security is paramount, necessitating features like secure password resets and login capabilities.\n\n5. The app will require defined authorization mechanisms to differentiate between client and tutor roles, ensuring that users have access to appropriate functionalities based on their role.\n\nThe input from the user highlights the desire for advanced features such as personalized learning path generation based on data analytics, hinting at the potential for further innovation in tutor-client engagement and management.\n\nThe requirements for security and privacy are stringent, particularly concerning financial transactions and personal data. The app must incorporate encryption for data at rest and in transit, robust access control policies, continuous monitoring, regular security audits, and compliance with international standards like GDPR and PCI DSS. Additionally, raising user awareness about security practices is vital.\n\nIn summary, the Tutor App should be a versatile, secure, and efficient platform that addresses the specific needs and challenges faced by tutors in managing their tutoring business.\"\": \"Intermediate to advanced digital literacy\" : Reasoning: \"Given the broad range of functionalities and responsibilities outlined for both tutors and their clients, it\u2019s reasonable to expect that the user base of this app would display at least an intermediate level of digital literacy. Tutors would need to navigate complex features related to scheduling, financial management and use of data analytics for personalized learning paths, which may require a certain level of comfort with digital tools and potentially some specialized software. Clients, while potentially less engaged with the app\u2019s administrative and analytical functionalities, would still need to interact with it for scheduling, invoicing, and participation in personalized learning paths. The expectation for these users to also engage with security features like OAuth2 or traditional sign-in methods, and to comprehend privacy practices, suggests a need for an understanding of digital security and privacy principles that leans towards advanced digital literacy. Additionally, the broad range of interactions and the critical nature of the data being handled (personal information, financial transactions) further underscores the need for users to be proficient and conscious of digital environments. Overall, while the app should aim to be as user-friendly as possible, an intermediate to advanced level of digital literacy would be beneficial to navigate the app efficiently and securely.\"\n\n\n### Conclusive Q&A\n- \"How will the app handle data analytics for generating personalized learning paths, and what data points will be analyzed?\": \"A combination of in-house analytics for user data and integration with external content providers, while focusing on performance, preferences, and feedback.\" : Reasoning: \"Understanding the depth of data analytics and the specific data points required will help in designing the database schema and determining the computational resources needed.\"\n- \"What technologies will we use to ensure data encryption both at rest and in transit?\": \"Utilize TLS for data in transit and AES for data at rest, leveraging cloud provider services where possible.\" : Reasoning: \"Encrypting data at rest and in transit is crucial for user privacy and data security. Selecting appropriate technologies is key.\"\n- \"What approaches will we take to ensure the app is compliant with GDPR and PCI DSS regulations?\": \"Adopt a combination of technological, legal, and procedural measures to ensure ongoing compliance with GDPR and PCI DSS.\" : Reasoning: \"Compliance with GDPR and PCI DSS is non-negotiable for users' data protection and financial transaction security.\"\n- \"How will the app facilitate the management of invoicing and payment tracking?\": \"Integrate with trusted payment gateways for transactions and develop an internal system for invoicing, reminders, and reporting.\" : Reasoning: \"The invoicing and payment tracking system must be robust, user-friendly, and reliable.\"\n- \"What are the intended platforms (iOS, Android, Web) for the Tutor App, and will we go native or cross-platform?\": \"A cross-platform approach using Flutter or React Native, adjusting based on user feedback and platform-specific performance metrics.\" : Reasoning: \"Deciding on the platforms and whether to go native or cross-platform impacts the development process, team composition, and timeline.\"\n- \"How will user roles (client vs tutor) affect the access and functionality within the app?\": \"Utilize a flexible yet secure role-based access control system, ensuring a customized and relevant experience for each user type.\" : Reasoning: \"Defining access levels and functionalities for different user roles is crucial for user experience and security.\"\n- \"Will there be a feature for direct communication (e.g., messaging, calls) between tutors and clients within the app?\": \"Implement a secure in-app messaging and calling feature, using reliable third-party services to manage data privacy effectively.\" : Reasoning: \"Incorporating direct communication can enhance the tutor-client relationship but involves further considerations for privacy and data handling.\"\n- \"What measures will be in place for app security, especially concerning authentication and data security?\": \"Adopt strong encryption, multi-factor authentication, and routine security evaluations to protect users and their data.\" : Reasoning: \"The security of user data and authentication processes is paramount to earn users' trust and meet regulatory requirements.\"\n- \"How will the app's user interface cater to both tutors and clients while ensuring ease of use?\": \"Develop role-specific UI/UX designs that prioritize clarity and ease of navigation for all users, informed by user testing and feedback.\" : Reasoning: \"The design must offer a balance between functionality and simplicity, catering to users with varying levels of digital literacy.\"\n- \"How will we address the need for continuous monitoring and regular security audits?\": \"Utilize a combination of automated and manual security practices, including the integration of reputable monitoring tools and regular expert audits.\" : Reasoning: \"Continuous monitoring and regular audits are vital for maintaining the security and integrity of the app.\"\n\n\n### Requirement Q&A\n- \"do we need db?\": \"Yes\" : Reasoning: \"Considering the requirement to store user data, appointment schedules, financial transactions, invoice details, and personalized learning paths, a database is essential for organizing and managing this data effectively.\"\n- \"do we need an api for talking to a front end?\": \"Yes\" : Reasoning: \"Given the app's need for a front-end to facilitate user interaction, an API is required to enable communication between the front end and the server-side components of the app.\"\n- \"do we need an api for talking to other services?\": \"Yes\" : Reasoning: \"To integrate external services such as payment gateways, messaging or calling services, and potentially content providers for personalized learning paths, we'll need an API for outbound communication.\"\n- \"do we need an api for other services talking to us?\": \"Yes\" : Reasoning: \"For functionalities like payment verification from payment gateways, receiving external content for learning paths, and possibly other integrations, an API for receiving inbound communication from services is necessary.\"\n- \"do we need to issue api keys for other services to talk to us?\": \"Yes\" : Reasoning: \"To secure and manage access for external services integrating with our platform, issuing API keys is a standard and necessary practice.\"\n- \"do we need monitoring?\": \"Yes\" : Reasoning: \"Continuous monitoring is critical for maintaining the app's performance, user experience, and security. It will help in identifying and addressing issues proactively.\"\n- \"do we need internationalization?\": \"Yes\" : Reasoning: \"Given the potential global user base of tutors and clients, internationalization is important to cater to different languages and regional standards.\"\n- \"do we need analytics?\": \"Yes\" : Reasoning: \"Analytics will play a crucial role in monitoring app performance, user engagement, and effectiveness of personalized learning paths, thereby informing further development and improvements.\"\n- \"is there monetization?\": \"Yes\" : Reasoning: \"Considering the app provides a valuable service to tutors and potentially clients as well, including advanced features and personalization, a monetization strategy is reasonable to sustain and grow the platform.\"\n- \"is the monetization via a paywall or ads?\": \"Paywall\" : Reasoning: \"For an app focused on professional services like tutoring management, a paywall is more suitable and less intrusive for users than ads, aligning with a premium service perception.\"\n- \"does this require a subscription or a one-time purchase?\": \"Subscription\" : Reasoning: \"Given the continuous value the app provides over time with scheduling, invoice management, and analytics, a subscription model is appropriate and aligns with ongoing user needs.\"\n- \"is the whole service monetized or only part?\": \"Part\" : Reasoning: \"To attract a wide user base and allow for initial engagement without upfront costs, offering basic functionality for free with premium features behind a paywall can be an effective strategy.\"\n- \"is monetization implemented through authorization?\": \"Yes\" : Reasoning: \"Given the split between basic and premium features, utilizing authorization mechanisms to manage access based on subscription status is a logical approach.\"\n- \"do we need authentication?\": \"Yes\" : Reasoning: \"Authentication is fundamental for securely managing user accounts, personal and financial data, and to personalize the app experience for different user roles.\"\n- \"do we need authorization?\": \"Yes\" : Reasoning: \"Authorization is necessary to determine what functionalities and data each user can access, especially to differentiate between tutors, clients, and potentially admin roles.\"\n- \"what authorization roles do we need?\": \"['Tutor', 'Client', 'Admin']\" : Reasoning: \"Considering the app\u2019s functionality and user base, defining clear roles is crucial for managing access rights and personalizing the user experience.\"\n\n\n### Requirements\n### Functional Requirements\n#### Client and Tutor Profile Management\n##### Thoughts\nEssential for the core operations of appointment management and central to user interaction with the app.\n##### Description\nEnable the creation, editing, and deletion of tutor and client profiles, including the management of scheduling, rescheduling, and cancellations.\n#### Automated Invoicing\n##### Thoughts\nReduces administrative load on tutors and ensures a smooth financial operation within the app.\n##### Description\nAutomatically generate and send invoices to clients after appointments, manage payment tracking including notifications for payment statuses.\n#### Financial Reporting\n##### Thoughts\nCrucial for tutors to manage and understand the financial health of their tutoring business.\n##### Description\nProvide daily, weekly, monthly, and yearly financial summaries and detailed reports to tutors for income and expenditures.\n#### Authentication and Security\n##### Thoughts\nSecurity is paramount, especially when handling personal and financial data.\n##### Description\nSupport secure sign-in mechanisms using both OAuth2 and traditional methods, with features for secure password reset and login.\n#### Personalized Learning Paths\n##### Thoughts\nSets the app apart by providing value-added services, enhancing the tutoring experience.\n##### Description\nUse in-house analytics and data from external content providers to generate tailored learning plans based on student performance, preferences, and feedback.\n#### Role-Based Access Control\n##### Thoughts\nEnsures users only access features relevant to their role, enhancing security and user experience.\n##### Description\nImplement flexible yet secure access controls to differentiate functionalities between tutor and client roles.\n#### Data Analytics for Personalization\n##### Thoughts\nA core feature for delivering personalized education pathways, requiring adept handling of data.\n##### Description\nUtilize analytics to inform the creation of personalized learning paths, analyzing data on performance, preferences, and feedback.\n#### Direct Communication Channels\n##### Thoughts\nFacilitates communication, essential for coordinating and enhancing the tutoring experience.\n##### Description\nIncorporate secure messaging and calling capabilities within the app for tutors and clients.\n\n### Nonfunctional Requirements\n#### Performance\n##### Thoughts\nEnhances user satisfaction and ensures fluid app interactions.\n##### Description\nThe app should be responsive and efficient, with minimal load times and smooth navigation.\n#### Scalability\n##### Thoughts\nPrepares the platform for growth in both user base and data volume.\n##### Description\nDesigned to smoothly handle an increasing load of users, data, and transactions without performance degradation.\n#### Reliability\n##### Thoughts\nCrucial for maintaining trust and continued use of the app.\n##### Description\nEnsure high availability, with minimal downtime and robust error handling.\n#### Security\n##### Thoughts\nParamount for user trust, especially considering the handling of sensitive financial and personal data.\n##### Description\nAdhere to best practices in encryption, regularly updated security protocols, and compliance with GDPR and PCI DSS regulations.\n#### Usability\n##### Thoughts\nKey to engaging and retaining users, ensuring they can fully leverage the app features.\n##### Description\nIntuitive design and navigation tailored to both tutors and clients, ensuring ease of use across different digital literacy levels.\n#### Maintainability\n##### Thoughts\nFacilitates long-term app health and adaptability to future needs or changes.\n##### Description\nCode and architecture designed for easy updates, bug fixes, and the addition of new features, with comprehensive documentation.\n#### Compliance\n##### Thoughts\nNon-negotiable for operating in various jurisdictions and protecting user data.\n##### Description\nEnsure ongoing compliance with legal and regulatory standards, including GDPR and PCI DSS.\n#### Accessibility\n##### Thoughts\nExpands the app\u2019s user base and is crucial for inclusivity.\n##### Description\nComply with accessibility standards to ensure the app is usable by people with a wide range of disabilities.\n\n\n### Modules\n### Module: User Management\n#### Description\nCentrally manages all user-related functionalities including authentication, profile management, and access control. It'll ensure users are securely registered, authenticated, and authorized to access features relevant to their roles.\n#### Requirements\n#### Requirement: User Authentication\nImplement secure authentication mechanisms allowing for both OAuth2 and traditional email/password login, with capabilities for secure password resets.\n\n#### Requirement: Profile Management\nProvide users the ability to create, edit, and delete their profiles, safely storing personal and preference data.\n\n#### Requirement: Role-Based Access Control\nDefine and enforce access controls that differentiate between tutor, client, and admin roles, ensuring users can only access appropriate features.\n\n#### Endpoints\n##### Login: `POST /auth/login`\n\nAuthenticate a user and return an access token.\n\n##### Request: `###### LoginInput\n**Description**: LoginInput\n\n**Parameters**:\n- **Name**: email\n  - **Type**: string\n  - **Description**: The registered email address of the user attempting to login.\n\n- **Name**: password\n  - **Type**: string\n  - **Description**: The password provided by the user for login. This will be securely handled and validated.\n\n`\n##### Response:`###### LoginInput\n**Description**: LoginInput\n\n**Parameters**:\n- **Name**: email\n  - **Type**: string\n  - **Description**: The registered email address of the user attempting to login.\n\n- **Name**: password\n  - **Type**: string\n  - **Description**: The password provided by the user for login. This will be securely handled and validated.\n\n`\n\n\n\n\n##### Database Schema\n\n## TutorMaster Schema\n**Description**: This schema defines the basic structure for the TutorMaster application, including users, appointments, invoices, and payments.\n**Tables**:\n**UserRole**\n\n**Description**: Enumeration for User Roles\n\n**Definition**:\n```\nenum UserRole {\n  Tutor\n  Client\n  Admin\n}\n```\n\n**InvoiceStatus**\n\n**Description**: Enumeration for Invoice Status\n\n**Definition**:\n```\nenum InvoiceStatus {\n  Pending\n  Paid\n  Failed\n}\n```\n\n**AppointmentStatus**\n\n**Description**: Enumeration for Appointment Status\n\n**Definition**:\n```\nenum AppointmentStatus {\n  Scheduled\n  Completed\n  Canceled\n}\n```\n\n**User**\n\n**Description**: Stores user information including their role and personal details.\n\n**Definition**:\n```\nmodel User {\n  id        String          @id @default(uuid())\n  email     String          @unique\n  password  String\n  name      String\n  role      UserRole\n  createdAt DateTime        @default(now())\n  updatedAt DateTime        @updatedAt\n  Appointments Appointment[]\n  Invoices      Invoice[]\n}\n```\n\n**Appointment**\n\n**Description**: Manages scheduling details for tutoring sessions.\n\n**Definition**:\n```\nmodel Appointment {\n  id          String            @id @default(uuid())\n  userId      String\n  date        DateTime\n  status      AppointmentStatus\n  createdAt   DateTime          @default(now())\n  updatedAt   DateTime          @updatedAt\n  User        User              @relation(fields: [userId], references: [id])\n  Invoice     Invoice?\n}\n```\n\n**Invoice**\n\n**Description**: Tracks invoicing details linked to appointments and payments.\n\n**Definition**:\n```\nmodel Invoice {\n  id           String    @id @default(uuid())\n  appointmentId String\n  userId       String\n  amount       Float\n  status       InvoiceStatus\n  createdAt    DateTime  @default(now())\n  updatedAt    DateTime  @updatedAt\n  Appointment  Appointment @relation(fields: [appointmentId], references: [id])\n  User         User        @relation(fields: [userId], references: [id])\n  Payment      Payment?\n}\n```\n\n**Payment**\n\n**Description**: Manages payment details for invoices.\n\n**Definition**:\n```\nmodel Payment {\n  id         String      @id @default(uuid())\n  invoiceId  String\n  status     String\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime    @updatedAt\n  Invoice    Invoice      @relation(fields: [invoiceId], references: [id])\n}\n```\n\n\n##### Register: `POST /auth/register`\n\nRegister a new user with either traditional or OAuth2 methods.\n\n##### Request: `###### RegisterInput\n**Description**: RegisterInput\n\n**Parameters**:\n- **Name**: name\n  - **Type**: string\n  - **Description**: User's full name.\n\n- **Name**: email\n  - **Type**: string\n  - **Description**: User's email address, which will be unique in the system.\n\n- **Name**: password\n  - **Type**: string\n  - **Description**: User's password; required for traditional sign-up.\n\n- **Name**: oauth_token\n  - **Type**: string\n  - **Description**: OAuth2 token; required for OAuth2 sign-up.\n\n- **Name**: role\n  - **Type**: string\n  - **Description**: Specifies the user's role within the system.\n\n`\n##### Response:`###### RegisterInput\n**Description**: RegisterInput\n\n**Parameters**:\n- **Name**: name\n  - **Type**: string\n  - **Description**: User's full name.\n\n- **Name**: email\n  - **Type**: string\n  - **Description**: User's email address, which will be unique in the system.\n\n- **Name**: password\n  - **Type**: string\n  - **Description**: User's password; required for traditional sign-up.\n\n- **Name**: oauth_token\n  - **Type**: string\n  - **Description**: OAuth2 token; required for OAuth2 sign-up.\n\n- **Name**: role\n  - **Type**: string\n  - **Description**: Specifies the user's role within the system.\n\n`\n\n\nname='UserRegistrationInput' description='A comprehensive model capturing the necessary information for registering a new user, accommodating both traditional and OAuth2 signup methods.' params=[Parameter(name='name', param_type='string', description='The full name of the user.'), Parameter(name='email', param_type='string', description='The email address of the user, unique across the system.'), Parameter(name='password', param_type='string', description='The password chosen by the user for traditional sign-up. Not required for OAuth2 registrations.'), Parameter(name='oauth_token', param_type='string', description='The token obtained from an OAuth2 provider. Required for OAuth2 sign-ups.'), Parameter(name='role', param_type='string', description=\"The role of the user, distinguishing between 'Tutor', 'Client', and potentially 'Admin'.\")]\n\n##### Database Schema\n\n## TutorMaster Schema\n**Description**: This schema defines the basic structure for the TutorMaster application, including users, appointments, invoices, and payments.\n**Tables**:\n**UserRole**\n\n**Description**: Enumeration for User Roles\n\n**Definition**:\n```\nenum UserRole {\n  Tutor\n  Client\n  Admin\n}\n```\n\n**InvoiceStatus**\n\n**Description**: Enumeration for Invoice Status\n\n**Definition**:\n```\nenum InvoiceStatus {\n  Pending\n  Paid\n  Failed\n}\n```\n\n**AppointmentStatus**\n\n**Description**: Enumeration for Appointment Status\n\n**Definition**:\n```\nenum AppointmentStatus {\n  Scheduled\n  Completed\n  Canceled\n}\n```\n\n**User**\n\n**Description**: Stores user information including their role and personal details.\n\n**Definition**:\n```\nmodel User {\n  id        String          @id @default(uuid())\n  email     String          @unique\n  password  String\n  name      String\n  role      UserRole\n  createdAt DateTime        @default(now())\n  updatedAt DateTime        @updatedAt\n  Appointments Appointment[]\n  Invoices      Invoice[]\n}\n```\n\n**Appointment**\n\n**Description**: Manages scheduling details for tutoring sessions.\n\n**Definition**:\n```\nmodel Appointment {\n  id          String            @id @default(uuid())\n  userId      String\n  date        DateTime\n  status      AppointmentStatus\n  createdAt   DateTime          @default(now())\n  updatedAt   DateTime          @updatedAt\n  User        User              @relation(fields: [userId], references: [id])\n  Invoice     Invoice?\n}\n```\n\n**Invoice**\n\n**Description**: Tracks invoicing details linked to appointments and payments.\n\n**Definition**:\n```\nmodel Invoice {\n  id           String    @id @default(uuid())\n  appointmentId String\n  userId       String\n  amount       Float\n  status       InvoiceStatus\n  createdAt    DateTime  @default(now())\n  updatedAt    DateTime  @updatedAt\n  Appointment  Appointment @relation(fields: [appointmentId], references: [id])\n  User         User        @relation(fields: [userId], references: [id])\n  Payment      Payment?\n}\n```\n\n**Payment**\n\n**Description**: Manages payment details for invoices.\n\n**Definition**:\n```\nmodel Payment {\n  id         String      @id @default(uuid())\n  invoiceId  String\n  status     String\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime    @updatedAt\n  Invoice    Invoice      @relation(fields: [invoiceId], references: [id])\n}\n```\n\n\n##### Password Reset: `POST /auth/reset`\n\nInitiate a password reset process for a user.\n\n##### Request: `###### PasswordResetInitiationInput\n**Description**: PasswordResetInitiationInput\n\n**Parameters**:\n- **Name**: email\n  - **Type**: string\n  - **Description**: The registered email address of the user requesting a password reset.\n\n`\n##### Response:`###### PasswordResetInitiationInput\n**Description**: PasswordResetInitiationInput\n\n**Parameters**:\n- **Name**: email\n  - **Type**: string\n  - **Description**: The registered email address of the user requesting a password reset.\n\n`\n\n\nname='PasswordResetInitiationInput' description='Model for capturing the necessary information to initiate a password reset process.' params=[Parameter(name='email', param_type='string', description=\"The email address associated with the user's account.\")]\n\nname='PasswordResetResponse' description='Provides feedback on the initiation of the password reset process.' params=[Parameter(name='status', param_type='string', description='Indicates the success or failure of the reset initiation.'), Parameter(name='message', param_type='string', description='Provides additional information regarding the process.')]\n\n##### Database Schema\n\n## TutorMaster Schema\n**Description**: This schema defines the basic structure for the TutorMaster application, including users, appointments, invoices, and payments.\n**Tables**:\n**UserRole**\n\n**Description**: Enumeration for User Roles\n\n**Definition**:\n```\nenum UserRole {\n  Tutor\n  Client\n  Admin\n}\n```\n\n**InvoiceStatus**\n\n**Description**: Enumeration for Invoice Status\n\n**Definition**:\n```\nenum InvoiceStatus {\n  Pending\n  Paid\n  Failed\n}\n```\n\n**AppointmentStatus**\n\n**Description**: Enumeration for Appointment Status\n\n**Definition**:\n```\nenum AppointmentStatus {\n  Scheduled\n  Completed\n  Canceled\n}\n```\n\n**User**\n\n**Description**: Stores user information including their role and personal details.\n\n**Definition**:\n```\nmodel User {\n  id        String          @id @default(uuid())\n  email     String          @unique\n  password  String\n  name      String\n  role      UserRole\n  createdAt DateTime        @default(now())\n  updatedAt DateTime        @updatedAt\n  Appointments Appointment[]\n  Invoices      Invoice[]\n}\n```\n\n**Appointment**\n\n**Description**: Manages scheduling details for tutoring sessions.\n\n**Definition**:\n```\nmodel Appointment {\n  id          String            @id @default(uuid())\n  userId      String\n  date        DateTime\n  status      AppointmentStatus\n  createdAt   DateTime          @default(now())\n  updatedAt   DateTime          @updatedAt\n  User        User              @relation(fields: [userId], references: [id])\n  Invoice     Invoice?\n}\n```\n\n**Invoice**\n\n**Description**: Tracks invoicing details linked to appointments and payments.\n\n**Definition**:\n```\nmodel Invoice {\n  id           String    @id @default(uuid())\n  appointmentId String\n  userId       String\n  amount       Float\n  status       InvoiceStatus\n  createdAt    DateTime  @default(now())\n  updatedAt    DateTime  @updatedAt\n  Appointment  Appointment @relation(fields: [appointmentId], references: [id])\n  User         User        @relation(fields: [userId], references: [id])\n  Payment      Payment?\n}\n```\n\n**Payment**\n\n**Description**: Manages payment details for invoices.\n\n**Definition**:\n```\nmodel Payment {\n  id         String      @id @default(uuid())\n  invoiceId  String\n  status     String\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime    @updatedAt\n  Invoice    Invoice      @relation(fields: [invoiceId], references: [id])\n}\n```\n\n\n##### Create Profile: `POST /profile`\n\nCreate a new user profile.\n\n##### Request: `###### UserProfileCreationInput\n**Description**: UserProfileCreationInput\n\n**Parameters**:\n- **Name**: name\n  - **Type**: string\n  - **Description**: The full name of the user.\n\n- **Name**: email\n  - **Type**: string\n  - **Description**: The user's email address. Must be unique across the system.\n\n- **Name**: password\n  - **Type**: string\n  - **Description**: A securely hashed password chosen by the user. It is expected that the client-side application has already hashed the password before transmission.\n\n- **Name**: role\n  - **Type**: UserRole\n  - **Description**: The role of the user within the application. Accepted values are Tutor, Client, and Admin.\n\n`\n##### Response:`###### UserProfileCreationInput\n**Description**: UserProfileCreationInput\n\n**Parameters**:\n- **Name**: name\n  - **Type**: string\n  - **Description**: The full name of the user.\n\n- **Name**: email\n  - **Type**: string\n  - **Description**: The user's email address. Must be unique across the system.\n\n- **Name**: password\n  - **Type**: string\n  - **Description**: A securely hashed password chosen by the user. It is expected that the client-side application has already hashed the password before transmission.\n\n- **Name**: role\n  - **Type**: UserRole\n  - **Description**: The role of the user within the application. Accepted values are Tutor, Client, and Admin.\n\n`\n\n\n\n\n##### Database Schema\n\n## TutorMaster Schema\n**Description**: This schema defines the basic structure for the TutorMaster application, including users, appointments, invoices, and payments.\n**Tables**:\n**UserRole**\n\n**Description**: Enumeration for User Roles\n\n**Definition**:\n```\nenum UserRole {\n  Tutor\n  Client\n  Admin\n}\n```\n\n**InvoiceStatus**\n\n**Description**: Enumeration for Invoice Status\n\n**Definition**:\n```\nenum InvoiceStatus {\n  Pending\n  Paid\n  Failed\n}\n```\n\n**AppointmentStatus**\n\n**Description**: Enumeration for Appointment Status\n\n**Definition**:\n```\nenum AppointmentStatus {\n  Scheduled\n  Completed\n  Canceled\n}\n```\n\n**User**\n\n**Description**: Stores user information including their role and personal details.\n\n**Definition**:\n```\nmodel User {\n  id        String          @id @default(uuid())\n  email     String          @unique\n  password  String\n  name      String\n  role      UserRole\n  createdAt DateTime        @default(now())\n  updatedAt DateTime        @updatedAt\n  Appointments Appointment[]\n  Invoices      Invoice[]\n}\n```\n\n**Appointment**\n\n**Description**: Manages scheduling details for tutoring sessions.\n\n**Definition**:\n```\nmodel Appointment {\n  id          String            @id @default(uuid())\n  userId      String\n  date        DateTime\n  status      AppointmentStatus\n  createdAt   DateTime          @default(now())\n  updatedAt   DateTime          @updatedAt\n  User        User              @relation(fields: [userId], references: [id])\n  Invoice     Invoice?\n}\n```\n\n**Invoice**\n\n**Description**: Tracks invoicing details linked to appointments and payments.\n\n**Definition**:\n```\nmodel Invoice {\n  id           String    @id @default(uuid())\n  appointmentId String\n  userId       String\n  amount       Float\n  status       InvoiceStatus\n  createdAt    DateTime  @default(now())\n  updatedAt    DateTime  @updatedAt\n  Appointment  Appointment @relation(fields: [appointmentId], references: [id])\n  User         User        @relation(fields: [userId], references: [id])\n  Payment      Payment?\n}\n```\n\n**Payment**\n\n**Description**: Manages payment details for invoices.\n\n**Definition**:\n```\nmodel Payment {\n  id         String      @id @default(uuid())\n  invoiceId  String\n  status     String\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime    @updatedAt\n  Invoice    Invoice      @relation(fields: [invoiceId], references: [id])\n}\n```\n\n\n##### Edit Profile: `PUT /profile/{id}`\n\nEdit an existing user profile.\n\n##### Request: `###### ProfileUpdateInput\n**Description**: ProfileUpdateInput\n\n**Parameters**:\n- **Name**: name\n  - **Type**: string\n  - **Description**: Optional. The new full name of the user. If provided, it updates the user's name.\n\n- **Name**: email\n  - **Type**: string\n  - **Description**: Optional. The new email address of the user. Must be unique across all users. If provided, it updates the user's email.\n\n- **Name**: role\n  - **Type**: UserRole\n  - **Description**: Optional. The new role of the user within the application. Accepted values are Tutor, Client, and Admin. This field should be treated cautiously as changes in roles can affect access control.\n\n`\n##### Response:`###### ProfileUpdateInput\n**Description**: ProfileUpdateInput\n\n**Parameters**:\n- **Name**: name\n  - **Type**: string\n  - **Description**: Optional. The new full name of the user. If provided, it updates the user's name.\n\n- **Name**: email\n  - **Type**: string\n  - **Description**: Optional. The new email address of the user. Must be unique across all users. If provided, it updates the user's email.\n\n- **Name**: role\n  - **Type**: UserRole\n  - **Description**: Optional. The new role of the user within the application. Accepted values are Tutor, Client, and Admin. This field should be treated cautiously as changes in roles can affect access control.\n\n`\n\n\n\n\n##### Database Schema\n\n## TutorMaster Schema\n**Description**: This schema defines the basic structure for the TutorMaster application, including users, appointments, invoices, and payments.\n**Tables**:\n**UserRole**\n\n**Description**: Enumeration for User Roles\n\n**Definition**:\n```\nenum UserRole {\n  Tutor\n  Client\n  Admin\n}\n```\n\n**InvoiceStatus**\n\n**Description**: Enumeration for Invoice Status\n\n**Definition**:\n```\nenum InvoiceStatus {\n  Pending\n  Paid\n  Failed\n}\n```\n\n**AppointmentStatus**\n\n**Description**: Enumeration for Appointment Status\n\n**Definition**:\n```\nenum AppointmentStatus {\n  Scheduled\n  Completed\n  Canceled\n}\n```\n\n**User**\n\n**Description**: Stores user information including their role and personal details.\n\n**Definition**:\n```\nmodel User {\n  id        String          @id @default(uuid())\n  email     String          @unique\n  password  String\n  name      String\n  role      UserRole\n  createdAt DateTime        @default(now())\n  updatedAt DateTime        @updatedAt\n  Appointments Appointment[]\n  Invoices      Invoice[]\n}\n```\n\n**Appointment**\n\n**Description**: Manages scheduling details for tutoring sessions.\n\n**Definition**:\n```\nmodel Appointment {\n  id          String            @id @default(uuid())\n  userId      String\n  date        DateTime\n  status      AppointmentStatus\n  createdAt   DateTime          @default(now())\n  updatedAt   DateTime          @updatedAt\n  User        User              @relation(fields: [userId], references: [id])\n  Invoice     Invoice?\n}\n```\n\n**Invoice**\n\n**Description**: Tracks invoicing details linked to appointments and payments.\n\n**Definition**:\n```\nmodel Invoice {\n  id           String    @id @default(uuid())\n  appointmentId String\n  userId       String\n  amount       Float\n  status       InvoiceStatus\n  createdAt    DateTime  @default(now())\n  updatedAt    DateTime  @updatedAt\n  Appointment  Appointment @relation(fields: [appointmentId], references: [id])\n  User         User        @relation(fields: [userId], references: [id])\n  Payment      Payment?\n}\n```\n\n**Payment**\n\n**Description**: Manages payment details for invoices.\n\n**Definition**:\n```\nmodel Payment {\n  id         String      @id @default(uuid())\n  invoiceId  String\n  status     String\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime    @updatedAt\n  Invoice    Invoice      @relation(fields: [invoiceId], references: [id])\n}\n```\n\n\n##### Delete Profile: `DELETE /profile/{id}`\n\nDelete a user profile.\n\n##### Request: `###### ProfileDeletionInput\n**Description**: ProfileDeletionInput\n\n**Parameters**:\n- **Name**: id\n  - **Type**: string\n  - **Description**: The unique identifier of the user profile to be deleted.\n\n`\n##### Response:`###### ProfileDeletionInput\n**Description**: ProfileDeletionInput\n\n**Parameters**:\n- **Name**: id\n  - **Type**: string\n  - **Description**: The unique identifier of the user profile to be deleted.\n\n`\n\n\n\n\n##### Database Schema\n\n## TutorMaster Schema\n**Description**: This schema defines the basic structure for the TutorMaster application, including users, appointments, invoices, and payments.\n**Tables**:\n**UserRole**\n\n**Description**: Enumeration for User Roles\n\n**Definition**:\n```\nenum UserRole {\n  Tutor\n  Client\n  Admin\n}\n```\n\n**InvoiceStatus**\n\n**Description**: Enumeration for Invoice Status\n\n**Definition**:\n```\nenum InvoiceStatus {\n  Pending\n  Paid\n  Failed\n}\n```\n\n**AppointmentStatus**\n\n**Description**: Enumeration for Appointment Status\n\n**Definition**:\n```\nenum AppointmentStatus {\n  Scheduled\n  Completed\n  Canceled\n}\n```\n\n**User**\n\n**Description**: Stores user information including their role and personal details.\n\n**Definition**:\n```\nmodel User {\n  id        String          @id @default(uuid())\n  email     String          @unique\n  password  String\n  name      String\n  role      UserRole\n  createdAt DateTime        @default(now())\n  updatedAt DateTime        @updatedAt\n  Appointments Appointment[]\n  Invoices      Invoice[]\n}\n```\n\n**Appointment**\n\n**Description**: Manages scheduling details for tutoring sessions.\n\n**Definition**:\n```\nmodel Appointment {\n  id          String            @id @default(uuid())\n  userId      String\n  date        DateTime\n  status      AppointmentStatus\n  createdAt   DateTime          @default(now())\n  updatedAt   DateTime          @updatedAt\n  User        User              @relation(fields: [userId], references: [id])\n  Invoice     Invoice?\n}\n```\n\n**Invoice**\n\n**Description**: Tracks invoicing details linked to appointments and payments.\n\n**Definition**:\n```\nmodel Invoice {\n  id           String    @id @default(uuid())\n  appointmentId String\n  userId       String\n  amount       Float\n  status       InvoiceStatus\n  createdAt    DateTime  @default(now())\n  updatedAt    DateTime  @updatedAt\n  Appointment  Appointment @relation(fields: [appointmentId], references: [id])\n  User         User        @relation(fields: [userId], references: [id])\n  Payment      Payment?\n}\n```\n\n**Payment**\n\n**Description**: Manages payment details for invoices.\n\n**Definition**:\n```\nmodel Payment {\n  id         String      @id @default(uuid())\n  invoiceId  String\n  status     String\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime    @updatedAt\n  Invoice    Invoice      @relation(fields: [invoiceId], references: [id])\n}\n```\n\n\n\n### Module: Scheduling\n#### Description\nManages all aspects of appointment scheduling between tutors and clients, including initial scheduling, rescheduling, and cancellation. Provides seamless integration with user profiles and sends appointment notifications.\n#### Requirements\n#### Requirement: Scheduling\nEnable users to schedule appointments, automatically finding and booking available slots.\n\n#### Requirement: Rescheduling\nAllow users to reschedule appointments, offering alternative time slots.\n\n#### Requirement: Cancellation\nPermit users to cancel appointments, freeing up allocated slots for other users.\n\n#### Endpoints\n##### Schedule Appointment: `POST /appointment`\n\nCreate a new appointment between a tutor and a client.\n\n##### Request: `###### AppointmentCreationInput\n**Description**: AppointmentCreationInput\n\n**Parameters**:\n- **Name**: tutorId\n  - **Type**: string\n  - **Description**: The unique identifier of the tutor.\n\n- **Name**: clientId\n  - **Type**: string\n  - **Description**: The unique identifier of the client.\n\n- **Name**: date\n  - **Type**: DateTime\n  - **Description**: The desired date and time for the appointment.\n\n`\n##### Response:`###### AppointmentCreationInput\n**Description**: AppointmentCreationInput\n\n**Parameters**:\n- **Name**: tutorId\n  - **Type**: string\n  - **Description**: The unique identifier of the tutor.\n\n- **Name**: clientId\n  - **Type**: string\n  - **Description**: The unique identifier of the client.\n\n- **Name**: date\n  - **Type**: DateTime\n  - **Description**: The desired date and time for the appointment.\n\n`\n\n\nname='AppointmentCreationInput' description='Model for capturing the necessary information to schedule a new appointment between a tutor and a client.' params=[Parameter(name='tutorId', param_type='string', description='The unique identifier of the tutor.'), Parameter(name='clientId', param_type='string', description='The unique identifier of the client.'), Parameter(name='date', param_type='DateTime', description='The desired date and time for the appointment.')]\n\nname='AppointmentCreationOutput' description='Model for the response upon successfully scheduling an appointment, containing details of the created appointment.' params=[Parameter(name='appointmentId', param_type='string', description='The unique identifier of the newly created appointment.'), Parameter(name='tutorId', param_type='string', description='The unique identifier of the tutor involved in the appointment.'), Parameter(name='clientId', param_type='string', description='The unique identifier of the client involved in the appointment.'), Parameter(name='date', param_type='DateTime', description='The confirmed date and time of the appointment.'), Parameter(name='status', param_type='string', description='The status of the appointment (e.g., Scheduled).')]\n\n##### Database Schema\n\n## TutorMaster Schema\n**Description**: This schema defines the basic structure for the TutorMaster application, including users, appointments, invoices, and payments.\n**Tables**:\n**UserRole**\n\n**Description**: Enumeration for User Roles\n\n**Definition**:\n```\nenum UserRole {\n  Tutor\n  Client\n  Admin\n}\n```\n\n**InvoiceStatus**\n\n**Description**: Enumeration for Invoice Status\n\n**Definition**:\n```\nenum InvoiceStatus {\n  Pending\n  Paid\n  Failed\n}\n```\n\n**AppointmentStatus**\n\n**Description**: Enumeration for Appointment Status\n\n**Definition**:\n```\nenum AppointmentStatus {\n  Scheduled\n  Completed\n  Canceled\n}\n```\n\n**User**\n\n**Description**: Stores user information including their role and personal details.\n\n**Definition**:\n```\nmodel User {\n  id        String          @id @default(uuid())\n  email     String          @unique\n  password  String\n  name      String\n  role      UserRole\n  createdAt DateTime        @default(now())\n  updatedAt DateTime        @updatedAt\n  Appointments Appointment[]\n  Invoices      Invoice[]\n}\n```\n\n**Appointment**\n\n**Description**: Manages scheduling details for tutoring sessions.\n\n**Definition**:\n```\nmodel Appointment {\n  id          String            @id @default(uuid())\n  userId      String\n  date        DateTime\n  status      AppointmentStatus\n  createdAt   DateTime          @default(now())\n  updatedAt   DateTime          @updatedAt\n  User        User              @relation(fields: [userId], references: [id])\n  Invoice     Invoice?\n}\n```\n\n**Invoice**\n\n**Description**: Tracks invoicing details linked to appointments and payments.\n\n**Definition**:\n```\nmodel Invoice {\n  id           String    @id @default(uuid())\n  appointmentId String\n  userId       String\n  amount       Float\n  status       InvoiceStatus\n  createdAt    DateTime  @default(now())\n  updatedAt    DateTime  @updatedAt\n  Appointment  Appointment @relation(fields: [appointmentId], references: [id])\n  User         User        @relation(fields: [userId], references: [id])\n  Payment      Payment?\n}\n```\n\n**Payment**\n\n**Description**: Manages payment details for invoices.\n\n**Definition**:\n```\nmodel Payment {\n  id         String      @id @default(uuid())\n  invoiceId  String\n  status     String\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime    @updatedAt\n  Invoice    Invoice      @relation(fields: [invoiceId], references: [id])\n}\n```\n\n\n##### Reschedule Appointment: `PUT /appointment/{id}/reschedule`\n\nChange the date/time of an existing appointment.\n\n##### Request: `###### AppointmentRescheduleInput\n**Description**: AppointmentRescheduleInput\n\n**Parameters**:\n- **Name**: appointmentId\n  - **Type**: string\n  - **Description**: The unique identifier of the appointment being rescheduled.\n\n- **Name**: newDate\n  - **Type**: DateTime\n  - **Description**: The new date and time the user wishes to reschedule the appointment to.\n\n`\n##### Response:`###### AppointmentRescheduleInput\n**Description**: AppointmentRescheduleInput\n\n**Parameters**:\n- **Name**: appointmentId\n  - **Type**: string\n  - **Description**: The unique identifier of the appointment being rescheduled.\n\n- **Name**: newDate\n  - **Type**: DateTime\n  - **Description**: The new date and time the user wishes to reschedule the appointment to.\n\n`\n\n\nname='AppointmentRescheduleInput' description='Input model for capturing the necessary details to reschedule an existing appointment.' params=[Parameter(name='appointmentId', param_type='string', description='The unique identifier of the appointment to reschedule.'), Parameter(name='newDate', param_type='DateTime', description='The new desired date and time for the appointment.')]\n\nname='AppointmentRescheduleOutput' description='Output model representing the outcome of an attempt to reschedule an appointment, including any relevant details about the updated appointment.' params=[Parameter(name='success', param_type='boolean', description='Indicates whether the rescheduling operation was successful.'), Parameter(name='message', param_type='string', description='Provides additional detail about the rescheduling attempt, such as confirmation of success or explanation of failure/error.'), Parameter(name='appointmentId', param_type='string', description='The unique identifier of the appointment that was rescheduled, for successful operations.'), Parameter(name='newDate', param_type='DateTime', description='The confirmed new date and time of the rescheduled appointment, for successful operations.')]\n\n##### Database Schema\n\n## TutorMaster Schema\n**Description**: This schema defines the basic structure for the TutorMaster application, including users, appointments, invoices, and payments.\n**Tables**:\n**UserRole**\n\n**Description**: Enumeration for User Roles\n\n**Definition**:\n```\nenum UserRole {\n  Tutor\n  Client\n  Admin\n}\n```\n\n**InvoiceStatus**\n\n**Description**: Enumeration for Invoice Status\n\n**Definition**:\n```\nenum InvoiceStatus {\n  Pending\n  Paid\n  Failed\n}\n```\n\n**AppointmentStatus**\n\n**Description**: Enumeration for Appointment Status\n\n**Definition**:\n```\nenum AppointmentStatus {\n  Scheduled\n  Completed\n  Canceled\n}\n```\n\n**User**\n\n**Description**: Stores user information including their role and personal details.\n\n**Definition**:\n```\nmodel User {\n  id        String          @id @default(uuid())\n  email     String          @unique\n  password  String\n  name      String\n  role      UserRole\n  createdAt DateTime        @default(now())\n  updatedAt DateTime        @updatedAt\n  Appointments Appointment[]\n  Invoices      Invoice[]\n}\n```\n\n**Appointment**\n\n**Description**: Manages scheduling details for tutoring sessions.\n\n**Definition**:\n```\nmodel Appointment {\n  id          String            @id @default(uuid())\n  userId      String\n  date        DateTime\n  status      AppointmentStatus\n  createdAt   DateTime          @default(now())\n  updatedAt   DateTime          @updatedAt\n  User        User              @relation(fields: [userId], references: [id])\n  Invoice     Invoice?\n}\n```\n\n**Invoice**\n\n**Description**: Tracks invoicing details linked to appointments and payments.\n\n**Definition**:\n```\nmodel Invoice {\n  id           String    @id @default(uuid())\n  appointmentId String\n  userId       String\n  amount       Float\n  status       InvoiceStatus\n  createdAt    DateTime  @default(now())\n  updatedAt    DateTime  @updatedAt\n  Appointment  Appointment @relation(fields: [appointmentId], references: [id])\n  User         User        @relation(fields: [userId], references: [id])\n  Payment      Payment?\n}\n```\n\n**Payment**\n\n**Description**: Manages payment details for invoices.\n\n**Definition**:\n```\nmodel Payment {\n  id         String      @id @default(uuid())\n  invoiceId  String\n  status     String\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime    @updatedAt\n  Invoice    Invoice      @relation(fields: [invoiceId], references: [id])\n}\n```\n\n\n##### Cancel Appointment: `DELETE /appointment/{id}/cancel`\n\nCancel an existing appointment.\n\n##### Request: `###### AppointmentCancellationInput\n**Description**: AppointmentCancellationInput\n\n**Parameters**:\n- **Name**: id\n  - **Type**: string\n  - **Description**: The unique identifier of the appointment to be canceled.\n\n`\n##### Response:`###### AppointmentCancellationInput\n**Description**: AppointmentCancellationInput\n\n**Parameters**:\n- **Name**: id\n  - **Type**: string\n  - **Description**: The unique identifier of the appointment to be canceled.\n\n`\n\n\n\n\n##### Database Schema\n\n## TutorMaster Schema\n**Description**: This schema defines the basic structure for the TutorMaster application, including users, appointments, invoices, and payments.\n**Tables**:\n**UserRole**\n\n**Description**: Enumeration for User Roles\n\n**Definition**:\n```\nenum UserRole {\n  Tutor\n  Client\n  Admin\n}\n```\n\n**InvoiceStatus**\n\n**Description**: Enumeration for Invoice Status\n\n**Definition**:\n```\nenum InvoiceStatus {\n  Pending\n  Paid\n  Failed\n}\n```\n\n**AppointmentStatus**\n\n**Description**: Enumeration for Appointment Status\n\n**Definition**:\n```\nenum AppointmentStatus {\n  Scheduled\n  Completed\n  Canceled\n}\n```\n\n**User**\n\n**Description**: Stores user information including their role and personal details.\n\n**Definition**:\n```\nmodel User {\n  id        String          @id @default(uuid())\n  email     String          @unique\n  password  String\n  name      String\n  role      UserRole\n  createdAt DateTime        @default(now())\n  updatedAt DateTime        @updatedAt\n  Appointments Appointment[]\n  Invoices      Invoice[]\n}\n```\n\n**Appointment**\n\n**Description**: Manages scheduling details for tutoring sessions.\n\n**Definition**:\n```\nmodel Appointment {\n  id          String            @id @default(uuid())\n  userId      String\n  date        DateTime\n  status      AppointmentStatus\n  createdAt   DateTime          @default(now())\n  updatedAt   DateTime          @updatedAt\n  User        User              @relation(fields: [userId], references: [id])\n  Invoice     Invoice?\n}\n```\n\n**Invoice**\n\n**Description**: Tracks invoicing details linked to appointments and payments.\n\n**Definition**:\n```\nmodel Invoice {\n  id           String    @id @default(uuid())\n  appointmentId String\n  userId       String\n  amount       Float\n  status       InvoiceStatus\n  createdAt    DateTime  @default(now())\n  updatedAt    DateTime  @updatedAt\n  Appointment  Appointment @relation(fields: [appointmentId], references: [id])\n  User         User        @relation(fields: [userId], references: [id])\n  Payment      Payment?\n}\n```\n\n**Payment**\n\n**Description**: Manages payment details for invoices.\n\n**Definition**:\n```\nmodel Payment {\n  id         String      @id @default(uuid())\n  invoiceId  String\n  status     String\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime    @updatedAt\n  Invoice    Invoice      @relation(fields: [invoiceId], references: [id])\n}\n```\n\n\n\n### Module: Invoicing and Payments\n#### Description\nAutomates the invoicing process post-appointment, integrates with payment services for processing transactions, and tracks invoice statuses to manage payments efficiently.\n#### Requirements\n#### Requirement: Automatic Invoice Generation\nGenerate and send invoices automatically post-appointment to clients.\n\n#### Requirement: Payment Tracking\nTrack the status of payments for invoices, updating status accordingly.\n\n#### Requirement: Unpaid Invoice Follow-ups\nAutomate follow-up notifications for unpaid invoices to encourage prompt payment.\n\n#### Endpoints\n##### Generate Invoice: `POST /invoice/generate`\n\nAutomatically generate an invoice after an appointment is completed.\n\n##### Request: `###### GenerateInvoiceInput\n**Description**: GenerateInvoiceInput\n\n**Parameters**:\n- **Name**: appointmentId\n  - **Type**: string\n  - **Description**: The ID of the completed appointment.\n\n`\n##### Response:`###### GenerateInvoiceInput\n**Description**: GenerateInvoiceInput\n\n**Parameters**:\n- **Name**: appointmentId\n  - **Type**: string\n  - **Description**: The ID of the completed appointment.\n\n`\n\n\nname='GenerateInvoiceInput' description='Model for capturing input necessary to generate a new invoice post-appointment.' params=[Parameter(name='appointmentId', param_type='string', description='The unique identifier of the completed appointment for which the invoice is to be generated.')]\n\nname='GeneratedInvoiceOutput' description='Model representing the newly generated invoice details.' params=[Parameter(name='invoiceId', param_type='string', description='The unique identifier of the generated invoice.'), Parameter(name='appointmentId', param_type='string', description='Associated appointment ID for the invoice.'), Parameter(name='amount', param_type='float', description='The total amount charged in the invoice.'), Parameter(name='status', param_type='string', description=\"The initial status of the invoice, generally set to 'Pending'.\"), Parameter(name='createdAt', param_type='DateTime', description='Timestamp indicating when the invoice was generated.')]\n\n##### Database Schema\n\n## TutorMaster Schema\n**Description**: This schema defines the basic structure for the TutorMaster application, including users, appointments, invoices, and payments.\n**Tables**:\n**UserRole**\n\n**Description**: Enumeration for User Roles\n\n**Definition**:\n```\nenum UserRole {\n  Tutor\n  Client\n  Admin\n}\n```\n\n**InvoiceStatus**\n\n**Description**: Enumeration for Invoice Status\n\n**Definition**:\n```\nenum InvoiceStatus {\n  Pending\n  Paid\n  Failed\n}\n```\n\n**AppointmentStatus**\n\n**Description**: Enumeration for Appointment Status\n\n**Definition**:\n```\nenum AppointmentStatus {\n  Scheduled\n  Completed\n  Canceled\n}\n```\n\n**User**\n\n**Description**: Stores user information including their role and personal details.\n\n**Definition**:\n```\nmodel User {\n  id        String          @id @default(uuid())\n  email     String          @unique\n  password  String\n  name      String\n  role      UserRole\n  createdAt DateTime        @default(now())\n  updatedAt DateTime        @updatedAt\n  Appointments Appointment[]\n  Invoices      Invoice[]\n}\n```\n\n**Appointment**\n\n**Description**: Manages scheduling details for tutoring sessions.\n\n**Definition**:\n```\nmodel Appointment {\n  id          String            @id @default(uuid())\n  userId      String\n  date        DateTime\n  status      AppointmentStatus\n  createdAt   DateTime          @default(now())\n  updatedAt   DateTime          @updatedAt\n  User        User              @relation(fields: [userId], references: [id])\n  Invoice     Invoice?\n}\n```\n\n**Invoice**\n\n**Description**: Tracks invoicing details linked to appointments and payments.\n\n**Definition**:\n```\nmodel Invoice {\n  id           String    @id @default(uuid())\n  appointmentId String\n  userId       String\n  amount       Float\n  status       InvoiceStatus\n  createdAt    DateTime  @default(now())\n  updatedAt    DateTime  @updatedAt\n  Appointment  Appointment @relation(fields: [appointmentId], references: [id])\n  User         User        @relation(fields: [userId], references: [id])\n  Payment      Payment?\n}\n```\n\n**Payment**\n\n**Description**: Manages payment details for invoices.\n\n**Definition**:\n```\nmodel Payment {\n  id         String      @id @default(uuid())\n  invoiceId  String\n  status     String\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime    @updatedAt\n  Invoice    Invoice      @relation(fields: [invoiceId], references: [id])\n}\n```\n\n\n##### Track Payment: `PATCH /invoice/{id}/payment-status`\n\nUpdate the payment status of an invoice.\n\n##### Request: `###### TrackPaymentInput\n**Description**: TrackPaymentInput\n\n**Parameters**:\n- **Name**: invoiceId\n  - **Type**: string\n  - **Description**: The unique identifier of the invoice to update.\n\n- **Name**: status\n  - **Type**: InvoiceStatus\n  - **Description**: The new payment status to apply to the invoice.\n\n`\n##### Response:`###### TrackPaymentInput\n**Description**: TrackPaymentInput\n\n**Parameters**:\n- **Name**: invoiceId\n  - **Type**: string\n  - **Description**: The unique identifier of the invoice to update.\n\n- **Name**: status\n  - **Type**: InvoiceStatus\n  - **Description**: The new payment status to apply to the invoice.\n\n`\n\n\n\n\n##### Database Schema\n\n## TutorMaster Schema\n**Description**: This schema defines the basic structure for the TutorMaster application, including users, appointments, invoices, and payments.\n**Tables**:\n**UserRole**\n\n**Description**: Enumeration for User Roles\n\n**Definition**:\n```\nenum UserRole {\n  Tutor\n  Client\n  Admin\n}\n```\n\n**InvoiceStatus**\n\n**Description**: Enumeration for Invoice Status\n\n**Definition**:\n```\nenum InvoiceStatus {\n  Pending\n  Paid\n  Failed\n}\n```\n\n**AppointmentStatus**\n\n**Description**: Enumeration for Appointment Status\n\n**Definition**:\n```\nenum AppointmentStatus {\n  Scheduled\n  Completed\n  Canceled\n}\n```\n\n**User**\n\n**Description**: Stores user information including their role and personal details.\n\n**Definition**:\n```\nmodel User {\n  id        String          @id @default(uuid())\n  email     String          @unique\n  password  String\n  name      String\n  role      UserRole\n  createdAt DateTime        @default(now())\n  updatedAt DateTime        @updatedAt\n  Appointments Appointment[]\n  Invoices      Invoice[]\n}\n```\n\n**Appointment**\n\n**Description**: Manages scheduling details for tutoring sessions.\n\n**Definition**:\n```\nmodel Appointment {\n  id          String            @id @default(uuid())\n  userId      String\n  date        DateTime\n  status      AppointmentStatus\n  createdAt   DateTime          @default(now())\n  updatedAt   DateTime          @updatedAt\n  User        User              @relation(fields: [userId], references: [id])\n  Invoice     Invoice?\n}\n```\n\n**Invoice**\n\n**Description**: Tracks invoicing details linked to appointments and payments.\n\n**Definition**:\n```\nmodel Invoice {\n  id           String    @id @default(uuid())\n  appointmentId String\n  userId       String\n  amount       Float\n  status       InvoiceStatus\n  createdAt    DateTime  @default(now())\n  updatedAt    DateTime  @updatedAt\n  Appointment  Appointment @relation(fields: [appointmentId], references: [id])\n  User         User        @relation(fields: [userId], references: [id])\n  Payment      Payment?\n}\n```\n\n**Payment**\n\n**Description**: Manages payment details for invoices.\n\n**Definition**:\n```\nmodel Payment {\n  id         String      @id @default(uuid())\n  invoiceId  String\n  status     String\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime    @updatedAt\n  Invoice    Invoice      @relation(fields: [invoiceId], references: [id])\n}\n```\n\n\n##### Follow-up Unpaid Invoice: `POST /invoice/{id}/follow-up`\n\nSend a follow-up notification for an unpaid invoice.\n\n##### Request: `###### FollowUpUnpaidInvoiceInput\n**Description**: FollowUpUnpaidInvoiceInput\n\n**Parameters**:\n- **Name**: invoiceId\n  - **Type**: string\n  - **Description**: The unique identifier of the invoice for which the follow-up notification should be sent.\n\n`\n##### Response:`###### FollowUpUnpaidInvoiceInput\n**Description**: FollowUpUnpaidInvoiceInput\n\n**Parameters**:\n- **Name**: invoiceId\n  - **Type**: string\n  - **Description**: The unique identifier of the invoice for which the follow-up notification should be sent.\n\n`\n\n\n\n\n##### Database Schema\n\n## TutorMaster Schema\n**Description**: This schema defines the basic structure for the TutorMaster application, including users, appointments, invoices, and payments.\n**Tables**:\n**UserRole**\n\n**Description**: Enumeration for User Roles\n\n**Definition**:\n```\nenum UserRole {\n  Tutor\n  Client\n  Admin\n}\n```\n\n**InvoiceStatus**\n\n**Description**: Enumeration for Invoice Status\n\n**Definition**:\n```\nenum InvoiceStatus {\n  Pending\n  Paid\n  Failed\n}\n```\n\n**AppointmentStatus**\n\n**Description**: Enumeration for Appointment Status\n\n**Definition**:\n```\nenum AppointmentStatus {\n  Scheduled\n  Completed\n  Canceled\n}\n```\n\n**User**\n\n**Description**: Stores user information including their role and personal details.\n\n**Definition**:\n```\nmodel User {\n  id        String          @id @default(uuid())\n  email     String          @unique\n  password  String\n  name      String\n  role      UserRole\n  createdAt DateTime        @default(now())\n  updatedAt DateTime        @updatedAt\n  Appointments Appointment[]\n  Invoices      Invoice[]\n}\n```\n\n**Appointment**\n\n**Description**: Manages scheduling details for tutoring sessions.\n\n**Definition**:\n```\nmodel Appointment {\n  id          String            @id @default(uuid())\n  userId      String\n  date        DateTime\n  status      AppointmentStatus\n  createdAt   DateTime          @default(now())\n  updatedAt   DateTime          @updatedAt\n  User        User              @relation(fields: [userId], references: [id])\n  Invoice     Invoice?\n}\n```\n\n**Invoice**\n\n**Description**: Tracks invoicing details linked to appointments and payments.\n\n**Definition**:\n```\nmodel Invoice {\n  id           String    @id @default(uuid())\n  appointmentId String\n  userId       String\n  amount       Float\n  status       InvoiceStatus\n  createdAt    DateTime  @default(now())\n  updatedAt    DateTime  @updatedAt\n  Appointment  Appointment @relation(fields: [appointmentId], references: [id])\n  User         User        @relation(fields: [userId], references: [id])\n  Payment      Payment?\n}\n```\n\n**Payment**\n\n**Description**: Manages payment details for invoices.\n\n**Definition**:\n```\nmodel Payment {\n  id         String      @id @default(uuid())\n  invoiceId  String\n  status     String\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime    @updatedAt\n  Invoice    Invoice      @relation(fields: [invoiceId], references: [id])\n}\n```\n\n\n\n### Module: Financial Reporting\n#### Description\nProvides summaries and detailed financial reports based on transactions recorded in the Invoicing and Payments module. It is essential for tutors to monitor and manage the financial health of their business.\n\n### Module: Personalized Learning\n#### Description\nUtilizes data analytics to generate personalized learning paths for students based on their performance, preferences, and feedback. This module requires sophisticated data processing and might leverage machine learning algorithms to tailor educational content.\n\n### Module: Communication\n#### Description\nFacilitates direct, secure communication between tutors and clients within the app. This includes messaging and calling features, requiring careful attention to privacy and data security considerations.\n\n### Module: Notification\n#### Description\nManages sending automated notifications for various app activities, such as upcoming appointments, invoice statuses, and potentially customized educational content alerts. Relies on user preferences stored in the User Management module.\n\n### Module: Analytics and Reporting\n#### Description\nGathers and processes data from across the app to inform decision-making and improvements. This includes analytics for tutoring performance, financial metrics, and user engagement. Feeds into the Personalized Learning module for optimizing learning paths.\n\n### Module: Security and Compliance\n#### Description\nEncompasses functionalities to ensure the app's security, including data encryption, compliance with GDPR and PCI DSS, and routine security audits. While not a module per se, its concerns should be embedded across all modules to maintain a high security standard.\n\n### Database Design\n## TutorMaster Schema\n**Description**: This schema defines the basic structure for the TutorMaster application, including users, appointments, invoices, and payments.\n**Tables**:\n**UserRole**\n\n**Description**: Enumeration for User Roles\n\n**Definition**:\n```\nenum UserRole {\n  Tutor\n  Client\n  Admin\n}\n```\n\n**InvoiceStatus**\n\n**Description**: Enumeration for Invoice Status\n\n**Definition**:\n```\nenum InvoiceStatus {\n  Pending\n  Paid\n  Failed\n}\n```\n\n**AppointmentStatus**\n\n**Description**: Enumeration for Appointment Status\n\n**Definition**:\n```\nenum AppointmentStatus {\n  Scheduled\n  Completed\n  Canceled\n}\n```\n\n**User**\n\n**Description**: Stores user information including their role and personal details.\n\n**Definition**:\n```\nmodel User {\n  id        String          @id @default(uuid())\n  email     String          @unique\n  password  String\n  name      String\n  role      UserRole\n  createdAt DateTime        @default(now())\n  updatedAt DateTime        @updatedAt\n  Appointments Appointment[]\n  Invoices      Invoice[]\n}\n```\n\n**Appointment**\n\n**Description**: Manages scheduling details for tutoring sessions.\n\n**Definition**:\n```\nmodel Appointment {\n  id          String            @id @default(uuid())\n  userId      String\n  date        DateTime\n  status      AppointmentStatus\n  createdAt   DateTime          @default(now())\n  updatedAt   DateTime          @updatedAt\n  User        User              @relation(fields: [userId], references: [id])\n  Invoice     Invoice?\n}\n```\n\n**Invoice**\n\n**Description**: Tracks invoicing details linked to appointments and payments.\n\n**Definition**:\n```\nmodel Invoice {\n  id           String    @id @default(uuid())\n  appointmentId String\n  userId       String\n  amount       Float\n  status       InvoiceStatus\n  createdAt    DateTime  @default(now())\n  updatedAt    DateTime  @updatedAt\n  Appointment  Appointment @relation(fields: [appointmentId], references: [id])\n  User         User        @relation(fields: [userId], references: [id])\n  Payment      Payment?\n}\n```\n\n**Payment**\n\n**Description**: Manages payment details for invoices.\n\n**Definition**:\n```\nmodel Payment {\n  id         String      @id @default(uuid())\n  invoiceId  String\n  status     String\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime    @updatedAt\n  Invoice    Invoice      @relation(fields: [invoiceId], references: [id])\n}\n```\n\n",
     "User": {
         "connect": {
             "id": 1
@@ -15,30 +15,25 @@
         "create": [
             {
                 "method": "POST",
-                "path": "/api/profile/create",
-                "functionName": "create_profile",
+                "path": "/auth/login",
+                "functionName": "Login",
                 "accessLevel": "PUBLIC",
-                "description": "Creates a new user profile",
+                "description": "Authenticate a user and return an access token.",
                 "requestObjects": {
                     "create": {
-                        "name": "CreateProfileRequest",
-                        "description": "Input required for creating a new profile",
+                        "name": "LoginInput",
+                        "description": "LoginInput",
                         "params": {
                             "create": [
                                 {
-                                    "name": "user_type",
-                                    "description": "Type of the user: client or professional",
-                                    "param_type": "str"
+                                    "name": "email",
+                                    "description": "The registered email address of the user attempting to login.",
+                                    "param_type": "string"
                                 },
                                 {
-                                    "name": "personal_details",
-                                    "description": "Name and contact information",
-                                    "param_type": "dict"
-                                },
-                                {
-                                    "name": "preferences",
-                                    "description": "Optional settings specific to the user type",
-                                    "param_type": "dict"
+                                    "name": "password",
+                                    "description": "The password provided by the user for login. This will be securely handled and validated.",
+                                    "param_type": "string"
                                 }
                             ]
                         }
@@ -46,19 +41,29 @@
                 },
                 "responseObject": {
                     "create": {
-                        "name": "CreateProfileResponse",
-                        "description": "Output after creating a profile",
+                        "name": "LoginInput",
+                        "description": "LoginInput",
                         "params": {
                             "create": [
                                 {
-                                    "name": "message",
-                                    "description": "Success or error message",
-                                    "param_type": "str"
+                                    "name": "access_token",
+                                    "description": "A JWT access token that should be used for subsequent requests requiring authentication.",
+                                    "param_type": "string"
                                 },
                                 {
-                                    "name": "profile_details",
-                                    "description": "Details of the created profile",
-                                    "param_type": "dict"
+                                    "name": "token_type",
+                                    "description": "Indicates the type of token issued. Typically, 'Bearer'.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "expires_in",
+                                    "description": "The lifetime in seconds of the access token.",
+                                    "param_type": "int"
+                                },
+                                {
+                                    "name": "error",
+                                    "description": "An error message indicating the reason for a failed login attempt. This field is present only when the login fails.",
+                                    "param_type": "string"
                                 }
                             ]
                         }
@@ -66,12 +71,328 @@
                 },
                 "schemas": {
                     "create": {
-                        "description": "Schema for storing client and professional profiles",
+                        "description": "This schema defines the basic structure for the TutorMaster application, including users, appointments, invoices, and payments.",
                         "tables": {
                             "create": [
                                 {
-                                    "description": "Stores user profile information",
-                                    "definition": "\n        model Profile {\n        id          Int     @id @default(autoincrement())\n        user_type   String\n        name        String\n        contact     String\n        preferences Json?\n        }\n        "
+                                    "description": "Enumeration for User Roles",
+                                    "definition": "enum UserRole {\n  Tutor\n  Client\n  Admin\n}"
+                                },
+                                {
+                                    "description": "Enumeration for Invoice Status",
+                                    "definition": "enum InvoiceStatus {\n  Pending\n  Paid\n  Failed\n}"
+                                },
+                                {
+                                    "description": "Enumeration for Appointment Status",
+                                    "definition": "enum AppointmentStatus {\n  Scheduled\n  Completed\n  Canceled\n}"
+                                },
+                                {
+                                    "description": "Stores user information including their role and personal details.",
+                                    "definition": "model User {\n  id        String          @id @default(uuid())\n  email     String          @unique\n  password  String\n  name      String\n  role      UserRole\n  createdAt DateTime        @default(now())\n  updatedAt DateTime        @updatedAt\n  Appointments Appointment[]\n  Invoices      Invoice[]\n}"
+                                },
+                                {
+                                    "description": "Manages scheduling details for tutoring sessions.",
+                                    "definition": "model Appointment {\n  id          String            @id @default(uuid())\n  userId      String\n  date        DateTime\n  status      AppointmentStatus\n  createdAt   DateTime          @default(now())\n  updatedAt   DateTime          @updatedAt\n  User        User              @relation(fields: [userId], references: [id])\n  Invoice     Invoice?\n}"
+                                },
+                                {
+                                    "description": "Tracks invoicing details linked to appointments and payments.",
+                                    "definition": "model Invoice {\n  id           String    @id @default(uuid())\n  appointmentId String\n  userId       String\n  amount       Float\n  status       InvoiceStatus\n  createdAt    DateTime  @default(now())\n  updatedAt    DateTime  @updatedAt\n  Appointment  Appointment @relation(fields: [appointmentId], references: [id])\n  User         User        @relation(fields: [userId], references: [id])\n  Payment      Payment?\n}"
+                                },
+                                {
+                                    "description": "Manages payment details for invoices.",
+                                    "definition": "model Payment {\n  id         String      @id @default(uuid())\n  invoiceId  String\n  status     String\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime    @updatedAt\n  Invoice    Invoice      @relation(fields: [invoiceId], references: [id])\n}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "method": "POST",
+                "path": "/auth/register",
+                "functionName": "Register",
+                "accessLevel": "PUBLIC",
+                "description": "Register a new user with either traditional or OAuth2 methods.",
+                "requestObjects": {
+                    "create": {
+                        "name": "RegisterInput",
+                        "description": "RegisterInput",
+                        "params": {
+                            "create": [
+                                {
+                                    "name": "name",
+                                    "description": "User's full name.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "email",
+                                    "description": "User's email address, which will be unique in the system.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "password",
+                                    "description": "User's password; required for traditional sign-up.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "oauth_token",
+                                    "description": "OAuth2 token; required for OAuth2 sign-up.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "role",
+                                    "description": "Specifies the user's role within the system.",
+                                    "param_type": "string"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "responseObject": {
+                    "create": {
+                        "name": "RegisterInput",
+                        "description": "RegisterInput",
+                        "params": {
+                            "create": [
+                                {
+                                    "name": "user_id",
+                                    "description": "The unique identifier of the newly created user.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "status",
+                                    "description": "Indicates the success or failure of the registration attempt.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "message",
+                                    "description": "Provides additional information or error details about the registration process.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "error",
+                                    "description": "Detailed error information, if applicable, describing why registration failed.",
+                                    "param_type": "string"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "schemas": {
+                    "create": {
+                        "description": "This schema defines the basic structure for the TutorMaster application, including users, appointments, invoices, and payments.",
+                        "tables": {
+                            "create": [
+                                {
+                                    "description": "Enumeration for User Roles",
+                                    "definition": "enum UserRole {\n  Tutor\n  Client\n  Admin\n}"
+                                },
+                                {
+                                    "description": "Enumeration for Invoice Status",
+                                    "definition": "enum InvoiceStatus {\n  Pending\n  Paid\n  Failed\n}"
+                                },
+                                {
+                                    "description": "Enumeration for Appointment Status",
+                                    "definition": "enum AppointmentStatus {\n  Scheduled\n  Completed\n  Canceled\n}"
+                                },
+                                {
+                                    "description": "Stores user information including their role and personal details.",
+                                    "definition": "model User {\n  id        String          @id @default(uuid())\n  email     String          @unique\n  password  String\n  name      String\n  role      UserRole\n  createdAt DateTime        @default(now())\n  updatedAt DateTime        @updatedAt\n  Appointments Appointment[]\n  Invoices      Invoice[]\n}"
+                                },
+                                {
+                                    "description": "Manages scheduling details for tutoring sessions.",
+                                    "definition": "model Appointment {\n  id          String            @id @default(uuid())\n  userId      String\n  date        DateTime\n  status      AppointmentStatus\n  createdAt   DateTime          @default(now())\n  updatedAt   DateTime          @updatedAt\n  User        User              @relation(fields: [userId], references: [id])\n  Invoice     Invoice?\n}"
+                                },
+                                {
+                                    "description": "Tracks invoicing details linked to appointments and payments.",
+                                    "definition": "model Invoice {\n  id           String    @id @default(uuid())\n  appointmentId String\n  userId       String\n  amount       Float\n  status       InvoiceStatus\n  createdAt    DateTime  @default(now())\n  updatedAt    DateTime  @updatedAt\n  Appointment  Appointment @relation(fields: [appointmentId], references: [id])\n  User         User        @relation(fields: [userId], references: [id])\n  Payment      Payment?\n}"
+                                },
+                                {
+                                    "description": "Manages payment details for invoices.",
+                                    "definition": "model Payment {\n  id         String      @id @default(uuid())\n  invoiceId  String\n  status     String\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime    @updatedAt\n  Invoice    Invoice      @relation(fields: [invoiceId], references: [id])\n}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "method": "POST",
+                "path": "/auth/reset",
+                "functionName": "Password Reset",
+                "accessLevel": "PUBLIC",
+                "description": "Initiate a password reset process for a user.",
+                "requestObjects": {
+                    "create": {
+                        "name": "PasswordResetInitiationInput",
+                        "description": "PasswordResetInitiationInput",
+                        "params": {
+                            "create": [
+                                {
+                                    "name": "email",
+                                    "description": "The registered email address of the user requesting a password reset.",
+                                    "param_type": "string"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "responseObject": {
+                    "create": {
+                        "name": "PasswordResetInitiationInput",
+                        "description": "PasswordResetInitiationInput",
+                        "params": {
+                            "create": [
+                                {
+                                    "name": "status",
+                                    "description": "Returns 'success' if the reset email was sent, 'failure' otherwise.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "message",
+                                    "description": "Conveys additional information, such as 'Reset email sent' or 'Email not found in our records'.",
+                                    "param_type": "string"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "schemas": {
+                    "create": {
+                        "description": "This schema defines the basic structure for the TutorMaster application, including users, appointments, invoices, and payments.",
+                        "tables": {
+                            "create": [
+                                {
+                                    "description": "Enumeration for User Roles",
+                                    "definition": "enum UserRole {\n  Tutor\n  Client\n  Admin\n}"
+                                },
+                                {
+                                    "description": "Enumeration for Invoice Status",
+                                    "definition": "enum InvoiceStatus {\n  Pending\n  Paid\n  Failed\n}"
+                                },
+                                {
+                                    "description": "Enumeration for Appointment Status",
+                                    "definition": "enum AppointmentStatus {\n  Scheduled\n  Completed\n  Canceled\n}"
+                                },
+                                {
+                                    "description": "Stores user information including their role and personal details.",
+                                    "definition": "model User {\n  id        String          @id @default(uuid())\n  email     String          @unique\n  password  String\n  name      String\n  role      UserRole\n  createdAt DateTime        @default(now())\n  updatedAt DateTime        @updatedAt\n  Appointments Appointment[]\n  Invoices      Invoice[]\n}"
+                                },
+                                {
+                                    "description": "Manages scheduling details for tutoring sessions.",
+                                    "definition": "model Appointment {\n  id          String            @id @default(uuid())\n  userId      String\n  date        DateTime\n  status      AppointmentStatus\n  createdAt   DateTime          @default(now())\n  updatedAt   DateTime          @updatedAt\n  User        User              @relation(fields: [userId], references: [id])\n  Invoice     Invoice?\n}"
+                                },
+                                {
+                                    "description": "Tracks invoicing details linked to appointments and payments.",
+                                    "definition": "model Invoice {\n  id           String    @id @default(uuid())\n  appointmentId String\n  userId       String\n  amount       Float\n  status       InvoiceStatus\n  createdAt    DateTime  @default(now())\n  updatedAt    DateTime  @updatedAt\n  Appointment  Appointment @relation(fields: [appointmentId], references: [id])\n  User         User        @relation(fields: [userId], references: [id])\n  Payment      Payment?\n}"
+                                },
+                                {
+                                    "description": "Manages payment details for invoices.",
+                                    "definition": "model Payment {\n  id         String      @id @default(uuid())\n  invoiceId  String\n  status     String\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime    @updatedAt\n  Invoice    Invoice      @relation(fields: [invoiceId], references: [id])\n}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "method": "POST",
+                "path": "/profile",
+                "functionName": "Create Profile",
+                "accessLevel": "PUBLIC",
+                "description": "Create a new user profile.",
+                "requestObjects": {
+                    "create": {
+                        "name": "UserProfileCreationInput",
+                        "description": "UserProfileCreationInput",
+                        "params": {
+                            "create": [
+                                {
+                                    "name": "name",
+                                    "description": "The full name of the user.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "email",
+                                    "description": "The user's email address. Must be unique across the system.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "password",
+                                    "description": "A securely hashed password chosen by the user. It is expected that the client-side application has already hashed the password before transmission.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "role",
+                                    "description": "The role of the user within the application. Accepted values are Tutor, Client, and Admin.",
+                                    "param_type": "UserRole"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "responseObject": {
+                    "create": {
+                        "name": "UserProfileCreationInput",
+                        "description": "UserProfileCreationInput",
+                        "params": {
+                            "create": [
+                                {
+                                    "name": "user_id",
+                                    "description": "The unique identifier of the newly created user profile. This ID is generated by the system.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "status",
+                                    "description": "Indicates the success or failure of the profile creation operation. Possible values are 'Success' and 'Failure'.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "message",
+                                    "description": "Provides further details about the profile creation process, particularly useful in the event of a failure.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "error",
+                                    "description": "In case of failure, this field contains detailed error information or validation messages explaining why the operation could not be completed.",
+                                    "param_type": "string"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "schemas": {
+                    "create": {
+                        "description": "This schema defines the basic structure for the TutorMaster application, including users, appointments, invoices, and payments.",
+                        "tables": {
+                            "create": [
+                                {
+                                    "description": "Enumeration for User Roles",
+                                    "definition": "enum UserRole {\n  Tutor\n  Client\n  Admin\n}"
+                                },
+                                {
+                                    "description": "Enumeration for Invoice Status",
+                                    "definition": "enum InvoiceStatus {\n  Pending\n  Paid\n  Failed\n}"
+                                },
+                                {
+                                    "description": "Enumeration for Appointment Status",
+                                    "definition": "enum AppointmentStatus {\n  Scheduled\n  Completed\n  Canceled\n}"
+                                },
+                                {
+                                    "description": "Stores user information including their role and personal details.",
+                                    "definition": "model User {\n  id        String          @id @default(uuid())\n  email     String          @unique\n  password  String\n  name      String\n  role      UserRole\n  createdAt DateTime        @default(now())\n  updatedAt DateTime        @updatedAt\n  Appointments Appointment[]\n  Invoices      Invoice[]\n}"
+                                },
+                                {
+                                    "description": "Manages scheduling details for tutoring sessions.",
+                                    "definition": "model Appointment {\n  id          String            @id @default(uuid())\n  userId      String\n  date        DateTime\n  status      AppointmentStatus\n  createdAt   DateTime          @default(now())\n  updatedAt   DateTime          @updatedAt\n  User        User              @relation(fields: [userId], references: [id])\n  Invoice     Invoice?\n}"
+                                },
+                                {
+                                    "description": "Tracks invoicing details linked to appointments and payments.",
+                                    "definition": "model Invoice {\n  id           String    @id @default(uuid())\n  appointmentId String\n  userId       String\n  amount       Float\n  status       InvoiceStatus\n  createdAt    DateTime  @default(now())\n  updatedAt    DateTime  @updatedAt\n  Appointment  Appointment @relation(fields: [appointmentId], references: [id])\n  User         User        @relation(fields: [userId], references: [id])\n  Payment      Payment?\n}"
+                                },
+                                {
+                                    "description": "Manages payment details for invoices.",
+                                    "definition": "model Payment {\n  id         String      @id @default(uuid())\n  invoiceId  String\n  status     String\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime    @updatedAt\n  Invoice    Invoice      @relation(fields: [invoiceId], references: [id])\n}"
                                 }
                             ]
                         }
@@ -80,25 +401,30 @@
             },
             {
                 "method": "PUT",
-                "path": "/api/profile/update",
-                "functionName": "update_profile",
-                "accessLevel": "USER",
-                "description": "Updates an existing user profile",
+                "path": "/profile/{id}",
+                "functionName": "Edit Profile",
+                "accessLevel": "PUBLIC",
+                "description": "Edit an existing user profile.",
                 "requestObjects": {
                     "create": {
-                        "name": "UpdateProfileRequest",
-                        "description": "Input required for updating an existing profile",
+                        "name": "ProfileUpdateInput",
+                        "description": "ProfileUpdateInput",
                         "params": {
                             "create": [
                                 {
-                                    "name": "profile_id",
-                                    "description": "Profile ID or unique identifier",
-                                    "param_type": "str"
+                                    "name": "name",
+                                    "description": "Optional. The new full name of the user. If provided, it updates the user's name.",
+                                    "param_type": "string"
                                 },
                                 {
-                                    "name": "fields_to_update",
-                                    "description": "Fields to be updated with their new values",
-                                    "param_type": "dict"
+                                    "name": "email",
+                                    "description": "Optional. The new email address of the user. Must be unique across all users. If provided, it updates the user's email.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "role",
+                                    "description": "Optional. The new role of the user within the application. Accepted values are Tutor, Client, and Admin. This field should be treated cautiously as changes in roles can affect access control.",
+                                    "param_type": "UserRole"
                                 }
                             ]
                         }
@@ -106,19 +432,24 @@
                 },
                 "responseObject": {
                     "create": {
-                        "name": "UpdateProfileResponse",
-                        "description": "Output after updating a profile",
+                        "name": "ProfileUpdateInput",
+                        "description": "ProfileUpdateInput",
                         "params": {
                             "create": [
                                 {
-                                    "name": "message",
-                                    "description": "Success or error message",
-                                    "param_type": "str"
+                                    "name": "success",
+                                    "description": "Indicates if the profile update was successful.",
+                                    "param_type": "boolean"
                                 },
                                 {
-                                    "name": "updated_profile_details",
-                                    "description": "Details of the updated profile",
-                                    "param_type": "dict"
+                                    "name": "message",
+                                    "description": "Provides further details about the update operation, particularly useful for conveying the outcome or specific issues encountered.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "error",
+                                    "description": "In case of failure, this field contains detailed error information or validation messages explaining why the operation could not be completed. This field is optional and only provided when there is an error.",
+                                    "param_type": "string"
                                 }
                             ]
                         }
@@ -126,67 +457,36 @@
                 },
                 "schemas": {
                     "create": {
-                        "description": "Schema for storing client and professional profiles",
+                        "description": "This schema defines the basic structure for the TutorMaster application, including users, appointments, invoices, and payments.",
                         "tables": {
                             "create": [
                                 {
-                                    "description": "Stores user profile information",
-                                    "definition": "\n        model Profile {\n        id          Int     @id @default(autoincrement())\n        user_type   String\n        name        String\n        contact     String\n        preferences Json?\n        }\n        "
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
-            {
-                "method": "GET",
-                "path": "/api/profile/retrieve",
-                "functionName": "retrieve_profile",
-                "accessLevel": "USER",
-                "description": "Retrieves a user profile",
-                "requestObjects": {
-                    "create": {
-                        "name": "RetrieveProfileRequest",
-                        "description": "Input required for retrieving a profile",
-                        "params": {
-                            "create": [
-                                {
-                                    "name": "profile_id",
-                                    "description": "Profile ID or unique identifier",
-                                    "param_type": "str"
-                                }
-                            ]
-                        }
-                    }
-                },
-                "responseObject": {
-                    "create": {
-                        "name": "RetrieveProfileResponse",
-                        "description": "Output after retrieving a profile",
-                        "params": {
-                            "create": [
-                                {
-                                    "name": "profile_details",
-                                    "description": "Details of the retrieved profile",
-                                    "param_type": "dict"
+                                    "description": "Enumeration for User Roles",
+                                    "definition": "enum UserRole {\n  Tutor\n  Client\n  Admin\n}"
                                 },
                                 {
-                                    "name": "message",
-                                    "description": "Error message if the profile is not found",
-                                    "param_type": "str"
-                                }
-                            ]
-                        }
-                    }
-                },
-                "schemas": {
-                    "create": {
-                        "description": "Schema for storing client and professional profiles",
-                        "tables": {
-                            "create": [
+                                    "description": "Enumeration for Invoice Status",
+                                    "definition": "enum InvoiceStatus {\n  Pending\n  Paid\n  Failed\n}"
+                                },
                                 {
-                                    "description": "Stores user profile information",
-                                    "definition": "\n        model Profile {\n        id          Int     @id @default(autoincrement())\n        user_type   String\n        name        String\n        contact     String\n        preferences Json?\n        }\n        "
+                                    "description": "Enumeration for Appointment Status",
+                                    "definition": "enum AppointmentStatus {\n  Scheduled\n  Completed\n  Canceled\n}"
+                                },
+                                {
+                                    "description": "Stores user information including their role and personal details.",
+                                    "definition": "model User {\n  id        String          @id @default(uuid())\n  email     String          @unique\n  password  String\n  name      String\n  role      UserRole\n  createdAt DateTime        @default(now())\n  updatedAt DateTime        @updatedAt\n  Appointments Appointment[]\n  Invoices      Invoice[]\n}"
+                                },
+                                {
+                                    "description": "Manages scheduling details for tutoring sessions.",
+                                    "definition": "model Appointment {\n  id          String            @id @default(uuid())\n  userId      String\n  date        DateTime\n  status      AppointmentStatus\n  createdAt   DateTime          @default(now())\n  updatedAt   DateTime          @updatedAt\n  User        User              @relation(fields: [userId], references: [id])\n  Invoice     Invoice?\n}"
+                                },
+                                {
+                                    "description": "Tracks invoicing details linked to appointments and payments.",
+                                    "definition": "model Invoice {\n  id           String    @id @default(uuid())\n  appointmentId String\n  userId       String\n  amount       Float\n  status       InvoiceStatus\n  createdAt    DateTime  @default(now())\n  updatedAt    DateTime  @updatedAt\n  Appointment  Appointment @relation(fields: [appointmentId], references: [id])\n  User         User        @relation(fields: [userId], references: [id])\n  Payment      Payment?\n}"
+                                },
+                                {
+                                    "description": "Manages payment details for invoices.",
+                                    "definition": "model Payment {\n  id         String      @id @default(uuid())\n  invoiceId  String\n  status     String\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime    @updatedAt\n  Invoice    Invoice      @relation(fields: [invoiceId], references: [id])\n}"
                                 }
                             ]
                         }
@@ -195,20 +495,20 @@
             },
             {
                 "method": "DELETE",
-                "path": "/api/profile/delete",
-                "functionName": "delete_profile",
-                "accessLevel": "USER",
-                "description": "Deletes a user profile",
+                "path": "/profile/{id}",
+                "functionName": "Delete Profile",
+                "accessLevel": "PUBLIC",
+                "description": "Delete a user profile.",
                 "requestObjects": {
                     "create": {
-                        "name": "DeleteProfileRequest",
-                        "description": "Input required for deleting a profile",
+                        "name": "ProfileDeletionInput",
+                        "description": "ProfileDeletionInput",
                         "params": {
                             "create": [
                                 {
-                                    "name": "profile_id",
-                                    "description": "Profile ID or unique identifier",
-                                    "param_type": "str"
+                                    "name": "id",
+                                    "description": "The unique identifier of the user profile to be deleted.",
+                                    "param_type": "string"
                                 }
                             ]
                         }
@@ -216,14 +516,19 @@
                 },
                 "responseObject": {
                     "create": {
-                        "name": "DeleteProfileResponse",
-                        "description": "Output after deleting a profile",
+                        "name": "ProfileDeletionInput",
+                        "description": "ProfileDeletionInput",
                         "params": {
                             "create": [
                                 {
+                                    "name": "success",
+                                    "description": "A boolean indicating whether the user profile was successfully deleted.",
+                                    "param_type": "boolean"
+                                },
+                                {
                                     "name": "message",
-                                    "description": "Success message confirming profile deletion or error message if the profile is not found or deletion fails",
-                                    "param_type": "str"
+                                    "description": "A message providing additional information about the delete operation. This could include confirmation of success or details of any errors encountered.",
+                                    "param_type": "string"
                                 }
                             ]
                         }
@@ -231,12 +536,570 @@
                 },
                 "schemas": {
                     "create": {
-                        "description": "Schema for storing client and professional profiles",
+                        "description": "This schema defines the basic structure for the TutorMaster application, including users, appointments, invoices, and payments.",
                         "tables": {
                             "create": [
                                 {
-                                    "description": "Stores user profile information",
-                                    "definition": "\n        model Profile {\n        id          Int     @id @default(autoincrement())\n        user_type   String\n        name        String\n        contact     String\n        preferences Json?\n        }\n        "
+                                    "description": "Enumeration for User Roles",
+                                    "definition": "enum UserRole {\n  Tutor\n  Client\n  Admin\n}"
+                                },
+                                {
+                                    "description": "Enumeration for Invoice Status",
+                                    "definition": "enum InvoiceStatus {\n  Pending\n  Paid\n  Failed\n}"
+                                },
+                                {
+                                    "description": "Enumeration for Appointment Status",
+                                    "definition": "enum AppointmentStatus {\n  Scheduled\n  Completed\n  Canceled\n}"
+                                },
+                                {
+                                    "description": "Stores user information including their role and personal details.",
+                                    "definition": "model User {\n  id        String          @id @default(uuid())\n  email     String          @unique\n  password  String\n  name      String\n  role      UserRole\n  createdAt DateTime        @default(now())\n  updatedAt DateTime        @updatedAt\n  Appointments Appointment[]\n  Invoices      Invoice[]\n}"
+                                },
+                                {
+                                    "description": "Manages scheduling details for tutoring sessions.",
+                                    "definition": "model Appointment {\n  id          String            @id @default(uuid())\n  userId      String\n  date        DateTime\n  status      AppointmentStatus\n  createdAt   DateTime          @default(now())\n  updatedAt   DateTime          @updatedAt\n  User        User              @relation(fields: [userId], references: [id])\n  Invoice     Invoice?\n}"
+                                },
+                                {
+                                    "description": "Tracks invoicing details linked to appointments and payments.",
+                                    "definition": "model Invoice {\n  id           String    @id @default(uuid())\n  appointmentId String\n  userId       String\n  amount       Float\n  status       InvoiceStatus\n  createdAt    DateTime  @default(now())\n  updatedAt    DateTime  @updatedAt\n  Appointment  Appointment @relation(fields: [appointmentId], references: [id])\n  User         User        @relation(fields: [userId], references: [id])\n  Payment      Payment?\n}"
+                                },
+                                {
+                                    "description": "Manages payment details for invoices.",
+                                    "definition": "model Payment {\n  id         String      @id @default(uuid())\n  invoiceId  String\n  status     String\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime    @updatedAt\n  Invoice    Invoice      @relation(fields: [invoiceId], references: [id])\n}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "method": "POST",
+                "path": "/appointment",
+                "functionName": "Schedule Appointment",
+                "accessLevel": "PUBLIC",
+                "description": "Create a new appointment between a tutor and a client.",
+                "requestObjects": {
+                    "create": {
+                        "name": "AppointmentCreationInput",
+                        "description": "AppointmentCreationInput",
+                        "params": {
+                            "create": [
+                                {
+                                    "name": "tutorId",
+                                    "description": "The unique identifier of the tutor.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "clientId",
+                                    "description": "The unique identifier of the client.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "date",
+                                    "description": "The desired date and time for the appointment.",
+                                    "param_type": "DateTime"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "responseObject": {
+                    "create": {
+                        "name": "AppointmentCreationInput",
+                        "description": "AppointmentCreationInput",
+                        "params": {
+                            "create": [
+                                {
+                                    "name": "appointmentId",
+                                    "description": "The unique identifier of the newly created appointment.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "tutorId",
+                                    "description": "The unique identifier of the tutor.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "clientId",
+                                    "description": "The unique identifier of the client.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "date",
+                                    "description": "The confirmed date and time of the appointment.",
+                                    "param_type": "DateTime"
+                                },
+                                {
+                                    "name": "status",
+                                    "description": "The status of the appointment (Scheduled, Confirmed, etc.).",
+                                    "param_type": "string"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "schemas": {
+                    "create": {
+                        "description": "This schema defines the basic structure for the TutorMaster application, including users, appointments, invoices, and payments.",
+                        "tables": {
+                            "create": [
+                                {
+                                    "description": "Enumeration for User Roles",
+                                    "definition": "enum UserRole {\n  Tutor\n  Client\n  Admin\n}"
+                                },
+                                {
+                                    "description": "Enumeration for Invoice Status",
+                                    "definition": "enum InvoiceStatus {\n  Pending\n  Paid\n  Failed\n}"
+                                },
+                                {
+                                    "description": "Enumeration for Appointment Status",
+                                    "definition": "enum AppointmentStatus {\n  Scheduled\n  Completed\n  Canceled\n}"
+                                },
+                                {
+                                    "description": "Stores user information including their role and personal details.",
+                                    "definition": "model User {\n  id        String          @id @default(uuid())\n  email     String          @unique\n  password  String\n  name      String\n  role      UserRole\n  createdAt DateTime        @default(now())\n  updatedAt DateTime        @updatedAt\n  Appointments Appointment[]\n  Invoices      Invoice[]\n}"
+                                },
+                                {
+                                    "description": "Manages scheduling details for tutoring sessions.",
+                                    "definition": "model Appointment {\n  id          String            @id @default(uuid())\n  userId      String\n  date        DateTime\n  status      AppointmentStatus\n  createdAt   DateTime          @default(now())\n  updatedAt   DateTime          @updatedAt\n  User        User              @relation(fields: [userId], references: [id])\n  Invoice     Invoice?\n}"
+                                },
+                                {
+                                    "description": "Tracks invoicing details linked to appointments and payments.",
+                                    "definition": "model Invoice {\n  id           String    @id @default(uuid())\n  appointmentId String\n  userId       String\n  amount       Float\n  status       InvoiceStatus\n  createdAt    DateTime  @default(now())\n  updatedAt    DateTime  @updatedAt\n  Appointment  Appointment @relation(fields: [appointmentId], references: [id])\n  User         User        @relation(fields: [userId], references: [id])\n  Payment      Payment?\n}"
+                                },
+                                {
+                                    "description": "Manages payment details for invoices.",
+                                    "definition": "model Payment {\n  id         String      @id @default(uuid())\n  invoiceId  String\n  status     String\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime    @updatedAt\n  Invoice    Invoice      @relation(fields: [invoiceId], references: [id])\n}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "method": "PUT",
+                "path": "/appointment/{id}/reschedule",
+                "functionName": "Reschedule Appointment",
+                "accessLevel": "PUBLIC",
+                "description": "Change the date/time of an existing appointment.",
+                "requestObjects": {
+                    "create": {
+                        "name": "AppointmentRescheduleInput",
+                        "description": "AppointmentRescheduleInput",
+                        "params": {
+                            "create": [
+                                {
+                                    "name": "appointmentId",
+                                    "description": "The unique identifier of the appointment being rescheduled.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "newDate",
+                                    "description": "The new date and time the user wishes to reschedule the appointment to.",
+                                    "param_type": "DateTime"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "responseObject": {
+                    "create": {
+                        "name": "AppointmentRescheduleInput",
+                        "description": "AppointmentRescheduleInput",
+                        "params": {
+                            "create": [
+                                {
+                                    "name": "success",
+                                    "description": "Indicates if the appointment was successfully rescheduled.",
+                                    "param_type": "boolean"
+                                },
+                                {
+                                    "name": "message",
+                                    "description": "A message describing the outcome of the rescheduling attempt.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "appointmentId",
+                                    "description": "The id of the appointment that was rescheduled, if successful.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "newDate",
+                                    "description": "The new date and time for the appointment, if rescheduling was successful.",
+                                    "param_type": "DateTime"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "schemas": {
+                    "create": {
+                        "description": "This schema defines the basic structure for the TutorMaster application, including users, appointments, invoices, and payments.",
+                        "tables": {
+                            "create": [
+                                {
+                                    "description": "Enumeration for User Roles",
+                                    "definition": "enum UserRole {\n  Tutor\n  Client\n  Admin\n}"
+                                },
+                                {
+                                    "description": "Enumeration for Invoice Status",
+                                    "definition": "enum InvoiceStatus {\n  Pending\n  Paid\n  Failed\n}"
+                                },
+                                {
+                                    "description": "Enumeration for Appointment Status",
+                                    "definition": "enum AppointmentStatus {\n  Scheduled\n  Completed\n  Canceled\n}"
+                                },
+                                {
+                                    "description": "Stores user information including their role and personal details.",
+                                    "definition": "model User {\n  id        String          @id @default(uuid())\n  email     String          @unique\n  password  String\n  name      String\n  role      UserRole\n  createdAt DateTime        @default(now())\n  updatedAt DateTime        @updatedAt\n  Appointments Appointment[]\n  Invoices      Invoice[]\n}"
+                                },
+                                {
+                                    "description": "Manages scheduling details for tutoring sessions.",
+                                    "definition": "model Appointment {\n  id          String            @id @default(uuid())\n  userId      String\n  date        DateTime\n  status      AppointmentStatus\n  createdAt   DateTime          @default(now())\n  updatedAt   DateTime          @updatedAt\n  User        User              @relation(fields: [userId], references: [id])\n  Invoice     Invoice?\n}"
+                                },
+                                {
+                                    "description": "Tracks invoicing details linked to appointments and payments.",
+                                    "definition": "model Invoice {\n  id           String    @id @default(uuid())\n  appointmentId String\n  userId       String\n  amount       Float\n  status       InvoiceStatus\n  createdAt    DateTime  @default(now())\n  updatedAt    DateTime  @updatedAt\n  Appointment  Appointment @relation(fields: [appointmentId], references: [id])\n  User         User        @relation(fields: [userId], references: [id])\n  Payment      Payment?\n}"
+                                },
+                                {
+                                    "description": "Manages payment details for invoices.",
+                                    "definition": "model Payment {\n  id         String      @id @default(uuid())\n  invoiceId  String\n  status     String\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime    @updatedAt\n  Invoice    Invoice      @relation(fields: [invoiceId], references: [id])\n}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "method": "DELETE",
+                "path": "/appointment/{id}/cancel",
+                "functionName": "Cancel Appointment",
+                "accessLevel": "PUBLIC",
+                "description": "Cancel an existing appointment.",
+                "requestObjects": {
+                    "create": {
+                        "name": "AppointmentCancellationInput",
+                        "description": "AppointmentCancellationInput",
+                        "params": {
+                            "create": [
+                                {
+                                    "name": "id",
+                                    "description": "The unique identifier of the appointment to be canceled.",
+                                    "param_type": "string"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "responseObject": {
+                    "create": {
+                        "name": "AppointmentCancellationInput",
+                        "description": "AppointmentCancellationInput",
+                        "params": {
+                            "create": [
+                                {
+                                    "name": "success",
+                                    "description": "Indicates if the cancellation operation was successful.",
+                                    "param_type": "boolean"
+                                },
+                                {
+                                    "name": "message",
+                                    "description": "Provides further details on the operation's outcome, such as confirmation of cancellation or an error explanation.",
+                                    "param_type": "string"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "schemas": {
+                    "create": {
+                        "description": "This schema defines the basic structure for the TutorMaster application, including users, appointments, invoices, and payments.",
+                        "tables": {
+                            "create": [
+                                {
+                                    "description": "Enumeration for User Roles",
+                                    "definition": "enum UserRole {\n  Tutor\n  Client\n  Admin\n}"
+                                },
+                                {
+                                    "description": "Enumeration for Invoice Status",
+                                    "definition": "enum InvoiceStatus {\n  Pending\n  Paid\n  Failed\n}"
+                                },
+                                {
+                                    "description": "Enumeration for Appointment Status",
+                                    "definition": "enum AppointmentStatus {\n  Scheduled\n  Completed\n  Canceled\n}"
+                                },
+                                {
+                                    "description": "Stores user information including their role and personal details.",
+                                    "definition": "model User {\n  id        String          @id @default(uuid())\n  email     String          @unique\n  password  String\n  name      String\n  role      UserRole\n  createdAt DateTime        @default(now())\n  updatedAt DateTime        @updatedAt\n  Appointments Appointment[]\n  Invoices      Invoice[]\n}"
+                                },
+                                {
+                                    "description": "Manages scheduling details for tutoring sessions.",
+                                    "definition": "model Appointment {\n  id          String            @id @default(uuid())\n  userId      String\n  date        DateTime\n  status      AppointmentStatus\n  createdAt   DateTime          @default(now())\n  updatedAt   DateTime          @updatedAt\n  User        User              @relation(fields: [userId], references: [id])\n  Invoice     Invoice?\n}"
+                                },
+                                {
+                                    "description": "Tracks invoicing details linked to appointments and payments.",
+                                    "definition": "model Invoice {\n  id           String    @id @default(uuid())\n  appointmentId String\n  userId       String\n  amount       Float\n  status       InvoiceStatus\n  createdAt    DateTime  @default(now())\n  updatedAt    DateTime  @updatedAt\n  Appointment  Appointment @relation(fields: [appointmentId], references: [id])\n  User         User        @relation(fields: [userId], references: [id])\n  Payment      Payment?\n}"
+                                },
+                                {
+                                    "description": "Manages payment details for invoices.",
+                                    "definition": "model Payment {\n  id         String      @id @default(uuid())\n  invoiceId  String\n  status     String\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime    @updatedAt\n  Invoice    Invoice      @relation(fields: [invoiceId], references: [id])\n}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "method": "POST",
+                "path": "/invoice/generate",
+                "functionName": "Generate Invoice",
+                "accessLevel": "PUBLIC",
+                "description": "Automatically generate an invoice after an appointment is completed.",
+                "requestObjects": {
+                    "create": {
+                        "name": "GenerateInvoiceInput",
+                        "description": "GenerateInvoiceInput",
+                        "params": {
+                            "create": [
+                                {
+                                    "name": "appointmentId",
+                                    "description": "The ID of the completed appointment.",
+                                    "param_type": "string"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "responseObject": {
+                    "create": {
+                        "name": "GenerateInvoiceInput",
+                        "description": "GenerateInvoiceInput",
+                        "params": {
+                            "create": [
+                                {
+                                    "name": "invoiceId",
+                                    "description": "Unique identifier for the generated invoice.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "appointmentId",
+                                    "description": "The associated appointment ID.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "amount",
+                                    "description": "Total amount charged in the invoice.",
+                                    "param_type": "float"
+                                },
+                                {
+                                    "name": "status",
+                                    "description": "Current status of the invoice.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "createdAt",
+                                    "description": "Timestamp of when the invoice was generated.",
+                                    "param_type": "DateTime"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "schemas": {
+                    "create": {
+                        "description": "This schema defines the basic structure for the TutorMaster application, including users, appointments, invoices, and payments.",
+                        "tables": {
+                            "create": [
+                                {
+                                    "description": "Enumeration for User Roles",
+                                    "definition": "enum UserRole {\n  Tutor\n  Client\n  Admin\n}"
+                                },
+                                {
+                                    "description": "Enumeration for Invoice Status",
+                                    "definition": "enum InvoiceStatus {\n  Pending\n  Paid\n  Failed\n}"
+                                },
+                                {
+                                    "description": "Enumeration for Appointment Status",
+                                    "definition": "enum AppointmentStatus {\n  Scheduled\n  Completed\n  Canceled\n}"
+                                },
+                                {
+                                    "description": "Stores user information including their role and personal details.",
+                                    "definition": "model User {\n  id        String          @id @default(uuid())\n  email     String          @unique\n  password  String\n  name      String\n  role      UserRole\n  createdAt DateTime        @default(now())\n  updatedAt DateTime        @updatedAt\n  Appointments Appointment[]\n  Invoices      Invoice[]\n}"
+                                },
+                                {
+                                    "description": "Manages scheduling details for tutoring sessions.",
+                                    "definition": "model Appointment {\n  id          String            @id @default(uuid())\n  userId      String\n  date        DateTime\n  status      AppointmentStatus\n  createdAt   DateTime          @default(now())\n  updatedAt   DateTime          @updatedAt\n  User        User              @relation(fields: [userId], references: [id])\n  Invoice     Invoice?\n}"
+                                },
+                                {
+                                    "description": "Tracks invoicing details linked to appointments and payments.",
+                                    "definition": "model Invoice {\n  id           String    @id @default(uuid())\n  appointmentId String\n  userId       String\n  amount       Float\n  status       InvoiceStatus\n  createdAt    DateTime  @default(now())\n  updatedAt    DateTime  @updatedAt\n  Appointment  Appointment @relation(fields: [appointmentId], references: [id])\n  User         User        @relation(fields: [userId], references: [id])\n  Payment      Payment?\n}"
+                                },
+                                {
+                                    "description": "Manages payment details for invoices.",
+                                    "definition": "model Payment {\n  id         String      @id @default(uuid())\n  invoiceId  String\n  status     String\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime    @updatedAt\n  Invoice    Invoice      @relation(fields: [invoiceId], references: [id])\n}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "method": "PATCH",
+                "path": "/invoice/{id}/payment-status",
+                "functionName": "Track Payment",
+                "accessLevel": "PUBLIC",
+                "description": "Update the payment status of an invoice.",
+                "requestObjects": {
+                    "create": {
+                        "name": "TrackPaymentInput",
+                        "description": "TrackPaymentInput",
+                        "params": {
+                            "create": [
+                                {
+                                    "name": "invoiceId",
+                                    "description": "The unique identifier of the invoice to update.",
+                                    "param_type": "string"
+                                },
+                                {
+                                    "name": "status",
+                                    "description": "The new payment status to apply to the invoice.",
+                                    "param_type": "InvoiceStatus"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "responseObject": {
+                    "create": {
+                        "name": "TrackPaymentInput",
+                        "description": "TrackPaymentInput",
+                        "params": {
+                            "create": [
+                                {
+                                    "name": "success",
+                                    "description": "Indicates if the status update was successfully applied. True for success, false for failure.",
+                                    "param_type": "boolean"
+                                },
+                                {
+                                    "name": "message",
+                                    "description": "Provides additional detail about the update attempt, such as confirmation of success or an explanation of failure.",
+                                    "param_type": "string"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "schemas": {
+                    "create": {
+                        "description": "This schema defines the basic structure for the TutorMaster application, including users, appointments, invoices, and payments.",
+                        "tables": {
+                            "create": [
+                                {
+                                    "description": "Enumeration for User Roles",
+                                    "definition": "enum UserRole {\n  Tutor\n  Client\n  Admin\n}"
+                                },
+                                {
+                                    "description": "Enumeration for Invoice Status",
+                                    "definition": "enum InvoiceStatus {\n  Pending\n  Paid\n  Failed\n}"
+                                },
+                                {
+                                    "description": "Enumeration for Appointment Status",
+                                    "definition": "enum AppointmentStatus {\n  Scheduled\n  Completed\n  Canceled\n}"
+                                },
+                                {
+                                    "description": "Stores user information including their role and personal details.",
+                                    "definition": "model User {\n  id        String          @id @default(uuid())\n  email     String          @unique\n  password  String\n  name      String\n  role      UserRole\n  createdAt DateTime        @default(now())\n  updatedAt DateTime        @updatedAt\n  Appointments Appointment[]\n  Invoices      Invoice[]\n}"
+                                },
+                                {
+                                    "description": "Manages scheduling details for tutoring sessions.",
+                                    "definition": "model Appointment {\n  id          String            @id @default(uuid())\n  userId      String\n  date        DateTime\n  status      AppointmentStatus\n  createdAt   DateTime          @default(now())\n  updatedAt   DateTime          @updatedAt\n  User        User              @relation(fields: [userId], references: [id])\n  Invoice     Invoice?\n}"
+                                },
+                                {
+                                    "description": "Tracks invoicing details linked to appointments and payments.",
+                                    "definition": "model Invoice {\n  id           String    @id @default(uuid())\n  appointmentId String\n  userId       String\n  amount       Float\n  status       InvoiceStatus\n  createdAt    DateTime  @default(now())\n  updatedAt    DateTime  @updatedAt\n  Appointment  Appointment @relation(fields: [appointmentId], references: [id])\n  User         User        @relation(fields: [userId], references: [id])\n  Payment      Payment?\n}"
+                                },
+                                {
+                                    "description": "Manages payment details for invoices.",
+                                    "definition": "model Payment {\n  id         String      @id @default(uuid())\n  invoiceId  String\n  status     String\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime    @updatedAt\n  Invoice    Invoice      @relation(fields: [invoiceId], references: [id])\n}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "method": "POST",
+                "path": "/invoice/{id}/follow-up",
+                "functionName": "Follow-up Unpaid Invoice",
+                "accessLevel": "PUBLIC",
+                "description": "Send a follow-up notification for an unpaid invoice.",
+                "requestObjects": {
+                    "create": {
+                        "name": "FollowUpUnpaidInvoiceInput",
+                        "description": "FollowUpUnpaidInvoiceInput",
+                        "params": {
+                            "create": [
+                                {
+                                    "name": "invoiceId",
+                                    "description": "The unique identifier of the invoice for which the follow-up notification should be sent.",
+                                    "param_type": "string"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "responseObject": {
+                    "create": {
+                        "name": "FollowUpUnpaidInvoiceInput",
+                        "description": "FollowUpUnpaidInvoiceInput",
+                        "params": {
+                            "create": [
+                                {
+                                    "name": "success",
+                                    "description": "Indicates if the follow-up notification was successfully sent. True for success, false for failure.",
+                                    "param_type": "boolean"
+                                },
+                                {
+                                    "name": "message",
+                                    "description": "Provides additional information regarding the follow-up operation, such as 'Notification sent successfully' or a description of why it failed.",
+                                    "param_type": "string"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "schemas": {
+                    "create": {
+                        "description": "This schema defines the basic structure for the TutorMaster application, including users, appointments, invoices, and payments.",
+                        "tables": {
+                            "create": [
+                                {
+                                    "description": "Enumeration for User Roles",
+                                    "definition": "enum UserRole {\n  Tutor\n  Client\n  Admin\n}"
+                                },
+                                {
+                                    "description": "Enumeration for Invoice Status",
+                                    "definition": "enum InvoiceStatus {\n  Pending\n  Paid\n  Failed\n}"
+                                },
+                                {
+                                    "description": "Enumeration for Appointment Status",
+                                    "definition": "enum AppointmentStatus {\n  Scheduled\n  Completed\n  Canceled\n}"
+                                },
+                                {
+                                    "description": "Stores user information including their role and personal details.",
+                                    "definition": "model User {\n  id        String          @id @default(uuid())\n  email     String          @unique\n  password  String\n  name      String\n  role      UserRole\n  createdAt DateTime        @default(now())\n  updatedAt DateTime        @updatedAt\n  Appointments Appointment[]\n  Invoices      Invoice[]\n}"
+                                },
+                                {
+                                    "description": "Manages scheduling details for tutoring sessions.",
+                                    "definition": "model Appointment {\n  id          String            @id @default(uuid())\n  userId      String\n  date        DateTime\n  status      AppointmentStatus\n  createdAt   DateTime          @default(now())\n  updatedAt   DateTime          @updatedAt\n  User        User              @relation(fields: [userId], references: [id])\n  Invoice     Invoice?\n}"
+                                },
+                                {
+                                    "description": "Tracks invoicing details linked to appointments and payments.",
+                                    "definition": "model Invoice {\n  id           String    @id @default(uuid())\n  appointmentId String\n  userId       String\n  amount       Float\n  status       InvoiceStatus\n  createdAt    DateTime  @default(now())\n  updatedAt    DateTime  @updatedAt\n  Appointment  Appointment @relation(fields: [appointmentId], references: [id])\n  User         User        @relation(fields: [userId], references: [id])\n  Payment      Payment?\n}"
+                                },
+                                {
+                                    "description": "Manages payment details for invoices.",
+                                    "definition": "model Payment {\n  id         String      @id @default(uuid())\n  invoiceId  String\n  status     String\n  createdAt  DateTime    @default(now())\n  updatedAt  DateTime    @updatedAt\n  Invoice    Invoice      @relation(fields: [invoiceId], references: [id])\n}"
                                 }
                             ]
                         }

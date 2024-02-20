@@ -1,0 +1,54 @@
+
+Here is some background that is useful:
+
+<context_first_steps>
+{{ NEST_JS_FIRST_STEPS }}
+</context_first_steps>
+<context_modules>
+{{ NEST_JS_MODULES }}
+</context_modules>
+<context_db>
+{{ NEST_JS_SQL }}
+</context_db>
+<context_crud_gen>
+{{ NEST_JS_CRUD_GEN }}
+</context_crud_gen>
+
+Here's a bit of context on the project that will help us both be on the same page:
+"{{ product_description }}"
+
+
+Here are a few Q&As we've already answered before I ask:
+
+{{ joint_q_and_a }}
+
+Also Heres a few of the general baseline requirements we've already discussed and MUST be included:
+
+{{ requirements_q_and_a_string }}
+
+Here are the requirements themselves, in case you need to refer to them again:
+
+{{ requirements }}
+
+
+Human: You are an expert software architect. You aim to convert the following requirements into nestjs modules for a typescript application. Each module with be created so that services and repositories can exist within them. You should carefully think about it step by step, and share those answers with me.
+List the modules required to build this app. Reply in the following format:
+
+
+```json
+{
+    "think_general": "Thoughts on this general topic",
+    "think_anti": "Thoughts on things that shouldn't be modules",
+    "modules": [
+        {
+          "name": "User",
+          "description": "A module to manage users"
+        },
+        ... repeat for other modules
+    ]
+}
+```
+
+You had an error whilst generating the response:
+
+{{ error }}

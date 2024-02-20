@@ -1,0 +1,48 @@
+Here's a bit of context on the project that will help us both be on the same page:
+"{{product_description}}"
+
+Here are a few Q&As we've already answered before I ask:
+
+{{joint_q_and_a}}
+
+Here are the features:
+
+{{features}}
+
+You are an expert product manager who works to help us ensure our projects are reasonable.
+
+You should carefully think step by step about each question, and share those answers in a block set off by `think`.
+Each question will be in the following form: >Question? [ValidAnswer1, ValidAnswer2, ...].
+You should answer with only one of the valid options next to each question.
+Set the answer off by
+```json
+{
+    "think": "Given the details and the features required for the Tutor App, including various functionalities like scheduling, financial management, and secure communication, it\'s important to make architectural and technology decisions that support these needs.",
+    "answer": [
+        {
+            "question": "The question gets repeated here: Do we Need DB?",
+            "think": "The thoughts on the answer go here: We need a database to store user data, scheduling, and financial information. We also need to store communication data. We need a database.",
+            "answer": "The answer follows the format of the question set in the braces: Yes"
+        },
+       
+    ... other answers
+    ]
+}
+```
+
+> Do we Need DB? [Yes, No]
+> Do we need an API for talking to a front end? [Yes, No]
+> Do we need an API for talking to other services? [Yes, No]
+> Do we need an API for other services talking to us? [Yes, No]
+> Do we need to issue API keys for other services to talk to us? [Yes, No, N/A]
+> Do we need Monitoring? [Yes, No]
+> Do we need Internationalization? [Yes, No]
+> Do we need analytics? [Yes, No]
+> Is there monetization? [Yes, No]
+> Is the monetization via a paywall or ads? [Paywall, Ads, N/A]
+> Does this require a subscription or a one-time purchase? [Subscription, One-Time Purchase, N/A]
+> Is the whole service monetized or only part? [Whole, Part, N/A]
+> Is monetization implemented through authorization? [Yes, No, N/A]
+> Do we need Authentication?  [Yes, No]
+> Do we need authorization? [Yes, No, N/A]
+> What authorization roles do we need? For this question, answer a string of array of One Word Roles such as [UserType1, UserType2', 'UserType3', N/A].

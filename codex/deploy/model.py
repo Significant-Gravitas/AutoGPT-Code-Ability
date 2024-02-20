@@ -6,6 +6,7 @@ from codex.developer.model import Package
 
 
 class CompiledRoute(BaseModel):
+    method: str
     service_code: str
     service_file_name: str
     main_function_name: str

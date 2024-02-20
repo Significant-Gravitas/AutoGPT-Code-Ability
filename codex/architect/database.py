@@ -7,7 +7,7 @@ from codex.api_model import DeliverableResponse, DeliverablesListResponse, Pagin
 
 async def get_deliverable(
     user_id: int, app_id: int, spec_id: int, deliverable_id: int
-) -> DeliverableResponse:
+) -> CompletedApp:
     completed_app = await CompletedApp.prisma().find_unique_or_raise(
         where={"id": deliverable_id},
         include={"compiledRoutes": True},
@@ -33,14 +33,9 @@ async def list_deliverables(
     page_size: int = 10,
 ) -> Tuple[List[CompletedApp], Pagination]:
     skip = (page - 1) * page_size
-    total_items = await CompletedApp.count()
+    total_items = await CompletedApp.prisma().count(where={"specId": spec_id})
     if total_items == 0:
-        return DeliverablesListResponse(
-            completedApps=[],
-            pagination=Pagination(
-                total_items=0, total_pages=0, current_page=0, page_size=0
-            ),
-        )
+        return [], Pagination(total_items=0, total_pages=0, current_page=0, page_size=0)
     total_pages = (total_items + page_size - 1) // page_size
 
     completed_apps_data = await CompletedApp.prisma().find_many(

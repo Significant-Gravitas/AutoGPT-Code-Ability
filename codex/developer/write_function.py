@@ -81,7 +81,7 @@ class WriteFunctionAIBlock(AIBlock):
         return requirements, code
 
     @staticmethod
-    def extract_type_hints(func_def):
+    def extract_type_hints(func_def) -> tuple[str, str]:
         args = []
         for arg in func_def.args.args:
             arg_type = ast.unparse(arg.annotation) if arg.annotation else "Unknown"
@@ -95,7 +95,7 @@ class WriteFunctionAIBlock(AIBlock):
 
         return args_str, return_type
 
-    def validate_code(self, invoke_params: dict, code: str) -> bool:
+    def validate_code(self, invoke_params: dict, code: str) -> Function:
         try:
             function_def = invoke_params["function_def"]
 
@@ -103,8 +103,8 @@ class WriteFunctionAIBlock(AIBlock):
             formatted_code = black.format_str(sorted_content, mode=black.FileMode())
             # We parse the code here to make sure it is valid
             parsed_code = ast.parse(formatted_code)
-            args, ret = [], None
-            docstring = None
+            args, ret = "", ""
+            docstring = ""
             generated_func_name = ""
 
             for ast_node in ast.walk(parsed_code):
@@ -117,23 +117,27 @@ class WriteFunctionAIBlock(AIBlock):
             errors = []
             if generated_func_name != function_def.name:
                 errors.append(
-                    f"Function name {generated_func_name} does not match required function name {function_def.name}"
+                    f"Function name {generated_func_name} does not match"
+                    f"required function name {function_def.name}"
                 )
             if args != function_def.args:
                 errors.append(
-                    f"Input parameter {args} does not match required parameter {function_def.args}"
+                    f"Input parameter {args} does not match required "
+                    f"parameter {function_def.args}"
                 )
 
             if ret != function_def.return_type:
                 errors.append(
-                    f"Return type {ret} does not match required return type {function_def.return_type}"
+                    f"Return type {ret} does not match required return type "
+                    f"{function_def.return_type}"
                 )
 
             if errors:
                 raise CodeValidationException(
-                    f"Function Template: ```\n{formatted_code}\n```\n\nIssues with the code:\n\n"
-                    + "\n".join(errors)
+                    f"Function Template: ```\n{formatted_code}\n```\n\n"
+                    "Issues with the code:\n\n" + "\n".join(errors)
                 )
+
             return Function(
                 name=function_def.name,
                 doc_string=docstring if docstring else function_def.doc_string,

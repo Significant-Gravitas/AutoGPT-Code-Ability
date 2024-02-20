@@ -1,14 +1,51 @@
 import enum
+import logging
 from dataclasses import dataclass
-from typing import List, Literal, Optional
+from typing import Callable, List, Literal, Optional, Type
 
 from prisma.enums import AccessLevel
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-from codex.prompts.claude.requirements.QAFormat import (
-    Q_AND_A_FORMAT,
-    Q_AND_A_FORMAT_WITH_THOUGHTS,
-)
+from codex.common.ai_block import AIBlock
+
+logger = logging.getLogger(__name__)
+
+Q_AND_A_FORMAT = """- "{question}": "{answer}"
+"""
+
+Q_AND_A_FORMAT_WITH_THOUGHTS = """- "{question}": "{answer}" : Reasoning: "{thoughts}"
+"""
+
+
+class Tool(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    name: str
+    description: str
+    func: Optional[Callable[..., str]] = None
+    block: Type[AIBlock]
+
+
+class InterviewMessage(BaseModel):
+    model_config = ConfigDict(strict=False)
+
+    tool: str
+    content: str
+
+
+class InterviewMessageWithResponse(InterviewMessage):
+    response: str
+
+
+class InterviewMessageUse(BaseModel):
+    uses: List[InterviewMessage | InterviewMessageWithResponse]
+
+
+class DecomposeTask(BaseModel):
+    # Placeholder until so I have something to test the ai_block with
+    thoughts: str
+    project_description: str
+    requirements: List[str]
+    api_routes: List[str]
 
 
 # Data Model
@@ -56,17 +93,17 @@ class Requirements(BaseModel):
         return f"#### {self.name}\n##### Thoughts\n{self.thoughts}\n##### Description\n{self.description}"
 
 
-class RequirementWrapper(BaseModel):
-    requirement: Requirements
+# class RequirementWrapper(BaseModel):
+#     requirement: Requirements
 
-    def __str__(self) -> str:
-        return self.requirement.__str__()
+#     def __str__(self) -> str:
+#         return self.requirement.__str__()
 
 
 @dataclass(repr=True)
 class ReqObj:
-    functional: list[RequirementWrapper]
-    nonfunctional: list[RequirementWrapper]
+    functional: list[Requirements]
+    nonfunctional: list[Requirements]
 
     def __str__(self) -> str:
         functionals = ""
@@ -87,7 +124,7 @@ class RequirementsGenResponse(BaseModel):
 class RequirementsQA:
     question: str
     think: str
-    answer: str
+    answer: str | list[str]
 
 
 class Feature(BaseModel):
@@ -115,13 +152,13 @@ class FeaturesSuperObject(BaseModel):
     features: list[FeatureWrapper]
 
 
-class WrappedRequirementsQA(BaseModel):
-    wrapper: RequirementsQA
+# class WrappedRequirementsQA(BaseModel):
+#     wrapper: RequirementsQA
 
 
 class RequirementsResponse(BaseModel):
     think: str
-    answer: list[WrappedRequirementsQA]
+    answer: list[RequirementsQA]
 
 
 class ModuleRefinementRequirement(BaseModel):
@@ -130,10 +167,6 @@ class ModuleRefinementRequirement(BaseModel):
 
     def __str__(self):
         return f"#### Requirement: {self.name}\n{self.description}\n"
-
-
-class ModuleRefinementRequrirementsWrapper(BaseModel):
-    requirement: ModuleRefinementRequirement
 
 
 class Parameter(BaseModel):
@@ -148,7 +181,7 @@ class Parameter(BaseModel):
 class RequestModel(BaseModel):
     name: str
     description: str
-    params: List[Parameter] | Parameter
+    params: List[Parameter]
 
     def __str__(self):
         params_str = "\n".join(param.__str__() for param in self.params)
@@ -158,7 +191,7 @@ class RequestModel(BaseModel):
 class ResponseModel(BaseModel):
     name: str
     description: str
-    params: List[Parameter] | Parameter
+    params: List[Parameter]
 
     def __str__(self):
         params_str = "\n".join(param.__str__() for param in self.params)
@@ -184,10 +217,6 @@ class DatabaseSchema(BaseModel):
         return f"## {self.name}\n**Description**: {self.description}\n**Tables**:\n{tables_str}\n"
 
 
-class ParameterWrapper(BaseModel):
-    param: Parameter
-
-
 class EndpointDataModel(BaseModel):
     name: str
     description: Optional[str]
@@ -197,11 +226,7 @@ class EndpointDataModel(BaseModel):
 class NewAPIModel(BaseModel):
     name: str
     description: Optional[str]
-    params: List[ParameterWrapper] | Optional[ParameterWrapper] | str
-
-
-class NewAPIModelWrapper(BaseModel):
-    model: NewAPIModel
+    params: List[Parameter]
 
 
 class APIEndpointWrapper(BaseModel):
@@ -211,13 +236,15 @@ class APIEndpointWrapper(BaseModel):
 
 class EndpointSchemaRefinementResponse(BaseModel):
     think: str
-    db_models_needed: Optional[str]
-    new_api_models: Optional[str] | NewAPIModelWrapper | list[NewAPIModelWrapper]
+    db_models_needed: list[str]
+    new_api_models: list[NewAPIModel]
     api_endpoint: APIEndpointWrapper
     end_thoughts: Optional[str]
 
 
 class Endpoint(BaseModel):
+    model_config = ConfigDict(strict=False)
+
     name: str
     type: Literal[
         "GET",
@@ -256,12 +283,9 @@ class Endpoint(BaseModel):
         return f"##### {self.name}: `{self.type} {self.path}`\n\n{self.description}\n\n{request_response_text}\n\n{data_model_text}\n\n{database_text}"
 
 
-class EndpointWrapper(BaseModel):
-    endpoint: Endpoint
-
-
 class EndpointGroupWrapper(BaseModel):
-    endpoint_group: list[EndpointWrapper] | str | EndpointWrapper
+    group_category: str
+    endpoints: list[Endpoint]
 
 
 class ModuleRefinementModule(BaseModel):
@@ -269,18 +293,14 @@ class ModuleRefinementModule(BaseModel):
     rough_requirements: str
     thoughts: str
     new_description: str
-    module_requirements_list: list[ModuleRefinementRequrirementsWrapper]
-    module_links: str
-    endpoint_groups_list: Optional[str]
-    endpoints: list[EndpointGroupWrapper] | EndpointGroupWrapper
-
-
-class ModuleRefinementModuleWrapper(BaseModel):
-    module: ModuleRefinementModule
+    module_requirements: list[ModuleRefinementRequirement]
+    module_links: list[str]
+    endpoint_groups_list: Optional[list[str]]
+    endpoint_groups: list[EndpointGroupWrapper]
 
 
 class ModuleRefinement(BaseModel):
-    modules: list[ModuleRefinementModuleWrapper]
+    modules: list[ModuleRefinementModule]
 
 
 class Module(BaseModel):
@@ -308,25 +328,18 @@ class Module(BaseModel):
         return f"{text}"
 
 
-class ModuleWrapper(BaseModel):
-    module: Module
-
-    def __str__(self) -> str:
-        return self.module.__str__()
-
-
 class ModuleResponse(BaseModel):
     think_general: str
     think_anti: str
-    answer: List[ModuleWrapper]
+    modules: List[Module]
 
     def __str__(self) -> str:
-        answer_str = "\n".join(str(x) for x in self.answer)
+        answer_str = "\n".join(str(x) for x in self.modules)
         return f"Thoughts: {self.think_general}\nAnti:{self.think_anti}\n{answer_str}"
 
 
-class DBSchemaTableResponseWrapper(BaseModel):
-    table: DatabaseTable
+# class DBSchemaTableResponseWrapper(BaseModel):
+#     table: DatabaseTable
 
 
 class DBSchemaResponseWrapper(BaseModel):
@@ -335,7 +348,12 @@ class DBSchemaResponseWrapper(BaseModel):
     # context on what the database schema is
     description: str
     # list of tables in the database schema
-    tables: List[DBSchemaTableResponseWrapper] | DBSchemaTableResponseWrapper
+    tables: List[DatabaseTable]
+
+
+class PreAnswer(BaseModel):
+    tables: list[dict[str, str]]
+    enums: list[dict[str, str]]
 
 
 class DBResponse(BaseModel):
@@ -343,7 +361,7 @@ class DBResponse(BaseModel):
     anti_think: str
     plan: str
     refine: str
-    pre_answer: str
+    pre_answer: PreAnswer
     pre_answer_issues: str
     full_schema: str
     database_schema: DBSchemaResponseWrapper
@@ -362,14 +380,15 @@ class ReplyEnum(enum.Enum):
         return super().__eq__(other)
 
     @classmethod
-    def _missing_(cls, value: str):
-        value = value.replace("/", "").lower()
-        if value.lower() == "yes":
-            return ReplyEnum.YES
-        elif value.lower() == "no":
-            return ReplyEnum.NO
-        elif value.lower() == "na":
-            return ReplyEnum.NA
+    def _missing_(cls, value: object):
+        if isinstance(value, str):
+            value = value.replace("/", "").lower()
+            if value.lower() == "yes":
+                return ReplyEnum.YES
+            elif value.lower() == "no":
+                return ReplyEnum.NO
+            elif value.lower() == "na":
+                return ReplyEnum.NA
         raise ValueError(f"{value} is not a valid ReplyEnum")
 
 
@@ -421,6 +440,8 @@ class RequirementsRefined(BaseModel):
 
     authorization_roles: List[str] = []
     authorization_roles_justification: str = ""
+
+    dirty_requirements: Optional[list[RequirementsQA]]
 
 
 class DatabaseSchemaRequirement(BaseModel):
@@ -518,7 +539,7 @@ class StateObj:
             if qa.was_conclusive and qa.was_conclusive == "Yes":
                 conclusive.append(qa)
             else:
-                print(f"Maybe an oopsie here? {qa}")
+                logger.info(f"Maybe an oopsie here? {qa}")
         return conclusive
 
     def conclusive_q_and_a_as_string(self) -> str:
@@ -553,8 +574,11 @@ class StateObj:
     def requirements_q_and_a_string(self) -> str:
         output: str = ""
         for req in self.requirements_q_and_a:
+            answer_text = (
+                req.answer if isinstance(req.answer, str) else "\n".join(req.answer)
+            )
             output += self.convert_to_q_and_a_format(
-                req.question, req.answer, req.think
+                req.question, answer_text, req.think
             )
         return output
 

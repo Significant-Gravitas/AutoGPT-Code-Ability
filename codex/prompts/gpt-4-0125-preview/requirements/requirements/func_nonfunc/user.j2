@@ -1,0 +1,41 @@
+Here's a bit of context on the project that will help us both be on the same page:
+"{{ product_description }}"
+
+Here are a few Q&As we've already answered before I ask:
+
+{{ joint_q_and_a }}
+
+Also heres a few of the general baseline requirements we've already discussed and MUST be included:
+
+{{ requirements_q_and_a_string }}
+
+You are an expert senior software architect and CTO. Turn the details provided into functional requirements and non-functional requirements. Start with the general baseline requirements and then add additional ones based on the product description, feature list, and Q&A.
+
+The features are:
+{{ features }}
+
+You should carefully think about it step by step, and share those answers in a block set off by `think`.
+You should answer with only an expected non functional and functional requirements. Set the answer off by
+```json
+{
+    "think": "your thoughts here",
+    "answer": {
+        "functional": [
+             {
+                    "name": "name of the requirement",
+                    "description": "description of the requirement",
+                    "thoughts": "thoughts on this requirement"
+                },
+            ... for all requirements
+        ],
+        "nonfunctional": [
+            {
+                "name": "name of the requirement",
+                "description": "description of the requirement",
+                "thoughts": "thoughts on this requirement"
+            },
+            ... for all requirements
+        ]
+    }
+}
+```
