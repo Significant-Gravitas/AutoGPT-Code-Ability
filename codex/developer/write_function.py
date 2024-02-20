@@ -184,7 +184,7 @@ class WriteFunctionAIBlock(AIBlock):
                 PackageCreateWithoutRelationsInput(
                     packageName=package.package_name,
                     # TODO: Fix db schema to allow null values
-                    # This is a work around to avoid merg nightmares with the db schema
+                    # This is a work around to avoid merg nightmares with the db schema
                     version=package.version if package.version else " ",
                     specifier=package.specifier if package.specifier else " ",
                 )
