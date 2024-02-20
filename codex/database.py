@@ -161,6 +161,7 @@ async def get_app_by_id(user_id: str, app_id: str) -> ApplicationResponse:
         where={
             "id": app_id,
             "userId": user_id,
+            "deleted": False,
         }
     )
 
