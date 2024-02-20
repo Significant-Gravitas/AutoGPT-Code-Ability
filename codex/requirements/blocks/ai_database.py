@@ -66,7 +66,6 @@ if __name__ == "__main__":
 
     setup_logging(local=True)
 
-
     ids = Indentifiers(user_id=1, app_id=1)
     db_client = Prisma(auto_register=True)
     oai = AsyncOpenAI()
