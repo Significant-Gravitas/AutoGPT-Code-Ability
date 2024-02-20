@@ -6,6 +6,7 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
+from codex.common.logging_config import setup_logging
 from codex.requirements.build_requirements_refinement_object import convert_requirements
 from codex.requirements.model import (
     RequirementsGenResponse,
@@ -122,6 +123,8 @@ if __name__ == "__main__":
 
     from openai import AsyncOpenAI
     from prisma import Prisma
+
+    setup_logging(local=True)
 
     ids = Indentifiers(user_id=1, app_id=1)
     db_client = Prisma(auto_register=True)

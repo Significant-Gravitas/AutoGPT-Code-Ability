@@ -1,5 +1,4 @@
 import logging
-from venv import logger
 
 from codex.common.ai_block import (
     AIBlock,
@@ -7,6 +6,7 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
+from codex.common.logging_config import setup_logging
 from codex.requirements.model import Clarification, QandA, QandAResponses
 
 logger = logging.getLogger(__name__)
@@ -196,6 +196,8 @@ if __name__ == "__main__":
 
     from openai import AsyncOpenAI
     from prisma import Prisma
+
+    setup_logging(local=True)
 
     ids = Indentifiers(user_id=1, app_id=1)
     db_client = Prisma(auto_register=True)
