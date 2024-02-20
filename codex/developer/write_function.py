@@ -6,7 +6,6 @@ import black
 import isort
 from prisma.models import Functions as FunctionsDBModel
 from prisma.types import FunctionsCreateInput, PackageCreateWithoutRelationsInput
-from regex import F
 
 from codex.common.ai_block import (
     AIBlock,
