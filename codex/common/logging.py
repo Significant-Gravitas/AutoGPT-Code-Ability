@@ -14,5 +14,5 @@ class Logger(logging.Logger):
         super().error(msg, *args, **kwargs)
 
 
-def getLogger(name):
-    return setup_logging(Logger(name))
+# def getLogger(name):
+#     return setup_logging(Logger(name))
