@@ -2,7 +2,7 @@ from openai import AsyncOpenAI
 
 
 class OpenAIChatClient:
-    _instance = None
+    _instance: "OpenAIChatClient" = None
     _configured = False
     openai: AsyncOpenAI
 
@@ -18,10 +18,11 @@ class OpenAIChatClient:
     def get_instance(cls) -> "OpenAIChatClient":
         if not cls._configured:
             raise Exception("Singleton instance needs to be configured first")
-        assert cls._instance is not None, "Singleton instance has not been configured"
         return cls._instance
 
     def __init__(self, openai_config):
+        if OpenAIChatClient._configured:
+            raise Exception("Singleton instance can only be instantiated once.")
         self.openai = AsyncOpenAI(**openai_config)
 
 
