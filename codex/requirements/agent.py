@@ -1,4 +1,5 @@
 import json
+import logging
 from asyncio import run
 
 import openai
@@ -8,8 +9,6 @@ from prisma.models import Specification
 from pydantic.json import pydantic_encoder
 
 from codex.api_model import Identifiers
-from codex.common import logging
-from codex.common.test_const import *
 from codex.prompts.claude.requirements.NestJSDocs import (
     NEST_JS_CRUD_GEN,
     NEST_JS_FIRST_STEPS,

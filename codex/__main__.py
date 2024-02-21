@@ -55,6 +55,7 @@ async def fetch_deliverable(session, user_id, app_id):
         try:
             data = await response.json()
             deliverable_id = data["id"]
+            click.echo(f"Created deliverable: {data}")
             deploy_url = f"http://127.0.0.1:8000/api/v1/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/"
             async with session.post(deploy_url) as dresponse:
                 deploy_data = await dresponse.json()
@@ -117,13 +118,11 @@ def serve() -> None:
     import uvicorn
 
     reload = os.environ.get("ENV", "CLOUD").lower() == "local"
-    log_level = "debug" if reload else "info"
+
     uvicorn.run(
         "codex.app:app",
         host="0.0.0.0",
         port=int(os.environ.get("PORT", 8000)),
-        reload=reload,
-        log_level=log_level,
     )
 
 

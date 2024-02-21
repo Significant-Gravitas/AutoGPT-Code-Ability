@@ -1,6 +1,7 @@
 import base64
 import io
 import json
+import logging
 
 from fastapi import APIRouter, HTTPException, Query, Response
 from fastapi.responses import StreamingResponse
@@ -15,7 +16,6 @@ from codex.api_model import (
     DeploymentsListResponse,
     Identifiers,
 )
-from codex.common import logging
 
 logger = logging.getLogger(__name__)
 

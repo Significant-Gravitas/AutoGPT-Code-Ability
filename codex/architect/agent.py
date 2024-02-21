@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 from openai import AsyncOpenAI
 from prisma.models import Specification
@@ -6,7 +7,6 @@ from prisma.models import Specification
 from codex.api_model import Identifiers
 from codex.architect.codegraph import CodeGraphAIBlock
 from codex.architect.model import ApplicationGraphs
-from codex.common import logging
 
 logger = logging.getLogger(__name__)
 

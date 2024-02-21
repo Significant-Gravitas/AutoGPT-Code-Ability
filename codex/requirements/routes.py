@@ -1,4 +1,5 @@
 import json
+import logging
 
 from fastapi import APIRouter, Query, Response
 from prisma.models import Specification
@@ -11,7 +12,6 @@ from codex.api_model import (
     SpecificationResponse,
     SpecificationsListResponse,
 )
-from codex.common import logging
 from codex.requirements.agent import generate_requirements
 
 logger = logging.getLogger(__name__)

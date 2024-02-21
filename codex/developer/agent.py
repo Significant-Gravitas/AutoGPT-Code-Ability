@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from typing import List
 
 from prisma.models import CodeGraph as CodeGraphDBModel
@@ -7,7 +8,6 @@ from prisma.models import FunctionDefinition as FunctionDefDBModel
 from prisma.models import Specification
 
 from codex.api_model import Identifiers
-from codex.common import logging
 from codex.developer.write_function import WriteFunctionAIBlock
 
 logger = logging.getLogger(__name__)

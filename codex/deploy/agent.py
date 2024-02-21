@@ -1,5 +1,6 @@
 import ast
 import base64
+import logging
 from typing import Tuple
 
 import black
@@ -9,7 +10,6 @@ from prisma.models import CompletedApp, Deployment
 from prisma.types import DeploymentCreateInput
 
 from codex.api_model import Identifiers
-from codex.common import logging
 from codex.deploy.model import Application, CompiledRoute
 from codex.deploy.packager import create_zip_file
 from codex.developer.model import Package
