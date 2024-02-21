@@ -1,6 +1,6 @@
 from typing import Dict, List
 
-from prisma.models import CompletedApp
+from prisma.models import CompletedApp, CompiledRoute as CompiledRouteDBModel
 from pydantic import BaseModel
 
 from codex.developer.model import Package
@@ -14,6 +14,7 @@ class CompiledRoute(BaseModel):
     request_param_str: str
     param_names_str: str
     packages: List[Package] | None = None
+    compiled_route: CompiledRouteDBModel | None = None
 
 
 class Application(BaseModel):
