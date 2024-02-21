@@ -1,6 +1,7 @@
 from typing import Dict, List
 
-from prisma.models import CompletedApp, CompiledRoute as CompiledRouteDBModel
+from prisma.models import CompiledRoute as CompiledRouteDBModel
+from prisma.models import CompletedApp
 from pydantic import BaseModel
 
 from codex.developer.model import Package
