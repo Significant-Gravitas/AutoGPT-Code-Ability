@@ -7,6 +7,7 @@ from prisma.models import Specification
 from codex.api_model import Identifiers
 from codex.architect.codegraph import CodeGraphAIBlock
 from codex.architect.model import ApplicationGraphs
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,6 +18,7 @@ async def create_code_graphs(
     Create the code graphs for given api routes in parallel
     """
     assert spec.ApiRouteSpecs, "No api routes found in the spec"
+
     async def create_graph(api_route):
         logger.info(f"Creating code graph for {api_route.path}")
         codegraph = CodeGraphAIBlock()

@@ -12,9 +12,9 @@ from prisma.fields import Json
 from prisma.models import LLMCallAttempt, LLMCallTemplate
 from prisma.types import LLMCallAttemptCreateInput
 from pydantic import BaseModel
-from codex.common.ai_model import OpenAIChatClient
 
 from codex.api_model import Identifiers
+from codex.common.ai_model import OpenAIChatClient
 
 logger = logging.getLogger(__name__)
 

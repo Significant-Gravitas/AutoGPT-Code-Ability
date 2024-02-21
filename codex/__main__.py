@@ -117,6 +117,7 @@ def benchmark():
 @cli.command()
 def serve() -> None:
     import uvicorn
+
     from codex.common.ai_model import OpenAIChatClient
 
     OpenAIChatClient.configure({})
