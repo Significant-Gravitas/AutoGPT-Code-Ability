@@ -14,6 +14,7 @@ class CompiledRoute(BaseModel):
     main_function_name: str
     request_param_str: str
     param_names_str: str
+    return_type: str
     packages: List[Package] | None = None
     compiled_route: CompiledRouteDBModel | None = None
 
