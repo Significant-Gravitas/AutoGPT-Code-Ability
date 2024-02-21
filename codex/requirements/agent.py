@@ -436,6 +436,7 @@ async def populate_database_specs():
     """
     from codex.api_model import Identifiers
     from codex.common.test_const import app_id_1, app_id_2, app_id_3, app_id_4, app_id_5
+
     requirements = [
         ("Availability Checker", app_id_1),
         ("Invoice Generator", app_id_2),
@@ -455,6 +456,7 @@ async def populate_database_specs():
 
 if __name__ == "__main__":
     from codex.common.test_const import identifier_1
+
     ids = identifier_1
     db_client = prisma.Prisma(auto_register=True)
 
