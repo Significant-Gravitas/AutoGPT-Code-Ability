@@ -83,6 +83,7 @@ def compile_application(app: CompletedApp) -> Application:
             name=app.name,
             description=app.description,
             server_code="",
+            completed_app=app,
             routes=compiled_routes,
             packages=packages,
         )

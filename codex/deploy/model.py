@@ -1,5 +1,6 @@
 from typing import Dict, List
 
+from prisma.models import CompletedApp
 from pydantic import BaseModel
 
 from codex.developer.model import Package
@@ -19,5 +20,6 @@ class Application(BaseModel):
     name: str
     description: str
     server_code: str
+    completed_app: CompletedApp | None = None
     routes: Dict[str, CompiledRoute]
     packages: List[Package] | None = None
