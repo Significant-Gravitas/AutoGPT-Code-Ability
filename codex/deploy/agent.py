@@ -102,6 +102,10 @@ def create_server_code(application: Application) -> Application:
     Returns:
         Application: _description_
     """
+    assert application.completed_app, "Application must have a completed_app"
+    name = application.completed_app.name
+    desc = application.completed_app.description
+
     server_code_imports = [
         "from fastapi import FastAPI",
         "from fastapi.responses import JSONResponse",
@@ -110,7 +114,7 @@ def create_server_code(application: Application) -> Application:
     ]
     server_code_header = f"""logger = logging.getLogger(__name__)
 
-app = FastAPI(title="{application.name}", description='''{application.description}''')"""
+app = FastAPI(title="{name}", description='''{desc}''')"""
 
     service_routes_code = []
     for route_path, compiled_route in application.routes.items():
@@ -199,6 +203,7 @@ def compile_route(compiled_route: CompiledRouteDBModel) -> CompiledRoute:
         request_param_str=req_param_str,
         param_names_str=param_names_str,
         packages=packages,
+        compiled_route=compiled_route,
     )
 
 
