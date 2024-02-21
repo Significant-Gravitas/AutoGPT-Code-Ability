@@ -6,6 +6,7 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
+from codex.common.logging_config import setup_logging
 from codex.requirements.build_requirements_refinement_object import convert_requirements
 from codex.requirements.model import (
     RequirementsGenResponse,
@@ -120,14 +121,14 @@ if __name__ == "__main__":
     """
     from asyncio import run
 
-    from openai import OpenAI
+    from openai import AsyncOpenAI
     from prisma import Prisma
 
     from codex.common.test_const import identifier_1
 
     ids = identifier_1
     db_client = Prisma(auto_register=True)
-    oai = OpenAI()
+    oai = AsyncOpenAI()
 
     product_description: str = """"""
 

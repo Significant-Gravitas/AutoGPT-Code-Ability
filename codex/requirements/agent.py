@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 from asyncio import run
@@ -85,6 +86,8 @@ async def generate_requirements(
     """
 
     running_state_obj = StateObj(task=description)
+
+    logger.info("State Object Created")
 
     # User Interview
     project_description, memory = await gather_task_info_loop(
@@ -306,16 +309,20 @@ async def generate_requirements(
     logger.info("Refined Modules Done")
 
     # DB Schemas
-    reply = ""
     db_table_names: list[str] = [
         table.name or "" for table in running_state_obj.database.tables
     ]
+
     for i, module in enumerate(running_state_obj.modules):
         if module.endpoints:
-            for j, endpoint in enumerate(module.endpoints):
-                endpoint_block = EndpointSchemaRefinementBlock()
-                endpoint_ref: EndpointSchemaRefinementResponse = (
-                    await endpoint_block.invoke(
+            logger.info(f"Endpoints for {module.name} Started")
+
+            endpoint_block = EndpointSchemaRefinementBlock()
+            new_endpoints: list[
+                EndpointSchemaRefinementResponse
+            ] = await asyncio.gather(
+                *[
+                    endpoint_block.invoke(
                         ids=ids,
                         invoke_params={
                             "spec": running_state_obj.__str__(),
@@ -324,15 +331,19 @@ async def generate_requirements(
                             "endpoint_repr": f"{endpoint!r}",
                         },
                     )
-                )
+                    for endpoint in module.endpoints
+                ]
+            )
+            for j, new_endpoint in enumerate(new_endpoints):
                 converted: Endpoint = convert_endpoint(
-                    input=endpoint_ref,
-                    existing=endpoint,
+                    input=new_endpoint,
+                    existing=module.endpoints[j],
                     database=running_state_obj.database,
                 )
                 logger.debug(f"{converted!r}")
-                logger.info(f"Endpoint {endpoint.type} {endpoint.name} Done")
+                logger.info(f"Endpoint {converted.type} {converted.name} Done")
                 running_state_obj.modules[i].endpoints[j] = converted  # type: ignore
+        logger.info(f"Endpoints for {module.name} Done")
 
     logger.info("Endpoints Done")
 
@@ -424,7 +435,7 @@ async def populate_database_specs():
       7 | 2024-02-08 11:51:15.216 | 2024-02-08 11:51:15.216 | Scurvey Tool                  | t       |      2
     """
     from codex.api_model import Identifiers
-
+    from codex.common.test_const import app_id_1, app_id_2, app_id_3, app_id_4, app_id_5
     requirements = [
         ("Availability Checker", app_id_1),
         ("Invoice Generator", app_id_2),
@@ -443,10 +454,11 @@ async def populate_database_specs():
 
 
 if __name__ == "__main__":
+    from codex.common.test_const import identifier_1
     ids = identifier_1
     db_client = prisma.Prisma(auto_register=True)
 
-    oai = openai.OpenAI()
+    oai = openai.AsyncOpenAI()
 
     task = """The Tutor App is an app designed for tutors to manage their clients,
  schedules, and invoices.
@@ -466,9 +478,11 @@ Additionally, it will have proper management of financials, including invoice ma
 
     async def run_gen():
         await db_client.connect()
+        logger.info("Starting Requirements Generation")
         output = await generate_requirements(
             ids=ids, app_name="Tutor", description=task
         )
+        logger.info("Requirements Generation Done")
         return output
 
     out = run(run_gen())
