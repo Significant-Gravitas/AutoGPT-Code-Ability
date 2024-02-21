@@ -4,7 +4,7 @@ from prisma.types import DeploymentCreateInput, DeploymentWhereInput
 from codex.api_model import DeploymentMetadata, DeploymentsListResponse, Pagination
 
 
-async def get_deployment(deployment_id: int) -> Deployment:
+async def get_deployment(deployment_id: str) -> Deployment:
     deployment = await Deployment.prisma().find_unique_or_raise(
         where={"id": deployment_id},
     )
@@ -12,7 +12,7 @@ async def get_deployment(deployment_id: int) -> Deployment:
     return deployment
 
 
-async def delete_deployment(deployment_id: int) -> None:
+async def delete_deployment(deployment_id: str) -> None:
     await Deployment.prisma().update(
         where={
             "id": deployment_id,
@@ -22,7 +22,7 @@ async def delete_deployment(deployment_id: int) -> None:
 
 
 async def list_deployments(
-    user_id: int, deliverable_id: int, page: int, page_size: int
+    user_id: str, deliverable_id: str, page: int, page_size: int
 ) -> DeploymentsListResponse:
     skip = (page - 1) * page_size
     total_items = await Deployment.prisma().count(

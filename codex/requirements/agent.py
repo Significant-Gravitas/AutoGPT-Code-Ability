@@ -9,8 +9,7 @@ from prisma.enums import AccessLevel
 from prisma.models import Specification
 from pydantic.json import pydantic_encoder
 
-from codex.api_model import Indentifiers
-from codex.common.logging_config import setup_logging
+from codex.api_model import Identifiers
 from codex.prompts.claude.requirements.NestJSDocs import (
     NEST_JS_CRUD_GEN,
     NEST_JS_FIRST_STEPS,
@@ -69,7 +68,7 @@ logger = logging.getLogger(__name__)
 
 
 async def generate_requirements(
-    ids: Indentifiers,
+    ids: Identifiers,
     app_name: str,
     description: str,
 ) -> Specification:
@@ -78,7 +77,7 @@ async def generate_requirements(
     upon the provided task
 
     Args:
-        ids (Indentifiers): Relevant ids for database operations
+        ids (Identifiers): Relevant ids for database operations
         app_name (str): name of the application
         description (str): description of the application
 
@@ -435,18 +434,19 @@ async def populate_database_specs():
       6 | 2024-02-08 11:51:15.216 | 2024-02-08 11:51:15.216 | Survey Tool                   | f       |      2
       7 | 2024-02-08 11:51:15.216 | 2024-02-08 11:51:15.216 | Scurvey Tool                  | t       |      2
     """
-    from codex.api_model import Indentifiers
+    from codex.api_model import Identifiers
+    from codex.common.test_const import app_id_1, app_id_2, app_id_3, app_id_4, app_id_5
 
-    requirmenets = [
-        ("Availability Checker", 1),
-        ("Invoice Generator", 2),
-        ("Appointment Optimization Tool", 3),
-        ("Distance Calculator", 4),
-        ("Profile Management System", 5),
+    requirements = [
+        ("Availability Checker", app_id_1),
+        ("Invoice Generator", app_id_2),
+        ("Appointment Optimization Tool", app_id_3),
+        ("Distance Calculator", app_id_4),
+        ("Profile Management System", app_id_5),
     ]
-    ids = Indentifiers(user_id=1, app_id=1)
+    ids = identifier_1
 
-    for task, app_id in requirmenets:
+    for task, app_id in requirements:
         print(f"Creating Spec for {task}, with app_id {app_id}")
         spec = hardcoded_requirements(task)
         ids.app_id = app_id
@@ -455,9 +455,9 @@ async def populate_database_specs():
 
 
 if __name__ == "__main__":
-    setup_logging(local=True)
+    from codex.common.test_const import identifier_1
 
-    ids = Indentifiers(user_id=1, app_id=1)
+    ids = identifier_1
     db_client = prisma.Prisma(auto_register=True)
 
     oai = openai.AsyncOpenAI()

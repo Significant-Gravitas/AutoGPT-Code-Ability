@@ -4,12 +4,12 @@ from typing import List
 
 import black
 import isort
-from prisma.models import Functions as FunctionsDBModel
-from prisma.types import FunctionsCreateInput, PackageCreateWithoutRelationsInput
+from prisma.models import Function as FunctionDBModel
+from prisma.types import FunctionCreateInput, PackageCreateWithoutRelationsInput
 
 from codex.common.ai_block import (
     AIBlock,
-    Indentifiers,
+    Identifiers,
     ValidatedResponse,
     ValidationError,
 )
@@ -98,7 +98,7 @@ class WriteFunctionAIBlock(AIBlock):
 
     def validate_code(self, invoke_params: dict, code: str) -> Function:
         try:
-            function_def = invoke_params["function_def"]
+            function_def: FunctionDBModel = invoke_params["function_def"]
 
             sorted_content = isort.code(code)
             formatted_code = black.format_str(sorted_content, mode=black.FileMode())
@@ -127,10 +127,10 @@ class WriteFunctionAIBlock(AIBlock):
                     f"parameter {function_def.args}"
                 )
 
-            if ret.lower() != function_def.return_type.lower():
+            if ret.lower() != function_def.returnType.lower():
                 errors.append(
                     f"Return type {ret} does not match required return type "
-                    f"{function_def.return_type}"
+                    f"{function_def.returnType}"
                 )
 
             if errors:
@@ -141,7 +141,7 @@ class WriteFunctionAIBlock(AIBlock):
 
             return Function(
                 name=function_def.name,
-                doc_string=docstring if docstring else function_def.doc_string,
+                doc_string=docstring if docstring else function_def.docString,
                 args=args,
                 return_type=ret,
                 code=formatted_code,
@@ -164,19 +164,10 @@ class WriteFunctionAIBlock(AIBlock):
         return response
 
     async def create_item(
-        self, ids: Indentifiers, validated_response: ValidatedResponse
+        self, ids: Identifiers, validated_response: ValidatedResponse
     ):
         """This is just a temporary that doesnt have a database model"""
         genfunc = validated_response.response.code
-
-        create_data = FunctionsCreateInput(
-            name=genfunc.name,
-            doc_string=genfunc.doc_string,
-            args=genfunc.args,
-            return_type=genfunc.return_type,
-            code=genfunc.code,
-            functionDefs={"connect": {"id": ids.function_def_id}},
-        )
 
         if validated_response.response.packages:
             package_create_data = [
@@ -189,24 +180,24 @@ class WriteFunctionAIBlock(AIBlock):
                 )
                 for package in validated_response.response.packages
             ]
-            create_data = FunctionsCreateInput(
+            create_data = FunctionCreateInput(
                 name=genfunc.name,
-                doc_string=genfunc.doc_string,
+                docString=genfunc.doc_string,
                 args=genfunc.args,
-                return_type=genfunc.return_type,
+                returnType=genfunc.return_type,
                 code=genfunc.code,
-                packages={"create": package_create_data},
-                functionDefs={"connect": {"id": ids.function_def_id}},
+                Packages={"create": package_create_data},
+                FunctionDefinitions={"connect": {"id": ids.function_def_id}},
             )
         else:
-            create_data = FunctionsCreateInput(
+            create_data = FunctionCreateInput(
                 name=genfunc.name,
-                doc_string=genfunc.doc_string,
+                docString=genfunc.doc_string,
                 args=genfunc.args,
-                return_type=genfunc.return_type,
+                returnType=genfunc.return_type,
                 code=genfunc.code,
-                functionDefs={"connect": {"id": ids.function_def_id}},
+                FunctionDefinitions={"connect": {"id": ids.function_def_id}},
             )
 
-        func = await FunctionsDBModel.prisma().create(data=create_data)
+        func = await FunctionDBModel.prisma().create(data=create_data)
         return func

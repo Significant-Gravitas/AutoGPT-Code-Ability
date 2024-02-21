@@ -1,12 +1,8 @@
 from datetime import datetime
 
 from prisma.enums import Role
-from prisma.models import Application, CodexUser
-from prisma.types import (
-    CodexUserCreateInput,
-    CodexUserCreateWithoutRelationsInput,
-    CodexUserUpdateInput,
-)
+from prisma.models import Application, User
+from prisma.types import UserCreateInput, UserCreateWithoutRelationsInput
 
 from codex.api_model import (
     ApplicationCreate,
@@ -15,27 +11,26 @@ from codex.api_model import (
     Pagination,
     UserResponse,
     UsersListResponse,
-    UserUpdate,
 )
+from codex.common import test_const
 
 
 async def create_test_data():
-    await CodexUser.prisma().create_many(
+    user_id_1 = test_const.user_id_1
+    user_id_2 = test_const.user_id_2
+
+    await User.prisma().create_many(
         [
-            CodexUserCreateWithoutRelationsInput(
-                discord_id="123456788",
-                email="joe.blogs@example.com",
-                name="Joe Blogs",
+            UserCreateWithoutRelationsInput(
+                id=user_id_1,
+                discordId="123456788",
                 role=Role.ADMIN,
-                password="password123",
                 deleted=False,
             ),
-            CodexUserCreateWithoutRelationsInput(
-                discord_id="234567891",
-                email="jane.doe@example.com",
-                name="Jane Doe",
+            UserCreateWithoutRelationsInput(
+                id=user_id_2,
+                discordId="234567891",
                 role=Role.USER,
-                password="password123",
                 deleted=False,
             ),
         ]
@@ -47,78 +42,71 @@ async def create_test_data():
             {
                 "name": "Availability Checker",
                 "deleted": False,
-                "userId": 1,
+                "id": test_const.app_id_1,
+                "userId": user_id_1,
                 "updatedAt": datetime.now(),
             },
             {
                 "name": "Invoice Generator",
                 "deleted": False,
-                "userId": 1,
+                "id": test_const.app_id_2,
+                "userId": user_id_1,
                 "updatedAt": datetime.now(),
             },
             {
                 "name": "Appointment Optimization Tool",
                 "deleted": False,
-                "userId": 1,
+                "id": test_const.app_id_3,
+                "userId": user_id_1,
                 "updatedAt": datetime.now(),
             },
             {
                 "name": "Distance Calculator",
                 "deleted": False,
-                "userId": 1,
+                "id": test_const.app_id_4,
+                "userId": user_id_1,
                 "updatedAt": datetime.now(),
             },
             {
                 "name": "Profile Management System",
                 "deleted": False,
-                "userId": 1,
+                "id": test_const.app_id_5,
+                "userId": user_id_1,
                 "updatedAt": datetime.now(),
             },
             {
                 "name": "Survey Tool",
                 "deleted": False,
-                "userId": 2,
+                "id": test_const.app_id_6,
+                "userId": user_id_2,
                 "updatedAt": datetime.now(),
             },
             {
                 "name": "Scurvey Tool",
                 "deleted": True,
-                "userId": 2,
+                "id": test_const.app_id_7,
+                "userId": user_id_2,
                 "updatedAt": datetime.now(),
             },
         ]
     )
 
 
-async def get_or_create_user_by_discord_id(discord_id: int) -> CodexUser:
-    user = await CodexUser.prisma().find_unique(where={"discord_id": str(discord_id)})
+async def get_or_create_user_by_discord_id(discord_id: str) -> User:
+    user = await User.prisma().find_unique(where={"discordId": discord_id})
 
     if not user:
-        user = await CodexUser.prisma().create(
-            data=CodexUserCreateInput(
-                discord_id=str(discord_id),
+        user = await User.prisma().create(
+            data=UserCreateInput(
+                discordId=str(discord_id),
             )
         )
 
     return user
 
 
-async def update_user(update: UserUpdate) -> CodexUser:
-    user = await CodexUser.prisma().update(
-        where={"id": update.id},
-        data=CodexUserUpdateInput(
-            email=update.email,
-            name=update.name,
-        ),
-    )
-    if not user:
-        raise ValueError(f"User with id {update.id} not found")
-
-    return user
-
-
-async def get_user(user_id: int) -> CodexUser:
-    user = await CodexUser.prisma().find_unique_or_raise(where={"id": user_id})
+async def get_user(user_id: str) -> User:
+    user = await User.prisma().find_unique_or_raise(where={"id": user_id})
 
     return user
 
@@ -128,7 +116,7 @@ async def list_users(page: int, page_size: int) -> UsersListResponse:
     skip = (page - 1) * page_size
 
     # Query the database for the total number of users
-    total_items = await CodexUser.prisma().count()
+    total_items = await User.prisma().count()
     if total_items == 0:
         return UsersListResponse(
             users=[],
@@ -138,7 +126,7 @@ async def list_users(page: int, page_size: int) -> UsersListResponse:
         )
 
     # Query the database for users with pagination
-    users = await CodexUser.prisma().find_many(skip=skip, take=page_size)
+    users = await User.prisma().find_many(skip=skip, take=page_size)
 
     # Calculate the total number of pages
     total_pages = (total_items + page_size - 1) // page_size
@@ -153,25 +141,24 @@ async def list_users(page: int, page_size: int) -> UsersListResponse:
 
     user_responses = [
         UserResponse(
-            id=CodexUser.id,
-            discord_id=CodexUser.discord_id,
-            createdAt=CodexUser.createdAt,
-            email=CodexUser.email,
-            name=CodexUser.name,
-            role=CodexUser.role,
+            id=user.id,
+            discord_id=user.discordId,
+            createdAt=user.createdAt,
+            role=user.role,
         )
-        for CodexUser in users
+        for user in users
     ]
 
     # Return both the users and the pagination info
     return UsersListResponse(users=user_responses, pagination=pagination)
 
 
-async def get_app_by_id(user_id: int, app_id: int) -> ApplicationResponse:
+async def get_app_by_id(user_id: str, app_id: str) -> ApplicationResponse:
     app = await Application.prisma().find_first_or_raise(
         where={
             "id": app_id,
             "userId": user_id,
+            "deleted": False,
         }
     )
 
@@ -184,7 +171,7 @@ async def get_app_by_id(user_id: int, app_id: int) -> ApplicationResponse:
     )
 
 
-async def create_app(user_id: int, app_data: ApplicationCreate) -> ApplicationResponse:
+async def create_app(user_id: str, app_data: ApplicationCreate) -> ApplicationResponse:
     app = await Application.prisma().create(
         data={
             "name": app_data.name,
@@ -201,7 +188,7 @@ async def create_app(user_id: int, app_data: ApplicationCreate) -> ApplicationRe
     )
 
 
-async def delete_app(user_id: int, app_id: int) -> None:
+async def delete_app(user_id: str, app_id: str) -> None:
     await Application.prisma().update(
         where={
             "id": app_id,
@@ -212,7 +199,7 @@ async def delete_app(user_id: int, app_id: int) -> None:
 
 
 async def list_apps(
-    user_id: int, page: int, page_size: int
+    user_id: str, page: int, page_size: int
 ) -> ApplicationsListResponse:
     skip = (page - 1) * page_size
     total_items = await Application.prisma().count(

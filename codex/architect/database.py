@@ -6,18 +6,18 @@ from codex.api_model import DeliverableResponse, DeliverablesListResponse, Pagin
 
 
 async def get_deliverable(
-    user_id: int, app_id: int, spec_id: int, deliverable_id: int
+    user_id: str, app_id: str, spec_id: str, deliverable_id: str
 ) -> CompletedApp:
     completed_app = await CompletedApp.prisma().find_unique_or_raise(
         where={"id": deliverable_id},
-        include={"compiledRoutes": True},
+        include={"CompiledRoutes": True},
     )
 
     return completed_app
 
 
 async def delete_deliverable(
-    user_id: int, app_id: int, spec_id: int, deliverable_id: int
+    user_id: str, app_id: str, spec_id: str, deliverable_id: str
 ) -> None:
     await CompletedApp.prisma().update(
         where={"id": deliverable_id},
@@ -26,14 +26,14 @@ async def delete_deliverable(
 
 
 async def list_deliverables(
-    user_id: int,
-    app_id: int,
-    spec_id: int,
+    user_id: str,
+    app_id: str,
+    spec_id: str,
     page: int = 1,
     page_size: int = 10,
 ) -> Tuple[List[CompletedApp], Pagination]:
     skip = (page - 1) * page_size
-    total_items = await CompletedApp.prisma().count(where={"specId": spec_id})
+    total_items = await CompletedApp.prisma().count(where={"specificationId": spec_id})
     if total_items == 0:
         return [], Pagination(total_items=0, total_pages=0, current_page=0, page_size=0)
     total_pages = (total_items + page_size - 1) // page_size
@@ -41,7 +41,7 @@ async def list_deliverables(
     completed_apps_data = await CompletedApp.prisma().find_many(
         skip=skip,
         take=page_size,
-        include={"compiledRoutes": True},
+        include={"CompiledRoutes": True},
     )
 
     pagination = Pagination(

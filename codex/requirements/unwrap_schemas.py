@@ -29,7 +29,7 @@ def unwrap_new_models(
             endpoint_data_model = EndpointDataModel(
                 name=model.name,
                 description=model.description,
-                params=(model.params),
+                params=model.params,
             )
             models.append(endpoint_data_model)
         return models

@@ -14,7 +14,7 @@ from codex.api_model import (
     DeploymentMetadata,
     DeploymentResponse,
     DeploymentsListResponse,
-    Indentifiers,
+    Identifiers,
 )
 
 logger = logging.getLogger(__name__)
@@ -29,10 +29,10 @@ deployment_router = APIRouter()
     tags=["deployments"],
 )
 async def create_deployment(
-    user_id: int,
-    app_id: int,
-    spec_id: int,
-    deliverable_id: int,
+    user_id: str,
+    app_id: str,
+    spec_id: str,
+    deliverable_id: str,
 ):
     """
     Create a new deployment with the provided zip file.
@@ -41,11 +41,11 @@ async def create_deployment(
         completedApp = await CompletedApp.prisma().find_unique(
             where={"id": deliverable_id},
             include={
-                "compiledRoutes": {
+                "CompiledRoutes": {
                     "include": {
-                        "functions": True,
-                        "apiRouteSpec": True,
-                        "codeGraph": True,
+                        "Functions": True,
+                        "ApiRouteSpec": True,
+                        "CodeGraph": True,
                     }
                 }
             },
@@ -54,7 +54,7 @@ async def create_deployment(
             raise ValueError(f"Completed app {deliverable_id} not found")
 
         logger.info(f"Creating deployment for {completedApp.name}")
-        ids = Indentifiers(
+        ids = Identifiers(
             user_id=user_id,
             app_id=app_id,
             spec_id=spec_id,
@@ -89,7 +89,7 @@ async def create_deployment(
     tags=["deployments"],
 )
 async def get_deployment(
-    user_id: int, app_id: int, spec_id: int, deliverable_id: int, deployment_id: int
+    user_id: str, app_id: str, spec_id: str, deliverable_id: str, deployment_id: str
 ):
     """
     Retrieve metadata about a specific deployment.
@@ -119,7 +119,7 @@ async def get_deployment(
     tags=["deployments"],
 )
 async def delete_deployment(
-    user_id: int, app_id: int, spec_id: int, deliverable_id: int, deployment_id: int
+    user_id: str, app_id: str, spec_id: str, deliverable_id: str, deployment_id: str
 ):
     """
     Delete a specific deployment.
@@ -145,10 +145,10 @@ async def delete_deployment(
     tags=["deployments"],
 )
 async def list_deployments(
-    user_id: int,
-    app_id: int,
-    spec_id: int,
-    deliverable_id: int,
+    user_id: str,
+    app_id: str,
+    spec_id: str,
+    deliverable_id: str,
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1),
 ):
@@ -172,7 +172,7 @@ async def list_deployments(
 
 
 @deployment_router.get("/deployments/{deployment_id}/download", tags=["deployments"])
-async def download_deployment(deployment_id: int):
+async def download_deployment(deployment_id: str):
     """
     Download the zip file for a specific deployment.
     """

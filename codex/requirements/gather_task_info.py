@@ -3,8 +3,7 @@ import asyncio
 import logging
 from typing import Callable, Optional
 
-from codex.common.ai_block import Indentifiers
-from codex.common.logging_config import setup_logging
+from codex.common.ai_block import Identifiers
 from codex.requirements.blocks.interview.ai_ask import AskBlock
 from codex.requirements.blocks.interview.ai_finish import FinishBlock
 from codex.requirements.blocks.interview.ai_interview import InterviewBlock
@@ -20,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 async def gather_task_info_loop(
-    task: str, ids: Indentifiers, ask_callback: Optional[Callable[..., str]] = None
+    task: str, ids: Identifiers, ask_callback: Optional[Callable[..., str]] = None
 ) -> tuple[str, list[InterviewMessageWithResponse]]:
     tools: list[Tool] = [
         Tool(
@@ -111,9 +110,9 @@ if __name__ == "__main__":
     from openai import AsyncOpenAI
     from prisma import Prisma
 
-    setup_logging(local=True)
+    from codex.common.test_const import identifier_1
 
-    ids = Indentifiers(user_id=1, app_id=1)
+    ids = identifier_1
     db_client = Prisma(auto_register=True)
     oai = AsyncOpenAI()
 
