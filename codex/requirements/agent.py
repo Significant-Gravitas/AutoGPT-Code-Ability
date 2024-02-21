@@ -40,6 +40,7 @@ from codex.requirements.gather_task_info import gather_task_info_loop
 from codex.requirements.hardcoded import (
     appointment_optimization_requirements,
     availability_checker_requirements,
+    calendar_booking_system,
     distance_calculator_requirements,
     invoice_generator_requirements,
     profile_management,
@@ -417,6 +418,28 @@ def hardcoded_requirements(task: str) -> ApplicationRequirements:
             return distance_calculator_requirements()
         case "Profile Management System":
             return profile_management()
+        case "Appointment Scheduling System":
+            return calendar_booking_system()
+        case "Survey Tool":
+            raise NotImplementedError("Survey Tool not implemented")
+        case "Inventory Management System":
+            raise NotImplementedError("Inventory Management System not implemented")
+        case "Invoiceing and Payment Tracking System":
+            raise NotImplementedError(
+                "Invoiceing and Payment Tracking System not implemented"
+            )
+        case "Client Portal":
+            raise NotImplementedError("Client Portal not implemented")
+        case "Tutor Scheduling App":
+            raise NotImplementedError("Tutor Scheduling App not implemented")
+        case "Cleaning Services App":
+            raise NotImplementedError("Cleaning Services App not implemented")
+        case "Personal Trainer App":
+            raise NotImplementedError("Personal Trainer App not implemented")
+        case "Plumber App":
+            raise NotImplementedError("Plumber App not implemented")
+        case "Property Management System":
+            raise NotImplementedError("Property Management System not implemented")
         case _:
             raise NotImplementedError(f"Task {task} not implemented")
 
@@ -443,6 +466,7 @@ async def populate_database_specs():
         ("Appointment Optimization Tool", 3),
         ("Distance Calculator", 4),
         ("Profile Management System", 5),
+        ("Appointment Scheduling System", 6),
     ]
     ids = Indentifiers(user_id=1, app_id=1)
 
