@@ -7,6 +7,7 @@ load_dotenv()
 from codex import app
 from codex.common.test_const import *
 
+
 @pytest.fixture
 def client():
     with TestClient(app.app) as c:
@@ -104,11 +105,13 @@ def test_specs_and_deliverables_apis(client):
     # assert next((s for s in specs if s['id'] == spec['id']), None) is None
 
 
+from prisma.models import APIRouteSpec
+
+from codex.app import db_client
 from codex.architect import agent
 from codex.architect.model import FunctionDef
-from prisma.models import APIRouteSpec
-from codex.app import db_client
 from codex.common.ai_model import OpenAIChatClient
+
 
 @pytest.mark.asyncio
 async def test_recursive_create_code_graphs():
@@ -120,8 +123,13 @@ async def test_recursive_create_code_graphs():
 
     # Find any api_route for now from the DB, we only use it for dummy data. Find all and get first
     api_route = await APIRouteSpec.prisma().find_first()
-    func_def = FunctionDef(name=entry_point_function, doc_string="dummy",
-                             args="dummy", return_type="dummy", function_template="")
+    func_def = FunctionDef(
+        name=entry_point_function,
+        doc_string="dummy",
+        args="dummy",
+        return_type="dummy",
+        function_template="",
+    )
 
     code_graph = await agent.recursive_create_code_graphs(
         ids=Identifiers(user_id=user_id_1, app_id=app_id_1, spec_id="123"),
