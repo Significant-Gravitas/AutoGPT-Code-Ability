@@ -7,10 +7,11 @@ import zipfile
 import aiohttp
 import click
 from dotenv import load_dotenv
-from networkx import is_valid_degree_sequence_havel_hakimi
 
 import codex.common.test_const as test_const
 from codex.common.logging_config import setup_logging
+
+# from networkx import is_valid_degree_sequence_havel_hakimi
 
 
 @click.group()
