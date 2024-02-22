@@ -1,12 +1,11 @@
 import asyncio
 import logging
 
-from openai import AsyncOpenAI
-from prisma.models import APIRouteSpec, CodeGraph, FunctionDefinition, Specification
-from prisma.types import CodeGraphCreateInput
+from prisma.models import APIRouteSpec, Function, Specification
+from prisma.types import FunctionCreateInput
 
 from codex.api_model import Identifiers
-from codex.develop.codegraph import CodeGraphAIBlock
+from codex.develop.develop import DevelopAIBlock
 from codex.develop.model import ApplicationGraphs, FunctionDef
 
 logger = logging.getLogger(__name__)
@@ -15,43 +14,44 @@ logger = logging.getLogger(__name__)
 generated_function_defs: list[FunctionDef] = []
 
 
-async def recursive_create_code_graphs(
+async def recursive_create_function(
     ids: Identifiers,
-    goal: str,
-    func_def: FunctionDef,
+    route_description: str,
+    func_name: str,
+    func_template: str,
     api_route: APIRouteSpec,
-) -> CodeGraph:
-    if func_def.function_template and "  pass" not in func_def.function_template:
+) -> Function:
+    if func_template and "  pass" not in func_template:
         # LLM is kind enough to implement the code, no need to do another AIblock.
-        create_input = CodeGraphCreateInput(
+        create_input = FunctionCreateInput(
             **{
-                "functionName": func_def.name,
+                "functionName": func_name,
                 "apiPath": api_route.path,
-                "codeGraph": func_def.function_template,
+                "functionCode": func_template,
                 "imports": [],
                 "FunctionDefinitions": {"create": []},
                 "ApiRouteSpec": {"connect": {"id": api_route.id}},
             }
         )
-        return await CodeGraph.prisma().create(data=create_input)
+        return await Function.prisma().create(data=create_input)
 
     description = f"""
-{func_def.function_template}
+{func_template}
 
-High-level Goal: {goal}"""
+High-level Goal: {route_description}"""
 
-    logger.info(f"Creating code graph for {func_def.name}")
+    logger.info(f"Creating code graph for {func_name}")
 
-    code_graph: CodeGraph = await CodeGraphAIBlock().invoke(
+    code_graph: Function = await DevelopAIBlock().invoke(
         ids=ids,
         invoke_params={
-            "function_name": func_def.name,
+            "function_name": func_name,
             "api_route": api_route,
             "description": description,
             "provided_functions": [
                 f.function_template
                 for f in generated_function_defs
-                if f.name != func_def.name
+                if f.name != func_name
             ],
         },
     )
@@ -72,11 +72,15 @@ High-level Goal: {goal}"""
     # DFS to traverse all the child functions, and recursively generate code graphs
     generated_function_defs.extend(function_defs)
     for child_func_def in function_defs:
-        child_graph = await recursive_create_code_graphs(
-            ids, goal, child_func_def, api_route
+        child_graph = await recursive_create_function(
+            ids,
+            route_description,
+            child_func_def.name,
+            child_func_def.function_template,
+            api_route,
         )
-        await CodeGraph.prisma().update(
-            where={"id": child_graph.id}, data={"parentCodeGraphId": code_graph.id}
+        await Function.prisma().update(
+            where={"id": child_graph.id}, data={"parentFunctionId": code_graph.id}
         )
 
     return code_graph
@@ -92,7 +96,7 @@ async def create_code_graphs(
 
     async def create_graph(api_route):
         logger.info(f"Creating code graph for {api_route.path}")
-        codegraph = CodeGraphAIBlock()
+        codegraph = DevelopAIBlock()
         return await codegraph.invoke(
             ids=ids,
             invoke_params={

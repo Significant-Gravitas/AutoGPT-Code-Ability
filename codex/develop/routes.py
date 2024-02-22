@@ -6,7 +6,6 @@ from fastapi import APIRouter, Query, Response
 import codex.database
 import codex.develop.agent as architect_agent
 import codex.develop.database
-import codex.developer.agent as developer_agent
 import codex.requirements.database
 from codex.api_model import DeliverableResponse, DeliverablesListResponse, Identifiers
 

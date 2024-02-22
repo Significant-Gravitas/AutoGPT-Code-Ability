@@ -202,14 +202,14 @@ model Function {
   template     String // This is the template of the function along with the docstring 
   state        FunctionState
 
-  Packages          Package[]
-  rawCode           String // This is the unpocessed code returned form the llm
-  importsStatements String[] // These are the import statements for the function
-  functionCode      String // This is the code of the function being written
+  Packages         Package[]
+  rawCode          String? // This is the unpocessed code returned form the llm
+  importStatements String[] // These are the import statements for the function
+  functionCode     String? // This is the code of the function being written
 
-  ParentFunction    Function?  @relation("ParentFunction", fields: [parentCodeGraphId], references: [id], onDelete: Cascade)
-  parentCodeGraphId String?
-  ChildFunction     Function[] @relation("ParentFunction")
+  ParentFunction   Function?  @relation("ParentFunction", fields: [parentFunctionId], references: [id], onDelete: Cascade)
+  parentFunctionId String?
+  ChildFunction    Function[] @relation("ParentFunction")
 
   ApiRouteSpec     APIRouteSpec?   @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
   apiRouteSpecId   String?
@@ -296,14 +296,14 @@ model Deployment {
 // ------------------------- LLM Models ----------------------------- //
 
 model LLMCallTemplate {
-  id           String   @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt    DateTime @default(now())
+  id               String           @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt        DateTime         @default(now())
   developmentPhase DevelopmentPhase
-  templateName String
-  fileHash     String
-  systemPrompt String
-  userPrompt   String
-  retryPrompt  String
+  templateName     String
+  fileHash         String
+  systemPrompt     String
+  userPrompt       String
+  retryPrompt      String
 
   Uses LLMCallAttempt[]
 }

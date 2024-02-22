@@ -4,7 +4,7 @@ from prisma.models import CompiledRoute as CompiledRouteDBModel
 from prisma.models import CompletedApp
 from pydantic import BaseModel
 
-from codex.developer.model import Package
+from codex.develop.model import Package
 
 
 class CompiledRoute(BaseModel):

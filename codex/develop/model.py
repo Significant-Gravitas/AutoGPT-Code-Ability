@@ -1,8 +1,14 @@
 from typing import Dict, List
 
 from prisma.models import APIRouteSpec
-from prisma.models import CodeGraph as CodeGraphDBModel
+from prisma.models import Function as FunctionDBModel
 from pydantic import BaseModel
+
+
+class Package(BaseModel):
+    package_name: str
+    version: str | None = None
+    specifier: str | None = None
 
 
 class FunctionDef(BaseModel):
@@ -13,14 +19,21 @@ class FunctionDef(BaseModel):
     function_template: str
 
 
-class CodeGraph(BaseModel):
+class GeneratedFunctionResponse(BaseModel):
+    function_id: str | None = None
+
     function_name: str
     api_route_spec: APIRouteSpec
-    code_graph: str
+    template: str
+
+    rawCode: str
+
+    packages: List[Package]
     imports: List[str]
-    function_defs: Dict[str, FunctionDef]
+    functionCode: str
+
     functions: Dict[str, FunctionDef] | None = None
 
 
 class ApplicationGraphs(BaseModel):
-    code_graphs: List[CodeGraphDBModel]
+    code_graphs: List[FunctionDBModel]
