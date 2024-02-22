@@ -11,6 +11,8 @@ from dotenv import load_dotenv
 import codex.common.test_const as test_const
 from codex.common.logging_config import setup_logging
 
+# from networkx import is_valid_degree_sequence_havel_hakimi
+
 
 @click.group()
 def cli():
@@ -117,6 +119,9 @@ def benchmark():
 def serve() -> None:
     import uvicorn
 
+    from codex.common.ai_model import OpenAIChatClient
+
+    OpenAIChatClient.configure({})
     reload = os.environ.get("ENV", "CLOUD").lower() == "local"
 
     uvicorn.run(

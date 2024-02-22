@@ -73,7 +73,7 @@ High-level Goal: {goal}'''
     return code_graph
 
 async def create_code_graphs(
-    ids: Identifiers, spec: Specification, oai_client: AsyncOpenAI = AsyncOpenAI()
+    ids: Identifiers, spec: Specification
 ) -> ApplicationGraphs:
     """
     Create the code graphs for given api routes in parallel
@@ -82,7 +82,7 @@ async def create_code_graphs(
 
     async def create_graph(api_route):
         logger.info(f"Creating code graph for {api_route.path}")
-        codegraph = CodeGraphAIBlock(oai_client=oai_client)
+        codegraph = CodeGraphAIBlock()
         return await codegraph.invoke(
             ids=ids,
             invoke_params={

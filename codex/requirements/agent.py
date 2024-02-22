@@ -10,6 +10,7 @@ from prisma.models import Specification
 from pydantic.json import pydantic_encoder
 
 from codex.api_model import Identifiers
+from codex.common.test_const import identifier_1
 from codex.prompts.claude.requirements.NestJSDocs import (
     NEST_JS_CRUD_GEN,
     NEST_JS_FIRST_STEPS,
@@ -39,7 +40,9 @@ from codex.requirements.gather_task_info import gather_task_info_loop
 from codex.requirements.hardcoded import (
     appointment_optimization_requirements,
     availability_checker_requirements,
+    calendar_booking_system,
     distance_calculator_requirements,
+    inventory_mgmt_system,
     invoice_generator_requirements,
     profile_management,
 )
@@ -63,7 +66,6 @@ from codex.requirements.model import (
     StateObj,
 )
 from codex.requirements.unwrap_schemas import convert_db_schema, convert_endpoint
-from codex.common.test_const import identifier_1
 
 logger = logging.getLogger(__name__)
 
@@ -417,6 +419,28 @@ def hardcoded_requirements(task: str) -> ApplicationRequirements:
             return distance_calculator_requirements()
         case "Profile Management System":
             return profile_management()
+        case "Appointment Scheduling System":
+            return calendar_booking_system()
+        case "Survey Tool":
+            raise NotImplementedError("Survey Tool not implemented")
+        case "Inventory Management System":
+            return inventory_mgmt_system()
+        case "Invoiceing and Payment Tracking System":
+            raise NotImplementedError(
+                "Invoiceing and Payment Tracking System not implemented"
+            )
+        case "Client Portal":
+            raise NotImplementedError("Client Portal not implemented")
+        case "Tutor Scheduling App":
+            raise NotImplementedError("Tutor Scheduling App not implemented")
+        case "Cleaning Services App":
+            raise NotImplementedError("Cleaning Services App not implemented")
+        case "Personal Trainer App":
+            raise NotImplementedError("Personal Trainer App not implemented")
+        case "Plumber App":
+            raise NotImplementedError("Plumber App not implemented")
+        case "Property Management System":
+            raise NotImplementedError("Property Management System not implemented")
         case _:
             raise NotImplementedError(f"Task {task} not implemented")
 
@@ -436,7 +460,15 @@ async def populate_database_specs():
       7 | 2024-02-08 11:51:15.216 | 2024-02-08 11:51:15.216 | Scurvey Tool                  | t       |      2
     """
     from codex.api_model import Identifiers
-    from codex.common.test_const import app_id_1, app_id_2, app_id_3, app_id_4, app_id_5
+    from codex.common.test_const import (
+        app_id_1,
+        app_id_2,
+        app_id_3,
+        app_id_4,
+        app_id_5,
+        app_id_6,
+        app_id_7,
+    )
 
     requirements = [
         ("Availability Checker", app_id_1),
@@ -444,6 +476,8 @@ async def populate_database_specs():
         ("Appointment Optimization Tool", app_id_3),
         ("Distance Calculator", app_id_4),
         ("Profile Management System", app_id_5),
+        ("Appointment Scheduling System", app_id_6),
+        ("Inventory Management System", app_id_7),
     ]
     ids = identifier_1
 

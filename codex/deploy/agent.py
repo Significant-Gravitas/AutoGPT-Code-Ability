@@ -83,6 +83,7 @@ def compile_application(app: CompletedApp) -> Application:
             name=app.name,
             description=app.description,
             server_code="",
+            completed_app=app,
             routes=compiled_routes,
             packages=packages,
         )
@@ -101,15 +102,20 @@ def create_server_code(application: Application) -> Application:
     Returns:
         Application: _description_
     """
+    assert application.completed_app, "Application must have a completed_app"
+    name = application.completed_app.name
+    desc = application.completed_app.description
+
     server_code_imports = [
         "from fastapi import FastAPI",
         "from fastapi.responses import JSONResponse",
         "import logging",
+        "import io",
         "from typing import *",
     ]
     server_code_header = f"""logger = logging.getLogger(__name__)
 
-app = FastAPI(title="{application.name}", description='''{application.description}''')"""
+app = FastAPI(title="{name}", description='''{desc}''')"""
 
     service_routes_code = []
     for route_path, compiled_route in application.routes.items():
@@ -121,6 +127,23 @@ app = FastAPI(title="{application.name}", description='''{application.descriptio
 
         # Write the api endpoint
         # TODO: pass the request method from the APIRouteSpec
+        response_type = "return JSONResponse(content=response)"
+        if compiled_route.return_type == "bytes":
+            response_type = """
+    # Convert the bytes to a BytesIO object for streaming
+    file_stream = io.BytesIO(response)
+
+    # Set the correct content-type for zip files
+    headers = {
+        "Content-Disposition": f"attachment; filename="new_file.zip""
+    }
+
+    # Return the streaming response
+    return StreamingResponse(
+        content=file_stream, media_type="application/zip", headers=headers
+    )
+"""
+
         route_code = f"""@app.{compiled_route.method.lower()}("{route_path}")
 async def {compiled_route.main_function_name}_route({compiled_route.request_param_str}):
     try:
@@ -129,7 +152,8 @@ async def {compiled_route.main_function_name}_route({compiled_route.request_para
         logger.exception("Error processing request")
         response = dict()
         response["error"] =  str(e)
-    return JSONResponse(content=response)
+        return JSONResponse(content=response)
+    {response_type}
 """
         service_routes_code.append(route_code)
 
@@ -170,7 +194,7 @@ def compile_route(compiled_route: CompiledRouteDBModel) -> CompiledRoute:
     if not compiled_route.CodeGraph:
         raise ValueError(f"No codeGraph found for route {compiled_route.id}")
 
-    req_param_str, param_names_str = extract_request_params(
+    req_param_str, param_names_str, ret_type = extract_request_response_params(
         compiled_route.CodeGraph.codeGraph
     )
     imports.extend(compiled_route.CodeGraph.imports)
@@ -188,7 +212,7 @@ def compile_route(compiled_route: CompiledRouteDBModel) -> CompiledRoute:
         raise ValueError(f"No APIRouteSpec found for route {compiled_route.id}")
 
     return CompiledRoute(
-        method=compiled_route.ApiRouteSpec.method,
+        method=str(compiled_route.ApiRouteSpec.method),
         service_code=formatted_code,
         service_file_name=compiled_route.CodeGraph.functionName.strip().replace(
             " ", "_"
@@ -198,20 +222,23 @@ def compile_route(compiled_route: CompiledRouteDBModel) -> CompiledRoute:
         request_param_str=req_param_str,
         param_names_str=param_names_str,
         packages=packages,
+        compiled_route=compiled_route,
+        return_type=ret_type,
     )
 
 
-def extract_request_params(main_function_code: str) -> Tuple[str, str]:
+def extract_request_response_params(main_function_code: str) -> Tuple[str, str, str]:
     """
-    Extracts the request params from the main function code.
+    Extracts the request params and return type from the main function code.
 
     Example Return:
-        'id: int, name: str'
+        'id: int, name: str', 'int'
     """
     tree = ast.parse(main_function_code)
 
     params = []
     param_names = []
+    return_type = "Any"  # Default to 'Any' or another placeholder if you prefer
 
     for node in ast.walk(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -223,11 +250,14 @@ def extract_request_params(main_function_code: str) -> Tuple[str, str]:
                     type_annotation = ast.unparse(arg.annotation)
                 params.append(f"{param_name}: {type_annotation}")
                 param_names.append(param_name)
+            # Check for return annotation
+            if node.returns:
+                return_type = ast.unparse(node.returns)
             break
 
     params_annotations = ", ".join(params)
     param_names_str = ", ".join(param_names)
-    return params_annotations, param_names_str
+    return params_annotations, param_names_str, return_type.lower()
 
 
 def extract_imports(function_code: str) -> Tuple[str, str]:

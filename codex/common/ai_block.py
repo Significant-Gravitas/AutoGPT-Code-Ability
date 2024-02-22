@@ -14,6 +14,7 @@ from prisma.types import LLMCallAttemptCreateInput
 from pydantic import BaseModel
 
 from codex.api_model import Identifiers
+from codex.common.ai_model import OpenAIChatClient
 
 logger = logging.getLogger(__name__)
 
@@ -76,14 +77,13 @@ class AIBlock:
 
     def __init__(
         self,
-        oai_client: AsyncOpenAI = AsyncOpenAI(),
     ):
         """
         Args:
             oai_client (AsyncOpenAI): The OpenAI client
             db_client (Prisma): The Prisma Database client
         """
-        self.oai_client = oai_client
+        self.oai_client: AsyncOpenAI = OpenAIChatClient.get_instance().openai
         self.template_base_path = os.path.join(
             os.path.dirname(__file__),
             f"../{self.template_base_path}/{self.model}",
