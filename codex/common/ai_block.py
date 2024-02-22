@@ -13,7 +13,8 @@ from prisma.models import LLMCallAttempt, LLMCallTemplate
 from prisma.types import LLMCallAttemptCreateInput
 from pydantic import BaseModel
 
-from codex.api_model import Indentifiers
+from codex.api_model import Identifiers
+from codex.common.ai_model import OpenAIChatClient
 
 logger = logging.getLogger(__name__)
 
@@ -76,14 +77,13 @@ class AIBlock:
 
     def __init__(
         self,
-        oai_client: AsyncOpenAI = AsyncOpenAI(),
     ):
         """
         Args:
             oai_client (AsyncOpenAI): The OpenAI client
             db_client (Prisma): The Prisma Database client
         """
-        self.oai_client = oai_client
+        self.oai_client: AsyncOpenAI = OpenAIChatClient.get_instance().openai
         self.template_base_path = os.path.join(
             os.path.dirname(__file__),
             f"../{self.template_base_path}/{self.model}",
@@ -169,8 +169,8 @@ class AIBlock:
 
     async def store_call_attempt(
         self,
-        user_id: int,
-        app_id: int,
+        user_id: str,
+        app_id: str,
         response: ValidatedResponse,
         attempt: int,
         prompt: Json,
@@ -178,20 +178,19 @@ class AIBlock:
         assert self.call_template_id, "Call template ID not set"
 
         call_attempt = await LLMCallAttempt.prisma().create(
-            data=LLMCallAttemptCreateInput(
-                userId=user_id,
-                appId=app_id,
-                callTemplateId=self.call_template_id,
-                completionTokens=response.usage_statistics.completion_tokens,
-                promptTokens=response.usage_statistics.prompt_tokens,
-                totalTokens=response.usage_statistics.total_tokens,
-                attempt=attempt,
-                prompt=Json(prompt),
-                response=response.message,
-                model=self.model,
-            )
+            data={
+                "User": {"connect": {"id": user_id}},
+                "Application": {"connect": {"id": app_id}},
+                "LLMCallTemplate": {"connect": {"id": self.call_template_id}},
+                "completionTokens": response.usage_statistics.completion_tokens,
+                "promptTokens": response.usage_statistics.prompt_tokens,
+                "totalTokens": response.usage_statistics.total_tokens,
+                "attempt": attempt,
+                "prompt": prompt,
+                "response": response.message,
+                "model": self.model,
+            }
         )
-
         return call_attempt
 
     def load_temaplate(self, template: str, invoke_params: dict) -> str:
@@ -259,9 +258,7 @@ class AIBlock:
 
         return self.PYDANTIC_FORMAT_INSTRUCTIONS
 
-    async def invoke(
-        self, ids: Indentifiers, invoke_params: dict, max_retries=3
-    ) -> Any:
+    async def invoke(self, ids: Identifiers, invoke_params: dict, max_retries=3) -> Any:
         validated_response = None
         if not self.call_template_id:
             await self.store_call_template()
@@ -349,7 +346,7 @@ class AIBlock:
         return stored_obj if stored_obj else validated_response.response
 
     async def create_item(
-        self, ids: Indentifiers, validated_response: ValidatedResponse
+        self, ids: Identifiers, validated_response: ValidatedResponse
     ):
         """
         Create an item from the validated response

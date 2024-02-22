@@ -2,7 +2,7 @@ import logging
 
 from codex.common.ai_block import (
     AIBlock,
-    Indentifiers,
+    Identifiers,
     ValidatedResponse,
     ValidationError,
 )
@@ -45,7 +45,7 @@ class FrontendClarificationBlock(AIBlock):
         return response
 
     async def create_item(
-        self, ids: Indentifiers, validated_response: ValidatedResponse
+        self, ids: Identifiers, validated_response: ValidatedResponse
     ):
         """
         This is where we would store the response in the database
@@ -87,7 +87,7 @@ class UserPersonaClarificationBlock(AIBlock):
         return response
 
     async def create_item(
-        self, ids: Indentifiers, validated_response: ValidatedResponse
+        self, ids: Identifiers, validated_response: ValidatedResponse
     ):
         """
         This is where we would store the response in the database
@@ -129,7 +129,7 @@ class UserSkillClarificationBlock(AIBlock):
         return response
 
     async def create_item(
-        self, ids: Indentifiers, validated_response: ValidatedResponse
+        self, ids: Identifiers, validated_response: ValidatedResponse
     ):
         """
         This is where we would store the response in the database
@@ -178,7 +178,7 @@ class QuestionAndAnswerClarificationBlock(AIBlock):
         return response
 
     async def create_item(
-        self, ids: Indentifiers, validated_response: ValidatedResponse
+        self, ids: Identifiers, validated_response: ValidatedResponse
     ):
         """
         This is where we would store the response in the database
@@ -197,9 +197,9 @@ if __name__ == "__main__":
     from openai import AsyncOpenAI
     from prisma import Prisma
 
-    setup_logging(local=True)
+    from codex.common.test_const import identifier_1
 
-    ids = Indentifiers(user_id=1, app_id=1)
+    ids = identifier_1
     db_client = Prisma(auto_register=True)
     oai = AsyncOpenAI()
 

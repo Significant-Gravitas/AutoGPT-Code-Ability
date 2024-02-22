@@ -9,7 +9,7 @@ from prisma.models import CompiledRoute as CompiledRouteDBModel
 from prisma.models import CompletedApp, Deployment
 from prisma.types import DeploymentCreateInput
 
-from codex.api_model import Indentifiers
+from codex.api_model import Identifiers
 from codex.deploy.model import Application, CompiledRoute
 from codex.deploy.packager import create_zip_file
 from codex.developer.model import Package
@@ -17,9 +17,7 @@ from codex.developer.model import Package
 logger = logging.getLogger(__name__)
 
 
-async def create_deployment(
-    ids: Indentifiers, completedApp: CompletedApp
-) -> Deployment:
+async def create_deployment(ids: Identifiers, completedApp: CompletedApp) -> Deployment:
     app = compile_application(completedApp)
     zip_file = create_zip_file(app)
     file_name = completedApp.name.replace(" ", "_")
@@ -30,7 +28,7 @@ async def create_deployment(
         encoded_file_bytes = base64.b64encode(zip_file).decode("utf-8")
         deployment = await Deployment.prisma().create(
             data=DeploymentCreateInput(
-                completedApp={"connect": {"id": completedApp.id}},
+                CompletedApp={"connect": {"id": completedApp.id}},
                 User={"connect": {"id": ids.user_id}},
                 fileName=f"{file_name}.zip",
                 fileSize=len(zip_file),
@@ -51,25 +49,25 @@ def compile_application(app: CompletedApp) -> Application:
     try:
         compiled_routes = {}
         packages = []
-        if not app.compiledRoutes:
+        if not app.CompiledRoutes:
             raise ValueError("No compiled routes found for application")
 
-        for db_compiled_route in app.compiledRoutes:
-            if not db_compiled_route.apiRouteSpec:
+        for db_compiled_route in app.CompiledRoutes:
+            if not db_compiled_route.ApiRouteSpec:
                 raise ValueError(
                     f"No APIRouteSpec found for route {db_compiled_route.id}"
                 )
 
-            if not db_compiled_route.functions:
+            if not db_compiled_route.Functions:
                 raise ValueError(f"No functions found for route {db_compiled_route.id}")
 
             logger.info(
-                f"Compiling route {db_compiled_route.apiRouteSpec.path}."
-                f" Num Functions: { len(db_compiled_route.functions)}"
+                f"Compiling route {db_compiled_route.ApiRouteSpec.path}."
+                f" Num Functions: { len(db_compiled_route.Functions)}"
             )
-            for function in db_compiled_route.functions:
-                if function.packages:
-                    for pack in function.packages:
+            for function in db_compiled_route.Functions:
+                if function.Packages:
+                    for pack in function.Packages:
                         packages.append(
                             Package(
                                 package_name=pack.packageName,
@@ -77,7 +75,7 @@ def compile_application(app: CompletedApp) -> Application:
                                 specifier=pack.specifier,
                             )
                         )
-            compiled_routes[db_compiled_route.apiRouteSpec.path] = compile_route(
+            compiled_routes[db_compiled_route.ApiRouteSpec.path] = compile_route(
                 db_compiled_route
             )
 
@@ -156,47 +154,47 @@ def compile_route(compiled_route: CompiledRouteDBModel) -> CompiledRoute:
     packages = []
     imports = []
     rest_of_code_sections = []
-    if not compiled_route.functions:
+    if not compiled_route.Functions:
         raise ValueError(f"No functions found for route {compiled_route.id}")
 
-    for i, function in enumerate(compiled_route.functions):
+    for i, function in enumerate(compiled_route.Functions):
         logger.info(
-            f"{i+1}/{len(compiled_route.functions)} Compiling function {function.name}"
+            f"{i+1}/{len(compiled_route.Functions)} Compiling function {function.name}"
         )
         import_code, rest_of_code = extract_imports(function.code)
         imports.append(import_code)
         rest_of_code_sections.append(rest_of_code)
-        if function.packages:
-            packages.extend(function.packages)
+        if function.Packages:
+            packages.extend(function.Packages)
 
-    if not compiled_route.codeGraph:
+    if not compiled_route.CodeGraph:
         raise ValueError(f"No codeGraph found for route {compiled_route.id}")
 
     req_param_str, param_names_str = extract_request_params(
-        compiled_route.codeGraph.code_graph
+        compiled_route.CodeGraph.codeGraph
     )
-    imports.extend(compiled_route.codeGraph.imports)
+    imports.extend(compiled_route.CodeGraph.imports)
     output_code = "\n".join(imports)
     output_code += "\n\n"
     output_code += "\n\n".join(rest_of_code_sections)
     output_code += "\n\n"
-    output_code += compiled_route.codeGraph.code_graph
+    output_code += compiled_route.CodeGraph.codeGraph
 
     sorted_content = isort.code(output_code)
 
     formatted_code = black.format_str(sorted_content, mode=black.FileMode())
 
-    if not compiled_route.apiRouteSpec:
+    if not compiled_route.ApiRouteSpec:
         raise ValueError(f"No APIRouteSpec found for route {compiled_route.id}")
 
     return CompiledRoute(
-        method=compiled_route.apiRouteSpec.method,
+        method=compiled_route.ApiRouteSpec.method.value,
         service_code=formatted_code,
-        service_file_name=compiled_route.codeGraph.function_name.strip().replace(
+        service_file_name=compiled_route.CodeGraph.functionName.strip().replace(
             " ", "_"
         )
         + "_service.py",
-        main_function_name=compiled_route.codeGraph.function_name,
+        main_function_name=compiled_route.CodeGraph.functionName,
         request_param_str=req_param_str,
         param_names_str=param_names_str,
         packages=packages,

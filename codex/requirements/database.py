@@ -1,7 +1,7 @@
 from prisma.models import Specification
 
 from codex.api_model import (
-    Indentifiers,
+    Identifiers,
     Pagination,
     SpecificationResponse,
     SpecificationsListResponse,
@@ -9,9 +9,7 @@ from codex.api_model import (
 from codex.requirements.model import ApplicationRequirements
 
 
-async def create_spec(
-    ids: Indentifiers, spec: ApplicationRequirements
-) -> Specification:
+async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specification:
     routes = []
 
     if not spec.api_routes:
@@ -20,12 +18,12 @@ async def create_spec(
         create_request = {
             "name": route.request_model.name,
             "description": route.request_model.description,
-            "params": {
+            "Params": {
                 "create": [
                     {
                         "name": param.name,
                         "description": param.description,
-                        "param_type": param.param_type,
+                        "paramType": param.param_type,
                     }
                     for param in route.request_model.params
                 ],
@@ -34,12 +32,12 @@ async def create_spec(
         create_response = {
             "name": route.response_model.name,
             "description": route.response_model.description,
-            "params": {
+            "Params": {
                 "create": [
                     {
                         "name": param.name,
                         "description": param.description,
-                        "param_type": param.param_type,
+                        "paramType": param.param_type,
                     }
                     for param in route.response_model.params
                 ],
@@ -50,7 +48,7 @@ async def create_spec(
         if route.database_schema:
             create_db = {
                 "description": route.database_schema.description,
-                "tables": {
+                "DatabaseTables": {
                     "create": [
                         {
                             "description": table.description,
@@ -64,35 +62,31 @@ async def create_spec(
             "method": route.method,
             "path": route.path,
             "functionName": route.function_name,
-            "accessLevel": route.access_level.value,
+            "AccessLevel": route.access_level.value,
             "description": route.description,
-            "requestObjects": {"create": create_request},
-            "responseObject": {"create": create_response},
+            "RequestObject": {"create": create_request},
+            "ResponseObject": {"create": create_response},
         }
         if create_db:
-            create_route["schemas"] = {"create": create_db}
+            create_route["DatabaseSchema"] = {"create": create_db}
         routes.append(create_route)
 
     create_spec = {
         "name": spec.name,
         "context": spec.context,
         "User": {"connect": {"id": ids.user_id}},
-        "app": {"connect": {"id": ids.app_id}},
-        "apiRoutes": {"create": routes},
+        "Application": {"connect": {"id": ids.app_id}},
+        "ApiRouteSpecs": {"create": routes},
     }
-    import json
-
-    with open("create.json", "w") as f:
-        f.write(json.dumps(create_spec, indent=4))
 
     new_spec = await Specification.prisma().create(
         data=create_spec,
         include={
-            "apiRoutes": {
+            "ApiRouteSpecs": {
                 "include": {
-                    "requestObjects": {"include": {"params": True}},
-                    "responseObject": {"include": {"params": True}},
-                    "schemas": {"include": {"tables": True}},
+                    "RequestObject": {"include": {"Params": True}},
+                    "ResponseObject": {"include": {"Params": True}},
+                    "DatabaseSchema": {"include": {"DatabaseTables": True}},
                 }
             }
         },
@@ -100,7 +94,7 @@ async def create_spec(
     return new_spec
 
 
-async def get_specification(user_id: int, app_id: int, spec_id: int) -> Specification:
+async def get_specification(user_id: str, app_id: str, spec_id: str) -> Specification:
     specification = await Specification.prisma().find_first_or_raise(
         where={
             "id": spec_id,
@@ -108,10 +102,10 @@ async def get_specification(user_id: int, app_id: int, spec_id: int) -> Specific
             "applicationId": app_id,
         },
         include={
-            "apiRoutes": {
+            "ApiRouteSpecs": {
                 "include": {
-                    "requestObjects": {"include": {"params": True}},
-                    "responseObject": {"include": {"params": True}},
+                    "RequestObject": {"include": {"Params": True}},
+                    "ResponseObject": {"include": {"Params": True}},
                 }
             }
         },
@@ -120,7 +114,40 @@ async def get_specification(user_id: int, app_id: int, spec_id: int) -> Specific
     return specification
 
 
-async def delete_specification(spec_id: int) -> Specification:
+async def get_latest_specification(user_id: str, app_id: str) -> Specification:
+    """
+    Gets the latest specification for the given user and app
+
+    Args:
+        user_id (str): uuid of the user
+        app_id (str): uuid of the application
+
+    Returns:
+        str: uuid of the latest specification for the user and app
+    """
+    specification = await Specification.prisma().find_many(
+        where={
+            "userId": user_id,
+            "applicationId": app_id,
+            "deleted": False,
+        },
+        include={
+            "ApiRouteSpecs": {
+                "include": {
+                    "RequestObject": {"include": {"Params": True}},
+                    "ResponseObject": {"include": {"Params": True}},
+                }
+            }
+        },
+        order={"createdAt": "desc"},
+    )
+    if not specification:
+        raise ValueError("No specifications found for the user and app")
+
+    return specification[0]
+
+
+async def delete_specification(spec_id: str) -> None:
     await Specification.prisma().update(
         where={"id": spec_id},
         data={"deleted": True},
@@ -128,7 +155,7 @@ async def delete_specification(spec_id: int) -> Specification:
 
 
 async def list_specifications(
-    user_id: int, app_id: int, page: int, page_size: int
+    user_id: str, app_id: str, page: int, page_size: int
 ) -> SpecificationsListResponse:
     skip = (page - 1) * page_size
     total_items = await Specification.prisma().count(
@@ -138,10 +165,10 @@ async def list_specifications(
         specs = await Specification.prisma().find_many(
             where={"userId": user_id, "applicationId": app_id, "deleted": False},
             include={
-                "apiRoutes": {
+                "ApiRouteSpecs": {
                     "include": {
-                        "requestObjects": {"include": {"params": True}},
-                        "responseObject": {"include": {"params": True}},
+                        "RequestObject": {"include": {"Params": True}},
+                        "ResponseObject": {"include": {"Params": True}},
                     }
                 }
             },
