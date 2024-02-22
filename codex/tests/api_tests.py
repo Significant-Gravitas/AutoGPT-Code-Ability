@@ -113,13 +113,17 @@ from codex.app import db_client
 async def test_recursive_create_code_graphs():
     await db_client.connect()
 
-    api_route = await APIRouteSpec.prisma().find_unique(where={"id": "19caa796-44dc-4a2d-974c-fe2e36cd8351"})
-    func_def = FunctionDef(name="start_game", doc_string="dummy",
+    entry_point_function = "start_game"
+    goal = "Create a CLI TicTacToe game"
+
+    # Find any api_route for now from the DB, we only use it for dummy data. Find all and get first
+    api_route = await APIRouteSpec.prisma().find_first()
+    func_def = FunctionDef(name=entry_point_function, doc_string="dummy",
                              args="dummy", return_type="dummy", function_template="")
 
     code_graph = await agent.recursive_create_code_graphs(
         ids=Identifiers(user_id=user_id_1, app_id=app_id_1, spec_id="123"),
-        goal="Create a CLI TicTacToe game",
+        goal=goal,
         func_def=func_def,
         api_route=api_route,
     )
