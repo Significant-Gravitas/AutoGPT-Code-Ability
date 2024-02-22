@@ -251,7 +251,7 @@ class DevelopAIBlock(AIBlock):
                 logger.debug(f"Created Function: {func}")
                 return func
             except Exception as e:
-                logger.info(f"Error saving code graph: {e}")
+                logger.info(f"Error saving Function: {e}")
 
     async def update_item(  # type: ignore
         self, ids: Identifiers, validated_response: ValidatedResponse
