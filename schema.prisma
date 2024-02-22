@@ -298,6 +298,7 @@ model Deployment {
 model LLMCallTemplate {
   id           String   @id @default(dbgenerated("gen_random_uuid()"))
   createdAt    DateTime @default(now())
+  developmentPhase DevelopmentPhase
   templateName String
   fileHash     String
   systemPrompt String
@@ -323,7 +324,6 @@ model LLMCallAttempt {
   attempt          Int
   prompt           Json
   response         String
-  developmentPhase DevelopmentPhase
 
   User              User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId            String?
