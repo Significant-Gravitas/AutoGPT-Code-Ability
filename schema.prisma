@@ -193,6 +193,9 @@ model CodeGraph {
   imports      String[]
   codeGraph    String
 
+  ParentCodeGraph     CodeGraph?           @relation("CodeGraphParent", fields: [parentCodeGraphId], references: [id], onDelete: Cascade)
+  parentCodeGraphId   String?
+  ChildCodeGraphs     CodeGraph[]          @relation("CodeGraphParent")
   FunctionDefinitions FunctionDefinition[]
   ApiRouteSpec        APIRouteSpec?        @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
   apiRouteSpecId      String?
@@ -270,7 +273,7 @@ model CompiledRoute {
 
   CodeGraph      CodeGraph?
   // Why is this unique and here with the many to many relationship? This is a 1-1 relationship, and this field might not even required.
-  codeGraphId    String @unique
+  codeGraphId    String        @unique
   ApiRouteSpec   APIRouteSpec? @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
   apiRouteSpecId String?
 }

@@ -73,7 +73,11 @@ class CodeGraphAIBlock(AIBlock):
     ) -> ValidatedResponse:
         try:
             text = response.response
-            code = text.split("```python")[1].split("```")[0]
+            code_blocks = text.split("```python")
+            code_blocks.pop(0)
+            if len(code_blocks) != 1:
+                raise ValidationError(f"There are {len(code_blocks)} code blocks in the response. There should be exactly 1")
+            code = code_blocks[0].split("```")[0]
 
             try:
                 tree = ast.parse(code)

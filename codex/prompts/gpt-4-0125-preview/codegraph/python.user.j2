@@ -1,2 +1,12 @@
 Main function name: {{ function_name }}
-Description: {{ description }}
+Required Function: {{ description }}
+----
+{% if provided_functions %}
+You can re-use these functions without creating a new stub:
+```python
+{% for function in provided_functions %}
+{{ function }}
+
+{% endfor %}
+```
+{% endif %}

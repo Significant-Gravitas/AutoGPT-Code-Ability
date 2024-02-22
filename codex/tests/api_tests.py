@@ -7,7 +7,6 @@ load_dotenv()
 from codex import app
 from codex.common.test_const import *
 
-
 @pytest.fixture
 def client():
     with TestClient(app.app) as c:
@@ -103,3 +102,25 @@ def test_specs_and_deliverables_apis(client):
     # response = client.get(f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/")
     # specs = response.json()['specs']
     # assert next((s for s in specs if s['id'] == spec['id']), None) is None
+
+
+from codex.architect import agent
+from codex.architect.model import FunctionDef
+from prisma.models import APIRouteSpec
+from codex.app import db_client
+
+@pytest.mark.asyncio
+async def test_recursive_create_code_graphs():
+    await db_client.connect()
+
+    api_route = await APIRouteSpec.prisma().find_unique(where={"id": "19caa796-44dc-4a2d-974c-fe2e36cd8351"})
+    func_def = FunctionDef(name="start_game", doc_string="dummy",
+                             args="dummy", return_type="dummy", function_template="")
+
+    code_graph = await agent.recursive_create_code_graphs(
+        ids=Identifiers(user_id=user_id_1, app_id=app_id_1, spec_id="123"),
+        goal="Create a CLI TicTacToe game",
+        func_def=func_def,
+        api_route=api_route,
+    )
+    assert code_graph is not None
