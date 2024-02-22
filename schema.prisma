@@ -325,8 +325,3 @@ model LLMCallAttempt {
   LLMCallTemplate   LLMCallTemplate? @relation(fields: [llmCallTemplateId], references: [id], onDelete: Cascade)
   llmCallTemplateId String?
 }
-
-// Application (Task)
-// Specification (refs Application)
-// CompletedApp (refs Specification)
-// Deployement (refs CompletedApp)
