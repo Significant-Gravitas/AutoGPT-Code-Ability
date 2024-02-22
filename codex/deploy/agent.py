@@ -212,7 +212,7 @@ def compile_route(compiled_route: CompiledRouteDBModel) -> CompiledRoute:
         raise ValueError(f"No APIRouteSpec found for route {compiled_route.id}")
 
     return CompiledRoute(
-        method=compiled_route.ApiRouteSpec.method.value,
+        method=str(compiled_route.ApiRouteSpec.method),
         service_code=formatted_code,
         service_file_name=compiled_route.CodeGraph.functionName.strip().replace(
             " ", "_"
