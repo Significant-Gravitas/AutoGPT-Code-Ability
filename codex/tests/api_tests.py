@@ -108,9 +108,9 @@ def test_specs_and_deliverables_apis(client):
 from prisma.models import APIRouteSpec
 
 from codex.app import db_client
-from codex.architect import agent
-from codex.architect.model import FunctionDef
 from codex.common.ai_model import OpenAIChatClient
+from codex.develop import agent
+from codex.develop.model import FunctionDef
 
 
 @pytest.mark.asyncio

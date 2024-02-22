@@ -6,8 +6,8 @@ from prisma.models import APIRouteSpec, CodeGraph, FunctionDefinition, Specifica
 from prisma.types import CodeGraphCreateInput
 
 from codex.api_model import Identifiers
-from codex.architect.codegraph import CodeGraphAIBlock
-from codex.architect.model import ApplicationGraphs, FunctionDef
+from codex.develop.codegraph import CodeGraphAIBlock
+from codex.develop.model import ApplicationGraphs, FunctionDef
 
 logger = logging.getLogger(__name__)
 

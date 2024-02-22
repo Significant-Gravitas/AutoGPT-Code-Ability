@@ -4,13 +4,13 @@ import logging
 from prisma.models import CodeGraph as CodeGraphDBModel
 from prisma.types import CodeGraphCreateInput
 
-from codex.architect.model import CodeGraph, FunctionDef
 from codex.common.ai_block import (
     AIBlock,
     Identifiers,
     ValidatedResponse,
     ValidationError,
 )
+from codex.develop.model import CodeGraph, FunctionDef
 
 logger = logging.getLogger(__name__)
 
