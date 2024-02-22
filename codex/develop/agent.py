@@ -1,12 +1,12 @@
 import logging
 import os
 
-from prisma.models import APIRouteSpec, Function
+from prisma.models import APIRouteSpec, Function, Specification, CompletedApp
 
 from codex.api_model import Identifiers
 from codex.develop.develop import DevelopAIBlock
 from codex.develop.model import FunctionDef
-
+from codex.develop.complie import compile_route, create_app
 RECURSION_DEPTH_LIMIT = int(os.environ.get("RECURSION_DEPTH_LIMIT", 3))
 
 logger = logging.getLogger(__name__)
@@ -15,12 +15,37 @@ logger = logging.getLogger(__name__)
 generated_function_defs: list[FunctionDef] = []
 
 
+async def develop_application(ids: Identifiers, spec: Specification) -> CompletedApp:
+    compiled_routes = []
+    if spec.ApiRouteSpecs:
+        for api_route in spec.ApiRouteSpecs:
+            route_root_func = await develop_route(
+                ids, api_route.description, api_route.functionName, api_route
+            )
+            compiled_route = await compile_route(ids, route_root_func, api_route)
+            compiled_routes.append(compiled_route)
+
+    return await create_app(ids, spec, compiled_routes)
+
+
 async def develop_route(
     ids: Identifiers,
     route_description: str,
     func_name: str,
     api_route: APIRouteSpec,
 ) -> Function:
+    """
+    Develops a route based on the given parameters.
+
+    Args:
+        ids (Identifiers): The identifiers for the route function.
+        route_description (str): The description of the route function.
+        func_name (str): The name of the route function.
+        api_route (APIRouteSpec): The API route specification.
+
+    Returns:
+        Function: The developed route function.
+    """
     global generated_function_defs
     generated_function_defs = []
 
