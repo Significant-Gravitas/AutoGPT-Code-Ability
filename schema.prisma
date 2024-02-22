@@ -307,6 +307,12 @@ model LLMCallTemplate {
   Uses LLMCallAttempt[]
 }
 
+enum DevelopmentPhase {
+  REQUIREMENTS
+  DEVELOPMENT
+  DEPLOYMENT
+}
+
 model LLMCallAttempt {
   id               String   @id @default(dbgenerated("gen_random_uuid()"))
   createdAt        DateTime @default(now())
@@ -317,6 +323,7 @@ model LLMCallAttempt {
   attempt          Int
   prompt           Json
   response         String
+  developmentPhase DevelopmentPhase
 
   User              User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId            String?
