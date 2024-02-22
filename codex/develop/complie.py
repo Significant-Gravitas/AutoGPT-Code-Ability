@@ -44,5 +44,3 @@ async def create_app(
         CompletedApp: The completed app object.
     """
     return CompletedApp(**{})
-    """
-    return CompletedApp(**{})

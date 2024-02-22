@@ -1,19 +1,20 @@
 import ast
-from importlib.metadata import packages_distributions
 import logging
+from importlib.metadata import packages_distributions
 from re import A
 from typing import List
 from urllib import parse
-from pkg_resources import parse_version
 
+from pkg_resources import parse_version
 from prisma.enums import DevelopmentPhase, FunctionState
+from prisma.models import Function
 from prisma.types import (
     FunctionCreateInput,
-    PackageCreateWithoutRelationsInput,
     FunctionCreateWithoutRelationsInput,
     FunctionUpdateInput,
+    PackageCreateWithoutRelationsInput,
 )
-from prisma.models import Function
+
 from codex.common.ai_block import (
     AIBlock,
     Identifiers,
