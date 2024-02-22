@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 generated_function_defs: list[FunctionDef] = []
 
 async def recursive_create_code_graphs(
-        ids: Identifiers, goal: str, func_def: FunctionDef, api_route: APIRouteSpec, oai_client: AsyncOpenAI = AsyncOpenAI()
+        ids: Identifiers, goal: str, func_def: FunctionDef, api_route: APIRouteSpec
 ) -> CodeGraph:
 
     # They are kind enough to implement the code, no need to do another AIblock.
@@ -42,7 +42,7 @@ High-level Goal: {goal}'''
 
     logger.info(f"Creating code graph for {func_def.name}")
 
-    code_graph: CodeGraph = await CodeGraphAIBlock(oai_client=oai_client).invoke(
+    code_graph: CodeGraph = await CodeGraphAIBlock().invoke(
         ids=ids,
         invoke_params={
             "function_name": func_def.name,
@@ -67,7 +67,7 @@ High-level Goal: {goal}'''
 
     generated_function_defs.extend(function_defs)
     for child_func_def in function_defs:
-        child_graph = await recursive_create_code_graphs(ids, goal, child_func_def, api_route, oai_client)
+        child_graph = await recursive_create_code_graphs(ids, goal, child_func_def, api_route)
         await CodeGraph.prisma().update(where={"id": child_graph.id}, data={"parentCodeGraphId": code_graph.id})
 
     return code_graph

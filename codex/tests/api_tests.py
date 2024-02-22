@@ -108,10 +108,12 @@ from codex.architect import agent
 from codex.architect.model import FunctionDef
 from prisma.models import APIRouteSpec
 from codex.app import db_client
+from codex.common.ai_model import OpenAIChatClient
 
 @pytest.mark.asyncio
 async def test_recursive_create_code_graphs():
     await db_client.connect()
+    OpenAIChatClient.configure({})
 
     entry_point_function = "start_game"
     goal = "Create a CLI TicTacToe game"
