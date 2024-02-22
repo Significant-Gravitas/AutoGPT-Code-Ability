@@ -21,8 +21,8 @@ async def recursive_create_code_graphs(
     func_def: FunctionDef,
     api_route: APIRouteSpec,
 ) -> CodeGraph:
-    # They are kind enough to implement the code, no need to do another AIblock.
     if func_def.function_template and "  pass" not in func_def.function_template:
+        # LLM is kind enough to implement the code, no need to do another AIblock.
         create_input = CodeGraphCreateInput(
             **{
                 "functionName": func_def.name,
@@ -56,9 +56,7 @@ High-level Goal: {goal}"""
         },
     )
 
-    # query FunctionDefinitions for the current code_graph
     function_defs: list[FunctionDef] = []
-
     for child in await FunctionDefinition.prisma().find_many(
         where={"CodeGraph": {"id": code_graph.id}}
     ):
@@ -71,6 +69,7 @@ High-level Goal: {goal}"""
         )
         function_defs.append(child_func_def)
 
+    # DFS to traverse all the child functions, and recursively generate code graphs
     generated_function_defs.extend(function_defs)
     for child_func_def in function_defs:
         child_graph = await recursive_create_code_graphs(
