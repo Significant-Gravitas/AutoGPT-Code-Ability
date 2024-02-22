@@ -193,57 +193,20 @@ model CodeGraph {
   imports      String[]
   codeGraph    String
 
-  ParentCodeGraph     CodeGraph?           @relation("CodeGraphParent", fields: [parentCodeGraphId], references: [id], onDelete: Cascade)
-  parentCodeGraphId   String?
-  ChildCodeGraphs     CodeGraph[]          @relation("CodeGraphParent")
-  FunctionDefinitions FunctionDefinition[]
-  ApiRouteSpec        APIRouteSpec?        @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
-  apiRouteSpecId      String?
-  DatabaseSchema      DatabaseSchema?      @relation(fields: [databaseSchemaId], references: [id], onDelete: Cascade)
-  databaseSchemaId    String?
-  CompiledRoute       CompiledRoute?       @relation(fields: [compiledRouteId], references: [id], onDelete: Cascade)
-  compiledRouteId     String?              @unique
-}
-
-// FunctionDefinition defines a function, including its input and return types.
-// It links to a specific code graph and function.
-model FunctionDefinition {
-  id               String   @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt        DateTime @default(now())
-  name             String
-  docString        String
-  args             String
-  returnType       String
-  functionTemplate String
-
-  CodeGraph   CodeGraph? @relation(fields: [codeGraphId], references: [id], onDelete: Cascade)
-  codeGraphId String?
-  Function   Function? @relation(fields: [functionsId], references: [id], onDelete: Cascade)
-  functionsId String?
+  ParentCodeGraph   CodeGraph?      @relation("CodeGraphParent", fields: [parentCodeGraphId], references: [id], onDelete: Cascade)
+  parentCodeGraphId String?
+  ChildCodeGraphs   CodeGraph[]     @relation("CodeGraphParent")
+  ApiRouteSpec      APIRouteSpec?   @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
+  apiRouteSpecId    String?
+  DatabaseSchema    DatabaseSchema? @relation(fields: [databaseSchemaId], references: [id], onDelete: Cascade)
+  databaseSchemaId  String?
+  CompiledRoute     CompiledRoute?  @relation(fields: [compiledRouteId], references: [id], onDelete: Cascade)
+  compiledRouteId   String?         @unique
 }
 
 // ------------------------- Developer Models ---------------------------- //
 // Database models for the developer
 // ------------------------------------------------------------------------ //
-
-// Functions represents individual software functions.
-// It includes information about the function and its relationships to packages and compiled routes.
-model Function {
-  id         String                       @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt  DateTime                     @default(now())
-  embedding  Unsupported("vector(1536)")?
-  name       String
-  docString  String
-  args       String
-  returnType String
-  code       String
-
-  FunctionDefinitions FunctionDefinition[]
-  // Is one function part of many packages?
-  Packages            Package[]
-  // Is one function part of many compiled routes?
-  CompiledRoutes      CompiledRoute[]
-}
 
 // Package represents a software package, including its version and specifier.
 // It is related to functions that are part of the package.
@@ -253,8 +216,6 @@ model Package {
   packageName String
   version     String
   specifier   String
-
-  Functions Function[]
 }
 
 // ------------------------- Delivery Models ----------------------------- //
@@ -268,7 +229,6 @@ model CompiledRoute {
   description String
   code        String
 
-  Functions     Function[]
   CompletedApps CompletedApp[]
 
   CodeGraph      CodeGraph?
