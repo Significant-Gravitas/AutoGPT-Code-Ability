@@ -17,6 +17,17 @@ generated_function_defs: list[FunctionDef] = []
 
 
 async def develop_application(ids: Identifiers, spec: Specification) -> CompletedApp:
+    """
+    Develops an application based on the given identifiers and specification.
+
+    Args:
+        ids (Identifiers): The identifiers used for development.
+        spec (Specification): The specification of the application.
+
+    Returns:
+        CompletedApp: The completed application.
+
+    """
     compiled_routes = []
     if spec.ApiRouteSpecs:
         for api_route in spec.ApiRouteSpecs:
