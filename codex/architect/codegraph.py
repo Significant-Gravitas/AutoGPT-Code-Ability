@@ -76,7 +76,9 @@ class CodeGraphAIBlock(AIBlock):
             code_blocks = text.split("```python")
             code_blocks.pop(0)
             if len(code_blocks) != 1:
-                raise ValidationError(f"There are {len(code_blocks)} code blocks in the response. There should be exactly 1")
+                raise ValidationError(
+                    f"There are {len(code_blocks)} code blocks in the response. There should be exactly 1"
+                )
             code = code_blocks[0].split("```")[0]
 
             try:
