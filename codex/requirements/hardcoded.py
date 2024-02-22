@@ -434,6 +434,595 @@ def profile_management() -> ApplicationRequirements:
     return application_requirements
 
 
+def calendar_booking_system() -> ApplicationRequirements:
+    database_schema = DatabaseSchema(
+        name="TimeSyncSchema",
+        description="A schema for the TimeSync app, supporting appointment scheduling, notifications, and calendar integrations.",
+        tables=[
+            DatabaseTable(
+                name="User",
+                description="Stores user information, including role and authentication details.",
+                definition="model User {\\n  id        String        @id @default(uuid())\\n  email     String        @unique\\n  role      UserRole      @default(Client)\\n  password  String\\n  createdAt DateTime      @default(now())\\n  updatedAt DateTime      @updatedAt\\n  Appointments  Appointment[]\\n  Notifications Notification[]\\n  Integrations  Integration[]\\n}",
+            ),
+            DatabaseTable(
+                name="Appointment",
+                description="Represents appointments with status, type, and time zone information.",
+                definition="model Appointment {\\n  id          String          @id @default(uuid())\\n  userId      String\\n  status      AppointmentStatus @default(Scheduled)\\n  type        String\\n  startTime   DateTime\\n  endTime     DateTime\\n  timeZone    String\\n  createdAt   DateTime        @default(now())\\n  updatedAt   DateTime        @updatedAt\\n  User        User            @relation(fields: [userId], references: [id])\\n  Notifications Notification[]\\n}",
+            ),
+            DatabaseTable(
+                name="Notification",
+                description="Manages notifications linked to users and appointments, with type defining the channels.",
+                definition="model Notification {\\n  id            String        @id @default(uuid())\\n  userId        String\\n  appointmentId String\\n  type          NotificationType\\n  sentAt        DateTime?\\n  User          User          @relation(fields: [userId], references: [id])\\n  Appointment   Appointment   @relation(fields: [appointmentId], references: [id])\\n}",
+            ),
+            DatabaseTable(
+                name="Integration",
+                description="Handles external calendar integrations for users, storing details in a JSON format.",
+                definition="model Integration {\\n  id        String        @id @default(uuid())\\n  userId    String\\n  type      IntegrationType\\n  details   Json\\n  User      User          @relation(fields: [userId], references: [id])\\n}",
+            ),
+        ],
+    )
+    return ApplicationRequirements(
+        name="TimeSync",
+        context="",
+        api_routes=[
+            APIRouteRequirement(
+                method="POST",
+                path="/users",
+                function_name="create_user",
+                description="Registers a new user by providing basic user information.",
+                access_level=AccessLevel.PUBLIC,
+                request_model=RequestModel(
+                    name="CreateUserInput",
+                    description="CreateUserInput",
+                    params=[
+                        Parameter(
+                            name="email",
+                            param_type="string",
+                            description="Unique email address of the user. Acts as a login identifier.",
+                        ),
+                        Parameter(
+                            name="password",
+                            param_type="string",
+                            description="Password for the user account. Must comply with defined security standards.",
+                        ),
+                        Parameter(
+                            name="role",
+                            param_type="UserRole",
+                            description="The role of the user which dictates access control. Optional parameter; defaults to 'Client' if not specified.",
+                        ),
+                    ],
+                ),
+                response_model=ResponseModel(
+                    name="CreateUserInput",
+                    description="CreateUserInput",
+                    params=[
+                        Parameter(
+                            name="user_id",
+                            param_type="string",
+                            description="The unique identifier of the newly created user.",
+                        ),
+                        Parameter(
+                            name="message",
+                            param_type="string",
+                            description="A success message confirming user creation.",
+                        ),
+                    ],
+                ),
+                database_schema=database_schema,
+                data_models=[],
+            ),
+            APIRouteRequirement(
+                method="PUT",
+                path="/users/{id}",
+                function_name="update_user_profile",
+                description="Updates an existing user's profile information.",
+                access_level=AccessLevel.USER,
+                request_model=RequestModel(
+                    name="UpdateUserProfileInput",
+                    description="UpdateUserProfileInput",
+                    params=[
+                        Parameter(
+                            name="email",
+                            param_type="String",
+                            description="The new email address of the user.",
+                        ),
+                        Parameter(
+                            name="password",
+                            param_type="String",
+                            description="The new password of the user. Should be hashed in the database, not stored in plain text.",
+                        ),
+                        Parameter(
+                            name="role",
+                            param_type="UserRole",
+                            description="The new role assigned to the user. Can be one of ['Admin', 'ServiceProvider', 'Client'].",
+                        ),
+                    ],
+                ),
+                response_model=ResponseModel(
+                    name="UpdateUserProfileInput",
+                    description="UpdateUserProfileInput",
+                    params=[
+                        Parameter(
+                            name="id",
+                            param_type="String",
+                            description="The unique identifier of the user.",
+                        ),
+                        Parameter(
+                            name="email",
+                            param_type="String",
+                            description="The updated email address of the user.",
+                        ),
+                        Parameter(
+                            name="role",
+                            param_type="UserRole",
+                            description="The updated role assigned to the user.",
+                        ),
+                        Parameter(
+                            name="updatedAt",
+                            param_type="DateTime",
+                            description="The timestamp reflecting when the update was made.",
+                        ),
+                    ],
+                ),
+                database_schema=database_schema,
+                data_models=[],
+            ),
+            APIRouteRequirement(
+                method="POST",
+                path="/users/login",
+                function_name="user_login",
+                description="Authenticates a user and returns a session token.",
+                access_level=AccessLevel.PUBLIC,
+                request_model=RequestModel(
+                    name="UserLoginInput",
+                    description="UserLoginInput",
+                    params=[
+                        Parameter(
+                            name="email",
+                            param_type="str",
+                            description="The email address associated with the user's account.",
+                        ),
+                        Parameter(
+                            name="password",
+                            param_type="str",
+                            description="The password associated with the user's account.",
+                        ),
+                    ],
+                ),
+                response_model=ResponseModel(
+                    name="UserLoginInput",
+                    description="UserLoginInput",
+                    params=[
+                        Parameter(
+                            name="success",
+                            param_type="bool",
+                            description="Indicates if the login was successful.",
+                        ),
+                        Parameter(
+                            name="token",
+                            param_type="str",
+                            description="A session token to be used for authenticated requests.",
+                        ),
+                        Parameter(
+                            name="message",
+                            param_type="str",
+                            description="A message providing more details about the login attempt, useful for debugging or informing the user about the login status.",
+                        ),
+                    ],
+                ),
+                database_schema=database_schema,
+                data_models=[],
+            ),
+            APIRouteRequirement(
+                method="POST",
+                path="/users/logout",
+                function_name="user_logout",
+                description="Logs out a user, invalidating the session token.",
+                access_level=AccessLevel.USER,
+                request_model=RequestModel(
+                    name="UserLogoutInput",
+                    description="UserLogoutInput",
+                    params=[
+                        Parameter(
+                            name="Authorization",
+                            param_type="Header",
+                            description="The session token provided as a part of the HTTP header for authentication.",
+                        )
+                    ],
+                ),
+                response_model=ResponseModel(
+                    name="UserLogoutInput",
+                    description="UserLogoutInput",
+                    params=[
+                        Parameter(
+                            name="message",
+                            param_type="string",
+                            description="A confirmation message indicating successful logout.",
+                        )
+                    ],
+                ),
+                database_schema=DatabaseSchema(
+                    name="TimeSyncSchema",
+                    description="A schema for the TimeSync app, supporting appointment scheduling, notifications, and calendar integrations.",
+                    tables=[
+                        DatabaseTable(
+                            name="User",
+                            description="Stores user information, including role and authentication details.",
+                            definition="model User {\\n  id        String        @id @default(uuid())\\n  email     String        @unique\\n  role      UserRole      @default(Client)\\n  password  String\\n  createdAt DateTime      @default(now())\\n  updatedAt DateTime      @updatedAt\\n  Appointments  Appointment[]\\n  Notifications Notification[]\\n  Integrations  Integration[]\\n}",
+                        ),
+                        DatabaseTable(
+                            name="Appointment",
+                            description="Represents appointments with status, type, and time zone information.",
+                            definition="model Appointment {\\n  id          String          @id @default(uuid())\\n  userId      String\\n  status      AppointmentStatus @default(Scheduled)\\n  type        String\\n  startTime   DateTime\\n  endTime     DateTime\\n  timeZone    String\\n  createdAt   DateTime        @default(now())\\n  updatedAt   DateTime        @updatedAt\\n  User        User            @relation(fields: [userId], references: [id])\\n  Notifications Notification[]\\n}",
+                        ),
+                        DatabaseTable(
+                            name="Notification",
+                            description="Manages notifications linked to users and appointments, with type defining the channels.",
+                            definition="model Notification {\\n  id            String        @id @default(uuid())\\n  userId        String\\n  appointmentId String\\n  type          NotificationType\\n  sentAt        DateTime?\\n  User          User          @relation(fields: [userId], references: [id])\\n  Appointment   Appointment   @relation(fields: [appointmentId], references: [id])\\n}",
+                        ),
+                        DatabaseTable(
+                            name="Integration",
+                            description="Handles external calendar integrations for users, storing details in a JSON format.",
+                            definition="model Integration {\\n  id        String        @id @default(uuid())\\n  userId    String\\n  type      IntegrationType\\n  details   Json\\n  User      User          @relation(fields: [userId], references: [id])\\n}",
+                        ),
+                    ],
+                ),
+                data_models=[],
+            ),
+            APIRouteRequirement(
+                method="PUT",
+                path="/users/{id}/settings/notifications",
+                function_name="update_notification_settings",
+                description="Updates a user's notification preferences.",
+                access_level=AccessLevel.USER,
+                request_model=RequestModel(
+                    name="UpdateNotificationSettingsRequest",
+                    description="UpdateNotificationSettingsRequest",
+                    params=[
+                        Parameter(
+                            name="userId",
+                            param_type="string",
+                            description="The unique identifier of the user whose notification settings need to be updated.",
+                        ),
+                        # Parameter(
+                        #     name="settings",
+                        #     param_type="NotificationSettingsUpdate",
+                        #     description="The new notification settings to be applied to the user's profile.",
+                        # ),
+                        Parameter(
+                            name="emailFrequency",
+                            param_type="string",
+                            description="The desired frequency of email notifications ('daily', 'weekly', 'never').",
+                        ),
+                        Parameter(
+                            name="smsEnabled",
+                            param_type="boolean",
+                            description="Indicates whether SMS notifications are enabled (true/false).",
+                        ),
+                    ],
+                ),
+                response_model=ResponseModel(
+                    name="UpdateNotificationSettingsRequest",
+                    description="UpdateNotificationSettingsRequest",
+                    params=[
+                        Parameter(
+                            name="success",
+                            param_type="boolean",
+                            description="Indicates if the update operation was successful.",
+                        ),
+                        Parameter(
+                            name="message",
+                            param_type="string",
+                            description="A message detailing the outcome of the operation.",
+                        ),
+                    ],
+                ),
+                database_schema=database_schema,
+                data_models=[
+                    # EndpointDataModel(
+                    #     name="NotificationSettingsUpdate",
+                    #     description="Defines the fields available for updating a user's notification preferences, like frequency and method.",
+                    #     params=[
+                    #         Parameter(
+                    #             name="emailFrequency",
+                    #             param_type="string",
+                    #             description="The desired frequency of email notifications ('daily', 'weekly', 'never').",
+                    #         ),
+                    #         Parameter(
+                    #             name="smsEnabled",
+                    #             param_type="boolean",
+                    #             description="Indicates whether SMS notifications are enabled (true/false).",
+                    #         ),
+                    #     ],
+                    # )
+                ],
+            ),
+            APIRouteRequirement(
+                method="POST",
+                path="/appointments",
+                function_name="create_appointment",
+                description="Creates a new appointment.",
+                access_level=AccessLevel.USER,
+                request_model=RequestModel(
+                    name="CreateAppointmentInput",
+                    description="CreateAppointmentInput",
+                    params=[
+                        Parameter(
+                            name="userId",
+                            param_type="String",
+                            description="The ID of the user creating the appointment.",
+                        ),
+                        Parameter(
+                            name="startTime",
+                            param_type="DateTime",
+                            description="The start time for the appointment.",
+                        ),
+                        Parameter(
+                            name="endTime",
+                            param_type="DateTime",
+                            description="The end time for the appointment.",
+                        ),
+                        Parameter(
+                            name="type",
+                            param_type="String",
+                            description="Type of the appointment.",
+                        ),
+                        Parameter(
+                            name="participants",
+                            param_type="[String]",
+                            description="List of participating user IDs.",
+                        ),
+                        Parameter(
+                            name="timeZone",
+                            param_type="String",
+                            description="Timezone for the scheduled appointment.",
+                        ),
+                    ],
+                ),
+                response_model=ResponseModel(
+                    name="CreateAppointmentInput",
+                    description="CreateAppointmentInput",
+                    params=[
+                        Parameter(
+                            name="success",
+                            param_type="Boolean",
+                            description="Indicates success or failure of the operation.",
+                        ),
+                        Parameter(
+                            name="appointmentId",
+                            param_type="String",
+                            description="Unique identifier for the newly created appointment.",
+                        ),
+                        Parameter(
+                            name="message",
+                            param_type="String",
+                            description="Additional information or error message.",
+                        ),
+                    ],
+                ),
+                database_schema=database_schema,
+                data_models=[],
+            ),
+            APIRouteRequirement(
+                method="PUT",
+                path="/appointments/{id}",
+                function_name="update_appointment",
+                description="Updates details of an existing appointment.",
+                access_level=AccessLevel.USER,
+                request_model=RequestModel(
+                    name="AppointmentUpdateInput",
+                    description="AppointmentUpdateInput",
+                    params=[
+                        Parameter(
+                            name="startTime",
+                            param_type="DateTime",
+                            description="The new start time for the appointment, accounting for any time zone considerations.",
+                        ),
+                        Parameter(
+                            name="endTime",
+                            param_type="DateTime",
+                            description="The new end time for the appointment, ensuring it follows logically after the start time.",
+                        ),
+                        Parameter(
+                            name="type",
+                            param_type="String",
+                            description="Optionally update the type/category of the appointment.",
+                        ),
+                        Parameter(
+                            name="status",
+                            param_type="AppointmentStatus",
+                            description="The updated status to reflect any changes such as rescheduling or cancellations.",
+                        ),
+                        Parameter(
+                            name="timeZone",
+                            param_type="String",
+                            description="If the time zone needs adjusting to reflect the appropriate scheduling context.",
+                        ),
+                    ],
+                ),
+                response_model=ResponseModel(
+                    name="AppointmentUpdateInput",
+                    description="AppointmentUpdateInput",
+                    params=[
+                        Parameter(
+                            name="id",
+                            param_type="String",
+                            description="The ID of the appointment that was updated.",
+                        ),
+                        Parameter(
+                            name="success",
+                            param_type="Boolean",
+                            description="Indicates true if the appointment was successfully updated, false otherwise.",
+                        ),
+                        Parameter(
+                            name="message",
+                            param_type="String",
+                            description="Provides more information about the outcome of the update, such as 'Appointment updated successfully' or 'Update failed due to [reason]'.",
+                        ),
+                    ],
+                ),
+                database_schema=database_schema,
+                data_models=[],
+            ),
+            APIRouteRequirement(
+                method="DELETE",
+                path="/appointments/{id}",
+                function_name="cancel_appointment",
+                description="Cancels an existing appointment.",
+                access_level=AccessLevel.USER,
+                request_model=RequestModel(
+                    name="CancelAppointmentInput",
+                    description="CancelAppointmentInput",
+                    params=[
+                        Parameter(
+                            name="id",
+                            param_type="str",
+                            description="Unique identifier of the appointment to be canceled.",
+                        )
+                    ],
+                ),
+                response_model=ResponseModel(
+                    name="CancelAppointmentInput",
+                    description="CancelAppointmentInput",
+                    params=[
+                        Parameter(
+                            name="success",
+                            param_type="bool",
+                            description="Indicates whether the appointment cancellation was successful.",
+                        ),
+                        Parameter(
+                            name="message",
+                            param_type="str",
+                            description="A message detailing the outcome of the cancellation request.",
+                        ),
+                    ],
+                ),
+                database_schema=database_schema,
+                data_models=[],
+            ),
+            APIRouteRequirement(
+                method="PUT",
+                path="/notifications/settings",
+                function_name="configure_notifications",
+                description="Configures a user's notification preferences.",
+                access_level=AccessLevel.USER,
+                request_model=RequestModel(
+                    name="ConfigureNotificationsRequest",
+                    description="ConfigureNotificationsRequest",
+                    params=[
+                        Parameter(
+                            name="userId",
+                            param_type="string",
+                            description="The unique identifier of the user updating their preferences",
+                        ),
+                        Parameter(
+                            name="emailEnabled",
+                            param_type="boolean",
+                            description="Indicates whether email notifications are enabled",
+                        ),
+                        Parameter(
+                            name="emailFrequency",
+                            param_type="string",
+                            description="Defines how often email notifications are sent ('immediately', 'daily', 'weekly')",
+                        ),
+                        Parameter(
+                            name="smsEnabled",
+                            param_type="boolean",
+                            description="Indicates whether SMS notifications are enabled",
+                        ),
+                    ],
+                ),
+                response_model=ResponseModel(
+                    name="ConfigureNotificationsRequest",
+                    description="ConfigureNotificationsRequest",
+                    params=[
+                        Parameter(
+                            name="success",
+                            param_type="boolean",
+                            description="Indicates whether the update operation was successful",
+                        ),
+                        Parameter(
+                            name="message",
+                            param_type="string",
+                            description="Provides information about the operation's outcome or failure reason",
+                        ),
+                    ],
+                ),
+                database_schema=database_schema,
+                data_models=[
+                    # EndpointDataModel(
+                    #     name="NotificationSettings",
+                    #     description="Defines the notification preferences for a user, including channels and frequency",
+                    #     params=[
+                    #         Parameter(
+                    #             name="emailEnabled",
+                    #             param_type="boolean",
+                    #             description="Indicates whether email notifications are enabled",
+                    #         ),
+                    #         Parameter(
+                    #             name="emailFrequency",
+                    #             param_type="string",
+                    #             description="Defines how often email notifications are sent ('immediately', 'daily', 'weekly')",
+                    #         ),
+                    #         Parameter(
+                    #             name="smsEnabled",
+                    #             param_type="boolean",
+                    #             description="Indicates whether SMS notifications are enabled",
+                    #         ),
+                    #     ],
+                    # )
+                ],
+            ),
+            APIRouteRequirement(
+                method="POST",
+                path="/notifications/dispatch",
+                function_name="dispatch_notifications",
+                description="Sends out notifications based on predefined criteria and user settings.",
+                access_level=AccessLevel.ADMIN,
+                request_model=RequestModel(
+                    name="DispatchNotificationInput",
+                    description="DispatchNotificationInput",
+                    params=[
+                        Parameter(
+                            name="criteria",
+                            param_type="string",
+                            description="Criteria for notification dispatch, such as 'allPendingWithin24h' to indicate all notifications for appointments occurring in the next 24 hours.",
+                        )
+                    ],
+                ),
+                response_model=ResponseModel(
+                    name="DispatchNotificationInput",
+                    description="DispatchNotificationInput",
+                    params=[
+                        Parameter(
+                            name="success",
+                            param_type="boolean",
+                            description="If the dispatch was successful overall.",
+                        ),
+                        Parameter(
+                            name="dispatchedCount",
+                            param_type="int",
+                            description="Total number of notifications dispatched.",
+                        ),
+                        Parameter(
+                            name="failedCount",
+                            param_type="int",
+                            description="Number of notifications that failed to dispatch.",
+                        ),
+                        Parameter(
+                            name="errors",
+                            param_type="[string]",
+                            description="List of errors for individual failures, if applicable.",
+                        ),
+                    ],
+                ),
+                database_schema=database_schema,
+                data_models=[],
+            ),
+        ],
+    )
+
+
 if __name__ == "__main__":
     from codex.common.logging_config import setup_logging
 
@@ -443,3 +1032,4 @@ if __name__ == "__main__":
     logger.info(appointment_optimization_requirements())
     logger.info(distance_calculator_requirements())
     logger.info(profile_management())
+    logger.info(calendar_booking_system())
