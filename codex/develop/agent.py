@@ -4,7 +4,7 @@ import os
 from prisma.models import APIRouteSpec, CompletedApp, Function, Specification
 
 from codex.api_model import Identifiers
-from codex.develop.complie import compile_route, create_app
+from codex.develop.compile import compile_route, create_app
 from codex.develop.develop import DevelopAIBlock
 from codex.develop.model import FunctionDef
 
