@@ -42,6 +42,7 @@ from codex.requirements.hardcoded import (
     availability_checker_requirements,
     calendar_booking_system,
     distance_calculator_requirements,
+    inventory_mgmt_system,
     invoice_generator_requirements,
     profile_management,
 )
@@ -423,7 +424,7 @@ def hardcoded_requirements(task: str) -> ApplicationRequirements:
         case "Survey Tool":
             raise NotImplementedError("Survey Tool not implemented")
         case "Inventory Management System":
-            raise NotImplementedError("Inventory Management System not implemented")
+            return inventory_mgmt_system()
         case "Invoiceing and Payment Tracking System":
             raise NotImplementedError(
                 "Invoiceing and Payment Tracking System not implemented"
@@ -466,6 +467,7 @@ async def populate_database_specs():
         app_id_4,
         app_id_5,
         app_id_6,
+        app_id_7,
     )
 
     requirements = [
@@ -475,6 +477,7 @@ async def populate_database_specs():
         ("Distance Calculator", app_id_4),
         ("Profile Management System", app_id_5),
         ("Appointment Scheduling System", app_id_6),
+        ("Inventory Management System", app_id_7),
     ]
     ids = identifier_1
 
