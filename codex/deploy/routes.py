@@ -6,6 +6,15 @@ import logging
 from fastapi import APIRouter, HTTPException, Query, Response
 from fastapi.responses import StreamingResponse
 from prisma.models import CompletedApp
+from prisma.types import (
+    APIRouteSpecArgsFromCompiledRouteRecursive2,
+    APIRouteSpecIncludeFromAPIRouteSpecRecursive3,
+    CompiledRouteIncludeFromCompiledRouteRecursive1,
+    CompletedAppInclude,
+    FindManyCompiledRouteArgsFromCompletedApp,
+    RequestObjectArgsFromAPIRouteSpecRecursive4,
+    ResponseObjectArgsFromAPIRouteSpecRecursive4,
+)
 
 import codex.database
 import codex.deploy.agent as deploy_agent
@@ -38,18 +47,27 @@ async def create_deployment(
     Create a new deployment with the provided zip file.
     """
     try:
+        include = CompletedAppInclude(
+            CompiledRoutes=FindManyCompiledRouteArgsFromCompletedApp(
+                include=CompiledRouteIncludeFromCompiledRouteRecursive1(
+                    ApiRouteSpec=APIRouteSpecArgsFromCompiledRouteRecursive2(
+                        include=APIRouteSpecIncludeFromAPIRouteSpecRecursive3(
+                            RequestObject=RequestObjectArgsFromAPIRouteSpecRecursive4(
+                                **{"include": {"Prama": True}}
+                            ),
+                            ResponseObject=ResponseObjectArgsFromAPIRouteSpecRecursive4(
+                                **{"include": {"Prama": True}}
+                            ),
+                        )
+                    )
+                )
+            )
+        )
         completedApp = await CompletedApp.prisma().find_unique(
             where={"id": deliverable_id},
-            include={
-                "CompiledRoutes": {
-                    "include": {
-                        "Functions": True,
-                        "ApiRouteSpec": True,
-                        "CodeGraph": True,
-                    }
-                }
-            },
+            include=include,
         )
+
         if not completedApp:
             raise ValueError(f"Completed app {deliverable_id} not found")
 

@@ -254,8 +254,12 @@ class DevelopAIBlock(AIBlock):
                         "ChildFunction": {"include": {"ApiRouteSpec": True}},
                     },
                 )
+                num_child_functions = (
+                    len(func.ChildFunction) if func.ChildFunction else 0
+                )
                 logger.info(
-                    f"✅ Created Function. - {func.id} Child Functions: {len(function_defs)}/{len(func.ChildFunction if func.ChildFunction else [])}"
+                    f"✅ Created Function. - {func.id} Child Functions: "
+                    f"{len(function_defs)}/{num_child_functions}"
                 )
                 return func
             except Exception as e:
