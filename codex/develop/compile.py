@@ -50,6 +50,8 @@ async def compile_route(
     date = CompiledRouteCreateInput(
         description=api_route.description,
         Packages={"connect": [{"id": package_id} for package_id in unique_packages]},
+        fileName=api_route.functionName + "_service.py",
+        mainFunctionName=route_root_func.functionName,
         compiledCode=code,
         RootFunction={"connect": {"id": route_root_func.id}},
         ApiRouteSpec={"connect": {"id": api_route.id}},
