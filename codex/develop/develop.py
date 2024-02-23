@@ -1,6 +1,5 @@
 import ast
 import logging
-from importlib.metadata import packages_distributions
 from typing import List
 
 from prisma.enums import DevelopmentPhase, FunctionState
@@ -246,7 +245,7 @@ class DevelopAIBlock(AIBlock):
                                 }
                             },
                         )
-                # We need to reload from the database the child functions so they 
+                # We need to reload from the database the child functions so they
                 # have the api route spec attached
                 func = await Function.prisma().find_unique_or_raise(
                     where={"id": func.id},
@@ -256,7 +255,7 @@ class DevelopAIBlock(AIBlock):
                     },
                 )
                 logger.info(
-                    f"✅ Created Function. Child Functions: {len(function_defs)}/{len(func.ChildFunction if func.ChildFunction else [])}"
+                    f"✅ Created Function. - {func.id} Child Functions: {len(function_defs)}/{len(func.ChildFunction if func.ChildFunction else [])}"
                 )
                 return func
             except Exception as e:
@@ -313,11 +312,35 @@ class DevelopAIBlock(AIBlock):
         func: Function | None = await Function.prisma().update(
             where={"id": generated_response.function_id}, data=update_obj
         )
-
         if not func:
             raise AssertionError(
                 f"Function with id {generated_response.function_id} not found"
             )
-        logger.info(f"✅ Updated Function")
+
+        # Child Functions Must be created without relations
+        # Here we add the relations after the function is created
+        if func.ChildFunction:
+            for function_def in func.ChildFunction:
+                await Function.prisma().update(
+                    where={"id": function_def.id},
+                    data={
+                        "ApiRouteSpec": {
+                            "connect": {
+                                "id": generated_response.api_route_spec.id
+                            }
+                        }
+                    },
+                )
+        # We need to reload from the database the child functions so they
+        # have the api route spec attached
+        func = await Function.prisma().find_unique_or_raise(
+            where={"id": func.id},
+            include={
+                "ParentFunction": True,
+                "ChildFunction": {"include": {"ApiRouteSpec": True}},
+            },
+        )
+
+        logger.info(f"✅ Updated Function: {func.functionName} - {func.id}")
 
         return func

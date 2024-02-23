@@ -60,7 +60,7 @@ async def compile_route(
     return compiled_route
 
 
-async def recursive_compile_route(function: Function) -> CompiledFunction:
+async def recursive_compile_route(in_function: Function) -> CompiledFunction:
     """
     Recursively compiles a function and its child functions
     into a single CompiledFunction object.
@@ -79,20 +79,19 @@ async def recursive_compile_route(function: Function) -> CompiledFunction:
     # Can't see how to do recursive lookup with prisma, so I'm checking the next
     # layer down each time. This is a bit of a hack, can be improved later.
     function = await Function.prisma().find_unique_or_raise(
-        where={"id": function.id},
+        where={"id": in_function.id},
         include={
             "ParentFunction": True,
             "ChildFunction": {"include": {"ApiRouteSpec": True}},
         },
     )
-    print(function)
-
+    logger.info(f"Compiling function: {function.id}")
     if function.ChildFunction is None:
         packages = []
         if function.Packages:
             packages = function.Packages
         if function.functionCode is None:
-            raise ValueError("Function code is required!")
+            raise ValueError(f"Leaf Function code is required! {function.id}")
         code = '\n'.join(function.importStatements)
         code += '\n\n'
         code += function.functionCode
@@ -124,7 +123,7 @@ async def recursive_compile_route(function: Function) -> CompiledFunction:
         imports.extend(function.importStatements)
 
         if function.functionCode is None:
-            raise ValueError("Function code is required!")
+            raise ValueError(f"Function code is required! {function.id}")
 
         code += "\n\n"
         code += function.functionCode

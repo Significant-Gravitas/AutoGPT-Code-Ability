@@ -35,6 +35,7 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
             route_root_func = await develop_route(
                 ids, api_route.description, api_route.functionName, api_route
             )
+            logger.info(f"Route function id: {route_root_func.id}")
             compiled_route = await compile_route(ids, route_root_func, api_route)
             compiled_routes.append(compiled_route)
 
@@ -143,6 +144,8 @@ High-level Goal: {route_description}"""
             await recursive_create_function(
                 ids, route_description, child, api_route, depth + 1
             )
+    else:
+        logger.info(f"❌ No child functions to develop for {function_def.id}")
 
     return route_function
 
