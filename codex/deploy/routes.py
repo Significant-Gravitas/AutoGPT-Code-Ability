@@ -53,10 +53,10 @@ async def create_deployment(
                     ApiRouteSpec=APIRouteSpecArgsFromCompiledRouteRecursive2(
                         include=APIRouteSpecIncludeFromAPIRouteSpecRecursive3(
                             RequestObject=RequestObjectArgsFromAPIRouteSpecRecursive4(
-                                **{"include": {"Prama": True}}
+                                **{"include": {"Params": True}}
                             ),
                             ResponseObject=ResponseObjectArgsFromAPIRouteSpecRecursive4(
-                                **{"include": {"Prama": True}}
+                                **{"include": {"Params": True}}
                             ),
                         )
                     )
