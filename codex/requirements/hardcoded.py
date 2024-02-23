@@ -107,7 +107,7 @@ def invoice_generator_requirements() -> ApplicationRequirements:
                 path="/create_invoice",
                 function_name="create_invoice",
                 access_level=AccessLevel.PUBLIC,
-                description="Function that returns the availability of professionals, updating based on current activity or schedule.",
+                description="This function will process input data regarding services rendered, billable hours, parts used, and applicable rates or taxes, to generate a comprehensive invoice as a pdf file. This function operates without the need for database access, relying solely on the input provided at the time of invoice creation.",
                 request_model=invoice_model,
                 response_model=invoice_response,
                 database_schema=None,
