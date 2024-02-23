@@ -28,7 +28,7 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
     compiled_routes = []
     if spec.ApiRouteSpecs:
         for api_route in spec.ApiRouteSpecs:
-            route_root_func = await develop_route(ids, api_route, api_route.description, api_route.functionName)
+            route_root_func = await develop_route([], ids, api_route, api_route.description, api_route.functionName)
             logger.info(f"Route function id: {route_root_func.id}")
             compiled_route = await compile_route(ids, route_root_func, api_route)
             compiled_routes.append(compiled_route)
@@ -37,6 +37,7 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
 
 
 async def develop_route(
+    generated_functions: list[Function], # TODO: remove this, replace with vector-lookup.
     ids: Identifiers,
     api_route: APIRouteSpec,
     goal_description: str,
@@ -50,6 +51,7 @@ async def develop_route(
     based on the provided function definition and api route spec.
 
     Args:
+        generated_functions (list[Function]): The list of already generated functions, used to promote function re-use.
         ids (Identifiers): The identifiers for the function.
         api_route (APIRouteSpec): The API route specification.
         goal_description (str): The high-level goal of the function to create.
@@ -65,9 +67,6 @@ async def develop_route(
     if depth >= RECURSION_DEPTH_LIMIT:
         raise ValueError("Recursion depth exceeded")
 
-    # Hacky generated function list. TODO: replace with vector-lookup
-    generated_function_defs: list[Function] = [] # await Function.prisma().find_many(where={"apiRouteSpecId": api_route.id})
-
     route_function: Function = await DevelopAIBlock().invoke(
         ids=ids,
         invoke_params={
@@ -76,7 +75,7 @@ async def develop_route(
             "description": function_template or "",
             "provided_functions": [
                 f.template
-                for f in generated_function_defs
+                for f in generated_functions
                 if f.functionName != function_name and f.parentFunctionId
             ],
             # api_route is not used by the prompt, but is used by the function
@@ -88,6 +87,7 @@ async def develop_route(
     )
 
     if route_function.ChildFunction:
+        generated_functions.extend(route_function.ChildFunction)
         logger.info(f"\tDeveloping {len(route_function.ChildFunction)} child functions")
         tasks = [
             develop_route(
@@ -97,7 +97,8 @@ async def develop_route(
                 function_name=child.functionName,
                 function_template=child.template,
                 api_route=api_route,
-                depth=depth + 1
+                depth=depth + 1,
+                generated_functions=generated_functions,
             )
             for child in route_function.ChildFunction
         ]
