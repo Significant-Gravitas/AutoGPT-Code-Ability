@@ -1,6 +1,6 @@
 import logging
 import os
-from re import T
+import asyncio
 
 from prisma.models import APIRouteSpec, CompletedApp, Function, Specification
 
@@ -95,7 +95,7 @@ async def recursive_create_function(
     route_description: str,
     function_def: Function,
     api_route: APIRouteSpec,
-    depth: int = 0,
+    depth: int = 1,
 ) -> Function:
     """
     Recursively creates a function and its child functions
@@ -111,10 +111,9 @@ async def recursive_create_function(
         Function: The created function.
     """
     if depth > 0:
-        logger.warning(f"Recursion depth: {depth} for route {route_description}")
+        logger.warning(f"Recursion depth: {depth} for route: {api_route.path} - Func: {function_def.functionName}")
     if depth >= RECURSION_DEPTH_LIMIT:
         raise ValueError("Recursion depth exceeded")
-
     description = f"""
 {function_def.template}
 
@@ -138,12 +137,10 @@ High-level Goal: {route_description}"""
     )
 
     if route_function.ChildFunction:
-        for child in route_function.ChildFunction:
-            # We don't need to store the output here,
-            # as the function will be stored in the database
-            await recursive_create_function(
+        tasks = [recursive_create_function(
                 ids, route_description, child, api_route, depth + 1
-            )
+            )  for child in route_function.ChildFunction]
+        await asyncio.gather(*tasks)
     else:
         logger.info(f"❌ No child functions to develop for {function_def.id}")
 
