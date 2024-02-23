@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 
@@ -60,8 +61,7 @@ async def develop_route(
     Returns:
         Function: The developed route function.
     """
-    if depth > 0:
-        logger.warning(f"Recursion depth: {depth} for route {api_route.path}")
+    logger.info(f"Developing for route: {api_route.path} - Func: {function_name}, depth: {depth}")
     if depth >= RECURSION_DEPTH_LIMIT:
         raise ValueError("Recursion depth exceeded")
 
@@ -89,10 +89,8 @@ async def develop_route(
 
     if route_function.ChildFunction:
         logger.info(f"\tDeveloping {len(route_function.ChildFunction)} child functions")
-        for child in route_function.ChildFunction:
-            # We don't need to store the output here,
-            # as the function will be stored in the database
-            await develop_route(
+        tasks = [
+            develop_route(
                 ids=ids,
                 goal_description=goal_description,
                 function_id=child.id,
@@ -101,6 +99,9 @@ async def develop_route(
                 api_route=api_route,
                 depth=depth + 1
             )
+            for child in route_function.ChildFunction
+        ]
+        await asyncio.gather(*tasks)
     else:
         logger.info(f"❌ No child functions to develop")
         logger.debug(route_function.rawCode)
