@@ -220,12 +220,13 @@ model Function {
 }
 
 model Package {
-  id          String     @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt   DateTime   @default(now())
-  packageName String
-  version     String
-  specifier   String
-  Functions   Function[]
+  id             String          @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt      DateTime        @default(now())
+  packageName    String
+  version        String
+  specifier      String
+  Functions      Function[]
+  CompiledRoutes CompiledRoute[]
 }
 
 // ------------------------- Delivery Models ----------------------------- //
@@ -237,16 +238,15 @@ model CompiledRoute {
   createdAt   DateTime                     @default(now())
   embedding   Unsupported("vector(1536)")?
   description String
+  Packages    Package[]
 
-  compiled_code String
+  compiledCode String
 
   CompletedApps CompletedApp[]
 
   rootFunctionId String
   RootFunction   Function @relation(fields: [rootFunctionId], references: [id], onDelete: Cascade)
 
-  // Why is this unique and here with the many to many relationship? This is a 1-1 relationship, and this field might not even required.
-  codeGraphId    String        @unique
   ApiRouteSpec   APIRouteSpec? @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
   apiRouteSpecId String?
 }
