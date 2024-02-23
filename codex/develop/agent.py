@@ -147,12 +147,14 @@ High-level Goal: {route_description}"""
 
 if __name__ == "__main__":
     import asyncio
+
     import prisma
-    import codex.common.test_const as test_consts
     from prisma.models import APIRouteSpec
-    from codex.requirements.database import get_latest_specification
-    from codex.common.logging import setup_logging
+
+    import codex.common.test_const as test_consts
     from codex.common.ai_model import OpenAIChatClient
+    from codex.common.logging import setup_logging
+    from codex.requirements.database import get_latest_specification
 
     OpenAIChatClient.configure({})
     setup_logging(local=True)
