@@ -1,5 +1,6 @@
 import logging
 import os
+from re import T
 
 from prisma.models import APIRouteSpec, CompletedApp, Function, Specification
 
@@ -60,6 +61,7 @@ async def develop_route(
     """
     global generated_function_defs
     generated_function_defs = []
+    logger.info(f"Developing route: {route_description}")
 
     route_function: Function = await DevelopAIBlock().invoke(
         ids=ids,
@@ -75,8 +77,8 @@ async def develop_route(
             "api_route": api_route,
         },
     )
-
     if route_function.ChildFunction:
+        logger.info(f"\tDeveloping {len(route_function.ChildFunction)} child functions")
         for child in route_function.ChildFunction:
             # We don't need to store the output here,
             # as the function will be stored in the database
@@ -141,3 +143,28 @@ High-level Goal: {route_description}"""
             )
 
     return route_function
+
+
+if __name__ == "__main__":
+    import asyncio
+    import prisma
+    import codex.common.test_const as test_consts
+    from prisma.models import APIRouteSpec
+    from codex.requirements.database import get_latest_specification
+    from codex.common.logging import setup_logging
+    from codex.common.ai_model import OpenAIChatClient
+
+    OpenAIChatClient.configure({})
+    setup_logging(local=True)
+    client = prisma.Prisma(auto_register=True)
+
+    async def run_me():
+        await client.connect()
+        ids = test_consts.identifier_1
+        spec = await get_latest_specification(ids.user_id, ids.app_id)
+        ans = await develop_application(ids=ids, spec=spec)
+        await client.disconnect()
+        return ans
+
+    ans = asyncio.run(run_me())
+    logger.info(ans)
