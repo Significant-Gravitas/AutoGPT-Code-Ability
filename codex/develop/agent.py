@@ -83,7 +83,7 @@ async def develop_route(
             "api_route": api_route,
             # function_id is used, so we can update the function with the implementation
             "function_id": function_id,
-            "allow_stub": depth >= RECURSION_DEPTH_LIMIT,
+            "allow_stub": depth < RECURSION_DEPTH_LIMIT,
         },
     )
 
