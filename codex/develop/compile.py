@@ -1,4 +1,6 @@
+import logging
 from typing import List
+import ast
 
 from prisma.models import (
     APIRouteSpec,
@@ -6,9 +8,23 @@ from prisma.models import (
     CompletedApp,
     Function,
     Specification,
+    Package,
 )
 
+from prisma.types import CompiledRouteCreateInput, CompletedAppCreateInput
+from pydantic import BaseModel
+from sqlalchemy import func
+
 from codex.api_model import Identifiers
+
+
+logger = logging.getLogger(__name__)
+
+
+class CompiledFunction(BaseModel):
+    packages: List[Package]
+    imports: List[str]
+    code: str
 
 
 async def compile_route(
@@ -26,7 +42,102 @@ async def compile_route(
         CompiledRoute: The compiled route object.
 
     """
-    return CompiledRoute(**{})
+    compiled_function = await recursive_compile_route(route_root_func)
+
+    unique_packages = list(set([package.id for package in compiled_function.packages]))
+
+    code = "\n".join(compiled_function.imports)
+    code += "\n\n"
+    code += compiled_function.code
+    date = CompiledRouteCreateInput(
+        description=api_route.description,
+        Packages={"connect": [{"id": package_id} for package_id in unique_packages]},
+        compiledCode=code,
+        RootFunction={"connect": {"id": route_root_func.id}},
+        ApiRouteSpec={"connect": {"id": api_route.id}},
+    )
+    compiled_route = await CompiledRoute.prisma().create(date)
+    return compiled_route
+
+
+async def recursive_compile_route(function: Function) -> CompiledFunction:
+    """
+    Recursively compiles a function and its child functions
+    into a single CompiledFunction object.
+
+    Args:
+        ids (Identifiers): The identifiers for the function.
+        function (Function): The function to compile.
+
+    Returns:
+        CompiledFunction: The compiled function.
+
+    Raises:
+        ValueError: If the function code is missing.
+    """
+
+    # Can't see how to do recursive lookup with prisma, so I'm checking the next
+    # layer down each time. This is a bit of a hack, can be improved later.
+    function = await Function.prisma().find_unique_or_raise(
+        where={"id": function.id},
+        include={
+            "ParentFunction": True,
+            "ChildFunction": {"include": {"ApiRouteSpec": True}},
+        },
+    )
+    print(function)
+
+    if function.ChildFunction is None:
+        packages = []
+        if function.Packages:
+            packages = function.Packages
+        if function.functionCode is None:
+            raise ValueError("Function code is required!")
+        code = '\n'.join(function.importStatements)
+        code += '\n\n'
+        code += function.functionCode
+
+        try:
+            tree = ast.parse(code)
+        except Exception as e:
+            raise ValueError(f"Syntax error in function code: {e}, {code}")
+
+
+        return CompiledFunction(
+            packages=packages,
+            imports=function.importStatements,
+            code=function.functionCode,
+        )
+    else:
+        packages = []
+        imports = []
+        code = ""
+        for child_function in function.ChildFunction:
+            compiled_function = await recursive_compile_route(child_function)
+            packages.extend(compiled_function.packages)
+            imports.extend(compiled_function.imports)
+            code += "\n\n"
+            code += compiled_function.code
+
+        if function.Packages:
+            packages.extend(function.Packages)
+        imports.extend(function.importStatements)
+
+        if function.functionCode is None:
+            raise ValueError("Function code is required!")
+
+        code += "\n\n"
+        code += function.functionCode
+        check_code = '\n'.join(imports)
+        check_code += '\n\n'
+        check_code += code
+
+        try:
+            tree = ast.parse(check_code)
+        except Exception as e:
+            raise ValueError(f"Syntax error in function code: {e}, {code}")
+
+        return CompiledFunction(packages=packages, imports=imports, code=code)
 
 
 async def create_app(
@@ -43,4 +154,16 @@ async def create_app(
     Returns:
         CompletedApp: The completed app object.
     """
-    return CompletedApp(**{})
+    if spec.ApiRouteSpecs is None:
+        raise ValueError("Specification must have at least one API route.")
+
+    data = CompletedAppCreateInput(
+        name=spec.name,
+        description=spec.context,
+        User={"connect": {"id": ids.user_id}},
+        CompiledRoutes={"connect": [{"id": route.id} for route in compiled_routes]},
+        Specification={"connect": {"id": spec.id}},
+        Application={"connect": {"id": ids.app_id}},
+    )
+    app = await CompletedApp.prisma().create(data)
+    return app

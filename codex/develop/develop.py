@@ -1,11 +1,8 @@
 import ast
 import logging
 from importlib.metadata import packages_distributions
-from re import A
 from typing import List
-from urllib import parse
 
-from pkg_resources import parse_version
 from prisma.enums import DevelopmentPhase, FunctionState
 from prisma.models import Function
 from prisma.types import (
@@ -207,6 +204,8 @@ class DevelopAIBlock(AIBlock):
 
                         function_defs.append(model)
 
+                logger.info(f"Child Functions Detected: {len(function_defs)}")
+
                 create_input = FunctionCreateInput(
                     functionName=generated_response.function_name,
                     template=generated_response.template,
@@ -247,8 +246,18 @@ class DevelopAIBlock(AIBlock):
                                 }
                             },
                         )
-
-                logger.info(f"Created Function: {func}")
+                # We need to reload from the database the child functions so they 
+                # have the api route spec attached
+                func = await Function.prisma().find_unique_or_raise(
+                    where={"id": func.id},
+                    include={
+                        "ParentFunction": True,
+                        "ChildFunction": {"include": {"ApiRouteSpec": True}},
+                    },
+                )
+                logger.info(
+                    f"✅ Created Function. Child Functions: {len(function_defs)}/{len(func.ChildFunction if func.ChildFunction else [])}"
+                )
                 return func
             except Exception as e:
                 logger.info(f"Error saving Function: {e}")
@@ -309,6 +318,6 @@ class DevelopAIBlock(AIBlock):
             raise AssertionError(
                 f"Function with id {generated_response.function_id} not found"
             )
-        logger.info(f"Updated Function: {func}")
+        logger.info(f"✅ Updated Function")
 
         return func

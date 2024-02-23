@@ -83,7 +83,9 @@ async def develop_route(
             # We don't need to store the output here,
             # as the function will be stored in the database
             await recursive_create_function(ids, route_description, child, api_route)
-
+    else:
+        logger.info("❌ No child functions to develop")
+        logger.debug(route_function.rawCode)
     return route_function
 
 
