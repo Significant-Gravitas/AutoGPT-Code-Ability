@@ -1,20 +1,15 @@
 import logging
 import os
-from re import T
 
 from prisma.models import APIRouteSpec, CompletedApp, Function, Specification
 
 from codex.api_model import Identifiers
 from codex.develop.compile import compile_route, create_app
 from codex.develop.develop import DevelopAIBlock
-from codex.develop.model import FunctionDef
 
 RECURSION_DEPTH_LIMIT = int(os.environ.get("RECURSION_DEPTH_LIMIT", 3))
 
 logger = logging.getLogger(__name__)
-
-# hacky way to list all generated functions, will be replaced with a vector-lookup
-generated_function_defs: list[FunctionDef] = []
 
 
 async def develop_application(ids: Identifiers, spec: Specification) -> CompletedApp:
@@ -32,9 +27,7 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
     compiled_routes = []
     if spec.ApiRouteSpecs:
         for api_route in spec.ApiRouteSpecs:
-            route_root_func = await develop_route(
-                ids, api_route.description, api_route.functionName, api_route
-            )
+            route_root_func = await develop_route(ids, api_route, api_route.description, api_route.functionName)
             logger.info(f"Route function id: {route_root_func.id}")
             compiled_route = await compile_route(ids, route_root_func, api_route)
             compiled_routes.append(compiled_route)
@@ -44,109 +37,73 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
 
 async def develop_route(
     ids: Identifiers,
-    route_description: str,
-    func_name: str,
     api_route: APIRouteSpec,
+    goal_description: str,
+    function_name: str,
+    function_id: str = None,
+    function_template: str = None,
+    depth: int = 0,
 ) -> Function:
     """
-    Develops a route based on the given parameters.
+    Recursively develops a function and its child functions
+    based on the provided function definition and api route spec.
 
     Args:
-        ids (Identifiers): The identifiers for the route function.
-        route_description (str): The description of the route function.
-        func_name (str): The name of the route function.
+        ids (Identifiers): The identifiers for the function.
         api_route (APIRouteSpec): The API route specification.
+        goal_description (str): The high-level goal of the function to create.
+        function_name (str): The name of the function to create.
+        function_id (str): The id of the function to create. If not provided, a new root-function will be created.
+        function_template (str): The docstring/template of the function to create.
+        depth (int): The depth of the recursion.
 
     Returns:
         Function: The developed route function.
     """
-    global generated_function_defs
-    generated_function_defs = []
-    logger.info(f"Developing route: {route_description}")
+    if depth > 0:
+        logger.warning(f"Recursion depth: {depth} for route {api_route.path}")
+    if depth >= RECURSION_DEPTH_LIMIT:
+        raise ValueError("Recursion depth exceeded")
+
+    # Hacky generated function list. TODO: replace with vector-lookup
+    generated_function_defs: list[Function] = [] # await Function.prisma().find_many(where={"apiRouteSpecId": api_route.id})
 
     route_function: Function = await DevelopAIBlock().invoke(
         ids=ids,
         invoke_params={
-            "function_name": func_name,
-            "description": route_description,
+            "function_name": function_name,
+            "goal": goal_description,
+            "description": function_template or "",
             "provided_functions": [
-                f.function_template
+                f.template
                 for f in generated_function_defs
-                if f.name != func_name
+                if f.functionName != function_name and f.parentFunctionId
             ],
             # api_route is not used by the prompt, but is used by the function
             "api_route": api_route,
+            # function_id is used, so we can update the function with the implementation
+            "function_id": function_id,
+            "allow_stub": depth >= RECURSION_DEPTH_LIMIT,
         },
     )
+
     if route_function.ChildFunction:
         logger.info(f"\tDeveloping {len(route_function.ChildFunction)} child functions")
         for child in route_function.ChildFunction:
             # We don't need to store the output here,
             # as the function will be stored in the database
-            await recursive_create_function(ids, route_description, child, api_route)
-    else:
-        logger.info("❌ No child functions to develop")
-        logger.debug(route_function.rawCode)
-    return route_function
-
-
-async def recursive_create_function(
-    ids: Identifiers,
-    route_description: str,
-    function_def: Function,
-    api_route: APIRouteSpec,
-    depth: int = 0,
-) -> Function:
-    """
-    Recursively creates a function and its child functions
-    based on the provided function definition.
-
-    Args:
-        ids (Identifiers): The identifiers for the function.
-        route_description (str): The description of the route.
-        function_def (Function): The function definition.
-        api_route (APIRouteSpec): The API route specification.
-
-    Returns:
-        Function: The created function.
-    """
-    if depth > 0:
-        logger.warning(f"Recursion depth: {depth} for route {route_description}")
-    if depth >= RECURSION_DEPTH_LIMIT:
-        raise ValueError("Recursion depth exceeded")
-
-    description = f"""
-{function_def.template}
-
-High-level Goal: {route_description}"""
-
-    route_function: Function = await DevelopAIBlock().invoke(
-        ids=ids,
-        invoke_params={
-            "function_name": function_def.functionName,
-            "description": description,
-            "provided_functions": [
-                f.function_template
-                for f in generated_function_defs
-                if f.name != function_def.functionName
-            ],
-            # api_route is not used by the prompt, but is used by the function
-            "api_route": api_route,
-            # function_id is used so we can update the function with the implementation
-            "function_id": function_def.id,
-        },
-    )
-
-    if route_function.ChildFunction:
-        for child in route_function.ChildFunction:
-            # We don't need to store the output here,
-            # as the function will be stored in the database
-            await recursive_create_function(
-                ids, route_description, child, api_route, depth + 1
+            await develop_route(
+                ids=ids,
+                goal_description=goal_description,
+                function_id=child.id,
+                function_name=child.functionName,
+                function_template=child.template,
+                api_route=api_route,
+                depth=depth + 1
             )
     else:
-        logger.info(f"❌ No child functions to develop for {function_def.id}")
-
+        logger.info(f"❌ No child functions to develop")
+        logger.debug(route_function.rawCode)
     return route_function
 
 

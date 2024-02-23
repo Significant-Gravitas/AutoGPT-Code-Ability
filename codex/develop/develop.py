@@ -197,6 +197,7 @@ class DevelopAIBlock(AIBlock):
                         model = FunctionCreateWithoutRelationsInput(
                             functionName=value.name,
                             template=value.function_template,
+                            apiRouteSpecId=generated_response.api_route_spec.id,
                             state=FunctionState.DEFINITION,
                         )
 
@@ -280,16 +281,13 @@ class DevelopAIBlock(AIBlock):
             func: The updated item
         """
         generated_response: GeneratedFunctionResponse = validated_response.response
-
-        function_defs = []
-
-        generated_response: GeneratedFunctionResponse = validated_response.response
         function_defs: list[FunctionCreateWithoutRelationsInput] = []
         if generated_response.functions:
             for key, value in generated_response.functions.items():
                 model = FunctionCreateWithoutRelationsInput(
                     functionName=value.name,
                     template=value.function_template,
+                    apiRouteSpecId=generated_response.api_route_spec.id,
                     state=FunctionState.DEFINITION,
                 )
 

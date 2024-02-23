@@ -1,12 +1,17 @@
 Main function name: {{ function_name }}
-Required Function: {{ description }}
+{{ description }}
+For additional context, this function that you need to implement will be used as part of a larger program for {{ goal }}.
 ----
 {% if provided_functions %}
-You can re-use these functions without creating a new stub:
+You can re-use these functions without introducing a new stub:
 ```python
 {% for function in provided_functions %}
 {{ function }}
 
 {% endfor %}
 ```
+{% endif %}
+
+{% if allow_stub %}
+IMPORTANT: FOR THIS GENERATION, CREATE ONLY ONE FUNCTION WITHOUT ANY STUBS.
 {% endif %}
