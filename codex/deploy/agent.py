@@ -119,7 +119,7 @@ app = FastAPI(title="{name}", description='''{desc}''')"""
         param_names_str = ", ".join([param.name for param in request.Params])
 
         # method is a string here even though it should be an enum in the model
-        method_name = compiled_route.ApiRouteSpec.method.lower() # type: ignore
+        method_name = compiled_route.ApiRouteSpec.method.lower()  # type: ignore
         route_code = f"""@app.{method_name}("{route_path}")
 async def {compiled_route.mainFunctionName}_route({request_param_str}):
     try:
