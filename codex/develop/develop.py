@@ -166,7 +166,7 @@ class DevelopAIBlock(AIBlock):
 
             response.response = GeneratedFunctionResponse(
                 function_id=invoke_params["function_id"]
-                if invoke_params["function_id"]
+                if "function_id" in invoke_params
                 else None,
                 function_name=invoke_params["function_name"],
                 api_route_spec=invoke_params["api_route"],
@@ -248,7 +248,7 @@ class DevelopAIBlock(AIBlock):
                             },
                         )
 
-                logger.debug(f"Created Function: {func}")
+                logger.info(f"Created Function: {func}")
                 return func
             except Exception as e:
                 logger.info(f"Error saving Function: {e}")
@@ -309,4 +309,6 @@ class DevelopAIBlock(AIBlock):
             raise AssertionError(
                 f"Function with id {generated_response.function_id} not found"
             )
+        logger.info(f"Updated Function: {func}")
+
         return func
