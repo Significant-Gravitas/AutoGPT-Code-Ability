@@ -57,7 +57,7 @@ def availability_checker_requirements() -> ApplicationRequirements:
                 path="/availability",
                 function_name="check_availability",
                 access_level=AccessLevel.PUBLIC,
-                description="Function that returns the availability of professionals, updating based on current activity or schedule.",
+                description="Function that returns the availability of professionals, updating based on current activity or schedule. This function operates without the need for database access, relying solely on the input provided in the request",
                 request_model=check_availability_request,
                 response_model=availability_status_response,
                 database_schema=None,
