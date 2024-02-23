@@ -325,9 +325,7 @@ class DevelopAIBlock(AIBlock):
                     where={"id": function_def.id},
                     data={
                         "ApiRouteSpec": {
-                            "connect": {
-                                "id": generated_response.api_route_spec.id
-                            }
+                            "connect": {"id": generated_response.api_route_spec.id}
                         }
                     },
                 )

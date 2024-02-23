@@ -1,22 +1,20 @@
+import ast
 import logging
 from typing import List
-import ast
 
 from prisma.models import (
     APIRouteSpec,
     CompiledRoute,
     CompletedApp,
     Function,
-    Specification,
     Package,
+    Specification,
 )
-
 from prisma.types import CompiledRouteCreateInput, CompletedAppCreateInput
 from pydantic import BaseModel
 from sqlalchemy import func
 
 from codex.api_model import Identifiers
-
 
 logger = logging.getLogger(__name__)
 
@@ -92,15 +90,14 @@ async def recursive_compile_route(in_function: Function) -> CompiledFunction:
             packages = function.Packages
         if function.functionCode is None:
             raise ValueError(f"Leaf Function code is required! {function.id}")
-        code = '\n'.join(function.importStatements)
-        code += '\n\n'
+        code = "\n".join(function.importStatements)
+        code += "\n\n"
         code += function.functionCode
 
         try:
             tree = ast.parse(code)
         except Exception as e:
             raise ValueError(f"Syntax error in function code: {e}, {code}")
-
 
         return CompiledFunction(
             packages=packages,
@@ -127,8 +124,8 @@ async def recursive_compile_route(in_function: Function) -> CompiledFunction:
 
         code += "\n\n"
         code += function.functionCode
-        check_code = '\n'.join(imports)
-        check_code += '\n\n'
+        check_code = "\n".join(imports)
+        check_code += "\n\n"
         check_code += code
 
         try:
