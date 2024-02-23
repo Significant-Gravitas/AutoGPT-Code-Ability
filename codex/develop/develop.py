@@ -126,12 +126,11 @@ class DevelopAIBlock(AIBlock):
             requirment_blocks = text.split("```requirements")
             requirment_blocks.pop(0)
             if len(requirment_blocks) != 1:
-                raise ValidationError(
-                    f"There are {len(requirment_blocks)} requirements blocks in the"
-                    + " response. There should be exactly 1"
+                packages = []
+            else:
+                packages: List[Package] = parse_requirements(
+                    requirment_blocks[0].split("```")[0]
                 )
-
-            packages = parse_requirements(requirment_blocks[0].split("```")[0])
 
             code_blocks = text.split("```python")
             code_blocks.pop(0)

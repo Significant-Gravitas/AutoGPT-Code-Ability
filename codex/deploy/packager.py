@@ -1,3 +1,4 @@
+import datetime
 import logging
 import os
 import tempfile
@@ -56,6 +57,17 @@ def create_zip_file(application: Application) -> bytes:
         with tempfile.TemporaryDirectory() as temp_dir:
             app_dir = os.path.join(temp_dir, "project")
             os.makedirs(app_dir, exist_ok=True)
+
+            readme_file_path = os.path.join(app_dir, "README.md")
+            with open(readme_file_path, "w") as readme_file:
+                readme_file.write("---\n")
+                current_date = datetime.datetime.now()
+                formatted_date = current_date.isoformat()
+                readme_file.write(f"date: {formatted_date}\n")
+                readme_file.write("author: codex\n")
+                readme_file.write("---\n\n")
+                readme_file.write(f"# {application.completed_app.name}\n\n")
+                readme_file.write(application.completed_app.description)
 
             init_file_path = os.path.join(app_dir, "__init__.py")
             with open(init_file_path, "w") as init_file:
