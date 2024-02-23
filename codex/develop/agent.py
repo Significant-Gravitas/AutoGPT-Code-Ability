@@ -112,7 +112,7 @@ async def recursive_create_function(
     """
     if depth > 0:
         logger.warning(f"Recursion depth: {depth} for route {route_description}")
-    if depth > RECURSION_DEPTH_LIMIT:
+    if depth >= RECURSION_DEPTH_LIMIT:
         raise ValueError("Recursion depth exceeded")
 
     description = f"""
