@@ -28,7 +28,9 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
     compiled_routes = []
     if spec.ApiRouteSpecs:
         for api_route in spec.ApiRouteSpecs:
-            route_root_func = await develop_route([], ids, api_route, api_route.description, api_route.functionName)
+            route_root_func = await develop_route(
+                [], ids, api_route, api_route.description, api_route.functionName
+            )
             logger.info(f"Route function id: {route_root_func.id}")
             compiled_route = await compile_route(ids, route_root_func, api_route)
             compiled_routes.append(compiled_route)
@@ -37,7 +39,9 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
 
 
 async def develop_route(
-    generated_functions: list[Function], # TODO: remove this, replace with vector-lookup.
+    generated_functions: list[
+        Function
+    ],  # TODO: remove this, replace with vector-lookup.
     ids: Identifiers,
     api_route: APIRouteSpec,
     goal_description: str,
@@ -63,7 +67,9 @@ async def develop_route(
     Returns:
         Function: The developed route function.
     """
-    logger.info(f"Developing for route: {api_route.path} - Func: {function_name}, depth: {depth}")
+    logger.info(
+        f"Developing for route: {api_route.path} - Func: {function_name}, depth: {depth}"
+    )
     if depth >= RECURSION_DEPTH_LIMIT:
         raise ValueError("Recursion depth exceeded")
 

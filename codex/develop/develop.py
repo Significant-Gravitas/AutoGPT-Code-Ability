@@ -163,7 +163,9 @@ class DevelopAIBlock(AIBlock):
                 "pass" not in visitor.functions[invoke_params["function_name"]]
             ), "Function body is empty"
 
-            requested_func: FunctionDef = visitor.functions[invoke_params["function_name"]]
+            requested_func: FunctionDef = visitor.functions[
+                invoke_params["function_name"]
+            ]
             functions = visitor.functions.copy()
             del functions[invoke_params["function_name"]]
 
@@ -194,9 +196,7 @@ class DevelopAIBlock(AIBlock):
             return await self.update_item(ids, validated_response)
 
         try:
-            generated_response: GeneratedFunctionResponse = (
-                validated_response.response
-            )
+            generated_response: GeneratedFunctionResponse = validated_response.response
             function_defs: list[FunctionCreateWithoutRelationsInput] = []
             if generated_response.functions:
                 for key, value in generated_response.functions.items():
@@ -225,9 +225,7 @@ class DevelopAIBlock(AIBlock):
                 importStatements=generated_response.imports,
                 functionCode=generated_response.functionCode,
                 ChildFunction={"create": function_defs},
-                ApiRouteSpec={
-                    "connect": {"id": generated_response.api_route_spec.id}
-                },
+                ApiRouteSpec={"connect": {"id": generated_response.api_route_spec.id}},
             )
             if generated_response.api_route_spec.DatabaseSchema:
                 create_input["DatabaseSchema"] = {
@@ -245,9 +243,7 @@ class DevelopAIBlock(AIBlock):
                         where={"id": function_def.id},
                         data={
                             "ApiRouteSpec": {
-                                "connect": {
-                                    "id": generated_response.api_route_spec.id
-                                }
+                                "connect": {"id": generated_response.api_route_spec.id}
                             }
                         },
                     )
@@ -260,9 +256,7 @@ class DevelopAIBlock(AIBlock):
                     "ChildFunction": {"include": {"ApiRouteSpec": True}},
                 },
             )
-            num_child_functions = (
-                len(func.ChildFunction) if func.ChildFunction else 0
-            )
+            num_child_functions = len(func.ChildFunction) if func.ChildFunction else 0
             logger.info(
                 f"✅ Created Function. - {func.id} Child Functions: "
                 f"{len(function_defs)}/{num_child_functions}"
@@ -313,9 +307,7 @@ class DevelopAIBlock(AIBlock):
             importStatements=generated_response.imports,
             functionCode=generated_response.functionCode,
             ChildFunction={"create": function_defs},
-            ApiRouteSpec={
-                "connect": {"id": generated_response.api_route_spec.id}
-            },
+            ApiRouteSpec={"connect": {"id": generated_response.api_route_spec.id}},
         )
 
         if not generated_response.function_id:
