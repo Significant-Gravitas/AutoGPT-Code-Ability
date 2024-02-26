@@ -153,17 +153,20 @@ class DevelopAIBlock(AIBlock):
                 visitor = FunctionVisitor()
                 visitor.visit(tree)
             except Exception as e:
+                # Important: ValidationErrors are used in the retry prompt
                 raise ValidationError(f"Error parsing code: {e}")
 
             func_name = invoke_params["function_name"]
             if func_name not in visitor.functions:
-                raise ValueError(f"Function {func_name} not found in code")
+                # Important: ValidationErrors are used in the retry prompt
+                raise ValidationError(f"Function {func_name} not found in code")
 
             requested_func: FunctionDef = visitor.functions[
                 invoke_params["function_name"]
             ]
 
             if "pass" in requested_func.function_code:
+                # Important: ValidationErrors are used in the retry prompt
                 raise ValidationError(
                     "Main Function body is empty, it should contain"
                     + " the implementation of this function!"
@@ -187,6 +190,7 @@ class DevelopAIBlock(AIBlock):
             )
             return response
         except Exception as e:
+            # Important: ValidationErrors are used in the retry prompt
             raise ValidationError(f"Error validating response: {e}")
 
     async def create_item(
