@@ -159,13 +159,16 @@ class DevelopAIBlock(AIBlock):
                 invoke_params["function_name"] in visitor.functions
             ), f"Function {invoke_params['function_name']} not found in code"
 
-            assert (
-                "pass" not in visitor.functions[invoke_params["function_name"]]
-            ), "Function body is empty"
-
             requested_func: FunctionDef = visitor.functions[
                 invoke_params["function_name"]
             ]
+
+            if "pass" in requested_func.function_code:
+                raise ValidationError(
+                    "Main Function body is empty, it should contain"
+                    + " the implementation fo this function!"
+                )
+
             functions = visitor.functions.copy()
             del functions[invoke_params["function_name"]]
 
