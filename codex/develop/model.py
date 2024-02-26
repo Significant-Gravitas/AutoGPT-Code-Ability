@@ -13,10 +13,10 @@ class Package(BaseModel):
 
 class FunctionDef(BaseModel):
     name: str
-    doc_string: str
     args: str
     return_type: str
     function_template: str
+    function_code: str
 
 
 class GeneratedFunctionResponse(BaseModel):

@@ -12,7 +12,6 @@ from prisma.models import (
 )
 from prisma.types import CompiledRouteCreateInput, CompletedAppCreateInput
 from pydantic import BaseModel
-from sqlalchemy import func
 
 from codex.api_model import Identifiers
 
@@ -47,7 +46,7 @@ async def compile_route(
     code = "\n".join(compiled_function.imports)
     code += "\n\n"
     code += compiled_function.code
-    date = CompiledRouteCreateInput(
+    data = CompiledRouteCreateInput(
         description=api_route.description,
         Packages={"connect": [{"id": package_id} for package_id in unique_packages]},
         fileName=api_route.functionName + "_service.py",
@@ -56,7 +55,7 @@ async def compile_route(
         RootFunction={"connect": {"id": route_root_func.id}},
         ApiRouteSpec={"connect": {"id": api_route.id}},
     )
-    compiled_route = await CompiledRoute.prisma().create(date)
+    compiled_route = await CompiledRoute.prisma().create(data)
     return compiled_route
 
 

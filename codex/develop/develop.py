@@ -92,21 +92,28 @@ class FunctionVisitor(ast.NodeVisitor):
         args_str = ", ".join(args)
         return_type = ast.unparse(node.returns) if node.returns else "Unknown"
 
-        # Extracting the docstring if it exists
+        # Extracting the function_template with doc_string if it exists
+        original_body = node.body.copy()
         if (
             node.body
             and isinstance(node.body[0], ast.Expr)
             and isinstance(node.body[0].value, (ast.Str, ast.Constant))
         ):
-            doc_string = node.body[0].value.s  # .s to get the string content
+            node.body = node.body[:1]
         else:
-            doc_string = ""  # Or set a default docstring value if you prefer
+            node.body = []
+
+        # add "pass" statement to the node.body
+        node.body.append(ast.parse("pass").body[0])
+        function_template = ast.unparse(node)
+        node.body = original_body
+
         self.functions[node.name] = FunctionDef(
             name=node.name,
-            doc_string=doc_string,
+            function_template=function_template,
             args=args_str,
             return_type=return_type,
-            function_template=ast.unparse(node),
+            function_code=ast.unparse(node),
         )
         self.generic_visit(node)
 
@@ -156,6 +163,7 @@ class DevelopAIBlock(AIBlock):
                 "pass" not in visitor.functions[invoke_params["function_name"]]
             ), "Function body is empty"
 
+            requested_func: FunctionDef = visitor.functions[invoke_params["function_name"]]
             functions = visitor.functions.copy()
             del functions[invoke_params["function_name"]]
 
@@ -165,13 +173,11 @@ class DevelopAIBlock(AIBlock):
                 else None,
                 function_name=invoke_params["function_name"],
                 api_route_spec=invoke_params["api_route"],
-                template=invoke_params["description"],
                 rawCode=code,
                 packages=packages,
                 imports=visitor.imports,
-                functionCode=visitor.functions[
-                    invoke_params["function_name"]
-                ].function_template,
+                template=requested_func.function_template,
+                functionCode=requested_func.function_code,
                 functions=functions,
             )
             return response
@@ -186,83 +192,84 @@ class DevelopAIBlock(AIBlock):
         if generated_response.function_id:
             # Detect if the function already exists and update it
             return await self.update_item(ids, validated_response)
-        else:
-            try:
-                generated_response: GeneratedFunctionResponse = (
-                    validated_response.response
-                )
-                function_defs: list[FunctionCreateWithoutRelationsInput] = []
-                if generated_response.functions:
-                    for key, value in generated_response.functions.items():
-                        model = FunctionCreateWithoutRelationsInput(
-                            functionName=value.name,
-                            template=value.function_template,
-                            state=FunctionState.DEFINITION,
-                        )
 
-                        function_defs.append(model)
+        try:
+            generated_response: GeneratedFunctionResponse = (
+                validated_response.response
+            )
+            function_defs: list[FunctionCreateWithoutRelationsInput] = []
+            if generated_response.functions:
+                for key, value in generated_response.functions.items():
+                    model = FunctionCreateWithoutRelationsInput(
+                        functionName=value.name,
+                        template=value.function_template,
+                        apiRouteSpecId=generated_response.api_route_spec.id,
+                        state=FunctionState.DEFINITION,
+                    )
 
-                logger.info(f"Child Functions Detected: {len(function_defs)}")
+                    function_defs.append(model)
 
-                create_input = FunctionCreateInput(
-                    functionName=generated_response.function_name,
-                    template=generated_response.template,
-                    state=FunctionState.WRITTEN,
-                    Packages={
-                        "create": [
-                            PackageCreateWithoutRelationsInput(**p.model_dump())
-                            for p in generated_response.packages
-                        ]
-                    },
-                    rawCode=generated_response.rawCode,
-                    importStatements=generated_response.imports,
-                    functionCode=generated_response.functionCode,
-                    ChildFunction={"create": function_defs},
-                    ApiRouteSpec={
-                        "connect": {"id": generated_response.api_route_spec.id}
-                    },
-                )
-                if generated_response.api_route_spec.DatabaseSchema:
-                    create_input["DatabaseSchema"] = {
-                        "connect": {
-                            "id": generated_response.api_route_spec.DatabaseSchema.id
-                        }
+            logger.info(f"Child Functions Detected: {len(function_defs)}")
+
+            create_input = FunctionCreateInput(
+                functionName=generated_response.function_name,
+                template=generated_response.template,
+                state=FunctionState.WRITTEN,
+                Packages={
+                    "create": [
+                        PackageCreateWithoutRelationsInput(**p.model_dump())
+                        for p in generated_response.packages
+                    ]
+                },
+                rawCode=generated_response.rawCode,
+                importStatements=generated_response.imports,
+                functionCode=generated_response.functionCode,
+                ChildFunction={"create": function_defs},
+                ApiRouteSpec={
+                    "connect": {"id": generated_response.api_route_spec.id}
+                },
+            )
+            if generated_response.api_route_spec.DatabaseSchema:
+                create_input["DatabaseSchema"] = {
+                    "connect": {
+                        "id": generated_response.api_route_spec.DatabaseSchema.id
                     }
+                }
 
-                # Child Functions Must be created without relations
-                # Here we add the relations after the function is created
-                func = await Function.prisma().create(data=create_input)
-                if func.ChildFunction:
-                    for function_def in func.ChildFunction:
-                        await Function.prisma().update(
-                            where={"id": function_def.id},
-                            data={
-                                "ApiRouteSpec": {
-                                    "connect": {
-                                        "id": generated_response.api_route_spec.id
-                                    }
+            # Child Functions Must be created without relations
+            # Here we add the relations after the function is created
+            func = await Function.prisma().create(data=create_input)
+            if func.ChildFunction:
+                for function_def in func.ChildFunction:
+                    await Function.prisma().update(
+                        where={"id": function_def.id},
+                        data={
+                            "ApiRouteSpec": {
+                                "connect": {
+                                    "id": generated_response.api_route_spec.id
                                 }
-                            },
-                        )
-                # We need to reload from the database the child functions so they
-                # have the api route spec attached
-                func = await Function.prisma().find_unique_or_raise(
-                    where={"id": func.id},
-                    include={
-                        "ParentFunction": True,
-                        "ChildFunction": {"include": {"ApiRouteSpec": True}},
-                    },
-                )
-                num_child_functions = (
-                    len(func.ChildFunction) if func.ChildFunction else 0
-                )
-                logger.info(
-                    f"✅ Created Function. - {func.id} Child Functions: "
-                    f"{len(function_defs)}/{num_child_functions}"
-                )
-                return func
-            except Exception as e:
-                logger.info(f"Error saving Function: {e}")
+                            }
+                        },
+                    )
+            # We need to reload from the database the child functions so they
+            # have the api route spec attached
+            func = await Function.prisma().find_unique_or_raise(
+                where={"id": func.id},
+                include={
+                    "ParentFunction": True,
+                    "ChildFunction": {"include": {"ApiRouteSpec": True}},
+                },
+            )
+            num_child_functions = (
+                len(func.ChildFunction) if func.ChildFunction else 0
+            )
+            logger.info(
+                f"✅ Created Function. - {func.id} Child Functions: "
+                f"{len(function_defs)}/{num_child_functions}"
+            )
+            return func
+        except Exception as e:
+            logger.info(f"Error saving Function: {e}")
 
     async def update_item(  # type: ignore
         self, ids: Identifiers, validated_response: ValidatedResponse
@@ -280,22 +287,21 @@ class DevelopAIBlock(AIBlock):
             func: The updated item
         """
         generated_response: GeneratedFunctionResponse = validated_response.response
-
-        function_defs = []
-
-        generated_response: GeneratedFunctionResponse = validated_response.response
         function_defs: list[FunctionCreateWithoutRelationsInput] = []
         if generated_response.functions:
             for key, value in generated_response.functions.items():
                 model = FunctionCreateWithoutRelationsInput(
                     functionName=value.name,
                     template=value.function_template,
+                    apiRouteSpecId=generated_response.api_route_spec.id,
                     state=FunctionState.DEFINITION,
                 )
 
                 function_defs.append(model)
 
         update_obj = FunctionUpdateInput(
+            functionName=generated_response.function_name,
+            template=generated_response.template,
             state=FunctionState.WRITTEN,
             Packages={
                 "create": [
@@ -307,6 +313,9 @@ class DevelopAIBlock(AIBlock):
             importStatements=generated_response.imports,
             functionCode=generated_response.functionCode,
             ChildFunction={"create": function_defs},
+            ApiRouteSpec={
+                "connect": {"id": generated_response.api_route_spec.id}
+            },
         )
 
         if not generated_response.function_id:
