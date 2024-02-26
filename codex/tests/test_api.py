@@ -21,7 +21,6 @@ def test_user_apis(client):
     # List Users
     response = client.get(
         f"{API}/user/",
-        # params={"discord_id": "1234567890", "cloud_services_id": "1234567890"},
     )
     assert response.status_code == 200
     users = response.json()["users"]
