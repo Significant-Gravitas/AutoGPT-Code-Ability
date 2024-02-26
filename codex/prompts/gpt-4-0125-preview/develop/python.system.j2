@@ -33,6 +33,11 @@ def check_urls(urls: list[str]) -> list[str]:
 
     Returns:
         list[str]: A list of URLs that are verified to be valid and accessible.
+
+    Example:
+        urls = ['https://www.google.com', 'https://www.facebook.com', 'https://invalidurl.com']
+        check_urls(urls)
+        > ['https://www.google.com', 'https://www.facebook.com']
     """
     pass
 
@@ -47,6 +52,11 @@ def download_page(url: str) -> str:
 
     Returns:
         str: The HTML content of the webpage.
+
+    Example:
+        url = 'https://www.google.com'
+        download_page(url)
+        > '<!doctype html><html itemscope="" itemtype="http://schema.org/WebPage" lang="en"><head>...'
     """
     pass
 
@@ -62,10 +72,35 @@ def convert_to_markdown(html: str) -> str:
 
     Returns:
         str: The content converted into Markdown format.
+
+    Example:
+        html = '<!doctype html><html itemscope="" itemtype="http://schema.org/WebPage" lang="en"><head>...'
+        convert_to_markdown(html)
+        > '# Title This is a paragraph of text. ## Subtitle This is another paragraph of text.'
     """
    pass
 
 def convert_webpages(urls: List[str], format: str) -> List[str]:
+    """
+    Converts a list of webpages to a specified format.
+
+    This function takes a list of URLs and downloads the HTML content of each webpage.
+    It then converts the HTML content into the specified format (either 'markdown' or 'html').
+    The resulting content is returned as a list of strings.
+
+    Args:
+        urls (List[str]): A list of URLs to be converted.
+        format (str): The desired format for the output. It can be either 'markdown' or 'html'.
+
+    Returns:
+        List[str]: A list of webpages converted to the specified format.
+
+    Example:
+        convert_webpages(['https://www.google.com'], 'markdown')
+        > ['# Title This is a paragraph of text. ## Subtitle This is another paragraph of text.']
+        convert_webpages(['https://www.google.com'], 'html')
+        > ['<!doctype html><html itemscope="" itemtype="http://schema.org/WebPage" lang="en"><head>...']
+    """
     verified_urls: List[str] = check_urls(urls)
 
     output: List[str] = []
@@ -83,8 +118,8 @@ Thinking carefully step by step. Always start your answer with your analysis of 
 
 ## IMPORTANT
 1. USE A SINGLE CODE BLOCK ("```python") FOR ALL PYTHON CODE (THIS IS MANDATORY)
-2. ALWAYS CREATE STUB FUNCTIONS FOR LOGIC TO BE IMPLEMENTED THAT YOU CAN NOT COMPLETE IN THE MAIN FUNCTION, BUT CREATE IT ONLY IF IT'S REALLY NECESSARY! TRY TO KEEP ONLY A SINGLE FUNCTION.
-3. THE GENERATED CODE HAS TO BE A WORKING CODE, NO SIMPLIFICATIONS OR INCOMPLETE CODE, UNIMPLEMENTED FUNCTIONS MUST BE STUBS.
+2. THE GENERATED CODE HAS TO BE A WORKING CODE, NO SIMPLIFICATIONS OR INCOMPLETE CODE, UNIMPLEMENTED FUNCTIONS MUST BE STUBS.
+3. CREATE STUB ONLY IF IT'S REALLY NECESSARY! TRY TO KEEP ONLY A SINGLE FUNCTION.
 4. ONLY PROVIDE THE STUB FUNCTIONS USED IN THE IMPLEMENTED FUNCTION, NO NEED TO PROVIDE THE OTHER STUB FUNCTIONS, JUST THE REQUESTED FUNCTION AND THE STUB FUNCTIONS.
 5. IF IT'S ONLY ONE LINE OF CODE, DON'T STUB IT, INLINE IT TO THE REQUESTED FUNCTION OR JUST WRITE THE FUNCTION IMPLEMENTATION DIRECTLY
 6. USE A SINGLE REQUIREMENTS BLOCK ("```requirements") FOR ALL REQUIREMENTS CODE (THIS IS MANDATORY EVEN IF THERE ARE NO REQUIREMENTS)
