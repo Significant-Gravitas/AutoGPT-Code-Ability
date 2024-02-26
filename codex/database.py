@@ -2,7 +2,7 @@ from datetime import datetime
 
 from prisma.enums import Role
 from prisma.models import Application, User
-from prisma.types import UserCreateInput, UserCreateWithoutRelationsInput
+from prisma.types import UserCreateWithoutRelationsInput
 
 from codex.api_model import (
     ApplicationCreate,
@@ -23,12 +23,14 @@ async def create_test_data():
         [
             UserCreateWithoutRelationsInput(
                 id=user_id_1,
+                cloudServicesId="123456789",
                 discordId="123456788",
                 role=Role.ADMIN,
                 deleted=False,
             ),
             UserCreateWithoutRelationsInput(
                 id=user_id_2,
+                cloudServicesId="234567890",
                 discordId="234567891",
                 role=Role.USER,
                 deleted=False,
@@ -92,15 +94,20 @@ async def create_test_data():
     )
 
 
-async def get_or_create_user_by_discord_id(discord_id: str) -> User:
-    user = await User.prisma().find_unique(where={"discordId": discord_id})
-
-    if not user:
-        user = await User.prisma().create(
-            data=UserCreateInput(
-                discordId=str(discord_id),
-            )
-        )
+async def get_or_create_user_by_cloud_services_id_and_discord_id(
+    cloud_services_id: str,
+    discord_id: str,
+) -> User:
+    user = await User.prisma().upsert(
+        where={"discordId": discord_id},
+        data={
+            "create": {
+                "discordId": discord_id,
+                "cloudServicesId": cloud_services_id,
+            },
+            "update": {},
+        },
+    )
 
     return user
 
@@ -142,6 +149,7 @@ async def list_users(page: int, page_size: int) -> UsersListResponse:
     user_responses = [
         UserResponse(
             id=user.id,
+            cloud_services_id=user.cloudServicesId,
             discord_id=user.discordId,
             createdAt=user.createdAt,
             role=user.role,
