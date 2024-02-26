@@ -35,6 +35,7 @@ model User {
   Specifications  Specification[]
   LLMCallAttempts LLMCallAttempt[]
   Deployments     Deployment[]
+  CompletedApp    CompletedApp[]
 }
 
 enum Role {
@@ -51,6 +52,8 @@ model Application {
   deleted     Boolean  @default(false)
 
   Specifications  Specification[]
+  CompletedApps   CompletedApp[]
+  Deployments     Deployment[]
   LLMCallAttempts LLMCallAttempt[]
   User            User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId          String?
@@ -103,7 +106,7 @@ model APIRouteSpec {
   description  String
   AccessLevel  AccessLevel
 
-  CodeGraphs     CodeGraph[]
+  Functions      Function[]
   CompiledRoutes CompiledRoute[]
 
   Specification    Specification?  @relation(fields: [specificationId], references: [id], onDelete: Cascade)
@@ -158,7 +161,7 @@ model DatabaseSchema {
   embedding      Unsupported("vector(1536)")?
   description    String
   DatabaseTables DatabaseTable[]
-  CodeGraphs     CodeGraph[]
+  Functions      Function[]
   ApiRouteSpecs  APIRouteSpec[]
 }
 
@@ -179,79 +182,51 @@ model DatabaseTable {
   databaseSchemaId  String?
 }
 
-// ------------------------- Architect Models ---------------------------- //
-// Database models for the architect
-// ------------------------- --------------------------------------------- //
-
-// CodeGraph represents a graph-based representation of code or logic.
-// It is associated with function definitions and can be linked to a database schema.
-model CodeGraph {
-  id           String   @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt    DateTime @default(now())
-  functionName String
-  apiPath      String
-  imports      String[]
-  codeGraph    String
-
-  FunctionDefinitions FunctionDefinition[]
-  ApiRouteSpec        APIRouteSpec?        @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
-  apiRouteSpecId      String?
-  DatabaseSchema      DatabaseSchema?      @relation(fields: [databaseSchemaId], references: [id], onDelete: Cascade)
-  databaseSchemaId    String?
-  CompiledRoute       CompiledRoute?       @relation(fields: [compiledRouteId], references: [id], onDelete: Cascade)
-  compiledRouteId     String?              @unique
-}
-
-// FunctionDefinition defines a function, including its input and return types.
-// It links to a specific code graph and function.
-model FunctionDefinition {
-  id               String   @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt        DateTime @default(now())
-  name             String
-  docString        String
-  args             String
-  returnType       String
-  functionTemplate String
-
-  CodeGraph   CodeGraph? @relation(fields: [codeGraphId], references: [id], onDelete: Cascade)
-  codeGraphId String?
-  Function   Function? @relation(fields: [functionsId], references: [id], onDelete: Cascade)
-  functionsId String?
-}
-
 // ------------------------- Developer Models ---------------------------- //
 // Database models for the developer
 // ------------------------------------------------------------------------ //
-
-// Functions represents individual software functions.
-// It includes information about the function and its relationships to packages and compiled routes.
-model Function {
-  id         String                       @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt  DateTime                     @default(now())
-  embedding  Unsupported("vector(1536)")?
-  name       String
-  docString  String
-  args       String
-  returnType String
-  code       String
-
-  FunctionDefinitions FunctionDefinition[]
-  // Is one function part of many packages?
-  Packages            Package[]
-  // Is one function part of many compiled routes?
-  CompiledRoutes      CompiledRoute[]
+enum FunctionState {
+  DEFINITION
+  WRITTEN
+  VERIFIED
 }
 
-// Package represents a software package, including its version and specifier.
-// It is related to functions that are part of the package.
-model Package {
-  id          String   @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt   DateTime @default(now())
-  packageName String
-  version     String
-  specifier   String
+// CodeGraph represents a graph-based representation of code or logic.
+// It is associated with function definitions and can be linked to a database schema.
+model Function {
+  id        String   @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  Functions Function[]
+  functionName String
+  template     String // This is the template of the function along with the docstring 
+  state        FunctionState
+
+  Packages         Package[]
+  rawCode          String? // This is the unpocessed code returned form the llm
+  importStatements String[] // These are the import statements for the function
+  functionCode     String? // This is the code of the function being written
+
+  ParentFunction   Function?  @relation("ParentFunction", fields: [parentFunctionId], references: [id], onDelete: Cascade)
+  parentFunctionId String?
+  ChildFunction    Function[] @relation("ParentFunction")
+
+  ApiRouteSpec     APIRouteSpec?   @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
+  apiRouteSpecId   String?
+  DatabaseSchema   DatabaseSchema? @relation(fields: [databaseSchemaId], references: [id], onDelete: Cascade)
+  databaseSchemaId String?
+  CompiledRoute    CompiledRoute[]
+  compiledRouteId  String?         @unique
+}
+
+model Package {
+  id             String          @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt      DateTime        @default(now())
+  packageName    String
+  version        String
+  specifier      String
+  Functions      Function[]
+  CompiledRoutes CompiledRoute[]
 }
 
 // ------------------------- Delivery Models ----------------------------- //
@@ -263,14 +238,17 @@ model CompiledRoute {
   createdAt   DateTime                     @default(now())
   embedding   Unsupported("vector(1536)")?
   description String
-  code        String
+  Packages    Package[]
 
-  Functions     Function[]
+  fileName         String
+  mainFunctionName String
+  compiledCode     String
+
   CompletedApps CompletedApp[]
 
-  CodeGraph      CodeGraph?
-  // Why is this unique and here with the many to many relationship? This is a 1-1 relationship, and this field might not even required.
-  codeGraphId    String @unique
+  rootFunctionId String
+  RootFunction   Function @relation(fields: [rootFunctionId], references: [id], onDelete: Cascade)
+
   ApiRouteSpec   APIRouteSpec? @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
   apiRouteSpecId String?
 }
@@ -285,10 +263,14 @@ model CompletedApp {
   name        String
   description String
 
+  User            User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String?
   CompiledRoutes  CompiledRoute[]
   Deployments     Deployment[]
   Specification   Specification?  @relation(fields: [specificationId], references: [id], onDelete: Cascade)
   specificationId String?
+  Application     Application?    @relation(fields: [applicationId], references: [id])
+  applicationId   String?
 }
 
 // ---------------------------------------------------------------------- //
@@ -307,6 +289,8 @@ model Deployment {
 
   User           User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId         String?
+  Application    Application?  @relation(fields: [applicationId], references: [id])
+  applicationId  String?
   CompletedApp   CompletedApp? @relation(fields: [completedAppId], references: [id], onDelete: Cascade)
   completedAppId String?
 }
@@ -314,15 +298,22 @@ model Deployment {
 // ------------------------- LLM Models ----------------------------- //
 
 model LLMCallTemplate {
-  id           String   @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt    DateTime @default(now())
-  templateName String
-  fileHash     String
-  systemPrompt String
-  userPrompt   String
-  retryPrompt  String
+  id               String           @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt        DateTime         @default(now())
+  developmentPhase DevelopmentPhase
+  templateName     String
+  fileHash         String
+  systemPrompt     String
+  userPrompt       String
+  retryPrompt      String
 
   Uses LLMCallAttempt[]
+}
+
+enum DevelopmentPhase {
+  REQUIREMENTS
+  DEVELOPMENT
+  DEPLOYMENT
 }
 
 model LLMCallAttempt {
@@ -343,8 +334,3 @@ model LLMCallAttempt {
   LLMCallTemplate   LLMCallTemplate? @relation(fields: [llmCallTemplateId], references: [id], onDelete: Cascade)
   llmCallTemplateId String?
 }
-
-// Application (Task)
-// Specification (refs Application)
-// CompletedApp (refs Specification)
-// Deployement (refs CompletedApp)

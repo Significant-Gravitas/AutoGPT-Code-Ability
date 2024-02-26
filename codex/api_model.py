@@ -152,7 +152,7 @@ class SpecificationResponse(BaseModel):
                 APIRouteSpecModel(
                     id=route.id,
                     createdAt=route.createdAt,
-                    method=route.method,
+                    method=route.method.value,
                     path=route.path,
                     description=route.description,
                     requestObject=RequestObjectModel(

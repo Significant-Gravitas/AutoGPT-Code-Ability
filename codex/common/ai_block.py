@@ -8,9 +8,9 @@ from jinja2 import Environment, FileSystemLoader
 from openai import AsyncOpenAI
 from openai.types import CompletionUsage
 from openai.types.chat import ChatCompletion
+from prisma.enums import DevelopmentPhase
 from prisma.fields import Json
 from prisma.models import LLMCallAttempt, LLMCallTemplate
-from prisma.types import LLMCallAttemptCreateInput
 from pydantic import BaseModel
 
 from codex.api_model import Identifiers
@@ -68,6 +68,7 @@ class AIBlock:
         - async def list_items(self, query_params: dict):
     """
 
+    developement_phase = DevelopmentPhase.REQUIREMENTS
     prompt_template_name = ""
     langauge = None
     model = ""
@@ -159,6 +160,7 @@ class AIBlock:
                     "systemPrompt": system_prompt,
                     "userPrompt": user_prompt,
                     "retryPrompt": retry_prompt,
+                    "developmentPhase": self.developement_phase,
                 }
             )
 

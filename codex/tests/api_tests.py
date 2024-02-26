@@ -103,3 +103,27 @@ def test_specs_and_deliverables_apis(client):
     # response = client.get(f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/")
     # specs = response.json()['specs']
     # assert next((s for s in specs if s['id'] == spec['id']), None) is None
+
+
+from codex.app import db_client
+from codex.common.ai_model import OpenAIChatClient
+from codex.common.logging import setup_logging
+from codex.develop import agent
+from codex.requirements.database import get_latest_specification
+
+
+@pytest.mark.asyncio
+async def test_recursive_create_code_graphs():
+    await db_client.connect()
+    OpenAIChatClient.configure({})
+    setup_logging(local=True)
+
+    ids = Identifiers(
+        user_id="123e4567-e89b-12d3-a456-426614174000",
+        app_id="d3954dee-6b41-47f5-be2f-a253f7544a59",
+    )
+    spec = await get_latest_specification(ids.user_id, ids.app_id)
+    ans = await agent.develop_application(ids=ids, spec=spec)
+
+    assert ans is not None
+    await db_client.disconnect()

@@ -1,3 +1,4 @@
+import datetime
 import logging
 import os
 import tempfile
@@ -5,8 +6,9 @@ import zipfile
 from collections import defaultdict
 from typing import List
 
+from prisma.models import Package
+
 from codex.deploy.model import Application
-from codex.developer.model import Package
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +18,7 @@ def generate_requirements_txt(packages: List[Package]) -> str:
 
     # Aggregate versions and specifiers for each package
     for package in packages:
-        resolved_packages[package.package_name].append(
+        resolved_packages[package.packageName].append(
             (package.version, package.specifier)
         )
 
@@ -47,10 +49,25 @@ def create_zip_file(application: Application) -> bytes:
         bytes: The zipped file
     """
     logger.info("Creating zip file")
+    assert application.completed_app, "Application must have a completed app"
+    assert (
+        application.completed_app.CompiledRoutes
+    ), "Application must have at least one compiled route"
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
             app_dir = os.path.join(temp_dir, "project")
             os.makedirs(app_dir, exist_ok=True)
+
+            readme_file_path = os.path.join(app_dir, "README.md")
+            with open(readme_file_path, "w") as readme_file:
+                readme_file.write("---\n")
+                current_date = datetime.datetime.now()
+                formatted_date = current_date.isoformat()
+                readme_file.write(f"date: {formatted_date}\n")
+                readme_file.write("author: codex\n")
+                readme_file.write("---\n\n")
+                readme_file.write(f"# {application.completed_app.name}\n\n")
+                readme_file.write(application.completed_app.description)
 
             init_file_path = os.path.join(app_dir, "__init__.py")
             with open(init_file_path, "w") as init_file:
@@ -68,12 +85,10 @@ def create_zip_file(application: Application) -> bytes:
             with open(requirements_file_path, "w") as requirements_file:
                 requirements_file.write(packages)
 
-            for route_name, compiled_route in application.routes.items():
-                service_file_path = os.path.join(
-                    app_dir, compiled_route.service_file_name
-                )
+            for compiled_route in application.completed_app.CompiledRoutes:
+                service_file_path = os.path.join(app_dir, compiled_route.fileName)
                 with open(service_file_path, "w") as service_file:
-                    service_file.write(compiled_route.service_code)
+                    service_file.write(compiled_route.compiledCode)
             logger.info("Created server code")
             # Create a zip file of the directory
             zip_file_path = os.path.join(app_dir, "server.zip")

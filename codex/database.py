@@ -161,6 +161,7 @@ async def get_app_by_id(user_id: str, app_id: str) -> ApplicationResponse:
             "deleted": False,
         }
     )
+    assert app.userId, "Application not found"
 
     return ApplicationResponse(
         id=app.id,
@@ -178,6 +179,8 @@ async def create_app(user_id: str, app_data: ApplicationCreate) -> ApplicationRe
             "userId": user_id,
         }
     )
+
+    assert app.userId, "Application not found"
 
     return ApplicationResponse(
         id=app.id,
@@ -217,7 +220,7 @@ async def list_apps(
                 createdAt=app.createdAt,
                 updatedAt=app.updatedAt,
                 name=app.name,
-                userid=app.userId,
+                userid=app.userId if app.userId else "",
             )
             for app in apps
         ]
