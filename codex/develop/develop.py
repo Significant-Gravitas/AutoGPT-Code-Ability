@@ -155,9 +155,9 @@ class DevelopAIBlock(AIBlock):
             except Exception as e:
                 raise ValidationError(f"Error parsing code: {e}")
 
-            assert (
-                invoke_params["function_name"] in visitor.functions
-            ), f"Function {invoke_params['function_name']} not found in code"
+            func_name = invoke_params["function_name"]
+            if func_name not in visitor.functions:
+                raise ValueError(f"Function {func_name} not found in code")
 
             requested_func: FunctionDef = visitor.functions[
                 invoke_params["function_name"]
