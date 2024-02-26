@@ -86,14 +86,14 @@ def is_within_working_hours(
         > True
     \"\"\"
     pass
-    
+
 def create_schedule(
     appointments: List[Appointment],
     working_hours: Dict[str, ProfessionalWorkingHours],
     travel_times: Dict[Tuple[str, str], TravelTime]
 ) -> List[Appointment]:
     suggested_appointments = []
-    
+
     for prof_id, working_hour in working_hours.items():
         available_start = working_hour.start
         while available_start < working_hour.end:
@@ -137,3 +137,232 @@ def test_function_visitor():
     # Check that all functions are identified
     assert len(visitor.pydantic_classes) == 4
     assert len(visitor.functions) == 3
+
+
+# Visiting a simple function definition with no arguments or return type
+def test_simple_function_definition():
+    # Initialize FunctionVisitor
+    visitor = FunctionVisitor()
+
+    # Create AST for a simple function definition
+    code = ast.parse("def my_function():\n    pass")
+
+    # Visit the AST
+    visitor.visit(code)
+
+    # Assert that the function was added to the functions dictionary
+    assert "my_function" in visitor.functions
+
+    # Assert the properties of the FunctionDef object
+    function_def = visitor.functions["my_function"]
+    assert function_def.name == "my_function"
+    assert function_def.args == ""
+    assert function_def.return_type == "Unknown"
+    assert function_def.function_template == "def my_function():\n    pass"
+    assert function_def.function_code == "def my_function():\n    pass"
+
+
+# Visiting a function definition with default arguments
+def test_function_with_default_arguments():
+    # Initialize FunctionVisitor
+    visitor = FunctionVisitor()
+
+    # Create AST for a function definition with default arguments
+    code = ast.parse("def my_function(arg1, arg2='default', arg3=123):\n    pass")
+
+    # Visit the AST
+    visitor.visit(code)
+
+    # Assert that the function was added to the functions dictionary
+    assert "my_function" in visitor.functions
+
+    # Assert the properties of the FunctionDef object
+    function_def = visitor.functions["my_function"]
+    assert function_def.name == "my_function"
+    assert function_def.args == "Unknown, Unknown, Unknown"
+    assert function_def.return_type == "Unknown"
+    assert (
+        function_def.function_template
+        == "def my_function(arg1, arg2='default', arg3=123):\n    pass"
+    )
+    assert (
+        function_def.function_code
+        == "def my_function(arg1, arg2='default', arg3=123):\n    pass"
+    )
+
+
+# Visiting a function definition with a decorator
+def test_visiting_function_with_decorator():
+    # Initialize FunctionVisitor
+    visitor = FunctionVisitor()
+
+    # Create AST for a function definition with a decorator
+    code = ast.parse("@decorator\ndef my_function():\n    pass")
+
+    # Visit the AST
+    visitor.visit(code)
+
+    # Assert that the function was added to the functions dictionary
+    assert "my_function" in visitor.functions
+
+    # Assert the properties of the FunctionDef object
+    function_def = visitor.functions["my_function"]
+    assert function_def.name == "my_function"
+    assert function_def.args == ""
+    assert function_def.return_type == "Unknown"
+    assert function_def.function_template == "@decorator\ndef my_function():\n    pass"
+    assert function_def.function_code == "@decorator\ndef my_function():\n    pass"
+
+
+# Visiting a class definition with no Pydantic inheritance
+def test_visiting_class_definition_no_pydantic_inheritance():
+    # Initialize FunctionVisitor
+    visitor = FunctionVisitor()
+
+    # Create AST for a class definition with no Pydantic inheritance
+    code = ast.parse("class MyClass:\n    pass")
+
+    # Visit the AST
+    visitor.visit(code)
+
+    # Assert that the pydantic_classes list is empty
+    assert len(visitor.pydantic_classes) == 0
+
+
+# Visiting a class definition with Pydantic inheritance
+def test_visiting_class_with_pydantic_inheritance():
+    # Initialize FunctionVisitor
+    visitor = FunctionVisitor()
+
+    # Create AST for a class definition with Pydantic inheritance
+    code = ast.parse("class MyClass(pydantic.BaseModel):\n    pass")
+
+    # Visit the AST
+    visitor.visit(code)
+
+    # Assert that the class name was added to the list of Pydantic classes
+    assert "MyClass" in visitor.pydantic_classes
+
+
+# Visiting an import statement with an alias
+def test_visiting_import_statement_with_alias():
+    # Initialize FunctionVisitor
+    visitor = FunctionVisitor()
+
+    # Create AST for an import statement with an alias
+    code = ast.parse("import module as m")
+
+    # Visit the AST
+    visitor.visit(code)
+
+    # Assert that the import statement was added to the imports list
+    assert "import module as m" in visitor.imports
+
+
+# Visiting an import statement with no alias
+def test_visiting_import_statement_with_no_alias():
+    # Initialize FunctionVisitor
+    visitor = FunctionVisitor()
+
+    # Create AST for an import statement with no alias
+    code = ast.parse("import module")
+
+    # Visit the AST
+    visitor.visit_Import(code.body[0])
+
+    # Assert that the import line was added to the imports list
+    assert visitor.imports == ["import module"]
+
+
+# Visiting a function definition with annotations that are not strings or constants
+def test_visiting_function_with_non_string_annotations():
+    # Initialize FunctionVisitor
+    visitor = FunctionVisitor()
+
+    # Create AST for a function definition with non-string annotations
+    code = ast.parse(
+        "def my_function(arg1: int, arg2: List[str]) -> Dict[str, int]:\n    pass"
+    )
+
+    # Visit the AST
+    visitor.visit(code)
+
+    # Assert that the function was added to the functions dictionary
+    assert "my_function" in visitor.functions
+
+    # Assert the properties of the FunctionDef object
+    function_def = visitor.functions["my_function"]
+    assert function_def.name == "my_function"
+    assert function_def.args == "int, List[str]"
+    assert function_def.return_type == "Dict[str, int]"
+    assert (
+        function_def.function_template
+        == "def my_function(arg1: int, arg2: List[str]) -> Dict[str, int]:\n    pass"
+    )
+    assert (
+        function_def.function_code
+        == "def my_function(arg1: int, arg2: List[str]) -> Dict[str, int]:\n    pass"
+    )
+
+
+# Visiting a function definition with a return annotation that is not a string or constant
+def test_visiting_function_with_non_string_return_annotation():
+    # Initialize FunctionVisitor
+    visitor = FunctionVisitor()
+
+    # Create AST for a function definition with a non-string return annotation
+    code = ast.parse("def my_function() -> int:\n    pass")
+
+    # Visit the AST
+    visitor.visit(code)
+
+    # Assert that the function was added to the functions dictionary
+    assert "my_function" in visitor.functions
+
+    # Assert the properties of the FunctionDef object
+    function_def = visitor.functions["my_function"]
+    assert function_def.name == "my_function"
+    assert function_def.args == ""
+    assert function_def.return_type == "int"
+    assert function_def.function_template == "def my_function() -> int:\n    pass"
+    assert function_def.function_code == "def my_function() -> int:\n    pass"
+
+
+# Visiting a class definition with a body that is not a list of statements
+def test_visiting_class_definition_with_non_list_body():
+    # Initialize FunctionVisitor
+    visitor = FunctionVisitor()
+
+    # Create AST for a class definition with a non-list body
+    code = ast.parse("class MyClass:\n    x = 1")
+
+    # Visit the AST
+    visitor.visit(code)
+
+    # Assert that the class was not added to the pydantic_classes list
+    assert "MyClass" not in visitor.pydantic_classes
+
+
+# Visiting a function definition with a body that is not a list of statements
+def test_visiting_function_with_non_list_body():
+    # Initialize FunctionVisitor
+    visitor = FunctionVisitor()
+
+    # Create AST for a function definition with a non-list body
+    code = ast.parse("def my_function():\n    print('Hello, World!')")
+
+    # Visit the AST
+    visitor.visit(code)
+
+    # Assert that the function was added to the functions dictionary
+    assert "my_function" in visitor.functions
+
+    # Assert the properties of the FunctionDef object
+    function_def = visitor.functions["my_function"]
+    assert function_def.name == "my_function"
+    assert function_def.args == ""
+    assert function_def.return_type == "Unknown"
+    assert function_def.function_template == "def my_function():\n    pass"
+    assert (
+        function_def.function_code == "def my_function():\n    print('Hello, World!')"
+    )
