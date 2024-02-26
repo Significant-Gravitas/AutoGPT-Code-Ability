@@ -302,7 +302,11 @@ class DevelopAIBlock(AIBlock):
             state=FunctionState.WRITTEN,
             Packages={
                 "create": [
-                    PackageCreateWithoutRelationsInput(**p.model_dump())
+                    PackageCreateWithoutRelationsInput(
+                        packageName=p.package_name,
+                        version=p.version if p.version else "",
+                        specifier=p.specifier if p.specifier else "",
+                    )
                     for p in generated_response.packages
                 ]
             },
