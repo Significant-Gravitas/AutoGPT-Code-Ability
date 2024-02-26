@@ -166,7 +166,7 @@ class DevelopAIBlock(AIBlock):
             if "pass" in requested_func.function_code:
                 raise ValidationError(
                     "Main Function body is empty, it should contain"
-                    + " the implementation fo this function!"
+                    + " the implementation of this function!"
                 )
 
             functions = visitor.functions.copy()
