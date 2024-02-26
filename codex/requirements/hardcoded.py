@@ -1900,6 +1900,1059 @@ def inventory_mgmt_system() -> ApplicationRequirements:
     )
 
 
+def invoice_payment_tracking() -> ApplicationRequirements:
+    schema = DatabaseSchema(
+        name="FinFlow",
+        description="Prisma schema for FinFlow, a backend system for managing financing, invoicing, and payments.",
+        tables=[
+            DatabaseTable(
+                name="User",
+                description="Represents system users with different roles.",
+                definition="model User {\n  id    String  @id @default(cuid())\n  email String  @unique\n  role  Role\n  invoices Invoice[]\n  reports Report[]\n}",
+            ),
+            DatabaseTable(
+                name="Invoice",
+                description="Invoicing information, related to users and payments.",
+                definition="model Invoice {\n  id     String        @id @default(cuid())\n  userId String\n  user   User          @relation(fields: [userId], references: [id])\n  number String @unique\n  status InvoiceStatus\n  items  InvoiceItem[]\n  payment Payment?\n}",
+            ),
+            DatabaseTable(
+                name="InvoiceItem",
+                description="Line items associated with invoices.",
+                definition="model InvoiceItem {\n  id        String  @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  description String\n  quantity Int\n  price   Float\n}",
+            ),
+            DatabaseTable(
+                name="Payment",
+                description="Payment details linked to invoices and payment gateways.",
+                definition="model Payment {\n  id        String @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  amount    Float\n  gatewayId String\n  gateway   PaymentGateway @relation(fields: [gatewayId], references: [id])\n}",
+            ),
+            DatabaseTable(
+                name="Report",
+                description="Financial reports generated for the user.",
+                definition="model Report {\n  id          String      @id @default(cuid())\n  userId      String\n  user        User        @relation(fields: [userId], references: [id])\n  type        ReportType\n  generatedAt DateTime\n}",
+            ),
+            DatabaseTable(
+                name="PaymentGateway",
+                description="Information about payment gateways.",
+                definition="model PaymentGateway {\n  id    String    @id @default(cuid())\n  name  String\n  apiKey String\n  payments Payment[]\n}",
+            ),
+            DatabaseTable(
+                name="ComplianceLog",
+                description="Log for compliance and auditing.",
+                definition="model ComplianceLog {\n  id         String    @id @default(cuid())\n  description String\n  loggedAt   DateTime\n}",
+            ),
+        ],
+    )
+
+    return ApplicationRequirements(
+        name="FinFlow",
+        context="""# FinFlow\n\n## Task \nhe backend for managnig invoicing, tracking payments, and handling financial reports and insights it should consist of robust API routes to handle  functionalities related to financial transactions. \n\n### Project Description\nBased on the detailed information gathered through the interview process, the task entails developing a backend system focusing on managing invoicing, tracking payments, and facilitating comprehensive financial reports and insights. Such a backend system should encompass a set of robust API routes tailored towards facilitating a range of functionalities pertinent to financial transactions. Key functionalities derived from user inputs include:\n\n- Creation and management of invoices with the ability to distinguish between draft and finalized statuses.\n- Support for adding line items to invoices, inclusive of descriptions, quantities, and price information, along with handling multiple currencies and tax calculations.\n- Automatic generation of unique invoice numbers, provision for discounts, and acceptance of partial payments to enhance usability.\n- Integration with payment gateways to enable direct payments within the system, coupled with endpoints for clients to view their invoices.\n- Sending automated reminders for unpaid invoices and offering detailed reports for tracking invoicing activity to assist businesses in their financial management.\n\nFinancial reports and insights should cover:\n\n- Revenue growth, expense tracking, and profit margins over time.\n- Analysis of cash flow statements to ensure positive cash flow alongside identification of investment opportunities and cost reduction strategies.\n- Insights into customer acquisition costs and lifetime value crucial for strategic planning.\n\nThe preferred technology stack for backend development is Node.js, chosen for its efficiency, lightweight nature, and the rich npm ecosystem that supports rapid feature development and deployment.\n\nCompliance and security requirements are of utmost importance, including adherence to regulations such as GDPR, the Sarbanes-Oxley Act, PCI DSS, and ISO 27001. This adherence is critical for protecting sensitive financial data and avoiding penalties.\n\nThe project should also contemplate best practices for developing financial transaction APIs, which involve ensuring strong security measures, compliance with relevant financial data regulations, clear and well-documented API following RESTful principles, robust error handling, periodic updates, and a scalable architecture.\n\nLatest technologies consideration includes not just the use of Node.js but also the exploration of Python with Django or Flask, Java with Spring, databases like PostgreSQL and MongoDB, Redis for caching, and the adoption of microservices architecture. Secure coding practices and cybersecurity measures are also paramount.\n\n### Product Description\nFinFlow is a comprehensive backend financial management system designed to streamline invoicing, facilitate payments, and provide actionable financial insights for small to medium-sized enterprises (SMEs). By delivering robust API routes, FinFlow enables the creation and management of invoices, supports the addition of detailed line items, handles multi-currency transactions, and integrates with various payment gateways. Additionally, its capabilities extend to sending automated reminders for due payments and generating detailed financial reports that include analysis of revenue growth, expense tracking, profit margins, cash flows, and strategic financial metrics like customer acquisition costs and lifetime value. Developed on a technology stack centered around Node.js for its efficiency and support for rapid deployment, FinFlow prioritizes compliance with global financial regulations such as GDPR, PCI DSS, and the Sarbanes-Oxley Act, ensuring data is securely managed. The architecture leverages modern practices including microservices for scalability and robustness, and it incorporates Python, Java, and various databases to cover a broad range of financial operations. Secure coding and cybersecurity measures are fundamental to protect sensitive financial data.\n\n### Features\n#### Invoice Management\n##### Description\nEnables users to create, manage, and track invoices with support for draft and finalized statuses. Features automatic generation of unique invoice numbers, line items addition, multi-currency and tax calculations.\n##### Considerations\nDesigned for intuitiveness and robustness, ensuring easy management across various currencies and compliance with tax regulations.\n##### Risks\nComplexity in managing currency conversion and tax compliance.\n##### External Tools Required\nCurrency conversion API, tax calculation service.\n##### Priority: CRITICAL\n#### Payment Integration\n##### Description\nIntegrates with multiple payment gateways offering direct payment capabilities within invoices, coupled with endpoints for clients to view and settle their invoices.\n##### Considerations\nMust ensure secure transactions, choosing gateways that comply with financial regulations.\n##### Risks\nSecurity vulnerabilities in payment transactions.\n##### External Tools Required\nPayment gateway SDKs.\n##### Priority: HIGH\n#### Automated Reminders\n##### Description\nAutomates the sending of reminders for unpaid invoices, reducing overdue payments.\n##### Considerations\nSensitive to user engagement without being intrusive.\n##### Risks\nPotential pushback if perceived as too aggressive.\n##### External Tools Required\nEmail and SMS service providers.\n##### Priority: MEDIUM\n#### Financial Reporting\n##### Description\nGenerates comprehensive financial reports covering revenue growth, expense tracking, profit margins, and analysis of cash flow, alongside strategic metrics.\n##### Considerations\nMust be customizable and detailed to cater to varied SME needs.\n##### Risks\nComplexity in ensuring report accuracy and relevance.\n##### External Tools Required\nData visualization tools.\n##### Priority: HIGH\n\n### Clarifiying Questions\n- "Do we need a front end for this?": "No" : Reasoning: "Given the detailed requirements, the focus is primarily on developing a robust backend system with a comprehensive set of functionalities tailored for financial transactions, invoicing, payment tracking, and generating financial insights. The task explicitly outlines the need for managing invoicing, facilitating payments, and providing financial reports through backend capabilities, such as API routes. Although integrating with payment gateways and enabling clients to view their invoices might initially imply a user interface, these interactions can still be facilitated through APIs consumed by existing or third-party front-end systems. The detailed requirements do not explicitly mention the creation of a user interface but rather a solid and secure backend infrastructure to support financial operations, suggesting that the current scope is centered on backend development. The exploration of technologies also leans towards backend development stacks, with no direct mention of front-end frameworks or libraries. Therefore, based on the current information provided, a front end is not a requirement within the outlined scope but rather, the focus should be on building a comprehensive, secure, and compliant backend system."\n- "Who is the expected user of this: "Based on the detailed information gathered through the interview process, the task entails developing a backend system focusing on managing invoicing, tracking payments, and facilitating comprehensive financial reports and insights. Such a backend system should encompass a set of robust API routes tailored towards facilitating a range of functionalities pertinent to financial transactions. Key functionalities derived from user inputs include:\n\n- Creation and management of invoices with the ability to distinguish between draft and finalized statuses.\n- Support for adding line items to invoices, inclusive of descriptions, quantities, and price information, along with handling multiple currencies and tax calculations.\n- Automatic generation of unique invoice numbers, provision for discounts, and acceptance of partial payments to enhance usability.\n- Integration with payment gateways to enable direct payments within the system, coupled with endpoints for clients to view their invoices.\n- Sending automated reminders for unpaid invoices and offering detailed reports for tracking invoicing activity to assist businesses in their financial management.\n\nFinancial reports and insights should cover:\n\n- Revenue growth, expense tracking, and profit margins over time.\n- Analysis of cash flow statements to ensure positive cash flow alongside identification of investment opportunities and cost reduction..."": "The expected users are small to medium-sized enterprises (SMEs) and financial managers within these organizations." : Reasoning: "Given the focus on invoicing, payment tracking, and financial reporting, the backend system being developed is evidently targeted towards businesses, specifically small to medium-sized enterprises (SMEs) that require robust financial management tools but might not have the resources to develop such systems in-house. Financial managers or officers within these organizations would directly interact with the system\'s functionalities, leveraging it to streamline their financial operations, manage invoices and payments efficiently, and gain valuable insights into their financial health through comprehensive reports. These insights and operational efficiencies could empower SMEs to make informed strategic decisions, optimize their cash flow, and foster growth."\n- "What is the skill level of the expected user of this: "Based on the detailed information gathered through the interview process, the task entails developing a backend system focusing on managing invoicing, tracking payments, and facilitating comprehensive financial reports and insights. Such a backend system should encompass a set of robust API routes tailored towards facilitating a range of functionalities pertinent to financial transactions. Key functionalities derived from user inputs include:\n\n- Creation and management of invoices with the ability to distinguish between draft and finalized statuses.\n- Support for adding line items to invoices, inclusive of descriptions, quantities, and price information, along with handling multiple currencies and tax calculations.\n- Automatic generation of unique invoice numbers, provision for discounts, and acceptance of partial payments to enhance usability.\n- Integration with payment gateways to enable direct payments within the system, coupled with endpoints for clients to view their invoices.\n- Sending automated reminders for unpaid invoices and offering detailed reports for tracking invoicing activity to assist businesses in their financial management.\n\nFinancial reports and insights should cover:\n\n- Revenue growth, expense tracking, and profit margins over time.\n- Analysis of cash flow statements to ensure positive cash flow alongside identification of investment opportunities and cost reduction strategies.\n- Insights into customer acquisition costs and lifetime value crucial for strategic planning.\n\nThe preferred technology stack for backend development is Node.js, chosen for its efficiency, lightweight nature, and the rich npm ecosystem that supports rapid feature development and deployment.\n\nCompliance and security requirements are of utmost importance, including adherence to regulations such as GDPR, the Sarbanes-Oxley Act, PCI DSS, and ISO 27001. This adherence is critical for protecting sensitive financial data and avoiding penalties.\n\nThe project should also contemplate best practices for developing financial transaction APIs, which involve ensuring strong security measures, compliance with relevant financial data regulations, clear and well-documented API following RESTful principles, robust error handling, periodic updates, and a scalable architecture.\n\nLatest technologies consideration includes not just the use of Node.js but also the exploration of Python with Django or Flask, Java with Spring, databases like PostgreSQL and MongoDB, Redis for caching, and the adoption of microservices architecture. Secure coding practices and cybersecurity measures are also paramount."": "Intermediate to Advanced" : Reasoning: "Considering the system\'s complexity and the range of functionalities it encompasses, the expected users, particularly financial managers within SMEs, should possess an intermediate to advanced level of skill. First and foremost, they should be comfortable with financial software and concepts, including invoicing, payment tracking, and report generation. A deeper understanding would be beneficial for navigating the system effectively, particularly in interpreting the financial reports and insights the system provides, which would include analysis of cash flow, revenue growth, and other critical financial metrics. Given that getting the most out of these systems could involve using APIs or interpreting data from them, users should be technically adept to some extent, understanding how to interact with or leverage digital tools for their financial operations. However, the system should also be designed with intuitiveness in mind, ensuring even those at the lower end of this skill spectrum can leverage it effectively with a reasonable learning curve. This balances the need for sophisticated functionality with user accessibility, ensuring a greater range of SMEs can benefit from the system."\n\n\n### Conclusive Q&A\n- "What specific data model conventions should be followed for the entities like invoices, payments, and financial reports?": "Adopt a normalized, industry-standard data model, optimized for performance and compliance with flexibility for business-specific customizations." : Reasoning: "Defining a clear data model is crucial for consistency, performance, and future scalability. Clarification on data models will help design efficient database schemas."\n- "How should the system handle multi-currency transactions and conversions?": "Incorporate a reliable, compliant third-party service for real-time currency conversion, with considerations for precision and regulatory adherence." : Reasoning: "Currency handling is crucial for global operations, requiring clarity on conversion rates, storage, and calculations."\n- "What are the specific security measures for API endpoints, particularly those handling sensitive financial data?": "Adopt comprehensive security measures including TLS, OAuth2.0, data encryption, rate limiting, and compliance audits for all financial data handling endpoints." : Reasoning: "Security is paramount, especially for financial transactions. Clear security protocols are needed for API design."\n- "How will the system integrate with various payment gateways, and what are the criteria for selecting them?": "Integrate with multiple reputable payment gateways, selected based on security, compliance, cost-effectiveness, SDK support, and global availability." : Reasoning: "Payment gateway integration is integral to invoicing and payments. Criteria for selection need to be defined."\n- "What auditing and logging requirements should be met to ensure compliance and facilitate debugging?": "Implement scalable, comprehensive logging and auditing mechanisms conforming to GDPR, SOX, and specific financial compliance needs." : Reasoning: "Auditing and logging are crucial for compliance and troubleshooting. Specific requirements need clarification."\n- "How should the backend communicate with potential front-end systems, considering flexibility and ease of integration?": "Develop RESTful APIs, with consideration for GraphQL, fully documented for ease of integration with any front-end systems, focusing on user-friendliness and flexibility." : Reasoning: "Even without developing a front end, ensuring smooth integration with third-party or future front ends is essential."\n- "What considerations should be made for data backup and disaster recovery?": "Adopt automated, encrypted, and compliant backup strategies with robust, tested disaster recovery processes to ensure data integrity and availability." : Reasoning: "Data integrity is critical, necessitating a clear strategy for backups and disaster recovery."\n- "What scalability considerations are in place to accommodate future growth in transaction volume?": "Incorporate a microservices architecture, cloud scalability options like serverless and containers, and strategic data handling measures to ensure system growth capability." : Reasoning: "Proactively addressing scalability can prevent future performance bottlenecks."\n- "Given the potential for regulatory changes, how flexible should the system architecture be to adapt?": "Design the system with modularity and decoupling, focusing on ease of updates and compliance adaptability through independent service updates and clear API versioning." : Reasoning: "Regulatory adherence is dynamic; thus, the system must be designed for adaptability."\n- "What performance benchmarks should the system aim to meet, considering the expected volume of transactions and reporting?": "Set performance benchmarks focusing on high transaction volumes and reporting efficiency, with goals for real-time responsiveness and scalable batch processing for insights." : Reasoning: "Defining performance metrics upfront can guide the optimization efforts and ensure user satisfaction."\n\n\n### Requirement Q&A\n- "do we need db?": "Yes" : Reasoning: "Considering the need to manage invoices, track payments, and generate reports, a database is essential for storing and managing this data efficiently."\n- "do we need an api for talking to a front end?": "Yes" : Reasoning: "Although a front end isn\'t being developed as part of this project, providing an API ensures flexibility and compatibility with existing or third-party front-end systems, allowing SMEs to access the functionalities seamlessly."\n- "do we need an api for talking to other services?": "Yes" : Reasoning: "Integration with payment gateways and possibly other financial services is crucial for processing payments and ensuring the system\'s wide usability for financial management."\n- "do we need an api for other services talking to us?": "Yes" : Reasoning: "Allowing other services to interact with our system through APIs can enhance operational efficiency, like automating invoice payments or data retrieval for financial reports."\n- "do we need to issue api keys for other services to talk to us?": "Yes" : Reasoning: "To ensure secure communication and identify authorized third-party services, issuing API keys is a necessary measure."\n- "do we need monitoring?": "Yes" : Reasoning: "Monitoring is vital for maintaining system health, tracking performance, and timely identifying and addressing potential issues."\n- "do we need internationalization?": "Yes" : Reasoning: "Given that SMEs could operate in or have clients from different regions, supporting multiple languages and currencies is important for ensuring the system\'s broad applicability."\n- "do we need analytics?": "Yes" : Reasoning: "Analytics are crucial for providing financial insights to SMEs, guiding strategic decisions based on financial health, transaction trends, and overview reports."\n- "is there monetization?": "Yes" : Reasoning: "Offering this backend as a service could present a monetization opportunity, providing valuable financial management tools to SMEs."\n- "is the monetization via a paywall or ads?": "Paywall" : Reasoning: "Given the business-oriented nature of the product, monetizing through a paywall would be preferable, offering premium features or tiered service levels without compromising the user experience with ads."\n- "does this require a subscription or a one-time purchase?": "Subscription" : Reasoning: "A subscription model would fit better with the ongoing nature of financial management and the provision of periodic updates, new features, and continuous customer support."\n- "is the whole service monetized or only part?": "Part" : Reasoning: "Offering a base level of service for free while monetizing premium features or additional services could attract a wider user base while still generating revenue."\n- "is monetization implemented through authorization?": "Yes" : Reasoning: "Using authorization to differentiate between free and premium users would be an effective way to implement monetized features."\n- "do we need authentication?": "Yes" : Reasoning: "Authentication is necessary to protect sensitive financial data, ensuring that only authorized users can access and manage their information."\n- "do we need authorization?": "Yes" : Reasoning: "Authorization is crucial for enforcing access controls, particularly in differentiating between user roles and what actions they are allowed to perform within the system."\n- "what authorization roles do we need?": "[\'Admin\', \'FinancialManager\', \'Viewer\']" : Reasoning: "Considering the system will be used by SMEs, roles should be designed to reflect the level of access required by different users, including managing finances, viewing reports, and administering the system."\n\n\n### Requirements\n### Functional Requirements\n#### Invoice Creation and Management\n##### Thoughts\nThis is central to the invoice management feature, addressing the core need of SMEs to efficiently manage their invoicing process.\n##### Description\nAllows users to create, edit, and track the status of invoices, including draft and finalized states, with support for unique invoice numbering, inclusion of line items, and calculation for different currencies and taxes.\n#### Payment Gateway Integration\n##### Thoughts\nEssential for facilitating smooth transactions and ensuring the system supports various methods of payment across different regions.\n##### Description\nEnables the system to integrate with multiple payment gateways, allowing users to make and receive payments directly through the system while complying with global financial regulations.\n#### Automated Payment Reminders\n##### Thoughts\nThis functionality is crucial for improving cash flow and reducing the manual effort in chasing payments.\n##### Description\nAutomates sending reminders for unpaid invoices to reduce the number of overdue payments, utilizing customizable criteria for when and how reminders are sent.\n#### Financial Reporting and Insights\n##### Thoughts\nOffering customizable and comprehensive reports is vital for SMEs to make informed decisions and strategies for growth.\n##### Description\nGenerates detailed reports on financial metrics such as revenue growth, expense tracking, profit margins, and cash flows, alongside providing strategic insights like customer acquisition costs and lifetime value.\n\n### Nonfunctional Requirements\n#### Security and Compliance\n##### Thoughts\nGiven the sensitive nature of financial data, ensuring the highest levels of security and compliance is non-negotiable.\n##### Description\nIncorporates robust security measures including TLS, OAuth2.0, data encryption, and complies with standards like GDPR, PCI DSS, and the Sarbanes-Oxley Act to protect sensitive financial data.\n#### Performance and Scalability\n##### Thoughts\nAs SMEs grow, the system must be able to scale with them, ensuring consistent performance and avoiding bottlenecks.\n##### Description\nDesigned to handle high transaction volumes with goals for real-time responsiveness, leveraging microservices for scalability to accommodate future growth.\n#### Data Integrity and Backup\n##### Thoughts\nMaintaining data integrity and preparing for any disaster recovery scenario is critical for the long-term reliability of the system.\n##### Description\nEnsures the integrity and security of data through automated, encrypted backups and establishes robust disaster recovery processes.\n#### API Security and Accessibility\n##### Thoughts\nGiven the backend focus of FinFlow, providing secure and well-documented APIs is critical for the ease of integration and flexibility.\n##### Description\nEnsures that all API endpoints, especially those handling financial transactions, are secure and compliant while being easily accessible and documented for integration with any front-end systems.\n#### Regulatory Adaptability\n##### Thoughts\nFinancial regulations are often subject to change, so the system\'s architecture must be flexible enough to accommodate these changes without significant overhauls.\n##### Description\nFacilitates easy updates and compliance adaptability through modular design and clear API versioning to accommodate potential regulatory changes.\n\n\n### Modules\n### Module: Invoicing\n#### Description\nManages the lifecycle of invoices from creation, through various edits, to finalization. Supports detailed line items, multi-currency transactions, and automatic tax calculations.\n#### Requirements\n#### Requirement: Invoice Creation\nAllows the creation of an invoice with draft or finalized status, including details like line items and unique invoice numbers.\n\n#### Requirement: Invoice Edit\nPermits editing invoice details, such as adding or removing line items, before finalization.\n\n#### Requirement: Multi-Currency Support\nHandles transactions in different currencies and applies real-time conversion rates during invoice creation.\n\n#### Requirement: Tax Calculations\nAutomatically calculates taxes based on items and applicable rates.\n\n#### Endpoints\n##### create_invoice: `POST /invoices`\n\nCreates a new invoice in the system.\n\n##### Request: `###### InvoiceCreationRequest\n**Description**: InvoiceCreationRequest\n\n**Parameters**:\n- **Name**: userId\n  - **Type**: String\n  - **Description**: Identifier for the user who is creating the invoice.\n\n- **Name**: items\n  - **Type**: Array<InvoiceItemInput>\n  - **Description**: Array of line items to be included in the invoice.\n\n- **Name**: currency\n  - **Type**: String\n  - **Description**: Currency in which the invoice is being issued.\n\n- **Name**: taxRate\n  - **Type**: Float\n  - **Description**: Tax rate applicable to the invoice, represented as a percentage.\n\n`\n##### Response:`###### InvoiceCreationRequest\n**Description**: InvoiceCreationRequest\n\n**Parameters**:\n- **Name**: userId\n  - **Type**: String\n  - **Description**: Identifier for the user who is creating the invoice.\n\n- **Name**: items\n  - **Type**: Array<InvoiceItemInput>\n  - **Description**: Array of line items to be included in the invoice.\n\n- **Name**: currency\n  - **Type**: String\n  - **Description**: Currency in which the invoice is being issued.\n\n- **Name**: taxRate\n  - **Type**: Float\n  - **Description**: Tax rate applicable to the invoice, represented as a percentage.\n\n`\n\n\nname=\'InvoiceCreationInput\' description=\'Model for input required to create a new invoice. This includes information about the invoice itself, the line items, and more.\' params=[Parameter(name=\'userId\', param_type=\'String\', description=\'The ID of the user creating the invoice.\'), Parameter(name=\'items\', param_type=\'Array<InvoiceItemInput>\', description=\'A collection of line items including description, quantity, and price.\'), Parameter(name=\'currency\', param_type=\'String\', description=\'Currency code (e.g., USD, EUR) for the invoice.\'), Parameter(name=\'taxRate\', param_type=\'Float\', description=\'Applicable tax rate for the invoice, if any.\')]\n\nname=\'InvoiceItemInput\' description=\'Details for each item included in the invoice.\' params=[Parameter(name=\'description\', param_type=\'String\', description=\'Description of the line item.\'), Parameter(name=\'quantity\', param_type=\'Integer\', description=\'Quantity of the line item.\'), Parameter(name=\'price\', param_type=\'Float\', description=\'Price per unit of the line item.\')]\n\n##### Database Schema\n\n## FinFlow\n**Description**: Prisma schema for FinFlow, a backend system for managing financing, invoicing, and payments.\n**Tables**:\n**User**\n\n**Description**: Represents system users with different roles.\n\n**Definition**:\n```\nmodel User {\n  id    String  @id @default(cuid())\n  email String  @unique\n  role  Role\n  invoices Invoice[]\n  reports Report[]\n}\n```\n\n**Invoice**\n\n**Description**: Invoicing information, related to users and payments.\n\n**Definition**:\n```\nmodel Invoice {\n  id     String        @id @default(cuid())\n  userId String\n  user   User          @relation(fields: [userId], references: [id])\n  number String @unique\n  status InvoiceStatus\n  items  InvoiceItem[]\n  payment Payment?\n}\n```\n\n**InvoiceItem**\n\n**Description**: Line items associated with invoices.\n\n**Definition**:\n```\nmodel InvoiceItem {\n  id        String  @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  description String\n  quantity Int\n  price   Float\n}\n```\n\n**Payment**\n\n**Description**: Payment details linked to invoices and payment gateways.\n\n**Definition**:\n```\nmodel Payment {\n  id        String @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  amount    Float\n  gatewayId String\n  gateway   PaymentGateway @relation(fields: [gatewayId], references: [id])\n}\n```\n\n**Report**\n\n**Description**: Financial reports generated for the user.\n\n**Definition**:\n```\nmodel Report {\n  id          String      @id @default(cuid())\n  userId      String\n  user        User        @relation(fields: [userId], references: [id])\n  type        ReportType\n  generatedAt DateTime\n}\n```\n\n**PaymentGateway**\n\n**Description**: Information about payment gateways.\n\n**Definition**:\n```\nmodel PaymentGateway {\n  id    String    @id @default(cuid())\n  name  String\n  apiKey String\n  payments Payment[]\n}\n```\n\n**ComplianceLog**\n\n**Description**: Log for compliance and auditing.\n\n**Definition**:\n```\nmodel ComplianceLog {\n  id         String    @id @default(cuid())\n  description String\n  loggedAt   DateTime\n}\n```\n\n\n##### edit_invoice: `PATCH /invoices/{id}`\n\nEdits an existing invoice by ID.\n\n##### Request: `###### EditInvoiceInput\n**Description**: EditInvoiceInput\n\n**Parameters**:\n- **Name**: id\n  - **Type**: String\n  - **Description**: The unique identifier of the invoice to be edited.\n\n- **Name**: invoiceDetails\n  - **Type**: InvoiceEditModel\n  - **Description**: The details of the invoice to be edited, encapsulated within the InvoiceEditModel.\n\n`\n##### Response:`###### EditInvoiceInput\n**Description**: EditInvoiceInput\n\n**Parameters**:\n- **Name**: id\n  - **Type**: String\n  - **Description**: The unique identifier of the invoice to be edited.\n\n- **Name**: invoiceDetails\n  - **Type**: InvoiceEditModel\n  - **Description**: The details of the invoice to be edited, encapsulated within the InvoiceEditModel.\n\n`\n\n\nname=\'InvoiceEditModel\' description=\'Model for editing invoice details, allowing updates to various invoice fields while ensuring that changes to critical fields like currency or finalized status are handled with caution.\' params=[Parameter(name=\'status\', param_type=\'String (Optional)\', description=\'Allows modifying the status of the invoice, i.e., from draft to finalized, but with strict checks to prevent arbitrary status changes.\'), Parameter(name=\'items\', param_type=\'Array[ItemEditModel] (Optional)\', description=\'List of line items to be added or updated in the invoice. Each item modification is described in a separate model.\'), Parameter(name=\'currency\', param_type=\'String (Optional)\', description=\'Currency in which the invoice is denoted. Modifications should ensure no discrepancies in already entered amounts.\')]\n\nname=\'ItemEditModel\' description=\'Model for adding or editing line items within an invoice.\' params=[Parameter(name=\'description\', param_type=\'String\', description=\'Description of the invoice item.\'), Parameter(name=\'quantity\', param_type=\'Integer\', description=\'Quantity of the item.\'), Parameter(name=\'price\', param_type=\'Float\', description=\'Price per unit of the item.\'), Parameter(name=\'id\', param_type=\'String (Optional)\', description=\'Unique ID of the item if it exists. If provided, the item will be updated; otherwise, a new item will be added.\')]\n\n##### Database Schema\n\n## FinFlow\n**Description**: Prisma schema for FinFlow, a backend system for managing financing, invoicing, and payments.\n**Tables**:\n**User**\n\n**Description**: Represents system users with different roles.\n\n**Definition**:\n```\nmodel User {\n  id    String  @id @default(cuid())\n  email String  @unique\n  role  Role\n  invoices Invoice[]\n  reports Report[]\n}\n```\n\n**Invoice**\n\n**Description**: Invoicing information, related to users and payments.\n\n**Definition**:\n```\nmodel Invoice {\n  id     String        @id @default(cuid())\n  userId String\n  user   User          @relation(fields: [userId], references: [id])\n  number String @unique\n  status InvoiceStatus\n  items  InvoiceItem[]\n  payment Payment?\n}\n```\n\n**InvoiceItem**\n\n**Description**: Line items associated with invoices.\n\n**Definition**:\n```\nmodel InvoiceItem {\n  id        String  @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  description String\n  quantity Int\n  price   Float\n}\n```\n\n**Payment**\n\n**Description**: Payment details linked to invoices and payment gateways.\n\n**Definition**:\n```\nmodel Payment {\n  id        String @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  amount    Float\n  gatewayId String\n  gateway   PaymentGateway @relation(fields: [gatewayId], references: [id])\n}\n```\n\n**Report**\n\n**Description**: Financial reports generated for the user.\n\n**Definition**:\n```\nmodel Report {\n  id          String      @id @default(cuid())\n  userId      String\n  user        User        @relation(fields: [userId], references: [id])\n  type        ReportType\n  generatedAt DateTime\n}\n```\n\n**PaymentGateway**\n\n**Description**: Information about payment gateways.\n\n**Definition**:\n```\nmodel PaymentGateway {\n  id    String    @id @default(cuid())\n  name  String\n  apiKey String\n  payments Payment[]\n}\n```\n\n**ComplianceLog**\n\n**Description**: Log for compliance and auditing.\n\n**Definition**:\n```\nmodel ComplianceLog {\n  id         String    @id @default(cuid())\n  description String\n  loggedAt   DateTime\n}\n```\n\n\n##### get_invoice: `GET /invoices/{id}`\n\nRetrieves invoice details by ID.\n\n##### Request: `###### GetInvoiceInput\n**Description**: GetInvoiceInput\n\n**Parameters**:\n- **Name**: id\n  - **Type**: string\n  - **Description**: The unique ID of the invoice to retrieve.\n\n`\n##### Response:`###### GetInvoiceInput\n**Description**: GetInvoiceInput\n\n**Parameters**:\n- **Name**: id\n  - **Type**: string\n  - **Description**: The unique ID of the invoice to retrieve.\n\n`\n\n\n\n\n##### Database Schema\n\n## FinFlow\n**Description**: Prisma schema for FinFlow, a backend system for managing financing, invoicing, and payments.\n**Tables**:\n**User**\n\n**Description**: Represents system users with different roles.\n\n**Definition**:\n```\nmodel User {\n  id    String  @id @default(cuid())\n  email String  @unique\n  role  Role\n  invoices Invoice[]\n  reports Report[]\n}\n```\n\n**Invoice**\n\n**Description**: Invoicing information, related to users and payments.\n\n**Definition**:\n```\nmodel Invoice {\n  id     String        @id @default(cuid())\n  userId String\n  user   User          @relation(fields: [userId], references: [id])\n  number String @unique\n  status InvoiceStatus\n  items  InvoiceItem[]\n  payment Payment?\n}\n```\n\n**InvoiceItem**\n\n**Description**: Line items associated with invoices.\n\n**Definition**:\n```\nmodel InvoiceItem {\n  id        String  @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  description String\n  quantity Int\n  price   Float\n}\n```\n\n**Payment**\n\n**Description**: Payment details linked to invoices and payment gateways.\n\n**Definition**:\n```\nmodel Payment {\n  id        String @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  amount    Float\n  gatewayId String\n  gateway   PaymentGateway @relation(fields: [gatewayId], references: [id])\n}\n```\n\n**Report**\n\n**Description**: Financial reports generated for the user.\n\n**Definition**:\n```\nmodel Report {\n  id          String      @id @default(cuid())\n  userId      String\n  user        User        @relation(fields: [userId], references: [id])\n  type        ReportType\n  generatedAt DateTime\n}\n```\n\n**PaymentGateway**\n\n**Description**: Information about payment gateways.\n\n**Definition**:\n```\nmodel PaymentGateway {\n  id    String    @id @default(cuid())\n  name  String\n  apiKey String\n  payments Payment[]\n}\n```\n\n**ComplianceLog**\n\n**Description**: Log for compliance and auditing.\n\n**Definition**:\n```\nmodel ComplianceLog {\n  id         String    @id @default(cuid())\n  description String\n  loggedAt   DateTime\n}\n```\n\n\n##### list_invoices: `GET /invoices`\n\nLists all invoices related to a user.\n\n##### Request: `###### ListInvoicesRequest\n**Description**: ListInvoicesRequest\n\n**Parameters**:\n- **Name**: userId\n  - **Type**: String\n  - **Description**: The unique identifier of the user whose invoices are to be listed.\n\n- **Name**: page\n  - **Type**: Integer\n  - **Description**: Pagination parameter, denotes the page number of the invoice list to be retrieved.\n\n- **Name**: pageSize\n  - **Type**: Integer\n  - **Description**: Pagination parameter, denotes the number of invoices to be listed per page.\n\n`\n##### Response:`###### ListInvoicesRequest\n**Description**: ListInvoicesRequest\n\n**Parameters**:\n- **Name**: userId\n  - **Type**: String\n  - **Description**: The unique identifier of the user whose invoices are to be listed.\n\n- **Name**: page\n  - **Type**: Integer\n  - **Description**: Pagination parameter, denotes the page number of the invoice list to be retrieved.\n\n- **Name**: pageSize\n  - **Type**: Integer\n  - **Description**: Pagination parameter, denotes the number of invoices to be listed per page.\n\n`\n\n\nname=\'InvoiceSummary\' description=\'A concise model representing the key information of an invoice for listing purposes.\' params=[Parameter(name=\'invoiceId\', param_type=\'String\', description=\'Unique identifier for the invoice.\'), Parameter(name=\'invoiceNumber\', param_type=\'String\', description=\'The unique number associated with the invoice.\'), Parameter(name=\'status\', param_type=\'String\', description=\'Current status of the invoice (e.g., draft, finalized).\'), Parameter(name=\'totalAmount\', param_type=\'Float\', description=\'Total amount of the invoice, taking into account item prices and quantities.\'), Parameter(name=\'currency\', param_type=\'String\', description=\'The currency in which the invoice was issued.\'), Parameter(name=\'createdAt\', param_type=\'DateTime\', description=\'The date and time when the invoice was created.\')]\n\n##### Database Schema\n\n## FinFlow\n**Description**: Prisma schema for FinFlow, a backend system for managing financing, invoicing, and payments.\n**Tables**:\n**User**\n\n**Description**: Represents system users with different roles.\n\n**Definition**:\n```\nmodel User {\n  id    String  @id @default(cuid())\n  email String  @unique\n  role  Role\n  invoices Invoice[]\n  reports Report[]\n}\n```\n\n**Invoice**\n\n**Description**: Invoicing information, related to users and payments.\n\n**Definition**:\n```\nmodel Invoice {\n  id     String        @id @default(cuid())\n  userId String\n  user   User          @relation(fields: [userId], references: [id])\n  number String @unique\n  status InvoiceStatus\n  items  InvoiceItem[]\n  payment Payment?\n}\n```\n\n**InvoiceItem**\n\n**Description**: Line items associated with invoices.\n\n**Definition**:\n```\nmodel InvoiceItem {\n  id        String  @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  description String\n  quantity Int\n  price   Float\n}\n```\n\n**Payment**\n\n**Description**: Payment details linked to invoices and payment gateways.\n\n**Definition**:\n```\nmodel Payment {\n  id        String @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  amount    Float\n  gatewayId String\n  gateway   PaymentGateway @relation(fields: [gatewayId], references: [id])\n}\n```\n\n**Report**\n\n**Description**: Financial reports generated for the user.\n\n**Definition**:\n```\nmodel Report {\n  id          String      @id @default(cuid())\n  userId      String\n  user        User        @relation(fields: [userId], references: [id])\n  type        ReportType\n  generatedAt DateTime\n}\n```\n\n**PaymentGateway**\n\n**Description**: Information about payment gateways.\n\n**Definition**:\n```\nmodel PaymentGateway {\n  id    String    @id @default(cuid())\n  name  String\n  apiKey String\n  payments Payment[]\n}\n```\n\n**ComplianceLog**\n\n**Description**: Log for compliance and auditing.\n\n**Definition**:\n```\nmodel ComplianceLog {\n  id         String    @id @default(cuid())\n  description String\n  loggedAt   DateTime\n}\n```\n\n\n\n### Module: Payment\n#### Description\nEnables secure transactions through various payment gateways, facilitating direct payment capabilities and ensuring global regulatory compliance.\n#### Requirements\n#### Requirement: Payment Gateway Integration\nIntegrates the system with external payment gateways, enabling payment processing.\n\n#### Requirement: Payment Processing\nHandles the processing of payments, including capturing transaction details and status.\n\n#### Requirement: Payment Security\nEnsures secure payment transactions, including encryption and compliance checks.\n\n#### Endpoints\n##### initiate_payment: `POST /payments/initiate/{invoiceId}`\n\nInitiates a payment for an invoice.\n\n##### Request: `###### PaymentInitiationRequest\n**Description**: PaymentInitiationRequest\n\n**Parameters**:\n- **Name**: invoiceId\n  - **Type**: String\n  - **Description**: Unique ID of the invoice for which the payment is being initiated.\n\n- **Name**: gatewayId\n  - **Type**: String\n  - **Description**: Identifier of the payment gateway through which the payment will be processed.\n\n`\n##### Response:`###### PaymentInitiationRequest\n**Description**: PaymentInitiationRequest\n\n**Parameters**:\n- **Name**: invoiceId\n  - **Type**: String\n  - **Description**: Unique ID of the invoice for which the payment is being initiated.\n\n- **Name**: gatewayId\n  - **Type**: String\n  - **Description**: Identifier of the payment gateway through which the payment will be processed.\n\n`\n\n\nname=\'PaymentInitiationRequest\' description=\'Model for initiating a payment, requires the invoice ID and payment gateway details.\' params=[Parameter(name=\'invoiceId\', param_type=\'String\', description=\'The unique identifier for the invoice being paid.\'), Parameter(name=\'gatewayId\', param_type=\'String\', description=\'The identifier for the chosen payment gateway.\')]\n\nname=\'PaymentInitiationResponse\' description=\'Provides the outcome of the payment initiation request, including a transaction status and unique payment identifier.\' params=[Parameter(name=\'paymentId\', param_type=\'String\', description=\'A unique identifier generated for the initiated payment.\'), Parameter(name=\'status\', param_type=\'String\', description="The status of the payment initiation, e.g., \'Pending\', \'Failed\'.")]\n\n##### Database Schema\n\n## FinFlow\n**Description**: Prisma schema for FinFlow, a backend system for managing financing, invoicing, and payments.\n**Tables**:\n**User**\n\n**Description**: Represents system users with different roles.\n\n**Definition**:\n```\nmodel User {\n  id    String  @id @default(cuid())\n  email String  @unique\n  role  Role\n  invoices Invoice[]\n  reports Report[]\n}\n```\n\n**Invoice**\n\n**Description**: Invoicing information, related to users and payments.\n\n**Definition**:\n```\nmodel Invoice {\n  id     String        @id @default(cuid())\n  userId String\n  user   User          @relation(fields: [userId], references: [id])\n  number String @unique\n  status InvoiceStatus\n  items  InvoiceItem[]\n  payment Payment?\n}\n```\n\n**InvoiceItem**\n\n**Description**: Line items associated with invoices.\n\n**Definition**:\n```\nmodel InvoiceItem {\n  id        String  @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  description String\n  quantity Int\n  price   Float\n}\n```\n\n**Payment**\n\n**Description**: Payment details linked to invoices and payment gateways.\n\n**Definition**:\n```\nmodel Payment {\n  id        String @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  amount    Float\n  gatewayId String\n  gateway   PaymentGateway @relation(fields: [gatewayId], references: [id])\n}\n```\n\n**Report**\n\n**Description**: Financial reports generated for the user.\n\n**Definition**:\n```\nmodel Report {\n  id          String      @id @default(cuid())\n  userId      String\n  user        User        @relation(fields: [userId], references: [id])\n  type        ReportType\n  generatedAt DateTime\n}\n```\n\n**PaymentGateway**\n\n**Description**: Information about payment gateways.\n\n**Definition**:\n```\nmodel PaymentGateway {\n  id    String    @id @default(cuid())\n  name  String\n  apiKey String\n  payments Payment[]\n}\n```\n\n**ComplianceLog**\n\n**Description**: Log for compliance and auditing.\n\n**Definition**:\n```\nmodel ComplianceLog {\n  id         String    @id @default(cuid())\n  description String\n  loggedAt   DateTime\n}\n```\n\n\n##### confirm_payment: `PATCH /payments/confirm/{paymentId}`\n\nConfirms a payment has been completed.\n\n##### Request: `###### PaymentConfirmationRequest\n**Description**: PaymentConfirmationRequest\n\n**Parameters**:\n- **Name**: paymentId\n  - **Type**: String\n  - **Description**: The unique identifier of the payment to be confirmed.\n\n- **Name**: confirmationStatus\n  - **Type**: String\n  - **Description**: Indicates the status of the payment confirmation attempt.\n\n`\n##### Response:`###### PaymentConfirmationRequest\n**Description**: PaymentConfirmationRequest\n\n**Parameters**:\n- **Name**: paymentId\n  - **Type**: String\n  - **Description**: The unique identifier of the payment to be confirmed.\n\n- **Name**: confirmationStatus\n  - **Type**: String\n  - **Description**: Indicates the status of the payment confirmation attempt.\n\n`\n\n\nname=\'PaymentConfirmationInput\' description=\'Input model for confirming payments, capturing necessary details for processing the payment confirmation.\' params=[Parameter(name=\'paymentId\', param_type=\'String\', description=\'Unique identifier for the payment to be confirmed.\'), Parameter(name=\'confirmationStatus\', param_type=\'String\', description="The status of the payment confirmation, e.g., \'Confirmed\', \'Failed\'.")]\n\nname=\'PaymentConfirmationResponse\' description=\'Response model for the payment confirmation process, indicating the success or failure of the operation.\' params=[Parameter(name=\'success\', param_type=\'Boolean\', description=\'Indicates if the payment confirmation was successful.\'), Parameter(name=\'message\', param_type=\'String\', description=\'A descriptive message about the outcome of the payment confirmation.\'), Parameter(name=\'updatedPaymentDetails\', param_type=\'Payment\', description=\'The updated payment details post-confirmation.\')]\n\n##### Database Schema\n\n## FinFlow\n**Description**: Prisma schema for FinFlow, a backend system for managing financing, invoicing, and payments.\n**Tables**:\n**User**\n\n**Description**: Represents system users with different roles.\n\n**Definition**:\n```\nmodel User {\n  id    String  @id @default(cuid())\n  email String  @unique\n  role  Role\n  invoices Invoice[]\n  reports Report[]\n}\n```\n\n**Invoice**\n\n**Description**: Invoicing information, related to users and payments.\n\n**Definition**:\n```\nmodel Invoice {\n  id     String        @id @default(cuid())\n  userId String\n  user   User          @relation(fields: [userId], references: [id])\n  number String @unique\n  status InvoiceStatus\n  items  InvoiceItem[]\n  payment Payment?\n}\n```\n\n**InvoiceItem**\n\n**Description**: Line items associated with invoices.\n\n**Definition**:\n```\nmodel InvoiceItem {\n  id        String  @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  description String\n  quantity Int\n  price   Float\n}\n```\n\n**Payment**\n\n**Description**: Payment details linked to invoices and payment gateways.\n\n**Definition**:\n```\nmodel Payment {\n  id        String @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  amount    Float\n  gatewayId String\n  gateway   PaymentGateway @relation(fields: [gatewayId], references: [id])\n}\n```\n\n**Report**\n\n**Description**: Financial reports generated for the user.\n\n**Definition**:\n```\nmodel Report {\n  id          String      @id @default(cuid())\n  userId      String\n  user        User        @relation(fields: [userId], references: [id])\n  type        ReportType\n  generatedAt DateTime\n}\n```\n\n**PaymentGateway**\n\n**Description**: Information about payment gateways.\n\n**Definition**:\n```\nmodel PaymentGateway {\n  id    String    @id @default(cuid())\n  name  String\n  apiKey String\n  payments Payment[]\n}\n```\n\n**ComplianceLog**\n\n**Description**: Log for compliance and auditing.\n\n**Definition**:\n```\nmodel ComplianceLog {\n  id         String    @id @default(cuid())\n  description String\n  loggedAt   DateTime\n}\n```\n\n\n\n### Module: Notification\n#### Description\nManages automated notifications for actions like unpaid invoice reminders, using customizable criteria and multiple communication channels.\n#### Requirements\n#### Requirement: Automated Reminders\nSends automated reminders for overdue invoices through selected channels.\n\n#### Requirement: Notification Preferences\nAllows users to set preferences for receiving notifications.\n\n#### Endpoints\n##### send_reminder: `POST /notifications/remind`\n\nSends a reminder for an unpaid invoice.\n\n##### Request: `###### ReminderNotificationInput\n**Description**: ReminderNotificationInput\n\n**Parameters**:\n- **Name**: invoiceId\n  - **Type**: String\n  - **Description**: Unique identifier for the invoice the reminder pertains to.\n\n- **Name**: userId\n  - **Type**: String\n  - **Description**: Unique identifier for the user associated with the invoice to send the notification to.\n\n- **Name**: medium\n  - **Type**: String\n  - **Description**: Preferred medium of notification (e.g., Email, SMS).\n\n- **Name**: sendTime\n  - **Type**: DateTime\n  - **Description**: Scheduled time for sending the reminder.\n\n`\n##### Response:`###### ReminderNotificationInput\n**Description**: ReminderNotificationInput\n\n**Parameters**:\n- **Name**: invoiceId\n  - **Type**: String\n  - **Description**: Unique identifier for the invoice the reminder pertains to.\n\n- **Name**: userId\n  - **Type**: String\n  - **Description**: Unique identifier for the user associated with the invoice to send the notification to.\n\n- **Name**: medium\n  - **Type**: String\n  - **Description**: Preferred medium of notification (e.g., Email, SMS).\n\n- **Name**: sendTime\n  - **Type**: DateTime\n  - **Description**: Scheduled time for sending the reminder.\n\n`\n\n\nname=\'ReminderNotificationInput\' description=\'Model for input required to send a reminder notification about an unpaid invoice, including invoice and user details.\' params=[Parameter(name=\'invoiceId\', param_type=\'String\', description=\'Unique identifier for the invoice the reminder pertains to.\'), Parameter(name=\'userId\', param_type=\'String\', description=\'Unique identifier for the user associated with the invoice to send the notification to.\'), Parameter(name=\'medium\', param_type=\'String\', description=\'Preferred medium of notification (e.g., Email, SMS).\'), Parameter(name=\'sendTime\', param_type=\'DateTime\', description=\'Scheduled time for sending the reminder.\')]\n\nname=\'ReminderNotificationOutput\' description=\'Model for output after attempting to send a reminder notification about an unpaid invoice.\' params=[Parameter(name=\'success\', param_type=\'Boolean\', description=\'Indicates if the reminder was successfully sent.\'), Parameter(name=\'message\', param_type=\'String\', description=\'A descriptive message about the outcome of the attempt.\')]\n\n##### Database Schema\n\n## FinFlow\n**Description**: Prisma schema for FinFlow, a backend system for managing financing, invoicing, and payments.\n**Tables**:\n**User**\n\n**Description**: Represents system users with different roles.\n\n**Definition**:\n```\nmodel User {\n  id    String  @id @default(cuid())\n  email String  @unique\n  role  Role\n  invoices Invoice[]\n  reports Report[]\n}\n```\n\n**Invoice**\n\n**Description**: Invoicing information, related to users and payments.\n\n**Definition**:\n```\nmodel Invoice {\n  id     String        @id @default(cuid())\n  userId String\n  user   User          @relation(fields: [userId], references: [id])\n  number String @unique\n  status InvoiceStatus\n  items  InvoiceItem[]\n  payment Payment?\n}\n```\n\n**InvoiceItem**\n\n**Description**: Line items associated with invoices.\n\n**Definition**:\n```\nmodel InvoiceItem {\n  id        String  @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  description String\n  quantity Int\n  price   Float\n}\n```\n\n**Payment**\n\n**Description**: Payment details linked to invoices and payment gateways.\n\n**Definition**:\n```\nmodel Payment {\n  id        String @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  amount    Float\n  gatewayId String\n  gateway   PaymentGateway @relation(fields: [gatewayId], references: [id])\n}\n```\n\n**Report**\n\n**Description**: Financial reports generated for the user.\n\n**Definition**:\n```\nmodel Report {\n  id          String      @id @default(cuid())\n  userId      String\n  user        User        @relation(fields: [userId], references: [id])\n  type        ReportType\n  generatedAt DateTime\n}\n```\n\n**PaymentGateway**\n\n**Description**: Information about payment gateways.\n\n**Definition**:\n```\nmodel PaymentGateway {\n  id    String    @id @default(cuid())\n  name  String\n  apiKey String\n  payments Payment[]\n}\n```\n\n**ComplianceLog**\n\n**Description**: Log for compliance and auditing.\n\n**Definition**:\n```\nmodel ComplianceLog {\n  id         String    @id @default(cuid())\n  description String\n  loggedAt   DateTime\n}\n```\n\n\n\n### Module: Reporting\n#### Description\nProvides comprehensive financial reporting, offering detailed insights into metrics like revenue, expenses, and cash flow, tailored to SMEs\' strategic needs.\n#### Requirements\n#### Requirement: Report Generation\nGenerates customizable reports based on financial data and analytics.\n\n#### Requirement: Insight Analysis\nProvides strategic financial insights derived from data analytics.\n\n#### Endpoints\n##### generate_report: `POST /reports/generate`\n\nGenerates a financial report based on specified parameters.\n\n##### Request: `###### GenerateReportInput\n**Description**: GenerateReportInput\n\n**Parameters**:\n- **Name**: userId\n  - **Type**: String\n  - **Description**: The user\'s ID for whom the report is being generated.\n\n- **Name**: reportType\n  - **Type**: String\n  - **Description**: Specifies the type of financial report required.\n\n- **Name**: startDate\n  - **Type**: DateTime\n  - **Description**: The start date for the reporting period.\n\n- **Name**: endDate\n  - **Type**: DateTime\n  - **Description**: The end date for the reporting period.\n\n- **Name**: filters\n  - **Type**: Array<String>\n  - **Description**: Optional filters to refine the report data.\n\n`\n##### Response:`###### GenerateReportInput\n**Description**: GenerateReportInput\n\n**Parameters**:\n- **Name**: userId\n  - **Type**: String\n  - **Description**: The user\'s ID for whom the report is being generated.\n\n- **Name**: reportType\n  - **Type**: String\n  - **Description**: Specifies the type of financial report required.\n\n- **Name**: startDate\n  - **Type**: DateTime\n  - **Description**: The start date for the reporting period.\n\n- **Name**: endDate\n  - **Type**: DateTime\n  - **Description**: The end date for the reporting period.\n\n- **Name**: filters\n  - **Type**: Array<String>\n  - **Description**: Optional filters to refine the report data.\n\n`\n\n\nname=\'ReportRequestParameters\' description=\'Contains all the parameters needed to generate a customizable financial report.\' params=[Parameter(name=\'userId\', param_type=\'String\', description=\'Unique identifier of the user requesting the report.\'), Parameter(name=\'reportType\', param_type=\'String\', description=\'Type of the report required (e.g., revenue_growth, expense_tracking).\'), Parameter(name=\'startDate\', param_type=\'DateTime\', description=\'Start date for the time frame of the report.\'), Parameter(name=\'endDate\', param_type=\'DateTime\', description=\'End date for the time frame of the report.\'), Parameter(name=\'filters\', param_type=\'Array<String>\', description=\'List of additional filters to apply to the report data (optional).\')]\n\nname=\'FinancialReport\' description=\'Represents the structured output of a financial report, including various metrics and insights.\' params=[Parameter(name=\'reportType\', param_type=\'String\', description=\'Type of the generated report.\'), Parameter(name=\'generatedAt\', param_type=\'DateTime\', description=\'Timestamp of when the report was generated.\'), Parameter(name=\'metrics\', param_type=\'Array<ReportMetric>\', description=\'A collection of metrics included in the report.\'), Parameter(name=\'insights\', param_type=\'Array<String>\', description=\'List of insights derived from the report data.\')]\n\nname=\'ReportMetric\' description=\'Details of a single metric within the financial report.\' params=[Parameter(name=\'metricName\', param_type=\'String\', description=\'Name of the metric.\'), Parameter(name=\'value\', param_type=\'Float\', description=\'Quantitative value of the metric.\'), Parameter(name=\'unit\', param_type=\'String\', description=\'Unit of measurement for the metric.\'), Parameter(name=\'description\', param_type=\'String\', description=\'A brief description or insight related to the metric.\')]\n\n##### Database Schema\n\n## FinFlow\n**Description**: Prisma schema for FinFlow, a backend system for managing financing, invoicing, and payments.\n**Tables**:\n**User**\n\n**Description**: Represents system users with different roles.\n\n**Definition**:\n```\nmodel User {\n  id    String  @id @default(cuid())\n  email String  @unique\n  role  Role\n  invoices Invoice[]\n  reports Report[]\n}\n```\n\n**Invoice**\n\n**Description**: Invoicing information, related to users and payments.\n\n**Definition**:\n```\nmodel Invoice {\n  id     String        @id @default(cuid())\n  userId String\n  user   User          @relation(fields: [userId], references: [id])\n  number String @unique\n  status InvoiceStatus\n  items  InvoiceItem[]\n  payment Payment?\n}\n```\n\n**InvoiceItem**\n\n**Description**: Line items associated with invoices.\n\n**Definition**:\n```\nmodel InvoiceItem {\n  id        String  @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  description String\n  quantity Int\n  price   Float\n}\n```\n\n**Payment**\n\n**Description**: Payment details linked to invoices and payment gateways.\n\n**Definition**:\n```\nmodel Payment {\n  id        String @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  amount    Float\n  gatewayId String\n  gateway   PaymentGateway @relation(fields: [gatewayId], references: [id])\n}\n```\n\n**Report**\n\n**Description**: Financial reports generated for the user.\n\n**Definition**:\n```\nmodel Report {\n  id          String      @id @default(cuid())\n  userId      String\n  user        User        @relation(fields: [userId], references: [id])\n  type        ReportType\n  generatedAt DateTime\n}\n```\n\n**PaymentGateway**\n\n**Description**: Information about payment gateways.\n\n**Definition**:\n```\nmodel PaymentGateway {\n  id    String    @id @default(cuid())\n  name  String\n  apiKey String\n  payments Payment[]\n}\n```\n\n**ComplianceLog**\n\n**Description**: Log for compliance and auditing.\n\n**Definition**:\n```\nmodel ComplianceLog {\n  id         String    @id @default(cuid())\n  description String\n  loggedAt   DateTime\n}\n```\n\n\n##### fetch_insights: `GET /insights`\n\nProvides strategic financial insights.\n\n##### Request: `###### FinancialInsightsRequest\n**Description**: FinancialInsightsRequest\n\n**Parameters**:\n- **Name**: startDate\n  - **Type**: DateTime\n  - **Description**: The start date for the range of financial data to consider.\n\n- **Name**: endDate\n  - **Type**: DateTime\n  - **Description**: The end date for the range of financial data to consider.\n\n- **Name**: metrics\n  - **Type**: Array<String>\n  - **Description**: Optional. A list of specific financial metrics to retrieve insights for.\n\n`\n##### Response:`###### FinancialInsightsRequest\n**Description**: FinancialInsightsRequest\n\n**Parameters**:\n- **Name**: startDate\n  - **Type**: DateTime\n  - **Description**: The start date for the range of financial data to consider.\n\n- **Name**: endDate\n  - **Type**: DateTime\n  - **Description**: The end date for the range of financial data to consider.\n\n- **Name**: metrics\n  - **Type**: Array<String>\n  - **Description**: Optional. A list of specific financial metrics to retrieve insights for.\n\n`\n\n\nname=\'FinancialInsight\' description=\'Represents a high-level financial insight derived from aggregating financial data.\' params=[Parameter(name=\'label\', param_type=\'String\', description=\'The name of the financial insight or metric.\'), Parameter(name=\'value\', param_type=\'Float\', description=\'The numerical value of the insight.\'), Parameter(name=\'trend\', param_type=\'String\', description="Indicates the trend of this metric (e.g., \'increasing\', \'decreasing\', \'stable\')."), Parameter(name=\'interpretation\', param_type=\'String\', description="A brief expert analysis or interpretation of what this insight suggests about the business\'s financial health.")]\n\n##### Database Schema\n\n## FinFlow\n**Description**: Prisma schema for FinFlow, a backend system for managing financing, invoicing, and payments.\n**Tables**:\n**User**\n\n**Description**: Represents system users with different roles.\n\n**Definition**:\n```\nmodel User {\n  id    String  @id @default(cuid())\n  email String  @unique\n  role  Role\n  invoices Invoice[]\n  reports Report[]\n}\n```\n\n**Invoice**\n\n**Description**: Invoicing information, related to users and payments.\n\n**Definition**:\n```\nmodel Invoice {\n  id     String        @id @default(cuid())\n  userId String\n  user   User          @relation(fields: [userId], references: [id])\n  number String @unique\n  status InvoiceStatus\n  items  InvoiceItem[]\n  payment Payment?\n}\n```\n\n**InvoiceItem**\n\n**Description**: Line items associated with invoices.\n\n**Definition**:\n```\nmodel InvoiceItem {\n  id        String  @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  description String\n  quantity Int\n  price   Float\n}\n```\n\n**Payment**\n\n**Description**: Payment details linked to invoices and payment gateways.\n\n**Definition**:\n```\nmodel Payment {\n  id        String @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  amount    Float\n  gatewayId String\n  gateway   PaymentGateway @relation(fields: [gatewayId], references: [id])\n}\n```\n\n**Report**\n\n**Description**: Financial reports generated for the user.\n\n**Definition**:\n```\nmodel Report {\n  id          String      @id @default(cuid())\n  userId      String\n  user        User        @relation(fields: [userId], references: [id])\n  type        ReportType\n  generatedAt DateTime\n}\n```\n\n**PaymentGateway**\n\n**Description**: Information about payment gateways.\n\n**Definition**:\n```\nmodel PaymentGateway {\n  id    String    @id @default(cuid())\n  name  String\n  apiKey String\n  payments Payment[]\n}\n```\n\n**ComplianceLog**\n\n**Description**: Log for compliance and auditing.\n\n**Definition**:\n```\nmodel ComplianceLog {\n  id         String    @id @default(cuid())\n  description String\n  loggedAt   DateTime\n}\n```\n\n\n\n### Module: Security\n#### Description\nSecures the system against unauthorized access and data breaches, ensuring compliance with global financial and data protection regulations.\n#### Requirements\n#### Requirement: Data Encryption\nEnsures all sensitive data is encrypted both at rest and in transit.\n\n#### Requirement: Access Management\nManages user access, implementing authentication and authorization protocols.\n\n#### Requirement: Compliance Adherence\nRegularly audits and updates the system to ensure ongoing compliance with relevant regulations.\n\n#### Endpoints\n##### update_security_settings: `PATCH /security/settings`\n\nUpdates security settings and protocols.\n\n##### Request: `###### UpdateSecuritySettingsRequest\n**Description**: UpdateSecuritySettingsRequest\n\n**Parameters**:\n- **Name**: updates\n  - **Type**: Array<SecuritySettingUpdate>\n  - **Description**: A list of security settings to update, each indicating the setting name and its new value.\n\n`\n##### Response:`###### UpdateSecuritySettingsRequest\n**Description**: UpdateSecuritySettingsRequest\n\n**Parameters**:\n- **Name**: updates\n  - **Type**: Array<SecuritySettingUpdate>\n  - **Description**: A list of security settings to update, each indicating the setting name and its new value.\n\n`\n\n\nname=\'SecuritySettingUpdate\' description=\'Represents a security setting that needs to be updated.\' params=[Parameter(name=\'settingName\', param_type=\'String\', description=\'The name of the security setting to update.\'), Parameter(name=\'newValue\', param_type=\'String\', description=\'The new value for the security setting.\')]\n\nname=\'UpdateSecuritySettingsResponse\' description=\'Response model for update security settings operation, indicating success or failure.\' params=[Parameter(name=\'success\', param_type=\'Boolean\', description=\'Indicates if the update operation was successful.\'), Parameter(name=\'updatedSettings\', param_type=\'Array<SecuritySettingUpdate>\', description=\'A list of all settings that were successfully updated.\'), Parameter(name=\'failedSettings\', param_type=\'Array<SecuritySettingUpdate>\', description=\'A list of settings that failed to update, with descriptions of the failure reasons.\')]\n\n##### Database Schema\n\n## FinFlow\n**Description**: Prisma schema for FinFlow, a backend system for managing financing, invoicing, and payments.\n**Tables**:\n**User**\n\n**Description**: Represents system users with different roles.\n\n**Definition**:\n```\nmodel User {\n  id    String  @id @default(cuid())\n  email String  @unique\n  role  Role\n  invoices Invoice[]\n  reports Report[]\n}\n```\n\n**Invoice**\n\n**Description**: Invoicing information, related to users and payments.\n\n**Definition**:\n```\nmodel Invoice {\n  id     String        @id @default(cuid())\n  userId String\n  user   User          @relation(fields: [userId], references: [id])\n  number String @unique\n  status InvoiceStatus\n  items  InvoiceItem[]\n  payment Payment?\n}\n```\n\n**InvoiceItem**\n\n**Description**: Line items associated with invoices.\n\n**Definition**:\n```\nmodel InvoiceItem {\n  id        String  @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  description String\n  quantity Int\n  price   Float\n}\n```\n\n**Payment**\n\n**Description**: Payment details linked to invoices and payment gateways.\n\n**Definition**:\n```\nmodel Payment {\n  id        String @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  amount    Float\n  gatewayId String\n  gateway   PaymentGateway @relation(fields: [gatewayId], references: [id])\n}\n```\n\n**Report**\n\n**Description**: Financial reports generated for the user.\n\n**Definition**:\n```\nmodel Report {\n  id          String      @id @default(cuid())\n  userId      String\n  user        User        @relation(fields: [userId], references: [id])\n  type        ReportType\n  generatedAt DateTime\n}\n```\n\n**PaymentGateway**\n\n**Description**: Information about payment gateways.\n\n**Definition**:\n```\nmodel PaymentGateway {\n  id    String    @id @default(cuid())\n  name  String\n  apiKey String\n  payments Payment[]\n}\n```\n\n**ComplianceLog**\n\n**Description**: Log for compliance and auditing.\n\n**Definition**:\n```\nmodel ComplianceLog {\n  id         String    @id @default(cuid())\n  description String\n  loggedAt   DateTime\n}\n```\n\n\n\n### Module: Compliance\n#### Description\nFocuses on ensuring regulatory compliance across all financial transactions, personal data handling, and system updates.\n#### Requirements\n#### Requirement: Regulatory Monitoring\nMonitors changes in financial and data protection laws to ensure compliance.\n\n#### Requirement: Audit Logging\nLogs actions for auditing purposes, supporting transparency and accountability.\n\n#### Endpoints\n##### log_compliance_action: `POST /compliance/logs`\n\nRecords a compliance-related action for auditing.\n\n##### Request: `###### LogComplianceActionInput\n**Description**: LogComplianceActionInput\n\n**Parameters**:\n- **Name**: complianceAction\n  - **Type**: ComplianceAction\n  - **Description**: The compliance action that needs to be logged.\n\n`\n##### Response:`###### LogComplianceActionInput\n**Description**: LogComplianceActionInput\n\n**Parameters**:\n- **Name**: complianceAction\n  - **Type**: ComplianceAction\n  - **Description**: The compliance action that needs to be logged.\n\n`\n\n\nname=\'ComplianceAction\' description=\'Represents a compliance-related action that needs to be logged for auditing.\' params=[Parameter(name=\'actionType\', param_type=\'String\', description="The type of action performed, e.g., \'Data Update\', \'View Sensitive Information\', etc."), Parameter(name=\'description\', param_type=\'String\', description=\'A detailed description of the action performed.\'), Parameter(name=\'performedBy\', param_type=\'String\', description=\'Identifier for the user or system component that performed the action.\'), Parameter(name=\'timestamp\', param_type=\'DateTime\', description=\'Timestamp when the action was performed.\')]\n\n##### Database Schema\n\n## FinFlow\n**Description**: Prisma schema for FinFlow, a backend system for managing financing, invoicing, and payments.\n**Tables**:\n**User**\n\n**Description**: Represents system users with different roles.\n\n**Definition**:\n```\nmodel User {\n  id    String  @id @default(cuid())\n  email String  @unique\n  role  Role\n  invoices Invoice[]\n  reports Report[]\n}\n```\n\n**Invoice**\n\n**Description**: Invoicing information, related to users and payments.\n\n**Definition**:\n```\nmodel Invoice {\n  id     String        @id @default(cuid())\n  userId String\n  user   User          @relation(fields: [userId], references: [id])\n  number String @unique\n  status InvoiceStatus\n  items  InvoiceItem[]\n  payment Payment?\n}\n```\n\n**InvoiceItem**\n\n**Description**: Line items associated with invoices.\n\n**Definition**:\n```\nmodel InvoiceItem {\n  id        String  @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  description String\n  quantity Int\n  price   Float\n}\n```\n\n**Payment**\n\n**Description**: Payment details linked to invoices and payment gateways.\n\n**Definition**:\n```\nmodel Payment {\n  id        String @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  amount    Float\n  gatewayId String\n  gateway   PaymentGateway @relation(fields: [gatewayId], references: [id])\n}\n```\n\n**Report**\n\n**Description**: Financial reports generated for the user.\n\n**Definition**:\n```\nmodel Report {\n  id          String      @id @default(cuid())\n  userId      String\n  user        User        @relation(fields: [userId], references: [id])\n  type        ReportType\n  generatedAt DateTime\n}\n```\n\n**PaymentGateway**\n\n**Description**: Information about payment gateways.\n\n**Definition**:\n```\nmodel PaymentGateway {\n  id    String    @id @default(cuid())\n  name  String\n  apiKey String\n  payments Payment[]\n}\n```\n\n**ComplianceLog**\n\n**Description**: Log for compliance and auditing.\n\n**Definition**:\n```\nmodel ComplianceLog {\n  id         String    @id @default(cuid())\n  description String\n  loggedAt   DateTime\n}\n```\n\n\n\n### Module: Integration\n#### Description\nFacilitates seamless integration with various external services, extending the system\'s capabilities and ensuring consistent functionality.\n#### Requirements\n#### Requirement: Service Integration\nImplements interfaces for connecting with external services like payment gateways.\n\n#### Requirement: Integration Security\nSecures connections with external services, ensuring data protection and transaction security.\n\n#### Endpoints\n##### connect_payment_gateway: `POST /integration/payment-gateway`\n\nSets up connection with a specified payment gateway.\n\n##### Request: `###### PaymentGatewayConnectionRequest\n**Description**: PaymentGatewayConnectionRequest\n\n**Parameters**:\n- **Name**: connectionDetails\n  - **Type**: PaymentGatewayConnectionInput\n  - **Description**: An object holding the necessary connection details.\n\n`\n##### Response:`###### PaymentGatewayConnectionRequest\n**Description**: PaymentGatewayConnectionRequest\n\n**Parameters**:\n- **Name**: connectionDetails\n  - **Type**: PaymentGatewayConnectionInput\n  - **Description**: An object holding the necessary connection details.\n\n`\n\n\nname=\'PaymentGatewayConnectionInput\' description=\'Data required to initiate a connection with a payment gateway.\' params=[Parameter(name=\'gatewayName\', param_type=\'String\', description=\'The name of the payment gateway to connect.\'), Parameter(name=\'apiKey\', param_type=\'String\', description=\'The API key provided by the payment gateway for authentication.\'), Parameter(name=\'apiSecret\', param_type=\'String\', description=\'The API secret or other credentials required for secure access.\')]\n\n##### Database Schema\n\n## FinFlow\n**Description**: Prisma schema for FinFlow, a backend system for managing financing, invoicing, and payments.\n**Tables**:\n**User**\n\n**Description**: Represents system users with different roles.\n\n**Definition**:\n```\nmodel User {\n  id    String  @id @default(cuid())\n  email String  @unique\n  role  Role\n  invoices Invoice[]\n  reports Report[]\n}\n```\n\n**Invoice**\n\n**Description**: Invoicing information, related to users and payments.\n\n**Definition**:\n```\nmodel Invoice {\n  id     String        @id @default(cuid())\n  userId String\n  user   User          @relation(fields: [userId], references: [id])\n  number String @unique\n  status InvoiceStatus\n  items  InvoiceItem[]\n  payment Payment?\n}\n```\n\n**InvoiceItem**\n\n**Description**: Line items associated with invoices.\n\n**Definition**:\n```\nmodel InvoiceItem {\n  id        String  @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  description String\n  quantity Int\n  price   Float\n}\n```\n\n**Payment**\n\n**Description**: Payment details linked to invoices and payment gateways.\n\n**Definition**:\n```\nmodel Payment {\n  id        String @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  amount    Float\n  gatewayId String\n  gateway   PaymentGateway @relation(fields: [gatewayId], references: [id])\n}\n```\n\n**Report**\n\n**Description**: Financial reports generated for the user.\n\n**Definition**:\n```\nmodel Report {\n  id          String      @id @default(cuid())\n  userId      String\n  user        User        @relation(fields: [userId], references: [id])\n  type        ReportType\n  generatedAt DateTime\n}\n```\n\n**PaymentGateway**\n\n**Description**: Information about payment gateways.\n\n**Definition**:\n```\nmodel PaymentGateway {\n  id    String    @id @default(cuid())\n  name  String\n  apiKey String\n  payments Payment[]\n}\n```\n\n**ComplianceLog**\n\n**Description**: Log for compliance and auditing.\n\n**Definition**:\n```\nmodel ComplianceLog {\n  id         String    @id @default(cuid())\n  description String\n  loggedAt   DateTime\n}\n```\n\n\n\n### Database Design\n## FinFlow\n**Description**: Prisma schema for FinFlow, a backend system for managing financing, invoicing, and payments.\n**Tables**:\n**User**\n\n**Description**: Represents system users with different roles.\n\n**Definition**:\n```\nmodel User {\n  id    String  @id @default(cuid())\n  email String  @unique\n  role  Role\n  invoices Invoice[]\n  reports Report[]\n}\n```\n\n**Invoice**\n\n**Description**: Invoicing information, related to users and payments.\n\n**Definition**:\n```\nmodel Invoice {\n  id     String        @id @default(cuid())\n  userId String\n  user   User          @relation(fields: [userId], references: [id])\n  number String @unique\n  status InvoiceStatus\n  items  InvoiceItem[]\n  payment Payment?\n}\n```\n\n**InvoiceItem**\n\n**Description**: Line items associated with invoices.\n\n**Definition**:\n```\nmodel InvoiceItem {\n  id        String  @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  description String\n  quantity Int\n  price   Float\n}\n```\n\n**Payment**\n\n**Description**: Payment details linked to invoices and payment gateways.\n\n**Definition**:\n```\nmodel Payment {\n  id        String @id @default(cuid())\n  invoiceId String\n  invoice   Invoice @relation(fields: [invoiceId], references: [id])\n  amount    Float\n  gatewayId String\n  gateway   PaymentGateway @relation(fields: [gatewayId], references: [id])\n}\n```\n\n**Report**\n\n**Description**: Financial reports generated for the user.\n\n**Definition**:\n```\nmodel Report {\n  id          String      @id @default(cuid())\n  userId      String\n  user        User        @relation(fields: [userId], references: [id])\n  type        ReportType\n  generatedAt DateTime\n}\n```\n\n**PaymentGateway**\n\n**Description**: Information about payment gateways.\n\n**Definition**:\n```\nmodel PaymentGateway {\n  id    String    @id @default(cuid())\n  name  String\n  apiKey String\n  payments Payment[]\n}\n```\n\n**ComplianceLog**\n\n**Description**: Log for compliance and auditing.\n\n**Definition**:\n```\nmodel ComplianceLog {\n  id         String    @id @default(cuid())\n  description String\n  loggedAt   DateTime\n}\n```\n\n""",
+        api_routes=[
+            APIRouteRequirement(
+                method="POST",
+                path="/invoices",
+                function_name="create_invoice",
+                description="Creates a new invoice in the system.",
+                access_level=AccessLevel.PUBLIC,
+                request_model=RequestModel(
+                    name="InvoiceCreationRequest",
+                    description="InvoiceCreationRequest",
+                    params=[
+                        Parameter(
+                            name="userId",
+                            param_type="String",
+                            description="Identifier for the user who is creating the invoice.",
+                        ),
+                        Parameter(
+                            name="items",
+                            param_type="Array<InvoiceItemInput>",
+                            description="Array of line items to be included in the invoice.",
+                        ),
+                        Parameter(
+                            name="currency",
+                            param_type="String",
+                            description="Currency in which the invoice is being issued.",
+                        ),
+                        Parameter(
+                            name="taxRate",
+                            param_type="Float",
+                            description="Tax rate applicable to the invoice, represented as a percentage.",
+                        ),
+                    ],
+                ),
+                response_model=ResponseModel(
+                    name="InvoiceCreationRequest",
+                    description="InvoiceCreationRequest",
+                    params=[
+                        Parameter(
+                            name="invoiceId",
+                            param_type="String",
+                            description="Unique identifier for the newly created invoice.",
+                        ),
+                        Parameter(
+                            name="status",
+                            param_type="String",
+                            description="Status of the invoice after creation. Expected values are 'Draft' or 'Finalized'.",
+                        ),
+                        Parameter(
+                            name="creationDate",
+                            param_type="DateTime",
+                            description="Timestamp reflecting when the invoice was created.",
+                        ),
+                    ],
+                ),
+                database_schema=schema,
+                data_models=[
+                    EndpointDataModel(
+                        name="InvoiceCreationInput",
+                        description="Model for input required to create a new invoice. This includes information about the invoice itself, the line items, and more.",
+                        params=[
+                            Parameter(
+                                name="userId",
+                                param_type="String",
+                                description="The ID of the user creating the invoice.",
+                            ),
+                            Parameter(
+                                name="items",
+                                param_type="Array<InvoiceItemInput>",
+                                description="A collection of line items including description, quantity, and price.",
+                            ),
+                            Parameter(
+                                name="currency",
+                                param_type="String",
+                                description="Currency code (e.g., USD, EUR) for the invoice.",
+                            ),
+                            Parameter(
+                                name="taxRate",
+                                param_type="Float",
+                                description="Applicable tax rate for the invoice, if any.",
+                            ),
+                        ],
+                    ),
+                    EndpointDataModel(
+                        name="InvoiceItemInput",
+                        description="Details for each item included in the invoice.",
+                        params=[
+                            Parameter(
+                                name="description",
+                                param_type="String",
+                                description="Description of the line item.",
+                            ),
+                            Parameter(
+                                name="quantity",
+                                param_type="Integer",
+                                description="Quantity of the line item.",
+                            ),
+                            Parameter(
+                                name="price",
+                                param_type="Float",
+                                description="Price per unit of the line item.",
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            APIRouteRequirement(
+                method="PATCH",
+                path="/invoices/{id}",
+                function_name="edit_invoice",
+                description="Edits an existing invoice by ID.",
+                access_level=AccessLevel.PUBLIC,
+                request_model=RequestModel(
+                    name="EditInvoiceInput",
+                    description="EditInvoiceInput",
+                    params=[
+                        Parameter(
+                            name="id",
+                            param_type="String",
+                            description="The unique identifier of the invoice to be edited.",
+                        ),
+                        Parameter(
+                            name="invoiceDetails",
+                            param_type="InvoiceEditModel",
+                            description="The details of the invoice to be edited, encapsulated within the InvoiceEditModel.",
+                        ),
+                    ],
+                ),
+                response_model=ResponseModel(
+                    name="EditInvoiceInput",
+                    description="EditInvoiceInput",
+                    params=[
+                        Parameter(
+                            name="success",
+                            param_type="Boolean",
+                            description="Indicates whether the edit operation was successful.",
+                        ),
+                        Parameter(
+                            name="message",
+                            param_type="String",
+                            description="A message describing the result of the operation, particularly useful in case of failure.",
+                        ),
+                        Parameter(
+                            name="updatedInvoice",
+                            param_type="Invoice",
+                            description="The updated invoice object reflecting the changes made. Null if operation failed.",
+                        ),
+                    ],
+                ),
+                database_schema=schema,
+                data_models=[
+                    EndpointDataModel(
+                        name="InvoiceEditModel",
+                        description="Model for editing invoice details, allowing updates to various invoice fields while ensuring that changes to critical fields like currency or finalized status are handled with caution.",
+                        params=[
+                            Parameter(
+                                name="status",
+                                param_type="String (Optional)",
+                                description="Allows modifying the status of the invoice, i.e., from draft to finalized, but with strict checks to prevent arbitrary status changes.",
+                            ),
+                            Parameter(
+                                name="items",
+                                param_type="Array[ItemEditModel] (Optional)",
+                                description="List of line items to be added or updated in the invoice. Each item modification is described in a separate model.",
+                            ),
+                            Parameter(
+                                name="currency",
+                                param_type="String (Optional)",
+                                description="Currency in which the invoice is denoted. Modifications should ensure no discrepancies in already entered amounts.",
+                            ),
+                        ],
+                    ),
+                    EndpointDataModel(
+                        name="ItemEditModel",
+                        description="Model for adding or editing line items within an invoice.",
+                        params=[
+                            Parameter(
+                                name="description",
+                                param_type="String",
+                                description="Description of the invoice item.",
+                            ),
+                            Parameter(
+                                name="quantity",
+                                param_type="Integer",
+                                description="Quantity of the item.",
+                            ),
+                            Parameter(
+                                name="price",
+                                param_type="Float",
+                                description="Price per unit of the item.",
+                            ),
+                            Parameter(
+                                name="id",
+                                param_type="String (Optional)",
+                                description="Unique ID of the item if it exists. If provided, the item will be updated; otherwise, a new item will be added.",
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            APIRouteRequirement(
+                method="GET",
+                path="/invoices/{id}",
+                function_name="get_invoice",
+                description="Retrieves invoice details by ID.",
+                access_level=AccessLevel.PUBLIC,
+                request_model=RequestModel(
+                    name="GetInvoiceInput",
+                    description="GetInvoiceInput",
+                    params=[
+                        Parameter(
+                            name="id",
+                            param_type="string",
+                            description="The unique ID of the invoice to retrieve.",
+                        )
+                    ],
+                ),
+                response_model=ResponseModel(
+                    name="GetInvoiceInput",
+                    description="GetInvoiceInput",
+                    params=[
+                        Parameter(
+                            name="id",
+                            param_type="string",
+                            description="The unique ID of the invoice.",
+                        ),
+                        Parameter(
+                            name="number",
+                            param_type="string",
+                            description="The unique invoice number.",
+                        ),
+                        Parameter(
+                            name="status",
+                            param_type="string",
+                            description="Current status of the invoice (e.g., draft, finalized).",
+                        ),
+                        Parameter(
+                            name="items",
+                            param_type="array of InvoiceItem",
+                            description="A collection of line items associated with the invoice. Each item contains details such as description, quantity, and price.",
+                        ),
+                        Parameter(
+                            name="payment",
+                            param_type="Payment or null",
+                            description="Payment details associated with this invoice. Null if no payment has been made yet.",
+                        ),
+                    ],
+                ),
+                database_schema=schema,
+                data_models=[],
+            ),
+            APIRouteRequirement(
+                method="GET",
+                path="/invoices",
+                function_name="list_invoices",
+                description="Lists all invoices related to a user.",
+                access_level=AccessLevel.PUBLIC,
+                request_model=RequestModel(
+                    name="ListInvoicesRequest",
+                    description="ListInvoicesRequest",
+                    params=[
+                        Parameter(
+                            name="userId",
+                            param_type="String",
+                            description="The unique identifier of the user whose invoices are to be listed.",
+                        ),
+                        Parameter(
+                            name="page",
+                            param_type="Integer",
+                            description="Pagination parameter, denotes the page number of the invoice list to be retrieved.",
+                        ),
+                        Parameter(
+                            name="pageSize",
+                            param_type="Integer",
+                            description="Pagination parameter, denotes the number of invoices to be listed per page.",
+                        ),
+                    ],
+                ),
+                response_model=ResponseModel(
+                    name="ListInvoicesRequest",
+                    description="ListInvoicesRequest",
+                    params=[
+                        Parameter(
+                            name="invoices",
+                            param_type="Array<InvoiceSummary>",
+                            description="An array of invoice summary objects.",
+                        ),
+                        Parameter(
+                            name="total",
+                            param_type="Integer",
+                            description="Total number of invoices available for the user.",
+                        ),
+                        Parameter(
+                            name="currentPage",
+                            param_type="Integer",
+                            description="The current page number being returned in the response.",
+                        ),
+                        Parameter(
+                            name="pageSize",
+                            param_type="Integer",
+                            description="The number of invoices returned per page.",
+                        ),
+                    ],
+                ),
+                database_schema=schema,
+                data_models=[
+                    EndpointDataModel(
+                        name="InvoiceSummary",
+                        description="A concise model representing the key information of an invoice for listing purposes.",
+                        params=[
+                            Parameter(
+                                name="invoiceId",
+                                param_type="String",
+                                description="Unique identifier for the invoice.",
+                            ),
+                            Parameter(
+                                name="invoiceNumber",
+                                param_type="String",
+                                description="The unique number associated with the invoice.",
+                            ),
+                            Parameter(
+                                name="status",
+                                param_type="String",
+                                description="Current status of the invoice (e.g., draft, finalized).",
+                            ),
+                            Parameter(
+                                name="totalAmount",
+                                param_type="Float",
+                                description="Total amount of the invoice, taking into account item prices and quantities.",
+                            ),
+                            Parameter(
+                                name="currency",
+                                param_type="String",
+                                description="The currency in which the invoice was issued.",
+                            ),
+                            Parameter(
+                                name="createdAt",
+                                param_type="DateTime",
+                                description="The date and time when the invoice was created.",
+                            ),
+                        ],
+                    )
+                ],
+            ),
+            APIRouteRequirement(
+                method="POST",
+                path="/payments/initiate/{invoiceId}",
+                function_name="initiate_payment",
+                description="Initiates a payment for an invoice.",
+                access_level=AccessLevel.PUBLIC,
+                request_model=RequestModel(
+                    name="PaymentInitiationRequest",
+                    description="PaymentInitiationRequest",
+                    params=[
+                        Parameter(
+                            name="invoiceId",
+                            param_type="String",
+                            description="Unique ID of the invoice for which the payment is being initiated.",
+                        ),
+                        Parameter(
+                            name="gatewayId",
+                            param_type="String",
+                            description="Identifier of the payment gateway through which the payment will be processed.",
+                        ),
+                    ],
+                ),
+                response_model=ResponseModel(
+                    name="PaymentInitiationRequest",
+                    description="PaymentInitiationRequest",
+                    params=[
+                        Parameter(
+                            name="paymentId",
+                            param_type="String",
+                            description="Unique identifier for the payment transaction, provided by the system.",
+                        ),
+                        Parameter(
+                            name="status",
+                            param_type="String",
+                            description="Status of the payment initiation, which could be 'Pending', 'Failed', or other relevant terms.",
+                        ),
+                    ],
+                ),
+                database_schema=schema,
+                data_models=[
+                    EndpointDataModel(
+                        name="PaymentInitiationRequest",
+                        description="Model for initiating a payment, requires the invoice ID and payment gateway details.",
+                        params=[
+                            Parameter(
+                                name="invoiceId",
+                                param_type="String",
+                                description="The unique identifier for the invoice being paid.",
+                            ),
+                            Parameter(
+                                name="gatewayId",
+                                param_type="String",
+                                description="The identifier for the chosen payment gateway.",
+                            ),
+                        ],
+                    ),
+                    EndpointDataModel(
+                        name="PaymentInitiationResponse",
+                        description="Provides the outcome of the payment initiation request, including a transaction status and unique payment identifier.",
+                        params=[
+                            Parameter(
+                                name="paymentId",
+                                param_type="String",
+                                description="A unique identifier generated for the initiated payment.",
+                            ),
+                            Parameter(
+                                name="status",
+                                param_type="String",
+                                description="The status of the payment initiation, e.g., 'Pending', 'Failed'.",
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            APIRouteRequirement(
+                method="PATCH",
+                path="/payments/confirm/{paymentId}",
+                function_name="confirm_payment",
+                description="Confirms a payment has been completed.",
+                access_level=AccessLevel.PUBLIC,
+                request_model=RequestModel(
+                    name="PaymentConfirmationRequest",
+                    description="PaymentConfirmationRequest",
+                    params=[
+                        Parameter(
+                            name="paymentId",
+                            param_type="String",
+                            description="The unique identifier of the payment to be confirmed.",
+                        ),
+                        Parameter(
+                            name="confirmationStatus",
+                            param_type="String",
+                            description="Indicates the status of the payment confirmation attempt.",
+                        ),
+                    ],
+                ),
+                response_model=ResponseModel(
+                    name="PaymentConfirmationRequest",
+                    description="PaymentConfirmationRequest",
+                    params=[
+                        Parameter(
+                            name="success",
+                            param_type="Boolean",
+                            description="Boolean flag indicating if the payment confirmation was successful.",
+                        ),
+                        Parameter(
+                            name="message",
+                            param_type="String",
+                            description="A message providing more details on the confirmation status.",
+                        ),
+                        Parameter(
+                            name="updatedPaymentDetails",
+                            param_type="Payment",
+                            description="The updated payment details post-confirmation attempt, reflecting the new status and any additional updates.",
+                        ),
+                    ],
+                ),
+                database_schema=schema,
+                data_models=[
+                    EndpointDataModel(
+                        name="PaymentConfirmationInput",
+                        description="Input model for confirming payments, capturing necessary details for processing the payment confirmation.",
+                        params=[
+                            Parameter(
+                                name="paymentId",
+                                param_type="String",
+                                description="Unique identifier for the payment to be confirmed.",
+                            ),
+                            Parameter(
+                                name="confirmationStatus",
+                                param_type="String",
+                                description="The status of the payment confirmation, e.g., 'Confirmed', 'Failed'.",
+                            ),
+                        ],
+                    ),
+                    EndpointDataModel(
+                        name="PaymentConfirmationResponse",
+                        description="Response model for the payment confirmation process, indicating the success or failure of the operation.",
+                        params=[
+                            Parameter(
+                                name="success",
+                                param_type="Boolean",
+                                description="Indicates if the payment confirmation was successful.",
+                            ),
+                            Parameter(
+                                name="message",
+                                param_type="String",
+                                description="A descriptive message about the outcome of the payment confirmation.",
+                            ),
+                            Parameter(
+                                name="updatedPaymentDetails",
+                                param_type="Payment",
+                                description="The updated payment details post-confirmation.",
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            APIRouteRequirement(
+                method="POST",
+                path="/notifications/remind",
+                function_name="send_reminder",
+                description="Sends a reminder for an unpaid invoice.",
+                access_level=AccessLevel.PUBLIC,
+                request_model=RequestModel(
+                    name="ReminderNotificationInput",
+                    description="ReminderNotificationInput",
+                    params=[
+                        Parameter(
+                            name="invoiceId",
+                            param_type="String",
+                            description="Unique identifier for the invoice the reminder pertains to.",
+                        ),
+                        Parameter(
+                            name="userId",
+                            param_type="String",
+                            description="Unique identifier for the user associated with the invoice to send the notification to.",
+                        ),
+                        Parameter(
+                            name="medium",
+                            param_type="String",
+                            description="Preferred medium of notification (e.g., Email, SMS).",
+                        ),
+                        Parameter(
+                            name="sendTime",
+                            param_type="DateTime",
+                            description="Scheduled time for sending the reminder.",
+                        ),
+                    ],
+                ),
+                response_model=ResponseModel(
+                    name="ReminderNotificationInput",
+                    description="ReminderNotificationInput",
+                    params=[
+                        Parameter(
+                            name="success",
+                            param_type="Boolean",
+                            description="Indicates if the reminder was successfully sent.",
+                        ),
+                        Parameter(
+                            name="message",
+                            param_type="String",
+                            description="A descriptive message about the outcome of the attempt.",
+                        ),
+                    ],
+                ),
+                database_schema=schema,
+                data_models=[
+                    EndpointDataModel(
+                        name="ReminderNotificationInput",
+                        description="Model for input required to send a reminder notification about an unpaid invoice, including invoice and user details.",
+                        params=[
+                            Parameter(
+                                name="invoiceId",
+                                param_type="String",
+                                description="Unique identifier for the invoice the reminder pertains to.",
+                            ),
+                            Parameter(
+                                name="userId",
+                                param_type="String",
+                                description="Unique identifier for the user associated with the invoice to send the notification to.",
+                            ),
+                            Parameter(
+                                name="medium",
+                                param_type="String",
+                                description="Preferred medium of notification (e.g., Email, SMS).",
+                            ),
+                            Parameter(
+                                name="sendTime",
+                                param_type="DateTime",
+                                description="Scheduled time for sending the reminder.",
+                            ),
+                        ],
+                    ),
+                    EndpointDataModel(
+                        name="ReminderNotificationOutput",
+                        description="Model for output after attempting to send a reminder notification about an unpaid invoice.",
+                        params=[
+                            Parameter(
+                                name="success",
+                                param_type="Boolean",
+                                description="Indicates if the reminder was successfully sent.",
+                            ),
+                            Parameter(
+                                name="message",
+                                param_type="String",
+                                description="A descriptive message about the outcome of the attempt.",
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            APIRouteRequirement(
+                method="POST",
+                path="/reports/generate",
+                function_name="generate_report",
+                description="Generates a financial report based on specified parameters.",
+                access_level=AccessLevel.PUBLIC,
+                request_model=RequestModel(
+                    name="GenerateReportInput",
+                    description="GenerateReportInput",
+                    params=[
+                        Parameter(
+                            name="userId",
+                            param_type="String",
+                            description="The user's ID for whom the report is being generated.",
+                        ),
+                        Parameter(
+                            name="reportType",
+                            param_type="String",
+                            description="Specifies the type of financial report required.",
+                        ),
+                        Parameter(
+                            name="startDate",
+                            param_type="DateTime",
+                            description="The start date for the reporting period.",
+                        ),
+                        Parameter(
+                            name="endDate",
+                            param_type="DateTime",
+                            description="The end date for the reporting period.",
+                        ),
+                        Parameter(
+                            name="filters",
+                            param_type="Array<String>",
+                            description="Optional filters to refine the report data.",
+                        ),
+                    ],
+                ),
+                response_model=ResponseModel(
+                    name="GenerateReportInput",
+                    description="GenerateReportInput",
+                    params=[
+                        Parameter(
+                            name="report",
+                            param_type="FinancialReport",
+                            description="The detailed financial report generated based on the input parameters.",
+                        )
+                    ],
+                ),
+                database_schema=schema,
+                data_models=[
+                    EndpointDataModel(
+                        name="ReportRequestParameters",
+                        description="Contains all the parameters needed to generate a customizable financial report.",
+                        params=[
+                            Parameter(
+                                name="userId",
+                                param_type="String",
+                                description="Unique identifier of the user requesting the report.",
+                            ),
+                            Parameter(
+                                name="reportType",
+                                param_type="String",
+                                description="Type of the report required (e.g., revenue_growth, expense_tracking).",
+                            ),
+                            Parameter(
+                                name="startDate",
+                                param_type="DateTime",
+                                description="Start date for the time frame of the report.",
+                            ),
+                            Parameter(
+                                name="endDate",
+                                param_type="DateTime",
+                                description="End date for the time frame of the report.",
+                            ),
+                            Parameter(
+                                name="filters",
+                                param_type="Array<String>",
+                                description="List of additional filters to apply to the report data (optional).",
+                            ),
+                        ],
+                    ),
+                    EndpointDataModel(
+                        name="FinancialReport",
+                        description="Represents the structured output of a financial report, including various metrics and insights.",
+                        params=[
+                            Parameter(
+                                name="reportType",
+                                param_type="String",
+                                description="Type of the generated report.",
+                            ),
+                            Parameter(
+                                name="generatedAt",
+                                param_type="DateTime",
+                                description="Timestamp of when the report was generated.",
+                            ),
+                            Parameter(
+                                name="metrics",
+                                param_type="Array<ReportMetric>",
+                                description="A collection of metrics included in the report.",
+                            ),
+                            Parameter(
+                                name="insights",
+                                param_type="Array<String>",
+                                description="List of insights derived from the report data.",
+                            ),
+                        ],
+                    ),
+                    EndpointDataModel(
+                        name="ReportMetric",
+                        description="Details of a single metric within the financial report.",
+                        params=[
+                            Parameter(
+                                name="metricName",
+                                param_type="String",
+                                description="Name of the metric.",
+                            ),
+                            Parameter(
+                                name="value",
+                                param_type="Float",
+                                description="Quantitative value of the metric.",
+                            ),
+                            Parameter(
+                                name="unit",
+                                param_type="String",
+                                description="Unit of measurement for the metric.",
+                            ),
+                            Parameter(
+                                name="description",
+                                param_type="String",
+                                description="A brief description or insight related to the metric.",
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            APIRouteRequirement(
+                method="GET",
+                path="/insights",
+                function_name="fetch_insights",
+                description="Provides strategic financial insights.",
+                access_level=AccessLevel.PUBLIC,
+                request_model=RequestModel(
+                    name="FinancialInsightsRequest",
+                    description="FinancialInsightsRequest",
+                    params=[
+                        Parameter(
+                            name="startDate",
+                            param_type="DateTime",
+                            description="The start date for the range of financial data to consider.",
+                        ),
+                        Parameter(
+                            name="endDate",
+                            param_type="DateTime",
+                            description="The end date for the range of financial data to consider.",
+                        ),
+                        Parameter(
+                            name="metrics",
+                            param_type="Array<String>",
+                            description="Optional. A list of specific financial metrics to retrieve insights for.",
+                        ),
+                    ],
+                ),
+                response_model=ResponseModel(
+                    name="FinancialInsightsRequest",
+                    description="FinancialInsightsRequest",
+                    params=[
+                        Parameter(
+                            name="insights",
+                            param_type="Array<FinancialInsight>",
+                            description="A collection of financial insights.",
+                        )
+                    ],
+                ),
+                database_schema=schema,
+                data_models=[
+                    EndpointDataModel(
+                        name="FinancialInsight",
+                        description="Represents a high-level financial insight derived from aggregating financial data.",
+                        params=[
+                            Parameter(
+                                name="label",
+                                param_type="String",
+                                description="The name of the financial insight or metric.",
+                            ),
+                            Parameter(
+                                name="value",
+                                param_type="Float",
+                                description="The numerical value of the insight.",
+                            ),
+                            Parameter(
+                                name="trend",
+                                param_type="String",
+                                description="Indicates the trend of this metric (e.g., 'increasing', 'decreasing', 'stable').",
+                            ),
+                            Parameter(
+                                name="interpretation",
+                                param_type="String",
+                                description="A brief expert analysis or interpretation of what this insight suggests about the business's financial health.",
+                            ),
+                        ],
+                    )
+                ],
+            ),
+            APIRouteRequirement(
+                method="PATCH",
+                path="/security/settings",
+                function_name="update_security_settings",
+                description="Updates security settings and protocols.",
+                access_level=AccessLevel.ADMIN,
+                request_model=RequestModel(
+                    name="UpdateSecuritySettingsRequest",
+                    description="UpdateSecuritySettingsRequest",
+                    params=[
+                        Parameter(
+                            name="updates",
+                            param_type="Array<SecuritySettingUpdate>",
+                            description="A list of security settings to update, each indicating the setting name and its new value.",
+                        )
+                    ],
+                ),
+                response_model=ResponseModel(
+                    name="UpdateSecuritySettingsRequest",
+                    description="UpdateSecuritySettingsRequest",
+                    params=[
+                        Parameter(
+                            name="success",
+                            param_type="Boolean",
+                            description="Indicates if the update operation was successful.",
+                        ),
+                        Parameter(
+                            name="updatedSettings",
+                            param_type="Array<SecuritySettingUpdate>",
+                            description="A list of all settings that were successfully updated.",
+                        ),
+                        Parameter(
+                            name="failedSettings",
+                            param_type="Array<SecuritySettingUpdate>",
+                            description="A list of settings that failed to update, with descriptions of the failure reasons.",
+                        ),
+                    ],
+                ),
+                database_schema=schema,
+                data_models=[
+                    EndpointDataModel(
+                        name="SecuritySettingUpdate",
+                        description="Represents a security setting that needs to be updated.",
+                        params=[
+                            Parameter(
+                                name="settingName",
+                                param_type="String",
+                                description="The name of the security setting to update.",
+                            ),
+                            Parameter(
+                                name="newValue",
+                                param_type="String",
+                                description="The new value for the security setting.",
+                            ),
+                        ],
+                    ),
+                    EndpointDataModel(
+                        name="UpdateSecuritySettingsResponse",
+                        description="Response model for update security settings operation, indicating success or failure.",
+                        params=[
+                            Parameter(
+                                name="success",
+                                param_type="Boolean",
+                                description="Indicates if the update operation was successful.",
+                            ),
+                            Parameter(
+                                name="updatedSettings",
+                                param_type="Array<SecuritySettingUpdate>",
+                                description="A list of all settings that were successfully updated.",
+                            ),
+                            Parameter(
+                                name="failedSettings",
+                                param_type="Array<SecuritySettingUpdate>",
+                                description="A list of settings that failed to update, with descriptions of the failure reasons.",
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            APIRouteRequirement(
+                method="POST",
+                path="/compliance/logs",
+                function_name="log_compliance_action",
+                description="Records a compliance-related action for auditing.",
+                access_level=AccessLevel.PUBLIC,
+                request_model=RequestModel(
+                    name="LogComplianceActionInput",
+                    description="LogComplianceActionInput",
+                    params=[
+                        Parameter(
+                            name="complianceAction",
+                            param_type="ComplianceAction",
+                            description="The compliance action that needs to be logged.",
+                        )
+                    ],
+                ),
+                response_model=ResponseModel(
+                    name="LogComplianceActionInput",
+                    description="LogComplianceActionInput",
+                    params=[
+                        Parameter(
+                            name="success",
+                            param_type="Boolean",
+                            description="Indicates whether the logging was successful.",
+                        ),
+                        Parameter(
+                            name="message",
+                            param_type="String",
+                            description="A descriptive message regarding the outcome of the log attempt.",
+                        ),
+                    ],
+                ),
+                database_schema=schema,
+                data_models=[
+                    EndpointDataModel(
+                        name="ComplianceAction",
+                        description="Represents a compliance-related action that needs to be logged for auditing.",
+                        params=[
+                            Parameter(
+                                name="actionType",
+                                param_type="String",
+                                description="The type of action performed, e.g., 'Data Update', 'View Sensitive Information', etc.",
+                            ),
+                            Parameter(
+                                name="description",
+                                param_type="String",
+                                description="A detailed description of the action performed.",
+                            ),
+                            Parameter(
+                                name="performedBy",
+                                param_type="String",
+                                description="Identifier for the user or system component that performed the action.",
+                            ),
+                            Parameter(
+                                name="timestamp",
+                                param_type="DateTime",
+                                description="Timestamp when the action was performed.",
+                            ),
+                        ],
+                    )
+                ],
+            ),
+            APIRouteRequirement(
+                method="POST",
+                path="/integration/payment-gateway",
+                function_name="connect_payment_gateway",
+                description="Sets up connection with a specified payment gateway.",
+                access_level=AccessLevel.PUBLIC,
+                request_model=RequestModel(
+                    name="PaymentGatewayConnectionRequest",
+                    description="PaymentGatewayConnectionRequest",
+                    params=[
+                        Parameter(
+                            name="connectionDetails",
+                            param_type="PaymentGatewayConnectionInput",
+                            description="An object holding the necessary connection details.",
+                        )
+                    ],
+                ),
+                response_model=ResponseModel(
+                    name="PaymentGatewayConnectionRequest",
+                    description="PaymentGatewayConnectionRequest",
+                    params=[
+                        Parameter(
+                            name="success",
+                            param_type="Boolean",
+                            description="Indicates if the connection attempt was successful.",
+                        ),
+                        Parameter(
+                            name="message",
+                            param_type="String",
+                            description="Provides more detail on the connection status, including errors if any.",
+                        ),
+                        Parameter(
+                            name="gatewayId",
+                            param_type="optional<String>",
+                            description="The unique identifier for the gateway in the system, provided upon a successful connection.",
+                        ),
+                    ],
+                ),
+                database_schema=schema,
+                data_models=[
+                    EndpointDataModel(
+                        name="PaymentGatewayConnectionInput",
+                        description="Data required to initiate a connection with a payment gateway.",
+                        params=[
+                            Parameter(
+                                name="gatewayName",
+                                param_type="String",
+                                description="The name of the payment gateway to connect.",
+                            ),
+                            Parameter(
+                                name="apiKey",
+                                param_type="String",
+                                description="The API key provided by the payment gateway for authentication.",
+                            ),
+                            Parameter(
+                                name="apiSecret",
+                                param_type="String",
+                                description="The API secret or other credentials required for secure access.",
+                            ),
+                        ],
+                    )
+                ],
+            ),
+        ],
+    )
+
+
 if __name__ == "__main__":
     from codex.common.logging_config import setup_logging
 
@@ -1911,3 +2964,4 @@ if __name__ == "__main__":
     logger.info(profile_management())
     logger.info(calendar_booking_system())
     logger.info(inventory_mgmt_system())
+    logger.info(invoice_payment_tracking())

@@ -44,6 +44,7 @@ from codex.requirements.hardcoded import (
     distance_calculator_requirements,
     inventory_mgmt_system,
     invoice_generator_requirements,
+    invoice_payment_tracking,
     profile_management,
 )
 from codex.requirements.matching import find_best_match
@@ -426,9 +427,7 @@ def hardcoded_requirements(task: str) -> ApplicationRequirements:
         case "Inventory Management System":
             return inventory_mgmt_system()
         case "Invoiceing and Payment Tracking System":
-            raise NotImplementedError(
-                "Invoiceing and Payment Tracking System not implemented"
-            )
+            return invoice_payment_tracking()
         case "Client Portal":
             raise NotImplementedError("Client Portal not implemented")
         case "Tutor Scheduling App":
@@ -468,6 +467,7 @@ async def populate_database_specs():
         app_id_5,
         app_id_6,
         app_id_7,
+        app_id_8,
     )
 
     requirements = [
@@ -478,6 +478,7 @@ async def populate_database_specs():
         ("Profile Management System", app_id_5),
         ("Appointment Scheduling System", app_id_6),
         ("Inventory Management System", app_id_7),
+        ("Invoiceing and Payment Tracking System", app_id_8),
     ]
     ids = identifier_1
 
