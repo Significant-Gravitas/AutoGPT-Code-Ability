@@ -3,10 +3,9 @@ import logging
 
 from fastapi import APIRouter, Query, Response
 
-import codex.architect.agent as architect_agent
-import codex.architect.database
 import codex.database
-import codex.developer.agent as developer_agent
+import codex.develop.agent as architect_agent
+import codex.develop.database
 import codex.requirements.database
 from codex.api_model import DeliverableResponse, DeliverablesListResponse, Identifiers
 
@@ -37,10 +36,8 @@ async def create_deliverable(user_id: str, app_id: str, spec_id: str):
                 spec_id=spec_id,
             )
             # Architect agent creates the code graphs for the requirements
-            graphs = await architect_agent.create_code_graphs(ids, specification)
-            # Developer agent writes the code for the code graphs
-            completed_app = await developer_agent.develop_application(
-                ids, graphs.code_graphs, specification
+            completed_app = await architect_agent.develop_application(
+                ids, specification
             )
 
             return DeliverableResponse(
@@ -74,7 +71,7 @@ async def get_deliverable(user_id: str, app_id: str, spec_id: str, deliverable_i
     Retrieve a specific deliverable (completed app) including its compiled routes by ID.
     """
     try:
-        deliverable = await codex.architect.database.get_deliverable(
+        deliverable = await codex.develop.database.get_deliverable(
             user_id, app_id, spec_id, deliverable_id
         )
         return DeliverableResponse(
@@ -102,7 +99,7 @@ async def delete_deliverable(
     Delete a specific deliverable (completed app) by ID.
     """
     try:
-        await codex.architect.database.delete_deliverable(
+        await codex.develop.database.delete_deliverable(
             user_id, app_id, spec_id, deliverable_id
         )
         return Response(
@@ -134,7 +131,7 @@ async def list_deliverables(
     List all deliverables (completed apps) for a specific specification.
     """
     try:
-        deliverables, pagination = await codex.architect.database.list_deliverables(
+        deliverables, pagination = await codex.develop.database.list_deliverables(
             user_id, app_id, spec_id, page, page_size
         )
 

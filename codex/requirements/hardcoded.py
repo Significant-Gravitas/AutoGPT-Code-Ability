@@ -57,7 +57,7 @@ def availability_checker_requirements() -> ApplicationRequirements:
                 path="/availability",
                 function_name="check_availability",
                 access_level=AccessLevel.PUBLIC,
-                description="Function that returns the availability of professionals, updating based on current activity or schedule.",
+                description="Function that returns the availability of professionals, updating based on current activity or schedule. This function operates without the need for database access, relying solely on the input provided in the request",
                 request_model=check_availability_request,
                 response_model=availability_status_response,
                 database_schema=None,
@@ -107,7 +107,7 @@ def invoice_generator_requirements() -> ApplicationRequirements:
                 path="/create_invoice",
                 function_name="create_invoice",
                 access_level=AccessLevel.PUBLIC,
-                description="Function that returns the availability of professionals, updating based on current activity or schedule.",
+                description="This function will process input data regarding services rendered, billable hours, parts used, and applicable rates or taxes, to generate a comprehensive invoice as a pdf file. This function operates without the need for database access, relying solely on the input provided at the time of invoice creation.",
                 request_model=invoice_model,
                 response_model=invoice_response,
                 database_schema=None,
@@ -125,7 +125,7 @@ def appointment_optimization_requirements() -> ApplicationRequirements:
         params=[
             Parameter(
                 name="availablility_calendar",
-                param_type="datetime[]",
+                param_type="list[datetime]",
                 description="A data structure (like a list or array) containing the professional's available time slots for a given period (e.g., a week). Each time slot should include the start and end times.",
             ),
             Parameter(
@@ -152,7 +152,7 @@ def appointment_optimization_requirements() -> ApplicationRequirements:
         params=[
             Parameter(
                 name="slots",
-                param_type="datetime[]",
+                param_type="list[datetime]",
                 description="A list of optimal appointment slots, each with a start and end time. This list should be sorted by preference or efficiency.",
             ),
             Parameter(
@@ -172,7 +172,7 @@ def appointment_optimization_requirements() -> ApplicationRequirements:
                 path="/create_schedule",
                 function_name="create_schedule",
                 access_level=AccessLevel.PUBLIC,
-                description="Function that returns the availability of professionals, updating based on current activity or schedule.",
+                description="The function for suggesting optimal appointment slots is designed to provide professionals and clients with the best possible meeting times based on the professional's availability, preferred working hours, and travel time considerations. This function operates in real-time, relying on input data without needing access to a database.",
                 request_model=appointment_model,
                 response_model=appointment_response,
                 database_schema=None,
@@ -196,7 +196,7 @@ def distance_calculator_requirements() -> ApplicationRequirements:
             Parameter(
                 name="end_location",
                 param_type="Tuple[str,str]",
-                description="TThe location where the client wishes to have the appointment, provided as latitude and longitude coordinates.",
+                description="The location where the client wishes to have the appointment, provided as latitude and longitude coordinates.",
             ),
         ],
     )

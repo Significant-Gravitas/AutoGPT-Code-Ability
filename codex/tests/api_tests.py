@@ -105,36 +105,25 @@ def test_specs_and_deliverables_apis(client):
     # assert next((s for s in specs if s['id'] == spec['id']), None) is None
 
 
-from prisma.models import APIRouteSpec
-
 from codex.app import db_client
-from codex.architect import agent
-from codex.architect.model import FunctionDef
 from codex.common.ai_model import OpenAIChatClient
+from codex.common.logging import setup_logging
+from codex.develop import agent
+from codex.requirements.database import get_latest_specification
 
 
 @pytest.mark.asyncio
 async def test_recursive_create_code_graphs():
     await db_client.connect()
     OpenAIChatClient.configure({})
+    setup_logging(local=True)
 
-    entry_point_function = "start_game"
-    goal = "Create a CLI TicTacToe game"
-
-    # Find any api_route for now from the DB, we only use it for dummy data. Find all and get first
-    api_route = await APIRouteSpec.prisma().find_first()
-    func_def = FunctionDef(
-        name=entry_point_function,
-        doc_string="dummy",
-        args="dummy",
-        return_type="dummy",
-        function_template="",
+    ids = Identifiers(
+        user_id="123e4567-e89b-12d3-a456-426614174000",
+        app_id="d3954dee-6b41-47f5-be2f-a253f7544a59",
     )
+    spec = await get_latest_specification(ids.user_id, ids.app_id)
+    ans = await agent.develop_application(ids=ids, spec=spec)
 
-    code_graph = await agent.recursive_create_code_graphs(
-        ids=Identifiers(user_id=user_id_1, app_id=app_id_1, spec_id="123"),
-        goal=goal,
-        func_def=func_def,
-        api_route=api_route,
-    )
-    assert code_graph is not None
+    assert ans is not None
+    await db_client.disconnect()
