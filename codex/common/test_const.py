@@ -1,4 +1,3 @@
-from codex import app
 from codex.api_model import Identifiers
 
 user_id_1 = "123e4567-e89b-12d3-a456-426614174000"
