@@ -1,5 +1,7 @@
 # Develop Prompts
 
+We should probably have a process of refining these in order. So we would first see if we can update our base prompt to be clearer, then we work not the examples, and only if we still need to, do we add incantations as a last resort
+
 ## Summary of Variables
 
 Variables are used across the template files to dynamically insert specific elements, such as function names, descriptions, and code snippets, into the generated output. Here's a summary of these variables, ordered by the file they are found in:
@@ -39,5 +41,3 @@ Combines the base template, examples, and incantations to guide the generation o
 
 ### `python.user.j2`
 Focuses on creating a working code implementation for a specified function, including its signature and the goal it serves, while allowing for the reuse of provided functions without the need for rewriting.
-
-This documentation encapsulates the essence and utility of each Jinja2 template file, ensuring a structured and efficient approach to generating Python code for varied programming tasks.
