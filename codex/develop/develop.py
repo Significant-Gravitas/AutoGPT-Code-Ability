@@ -126,7 +126,11 @@ class FunctionVisitor(ast.NodeVisitor):
         for base in node.bases:
             base_id = getattr(base, "id", None)
             # This will only work for direct children of BaseModel
-            if base_id == "BaseModel" or "pydantic.BaseModel" in ast.unparse(base):
+            is_pydantic = (
+                (isinstance(base, ast.Name) and base.id == "BaseModel") or
+                (isinstance(base, ast.Attribute) and base.attr == "BaseModel")
+            )
+            if is_pydantic:
                 self.pydantic_classes.append(node.name)
 
         self.generic_visit(node)
