@@ -366,3 +366,24 @@ def test_visiting_function_with_non_list_body():
     assert (
         function_def.function_code == "def my_function():\n    print('Hello, World!')"
     )
+
+
+def test_visiting_function_with_pass_body():
+    # Initialize FunctionVisitor
+    visitor = FunctionVisitor()
+
+    # Create AST for a function definition with a non-list body
+    code = ast.parse("def my_function():\n    pass")
+
+    # Visit the AST
+    visitor.visit(code)
+
+    # Assert that the function was added to the functions dictionary
+    assert "my_function" in visitor.functions
+
+    # Assert the properties of the FunctionDef object
+    function_def = visitor.functions["my_function"]
+    assert function_def.name == "my_function"
+    assert function_def.args == ""
+    assert function_def.return_type == "Unknown"
+    assert not function_def.is_implemented
