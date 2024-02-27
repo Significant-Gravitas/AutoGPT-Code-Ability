@@ -15,6 +15,7 @@ class FunctionDef(BaseModel):
     name: str
     args: str
     return_type: str
+    is_implemented: bool
     function_template: str
     function_code: str
 
