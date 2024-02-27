@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from prisma.enums import Role
 from prisma.models import Specification
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
@@ -34,28 +34,26 @@ class UserBase(BaseModel):
     discord_id: Optional[str] = Field(
         None, description="The unique Discord ID of the user"
     )
-    email: Optional[EmailStr] = Field(None, description="The email address of the user")
-    name: Optional[str] = Field(None, description="The name of the user")
+    cloudServicesId: str = Field(
+        ..., description="The unique identifier of the user in cloud services"
+    )
     role: Role = Field(default=Role.USER, description="The role of the user")
 
 
 class UserCreate(UserBase):
-    password: str = Field(..., description="The password of the user")
+    pass
 
 
 class UserUpdate(BaseModel):
     id: str = Field(..., description="The unique identifier of the user")
-    email: Optional[EmailStr] = Field(
-        None, description="The new email address of the user"
-    )
-    name: Optional[str] = Field(None, description="The new name of the user")
+
     role: Optional[Role] = Field(None, description="The new role of the user")
-    password: Optional[str] = Field(None, description="The new password of the user")
 
 
 class UserResponse(BaseModel):
     id: str
     discord_id: str
+    cloud_services_id: str
     createdAt: datetime
     role: Role
 
@@ -152,7 +150,9 @@ class SpecificationResponse(BaseModel):
                 APIRouteSpecModel(
                     id=route.id,
                     createdAt=route.createdAt,
-                    method=route.method,
+                    # if you've come here to fix this, talk to Nick. Something in the
+                    # system is misbehaving and treating this as if its a dict not an enum
+                    method=str(route.method),
                     path=route.path,
                     description=route.description,
                     requestObject=RequestObjectModel(
