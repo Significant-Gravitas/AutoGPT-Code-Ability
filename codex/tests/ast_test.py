@@ -1,6 +1,7 @@
 import ast
 
 import pytest
+from numpy import VisibleDeprecationWarning
 
 from codex.develop.develop import FunctionVisitor
 
@@ -92,6 +93,9 @@ def create_schedule(
     working_hours: Dict[str, ProfessionalWorkingHours],
     travel_times: Dict[Tuple[str, str], TravelTime]
 ) -> List[Appointment]:
+    \"\"\"
+    pass
+    \"\"\"
     suggested_appointments = []
 
     for prof_id, working_hour in working_hours.items():
@@ -137,6 +141,10 @@ def test_function_visitor():
     # Check that all functions are identified
     assert len(visitor.pydantic_classes) == 4
     assert len(visitor.functions) == 3
+
+    assert visitor.functions["create_schedule"].is_implemented
+    assert not visitor.functions["is_within_working_hours"].is_implemented
+    assert not visitor.functions["calculate_travel_time"].is_implemented
 
 
 # Visiting a simple function definition with no arguments or return type
@@ -366,3 +374,24 @@ def test_visiting_function_with_non_list_body():
     assert (
         function_def.function_code == "def my_function():\n    print('Hello, World!')"
     )
+
+
+def test_visiting_function_with_pass_body():
+    # Initialize FunctionVisitor
+    visitor = FunctionVisitor()
+
+    # Create AST for a function definition with a non-list body
+    code = ast.parse("def my_function():\n    pass")
+
+    # Visit the AST
+    visitor.visit(code)
+
+    # Assert that the function was added to the functions dictionary
+    assert "my_function" in visitor.functions
+
+    # Assert the properties of the FunctionDef object
+    function_def = visitor.functions["my_function"]
+    assert function_def.name == "my_function"
+    assert function_def.args == ""
+    assert function_def.return_type == "Unknown"
+    assert not function_def.is_implemented
