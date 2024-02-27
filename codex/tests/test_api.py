@@ -5,12 +5,13 @@ from fastapi.testclient import TestClient
 load_dotenv()
 
 from codex import app
-from codex.common.test_const import *
 from codex.common.ai_model import OpenAIChatClient
 from codex.common.logging import setup_logging
+from codex.common.test_const import *
 
 OpenAIChatClient.configure({})
 setup_logging(local=True)
+
 
 @pytest.fixture
 def client():
@@ -108,11 +109,16 @@ def test_specs_apis(client):
     # specs = response.json()['specs']
     # assert next((s for s in specs if s['id'] == spec['id']), None) is None
 
+
 def test_deliverables_apis(client):
-    spec_id = client.get(f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/").json()["specs"][0]["id"]
+    spec_id = client.get(f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/").json()[
+        "specs"
+    ][0]["id"]
 
     # Create Deliverable
-    response = client.post(f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/")
+    response = client.post(
+        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/"
+    )
     assert response.status_code == 200
     deliverable = response.json()
     assert deliverable["id"] is not None
@@ -146,9 +152,14 @@ def test_deliverables_apis(client):
     deliverables = response.json()["deliverables"]
     assert next((d for d in deliverables if d["id"] == deliverable_id), None) is None
 
+
 def test_deployment_apis(client):
-    spec_id = client.get(f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/").json()["specs"][0]["id"]
-    deliverable_id = client.get(f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/").json()["deliverables"][0]["id"]
+    spec_id = client.get(f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/").json()[
+        "specs"
+    ][0]["id"]
+    deliverable_id = client.get(
+        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/"
+    ).json()["deliverables"][0]["id"]
 
     # Create Deployment
     response = client.post(
