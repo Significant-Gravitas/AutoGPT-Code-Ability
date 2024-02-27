@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 
+from prisma.enums import FunctionState
 from prisma.models import APIRouteSpec, CompletedApp, Function, Specification
 
 from codex.api_model import Identifiers
@@ -78,7 +79,7 @@ async def develop_route(
         invoke_params={
             "function_name": function_name,
             "goal": goal_description,
-            "description": function_template or "",
+            "function_signature": function_template,
             "provided_functions": [
                 f.template
                 for f in generated_functions
@@ -107,6 +108,7 @@ async def develop_route(
                 generated_functions=generated_functions,
             )
             for child in route_function.ChildFunction
+            if child.state == FunctionState.DEFINITION
         ]
         await asyncio.gather(*tasks)
     else:
