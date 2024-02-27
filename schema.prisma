@@ -152,6 +152,28 @@ model Param {
   requestObjectId  String?
 }
 
+model ObjectType {
+  id        String   @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt DateTime @default(now())
+
+  name        String
+  description String
+  paramType   String
+
+  // One problem I have with generating the serve code is not knowing what imports are needed for the type annotations
+  // Best Idea I can think of is to include the imnport statement required for the type
+  typeImportStatement String
+
+  ParentObjectType   ObjectType?  @relation("ParentObjectType", fields: [parentObjectTypeId], references: [id], onDelete: Cascade)
+  parentObjectTypeId String?
+  ChildObjectType    ObjectType[] @relation("ParentObjectType")
+
+  FunctionArgs     Function? @relation("FunctionArgs", fields: [functionArgsId], references: [id], onDelete: Cascade)
+  functionArgsId   String?
+  FunctionReturn   Function? @relation("FunctionReturns", fields: [functionReturnId], references: [id], onDelete: Cascade)
+  functionReturnId String?
+}
+
 // DatabaseSchema represents the schema of a database.
 // It includes a description and relationships to database tables and code graphs.
 model DatabaseSchema {
@@ -206,6 +228,9 @@ model Function {
   rawCode          String? // This is the unpocessed code returned form the llm
   importStatements String[] // These are the import statements for the function
   functionCode     String? // This is the code of the function being written
+
+  functionArgs    ObjectType[] @relation("FunctionArgs")
+  functionReturns ObjectType[] @relation("FunctionReturns")
 
   ParentFunction   Function?  @relation("ParentFunction", fields: [parentFunctionId], references: [id], onDelete: Cascade)
   parentFunctionId String?
