@@ -111,67 +111,43 @@ model APIRouteSpec {
 
   Specification    Specification?  @relation(fields: [specificationId], references: [id], onDelete: Cascade)
   specificationId  String?
-  ResponseObject   ResponseObject? @relation(fields: [responseObjectId], references: [id], onDelete: Cascade)
+  ResponseObject   ObjectType?     @relation("ResponseObjectForAPI", fields: [responseObjectId], references: [id], onDelete: Cascade)
   responseObjectId String?
-  RequestObject    RequestObject?  @relation(fields: [requestObjectId], references: [id], onDelete: Cascade)
+  RequestObject    ObjectType?     @relation("RequestObjectForAPI", fields: [requestObjectId], references: [id], onDelete: Cascade)
   requestObjectId  String?
   DatabaseSchema   DatabaseSchema? @relation(fields: [databaseSchemaId], references: [id], onDelete: Cascade)
   databaseSchemaId String?
 }
 
-model ResponseObject {
+model ObjectField {
   id          String   @id @default(dbgenerated("gen_random_uuid()"))
   createdAt   DateTime @default(now())
   name        String
-  description String
+  description String?
 
-  ApiRouteSpecs APIRouteSpec[]
-  Params        Param[]
-}
+  Type          ObjectType? @relation(fields: [typeId], references: [id], onDelete: Cascade)
+  typeId        String? // null when it's primitive types.
+  primitiveType String? // null when it's composite/pydantic.
 
-model RequestObject {
-  id          String   @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt   DateTime @default(now())
-  name        String
-  description String
-
-  ApiRouteSpecs APIRouteSpec[]
-  Params        Param[]
-}
-
-model Param {
-  id          String   @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt   DateTime @default(now())
-  name        String
-  description String
-  paramType   String
-
-  ResponseObject   ResponseObject? @relation(fields: [responseObjectId], references: [id])
-  responseObjectId String?
-  RequestObject    RequestObject?  @relation(fields: [requestObjectId], references: [id])
-  requestObjectId  String?
+  // Reverse relations
+  FunctionArgs Function[] @relation("FunctionArgs")
 }
 
 model ObjectType {
-  id        String   @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt DateTime @default(now())
-
+  id          String        @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt   DateTime      @default(now())
   name        String
-  description String
-  paramType   String
+  description String?
+  Fields      ObjectField[]
 
   // One problem I have with generating the serve code is not knowing what imports are needed for the type annotations
   // Best Idea I can think of is to include the imnport statement required for the type
   typeImportStatement String
 
-  ParentObjectType   ObjectType?  @relation("ParentObjectType", fields: [parentObjectTypeId], references: [id], onDelete: Cascade)
-  parentObjectTypeId String?
-  ChildObjectType    ObjectType[] @relation("ParentObjectType")
-
-  FunctionArgs     Function? @relation("FunctionArgs", fields: [functionArgsId], references: [id], onDelete: Cascade)
-  functionArgsId   String?
-  FunctionReturn   Function? @relation("FunctionReturns", fields: [functionReturnId], references: [id], onDelete: Cascade)
-  functionReturnId String?
+  // Reverse relations
+  FunctionReturns   Function[]     @relation("FunctionReturns")
+  RequestAPIRoutes  APIRouteSpec[] @relation("RequestObjectForAPI")
+  ResponseAPIRoutes APIRouteSpec[] @relation("ResponseObjectForAPI")
 }
 
 // DatabaseSchema represents the schema of a database.
@@ -229,8 +205,9 @@ model Function {
   importStatements String[] // These are the import statements for the function
   functionCode     String? // This is the code of the function being written
 
-  functionArgs    ObjectType[] @relation("FunctionArgs")
-  functionReturns ObjectType[] @relation("FunctionReturns")
+  FunctionArgs     ObjectField[] @relation("FunctionArgs") // Function Args need name-type pairs
+  FunctionReturn   ObjectType    @relation("FunctionReturns", fields: [functionReturnId], references: [id], onDelete: Cascade)
+  functionReturnId String
 
   ParentFunction   Function?  @relation("ParentFunction", fields: [parentFunctionId], references: [id], onDelete: Cascade)
   parentFunctionId String?
