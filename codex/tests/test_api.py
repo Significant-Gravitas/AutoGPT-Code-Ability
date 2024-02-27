@@ -19,7 +19,9 @@ API: str = "/api/v1"
 
 def test_user_apis(client):
     # List Users
-    response = client.get(f"{API}/user/")
+    response = client.get(
+        f"{API}/user/",
+    )
     assert response.status_code == 200
     users = response.json()["users"]
     assert len(users) > 0
@@ -32,8 +34,14 @@ def test_user_apis(client):
     user = response.json()
     assert user["id"] == user_id_1
 
-    # Get User by Discord ID
-    response = client.get(f"{API}/discord/{user['discord_id']}")
+    # Create / Get User by Discord and Cloud Services ID
+    response = client.post(
+        f"{API}/user",
+        params={
+            "discord_id": user["discord_id"],
+            "cloud_services_id": user["cloud_services_id"],
+        },
+    )
     assert response.status_code == 200
     user = response.json()
     assert user["id"] == user_id_1

@@ -23,7 +23,7 @@ generator db {
 model User {
   id              String    @id @default(dbgenerated("gen_random_uuid()"))
   // This should probably have a shared id with Cloud Services so that we can look up users across them
-  cloudServicesId String?   @unique
+  cloudServicesId String   @unique
   discordId       String    @unique
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt

@@ -18,16 +18,21 @@ core_routes = APIRouter()
 
 
 # User endpoints
-@core_routes.get("/discord/{discord_id}", response_model=UserResponse, tags=["users"])
-async def get_discord_user(discord_id: str):
+@core_routes.post("/user", response_model=UserResponse, tags=["users"])
+async def get_or_create_user(cloud_services_id: str, discord_id: str):
     """
     This is intended to be used by the Discord bot to retrieve user information.
     The user_id that is retrived can then be used for other API calls.
     """
     try:
-        user = await codex.database.get_or_create_user_by_discord_id(discord_id)
+        user = (
+            await codex.database.get_or_create_user_by_cloud_services_id_and_discord_id(
+                cloud_services_id=cloud_services_id, discord_id=discord_id
+            )
+        )
         return UserResponse(
             id=user.id,
+            cloud_services_id=user.cloudServicesId,
             discord_id=user.discordId,
             createdAt=user.createdAt,
             role=user.role,
@@ -52,6 +57,7 @@ async def get_user(
         user = await codex.database.get_user(user_id)
         return UserResponse(
             id=user.id,
+            cloud_services_id=user.cloudServicesId,
             discord_id=user.discordId,
             createdAt=user.createdAt,
             role=user.role,

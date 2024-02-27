@@ -41,5 +41,8 @@
   "ruff.showNotifications": "always",
   "remote.autoForwardPortsSource": "hybrid",
   "terminal.integrated.scrollback": 100000,
-  "vsintellicode.modify.editor.suggestSelection": "automaticallyOverrodeDefaultValue"
+  "vsintellicode.modify.editor.suggestSelection": "automaticallyOverrodeDefaultValue",
+  "python.testing.pytestArgs": ["codex/tests"],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true
 }
