@@ -119,20 +119,6 @@ model APIRouteSpec {
   databaseSchemaId String?
 }
 
-model ObjectField {
-  id          String   @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt   DateTime @default(now())
-  name        String
-  description String?
-
-  Type          ObjectType? @relation(fields: [typeId], references: [id], onDelete: Cascade)
-  typeId        String? // null when it's primitive types.
-  primitiveType String? // null when it's composite/pydantic.
-
-  // Reverse relations
-  FunctionArgs Function[] @relation("FunctionArgs")
-}
-
 model ObjectType {
   id          String        @id @default(dbgenerated("gen_random_uuid()"))
   createdAt   DateTime      @default(now())
@@ -148,6 +134,20 @@ model ObjectType {
   FunctionReturns   Function[]     @relation("FunctionReturns")
   RequestAPIRoutes  APIRouteSpec[] @relation("RequestObjectForAPI")
   ResponseAPIRoutes APIRouteSpec[] @relation("ResponseObjectForAPI")
+}
+
+model ObjectField {
+  id          String   @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt   DateTime @default(now())
+  name        String
+  description String?
+
+  Type          ObjectType? @relation(fields: [typeId], references: [id], onDelete: Cascade)
+  typeId        String? // null when it's primitive types.
+  primitiveType String? // null when it's composite/pydantic.
+
+  // Reverse relations
+  FunctionArgs Function[] @relation("FunctionArgs")
 }
 
 // DatabaseSchema represents the schema of a database.
