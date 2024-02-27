@@ -23,7 +23,7 @@ generator db {
 model User {
   id              String    @id @default(dbgenerated("gen_random_uuid()"))
   // This should probably have a shared id with Cloud Services so that we can look up users across them
-  cloudServicesId String   @unique
+  cloudServicesId String    @unique
   discordId       String    @unique
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -214,7 +214,7 @@ model Function {
   functionCode     String? // This is the code of the function being written
 
   FunctionArgs     ObjectField[] @relation("FunctionArgs") // Function Args need name-type pairs
-  FunctionReturn   ObjectType?    @relation("FunctionReturns", fields: [functionReturnId], references: [id], onDelete: Cascade)
+  FunctionReturn   ObjectType?   @relation("FunctionReturns", fields: [functionReturnId], references: [id], onDelete: Cascade)
   functionReturnId String?
 
   ParentFunction   Function?  @relation("ParentFunction", fields: [parentFunctionId], references: [id], onDelete: Cascade)
