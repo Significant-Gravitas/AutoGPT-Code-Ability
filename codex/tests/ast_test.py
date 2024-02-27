@@ -1,7 +1,7 @@
 import ast
-from numpy import VisibleDeprecationWarning
 
 import pytest
+from numpy import VisibleDeprecationWarning
 
 from codex.develop.develop import FunctionVisitor
 
