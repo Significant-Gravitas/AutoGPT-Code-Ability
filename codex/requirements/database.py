@@ -1,5 +1,6 @@
 from prisma.models import Specification
 from prisma.types import SpecificationCreateInput
+
 from codex.api_model import (
     Identifiers,
     Pagination,
@@ -71,7 +72,6 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
             create_route["DatabaseSchema"] = {"create": create_db}
         routes.append(create_route)
 
-
     create_spec = SpecificationCreateInput(
         name=spec.name,
         context=spec.context,
@@ -79,7 +79,7 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
         Application={"connect": {"id": ids.app_id}},
         ApiRouteSpecs={"create": routes},
     )
-    
+
     new_spec = await Specification.prisma().create(
         data=create_spec,
         include={
