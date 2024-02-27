@@ -1,4 +1,5 @@
 import ast
+from numpy import VisibleDeprecationWarning
 
 import pytest
 
@@ -92,6 +93,9 @@ def create_schedule(
     working_hours: Dict[str, ProfessionalWorkingHours],
     travel_times: Dict[Tuple[str, str], TravelTime]
 ) -> List[Appointment]:
+    \"\"\"
+    pass
+    \"\"\"
     suggested_appointments = []
 
     for prof_id, working_hour in working_hours.items():
@@ -137,6 +141,10 @@ def test_function_visitor():
     # Check that all functions are identified
     assert len(visitor.pydantic_classes) == 4
     assert len(visitor.functions) == 3
+
+    assert visitor.functions["create_schedule"].is_implemented
+    assert not visitor.functions["is_within_working_hours"].is_implemented
+    assert not visitor.functions["calculate_travel_time"].is_implemented
 
 
 # Visiting a simple function definition with no arguments or return type
