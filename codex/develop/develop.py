@@ -67,6 +67,7 @@ class FunctionVisitor(ast.NodeVisitor):
     def __init__(self):
         self.functions = {}
         self.imports = []
+        self.pydantic_classes = []
 
     def visit_Import(self, node):
         for alias in node.names:
@@ -128,6 +129,22 @@ class FunctionVisitor(ast.NodeVisitor):
             function_template=function_template,
             function_code=ast.unparse(node),
         )
+        self.generic_visit(node)
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        """
+        Visits a ClassDef node in the AST and checks if it is a Pydantic class.
+        If it is a Pydantic class, adds its name to the list of Pydantic classes.
+        """
+        for base in node.bases:
+            base_id = getattr(base, "id", None)
+            # This will only work for direct children of BaseModel
+            is_pydantic = (isinstance(base, ast.Name) and base.id == "BaseModel") or (
+                isinstance(base, ast.Attribute) and base.attr == "BaseModel"
+            )
+            if is_pydantic:
+                self.pydantic_classes.append(node.name)
+
         self.generic_visit(node)
 
 
