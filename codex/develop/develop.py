@@ -84,6 +84,10 @@ class FunctionVisitor(ast.NodeVisitor):
             self.imports.append(import_line)
         self.generic_visit(node)
 
+    # TODO(AGPT-425):
+    #  - Add visit_ClassDef and parse input output complex types
+    #  - Exclude function inside the class and 'unexpected' nested functions.
+
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         args = []
         for arg in node.args.args:
@@ -92,27 +96,34 @@ class FunctionVisitor(ast.NodeVisitor):
         args_str = ", ".join(args)
         return_type = ast.unparse(node.returns) if node.returns else "Unknown"
 
-        # Extracting the function_template with doc_string if it exists
-        original_body = node.body.copy()
+        # Extract doc_string & function body
+        pass_block = ast.parse("pass").body[0]
         if (
             node.body
             and isinstance(node.body[0], ast.Expr)
             and isinstance(node.body[0].value, (ast.Str, ast.Constant))
         ):
-            node.body = node.body[:1]
+            doc_string_body = [node.body[0], pass_block]
+            code_body = node.body[1:]
         else:
-            node.body = []
+            doc_string_body = [pass_block]
+            code_body = node.body
 
-        # add "pass" statement to the node.body
-        node.body.append(ast.parse("pass").body[0])
+        # Construct function template
+        original_body = node.body.copy()
+        node.body = doc_string_body
         function_template = ast.unparse(node)
         node.body = original_body
 
+        # Function is not implemented if it has pass_block as its body
+        is_implemented = len(code_body) > 1 or ast.unparse(code_body[0]) != ast.unparse(pass_block)
+
         self.functions[node.name] = FunctionDef(
             name=node.name,
-            function_template=function_template,
             args=args_str,
             return_type=return_type,
+            is_implemented=is_implemented,
+            function_template=function_template,
             function_code=ast.unparse(node),
         )
         self.generic_visit(node)
@@ -165,7 +176,7 @@ class DevelopAIBlock(AIBlock):
                 invoke_params["function_name"]
             ]
 
-            if "pass" in requested_func.function_code:
+            if not requested_func.is_implemented:
                 # Important: ValidationErrors are used in the retry prompt
                 raise ValidationError(
                     "Main Function body is empty, it should contain"
@@ -211,7 +222,9 @@ class DevelopAIBlock(AIBlock):
                         functionName=value.name,
                         template=value.function_template,
                         apiRouteSpecId=generated_response.api_route_spec.id,
-                        state=FunctionState.DEFINITION,
+                        state=FunctionState.WRITTEN if value.is_implemented else FunctionState.DEFINITION,
+                        rawCode=value.function_code,
+                        functionCode=value.function_code,
                     )
 
                     function_defs.append(model)

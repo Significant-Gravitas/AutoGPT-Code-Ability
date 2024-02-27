@@ -1,12 +1,17 @@
-Main function name: {{ function_name }}
-Main function detail:
-{{ description }}
+Create the working code implementation of function called: {{ function_name }}
+{% if function_signature %}
+With this function signature:
+```python
+{{ function_signature }}
+```
+The created function has to match exactly as this signature!
+{% endif %}
+For additional context, this function that you need to implement will be used as part of a larger program for this goal:
+"{{ goal }}".
 
-The signature has to match exactly as the one in the description.
-For additional context, this function that you need to implement will be used as part of a larger program for {{ goal }}.
-
-----
+NOTE: IMPLEMENT THE REQUIRED FUNCTION WITH A REAL CODE IMPLEMENTATION, NOT JUST A STUB, PLACEHOLDER, OR PSEUDOCODE!
 {% if provided_functions %}
+----
 You can re-use these functions without introducing a new stub:
 ```python
 {% for function in provided_functions %}
@@ -17,8 +22,5 @@ You can re-use these functions without introducing a new stub:
 NOTE:
 DO NOT RE-WRITE THESE FUNCTIONS. JUST CALL IT IN THE FUNCTION THAT YOU WRITE (IF NEEDED).
 YOU SHOULD ONLY PRODUCE THE REQUIRED FUNCTION AND THE NEW STUBS (IF THERE IS ANY).
-{% endif %}
-
-{% if not allow_stub %}
-IMPORTANT: FOR THIS GENERATION, CREATE ONLY ONE FUNCTION WITHOUT ANY STUBS.
+----
 {% endif %}

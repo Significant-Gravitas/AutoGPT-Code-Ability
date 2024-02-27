@@ -119,8 +119,8 @@ async def test_recursive_create_code_graphs():
     setup_logging(local=True)
 
     ids = Identifiers(
-        user_id="123e4567-e89b-12d3-a456-426614174000",
-        app_id="d3954dee-6b41-47f5-be2f-a253f7544a59",
+        user_id=user_id_1,
+        app_id=app_id_1,
     )
     spec = await get_latest_specification(ids.user_id, ids.app_id)
     ans = await agent.develop_application(ids=ids, spec=spec)
