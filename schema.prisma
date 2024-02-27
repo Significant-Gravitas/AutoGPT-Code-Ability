@@ -120,20 +120,25 @@ model APIRouteSpec {
 }
 
 model ObjectType {
-  id          String        @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt   DateTime      @default(now())
+  id          String   @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt   DateTime @default(now())
   name        String
   description String?
-  Fields      ObjectField[]
+
+  Fields ObjectField[] @relation("ObjectTypeFields")
 
   // One problem I have with generating the serve code is not knowing what imports are needed for the type annotations
-  // Best Idea I can think of is to include the imnport statement required for the type
-  typeImportStatement String
+  // Best Idea I can think of is to include the import statement required for the type
+  importStatements String[]
+
+  DatabaseTable   DatabaseTable? @relation(fields: [databaseTableId], references: [id], onDelete: Cascade)
+  databaseTableId String?
 
   // Reverse relations
-  FunctionReturns   Function[]     @relation("FunctionReturns")
-  RequestAPIRoutes  APIRouteSpec[] @relation("RequestObjectForAPI")
-  ResponseAPIRoutes APIRouteSpec[] @relation("ResponseObjectForAPI")
+  ReferredFunctionReturns   Function[]     @relation("FunctionReturns")
+  ReferredRequestAPIRoutes  APIRouteSpec[] @relation("RequestObjectForAPI")
+  ReferredResponseAPIRoutes APIRouteSpec[] @relation("ResponseObjectForAPI")
+  ReferredObjectFields      ObjectField[]  @relation("ObjectFieldType")
 }
 
 model ObjectField {
@@ -142,12 +147,14 @@ model ObjectField {
   name        String
   description String?
 
-  Type          ObjectType? @relation(fields: [typeId], references: [id], onDelete: Cascade)
-  typeId        String? // null when it's primitive types.
-  primitiveType String? // null when it's composite/pydantic.
+  Type     ObjectType? @relation("ObjectFieldType", fields: [typeId], references: [id], onDelete: Cascade)
+  typeId   String? // null for primitive types, Type.id for composite types.
+  typeName String // list,dict,etc for primitive types, Type.name for composite types.
 
   // Reverse relations
-  FunctionArgs Function[] @relation("FunctionArgs")
+  ReferredFunctionArgs Function[] @relation("FunctionArgs")
+  ReferredObjectType   ObjectType @relation("ObjectTypeFields", fields: [referredObjectTypeId], references: [id])
+  referredObjectTypeId String
 }
 
 // DatabaseSchema represents the schema of a database.
@@ -178,6 +185,7 @@ model DatabaseTable {
   RelatedToTables   DatabaseTable[] @relation("TableRelations")
   DatabaseSchema    DatabaseSchema? @relation(fields: [databaseSchemaId], references: [id])
   databaseSchemaId  String?
+  ObjectType        ObjectType[]
 }
 
 // ------------------------- Developer Models ---------------------------- //
@@ -206,8 +214,8 @@ model Function {
   functionCode     String? // This is the code of the function being written
 
   FunctionArgs     ObjectField[] @relation("FunctionArgs") // Function Args need name-type pairs
-  FunctionReturn   ObjectType    @relation("FunctionReturns", fields: [functionReturnId], references: [id], onDelete: Cascade)
-  functionReturnId String
+  FunctionReturn   ObjectType?    @relation("FunctionReturns", fields: [functionReturnId], references: [id], onDelete: Cascade)
+  functionReturnId String?
 
   ParentFunction   Function?  @relation("ParentFunction", fields: [parentFunctionId], references: [id], onDelete: Cascade)
   parentFunctionId String?

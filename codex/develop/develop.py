@@ -225,7 +225,7 @@ class DevelopAIBlock(AIBlock):
 
     async def create_item(
         self, ids: Identifiers, validated_response: ValidatedResponse
-    ):
+    ) -> Function:
         """This is just a temporary that doesnt have a database model"""
         generated_response: GeneratedFunctionResponse = validated_response.response
         if generated_response.function_id:
@@ -308,7 +308,8 @@ class DevelopAIBlock(AIBlock):
             )
             return func
         except Exception as e:
-            logger.info(f"Error saving Function: {e}")
+            logger.error(f"Error saving Function: {e}")
+            raise e
 
     async def update_item(  # type: ignore
         self, ids: Identifiers, validated_response: ValidatedResponse
