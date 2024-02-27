@@ -116,7 +116,9 @@ class FunctionVisitor(ast.NodeVisitor):
         node.body = original_body
 
         # Function is not implemented if it has pass_block as its body
-        is_implemented = len(code_body) > 1 or ast.unparse(code_body[0]) != ast.unparse(pass_block)
+        is_implemented = len(code_body) > 1 or ast.unparse(code_body[0]) != ast.unparse(
+            pass_block
+        )
 
         self.functions[node.name] = FunctionDef(
             name=node.name,
@@ -222,7 +224,9 @@ class DevelopAIBlock(AIBlock):
                         functionName=value.name,
                         template=value.function_template,
                         apiRouteSpecId=generated_response.api_route_spec.id,
-                        state=FunctionState.WRITTEN if value.is_implemented else FunctionState.DEFINITION,
+                        state=FunctionState.WRITTEN
+                        if value.is_implemented
+                        else FunctionState.DEFINITION,
                         rawCode=value.function_code,
                         functionCode=value.function_code,
                     )
