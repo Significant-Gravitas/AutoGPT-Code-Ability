@@ -51,13 +51,13 @@ async def fetch_deliverable(session, user_id, app_id):
 
     spec = await get_latest_specification(user_id, app_id)
     spec_id = spec.id
-    print(f"Fetching deliverable for {spec.name}")
+    print(f"Developing the application for {spec.name}")
     url = f"http://127.0.0.1:8000/api/v1/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/"
     async with session.post(url) as response:
         try:
             data = await response.json()
             deliverable_id = data["id"]
-            click.echo(f"Created deliverable: {data}")
+            click.echo(f"Created application: {data}")
             deploy_url = f"http://127.0.0.1:8000/api/v1/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/"
             async with session.post(deploy_url) as dresponse:
                 deploy_data = await dresponse.json()
