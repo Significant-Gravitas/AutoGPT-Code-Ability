@@ -126,6 +126,9 @@ class APIRouteSpecModel(BaseModel):
 
 class SpecificationCreate(BaseModel):
     description: str
+    webhook_url: Optional[str] = Field(
+        None, default_factory=None, description="The URL to send webhooks to"
+    )
 
 
 class SpecificationResponse(BaseModel):

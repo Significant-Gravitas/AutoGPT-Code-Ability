@@ -2,11 +2,15 @@ import asyncio
 import json
 import logging
 from asyncio import run
+from enum import Enum
+from typing import Literal, Optional
 
 import openai
 import prisma
+import requests
 from prisma.enums import AccessLevel
 from prisma.models import Specification
+from pydantic import BaseModel
 from pydantic.json import pydantic_encoder
 
 from codex.api_model import Identifiers
@@ -71,10 +75,42 @@ from codex.requirements.unwrap_schemas import convert_db_schema, convert_endpoin
 logger = logging.getLogger(__name__)
 
 
+def generate_callback(webhook_url: str, ids: Identifiers):
+    # async def callback(input):
+    #     async with aiohttp.ClientSession() as session:
+    #         async with session.post(webhook_url, data=input) as response:
+    #             return await response.json()
+
+    class WebhookType(Enum):
+        SPECIFICATION = "specification"
+        QUESTION = "question"
+        DELIVERABLE = "deliverable"
+        DEPLOYMENT = "deployment"
+        DOWNLOAD_ZIP = "download_zip"
+
+    class QuestionResponse(BaseModel):
+        response: str
+        question: str
+        type: Literal["question"]
+
+    # convert the above to requests sync
+    def callback(input):
+        params = {
+            "type": str(WebhookType.QUESTION.value),
+            "codex_user_id": ids.user_id,
+            "user_id": "44173690-8265-440a-832e-43cbcf8ded58",
+        }
+        data = {"question": input}
+        response = requests.post(webhook_url, params=params, json=data)
+        response_json = response.json()
+        q_response = QuestionResponse(**response_json)
+        return q_response.response
+
+    return callback
+
+
 async def generate_requirements(
-    ids: Identifiers,
-    app_name: str,
-    description: str,
+    ids: Identifiers, app_name: str, description: str, webhook_url: Optional[str] = None
 ) -> Specification:
     """
     Runs the Requirements Agent to generate the system requirements based
@@ -93,9 +129,13 @@ async def generate_requirements(
 
     logger.info("State Object Created")
 
+    callback = None
+    if webhook_url:
+        callback = generate_callback(webhook_url, ids)
+
     # User Interview
     project_description, memory = await gather_task_info_loop(
-        task=running_state_obj.task, ask_callback=None, ids=ids
+        task=running_state_obj.task, ask_callback=callback, ids=ids
     )
     running_state_obj.project_description = project_description
     # convert the memory to `tool`: `content`: `response` format
