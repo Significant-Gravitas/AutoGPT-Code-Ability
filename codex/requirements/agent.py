@@ -476,9 +476,9 @@ async def populate_database_specs():
         ("Appointment Optimization Tool", app_id_3),
         ("Distance Calculator", app_id_4),
         ("Profile Management System", app_id_5),
-        # ("Appointment Scheduling System", app_id_6),
-        # ("Inventory Management System", app_id_7),
-        # ("Invoiceing and Payment Tracking System", app_id_8),
+        ("Appointment Scheduling System", app_id_6),
+        ("Inventory Management System", app_id_7),
+        ("Invoiceing and Payment Tracking System", app_id_8),
     ]
     ids = identifier_1
 
