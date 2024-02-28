@@ -3,6 +3,7 @@ import io
 import os
 import shutil
 import zipfile
+from datetime import datetime
 
 import aiohttp
 import click
@@ -49,12 +50,15 @@ def populate_db(database):
 async def fetch_deliverable(session, user_id, app_id):
     from codex.requirements.database import get_latest_specification
 
+    start_time = datetime.now()
     spec = await get_latest_specification(user_id, app_id)
     spec_id = spec.id
-    print(f"Developing the application for {spec.name}")
+    click.echo(f"Developing the application for {spec.name}")
     url = f"http://127.0.0.1:8000/api/v1/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/"
-    async with session.post(url) as response:
+    async with session.post(url, timeout=600) as response:
         try:
+            creation_time = datetime.now()
+            click.echo(f"Development took {creation_time - start_time}")
             data = await response.json()
             deliverable_id = data["id"]
             click.echo(f"Created application: {data}")
@@ -82,8 +86,11 @@ async def fetch_deliverable(session, user_id, app_id):
                     os.makedirs(extracted_folder)
                 with zipfile.ZipFile(content, "r") as zip_ref:
                     zip_ref.extractall(extracted_folder)
-
-                click.echo(f"Downloaded and extracted: {extracted_folder}")
+                end_time = datetime.now()
+                click.echo(
+                    f"Downloaded and extracted: "
+                    f"{extracted_folder} in {end_time - start_time}"
+                )
 
                 return deploy_data
         except Exception as e:
