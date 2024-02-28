@@ -144,8 +144,8 @@ def run_example():
     for task in list(ExampleTask):
         click.echo(f"[{i}] {task.value}")
         i += 1
-
-    case = int(input("Case: "))
+    print("------")
+    case = int(input("Enter number of the case to run: "))
 
     task = list(ExampleTask)[case - 1]
     asyncio.run(run_specific_benchmark(task))
