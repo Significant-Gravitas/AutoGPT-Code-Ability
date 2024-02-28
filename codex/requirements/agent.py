@@ -91,16 +91,18 @@ def generate_callback(webhook_url: str, ids: Identifiers):
     class QuestionResponse(BaseModel):
         response: str
         question: str
+        identifiers: Identifiers
         type: Literal["question"]
 
     # convert the above to requests sync
     def callback(input):
         params = {
             "type": str(WebhookType.QUESTION.value),
-            "codex_user_id": ids.user_id,
-            "user_id": "44173690-8265-440a-832e-43cbcf8ded58",
         }
-        data = {"question": input}
+        data = {
+            "message": {"question": input},
+            "identifiers": ids.model_dump(),
+        }
         response = requests.post(webhook_url, params=params, json=data)
         response_json = response.json()
         q_response = QuestionResponse(**response_json)

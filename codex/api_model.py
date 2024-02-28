@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 class Identifiers(BaseModel):
     user_id: str
+    cloud_services_id: str
     app_id: str
     spec_id: str | None = None
     completed_app_id: str | None = None
@@ -80,6 +81,7 @@ class ApplicationResponse(BaseModel):
     updatedAt: datetime
     name: str
     userid: str
+    cloud_services_id: str
 
 
 class ApplicationsListResponse(BaseModel):

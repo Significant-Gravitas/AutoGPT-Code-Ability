@@ -28,10 +28,12 @@ async def create_deliverable(user_id: str, app_id: str, spec_id: str):
         specification = await codex.requirements.database.get_specification(
             user_id, app_id, spec_id
         )
+        user = await codex.database.get_user(user_id)
         logger.info(f"Creating deliverable for {specification.name}")
         if specification:
             ids = Identifiers(
                 user_id=user_id,
+                cloud_services_id=user.cloudServicesId if user else "",
                 app_id=app_id,
                 spec_id=spec_id,
             )

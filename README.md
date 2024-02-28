@@ -83,7 +83,7 @@ This starts your application's server, making it available for development use.
 Access your application's documentation at:
 
 ```
-http://127.0.0.1:8000/docs
+http://127.0.0.1:7/docs
 ```
 
 Here, you'll find detailed guides and references on interacting with your application.

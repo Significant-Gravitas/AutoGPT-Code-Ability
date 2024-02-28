@@ -167,7 +167,8 @@ async def get_app_by_id(user_id: str, app_id: str) -> ApplicationResponse:
             "id": app_id,
             "userId": user_id,
             "deleted": False,
-        }
+        },
+        include={"User": True},
     )
     assert app.userId, "Application not found"
 
@@ -177,6 +178,7 @@ async def get_app_by_id(user_id: str, app_id: str) -> ApplicationResponse:
         updatedAt=app.updatedAt,
         name=app.name,
         userid=app.userId,
+        cloud_services_id=app.User.cloudServicesId if app.User else "",
     )
 
 
@@ -185,7 +187,8 @@ async def create_app(user_id: str, app_data: ApplicationCreate) -> ApplicationRe
         data={
             "name": app_data.name,
             "userId": user_id,
-        }
+        },
+        include={"User": True},
     )
 
     assert app.userId, "Application not found"
@@ -196,6 +199,7 @@ async def create_app(user_id: str, app_data: ApplicationCreate) -> ApplicationRe
         updatedAt=app.updatedAt,
         name=app.name,
         userid=app.userId,
+        cloud_services_id=app.User.cloudServicesId if app.User else "",
     )
 
 
@@ -217,7 +221,10 @@ async def list_apps(
         where={"userId": user_id, "deleted": False}
     )
     apps = await Application.prisma().find_many(
-        where={"userId": user_id, "deleted": False}, skip=skip, take=page_size
+        where={"userId": user_id, "deleted": False},
+        include={"User": True},
+        skip=skip,
+        take=page_size,
     )
     if apps:
         total_pages = (total_items + page_size - 1) // page_size
@@ -229,6 +236,7 @@ async def list_apps(
                 updatedAt=app.updatedAt,
                 name=app.name,
                 userid=app.userId if app.userId else "",
+                cloud_services_id=app.User.cloudServicesId if app.User else "",
             )
             for app in apps
         ]

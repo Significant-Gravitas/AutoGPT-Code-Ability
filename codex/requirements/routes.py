@@ -1,6 +1,5 @@
 import json
 import logging
-from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks, Query, Response
 
@@ -38,7 +37,12 @@ async def create_spec(
     """
     try:
         app = await codex.database.get_app_by_id(user_id, app_id)
-        ids = Identifiers(user_id=user_id, app_id=app_id)
+        user = await codex.database.get_user(user_id)
+        ids = Identifiers(
+            user_id=user_id,
+            app_id=app_id,
+            cloud_services_id=user.cloudServicesId if user else "",
+        )
         if spec.webhook_url:
             # Make this a background task and send the webhook_url to the agent
             background_tasks.add_task(
