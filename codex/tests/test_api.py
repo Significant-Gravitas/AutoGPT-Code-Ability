@@ -110,7 +110,8 @@ def test_specs_apis(client):
     # assert next((s for s in specs if s['id'] == spec['id']), None) is None
 
 
-def test_deliverables_apis(client):
+def test_deliverables_and_deployments_apis(client):
+    ###### Deliverables ######
     spec_id = client.get(f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/").json()[
         "specs"
     ][0]["id"]
@@ -141,25 +142,7 @@ def test_deliverables_apis(client):
     deliverable = response.json()
     assert deliverable["id"] == deliverable_id
 
-    # Delete Deliverable
-    response = client.delete(
-        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/{deliverable_id}"
-    )
-    assert response.status_code == 200
-    response = client.get(
-        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/"
-    )
-    deliverables = response.json()["deliverables"]
-    assert next((d for d in deliverables if d["id"] == deliverable_id), None) is None
-
-
-def test_deployment_apis(client):
-    spec_id = client.get(f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/").json()[
-        "specs"
-    ][0]["id"]
-    deliverable_id = client.get(
-        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/"
-    ).json()["deliverables"][0]["id"]
+    ##### Deployments #####
 
     # Create Deployment
     response = client.post(
@@ -186,6 +169,17 @@ def test_deployment_apis(client):
     assert response.status_code == 200
     deployment = response.json()
     assert deployment["id"] == deployment_id
+
+    # Delete Deliverable
+    response = client.delete(
+        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/{deliverable_id}"
+    )
+    assert response.status_code == 200
+    response = client.get(
+        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/"
+    )
+    deliverables = response.json()["deliverables"]
+    assert next((d for d in deliverables if d["id"] == deliverable_id), None) is None
 
     # Delete Deployment
     response = client.delete(
