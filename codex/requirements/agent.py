@@ -394,7 +394,7 @@ async def generate_requirements(
 
     full_spec = ApplicationRequirements(
         name=running_state_obj.product_name,
-        context=running_state_obj.__str__(),
+        context=running_state_obj.project_description,
         api_routes=api_routes,
     )
     logger.info(f"Full Spec Done")
