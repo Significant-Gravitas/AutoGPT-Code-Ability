@@ -166,9 +166,9 @@ class SpecificationResponse(BaseModel):
                                 createdAt=param.createdAt,
                                 name=param.name,
                                 description=param.description,
-                                param_type=param.paramType,
+                                param_type=param.typeName,
                             )
-                            for param in route.RequestObject.Params or []
+                            for param in route.RequestObject.Fields or []
                         ],
                     ),
                     responseObject=ResponseObjectModel(
@@ -182,9 +182,9 @@ class SpecificationResponse(BaseModel):
                                 createdAt=param.createdAt,
                                 name=param.name,
                                 description=param.description,
-                                param_type=param.paramType,
+                                param_type=param.typeName,
                             )
-                            for param in route.ResponseObject.Params or []
+                            for param in route.ResponseObject.Fields or []
                         ],
                     ),
                 )
@@ -238,8 +238,8 @@ class DeploymentMetadata(BaseModel):
     file_size: int
 
 
-class DeploymentResponse(BaseModel):
-    deployment: DeploymentMetadata
+class DeploymentResponse(DeploymentMetadata):
+    pass
 
 
 class DeploymentsListResponse(BaseModel):

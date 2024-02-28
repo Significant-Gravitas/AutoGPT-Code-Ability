@@ -23,7 +23,7 @@ generator db {
 model User {
   id              String    @id @default(dbgenerated("gen_random_uuid()"))
   // This should probably have a shared id with Cloud Services so that we can look up users across them
-  cloudServicesId String   @unique
+  cloudServicesId String    @unique
   discordId       String    @unique
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -111,45 +111,50 @@ model APIRouteSpec {
 
   Specification    Specification?  @relation(fields: [specificationId], references: [id], onDelete: Cascade)
   specificationId  String?
-  ResponseObject   ResponseObject? @relation(fields: [responseObjectId], references: [id], onDelete: Cascade)
+  ResponseObject   ObjectType?     @relation("ResponseObjectForAPI", fields: [responseObjectId], references: [id], onDelete: Cascade)
   responseObjectId String?
-  RequestObject    RequestObject?  @relation(fields: [requestObjectId], references: [id], onDelete: Cascade)
+  RequestObject    ObjectType?     @relation("RequestObjectForAPI", fields: [requestObjectId], references: [id], onDelete: Cascade)
   requestObjectId  String?
   DatabaseSchema   DatabaseSchema? @relation(fields: [databaseSchemaId], references: [id], onDelete: Cascade)
   databaseSchemaId String?
 }
 
-model ResponseObject {
+model ObjectType {
   id          String   @id @default(dbgenerated("gen_random_uuid()"))
   createdAt   DateTime @default(now())
   name        String
-  description String
+  description String?
 
-  ApiRouteSpecs APIRouteSpec[]
-  Params        Param[]
+  Fields ObjectField[] @relation("ObjectTypeFields")
+
+  // One problem I have with generating the serve code is not knowing what imports are needed for the type annotations
+  // Best Idea I can think of is to include the import statement required for the type
+  importStatements String[]
+
+  DatabaseTable   DatabaseTable? @relation(fields: [databaseTableId], references: [id], onDelete: Cascade)
+  databaseTableId String?
+
+  // Reverse relations
+  ReferredFunctionReturns   Function[]     @relation("FunctionReturns")
+  ReferredRequestAPIRoutes  APIRouteSpec[] @relation("RequestObjectForAPI")
+  ReferredResponseAPIRoutes APIRouteSpec[] @relation("ResponseObjectForAPI")
+  ReferredObjectFields      ObjectField[]  @relation("ObjectFieldType")
 }
 
-model RequestObject {
+model ObjectField {
   id          String   @id @default(dbgenerated("gen_random_uuid()"))
   createdAt   DateTime @default(now())
   name        String
-  description String
+  description String?
 
-  ApiRouteSpecs APIRouteSpec[]
-  Params        Param[]
-}
+  Type     ObjectType? @relation("ObjectFieldType", fields: [typeId], references: [id], onDelete: Cascade)
+  typeId   String? // null for primitive types, Type.id for composite types.
+  typeName String // list,dict,etc for primitive types, Type.name for composite types.
 
-model Param {
-  id          String   @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt   DateTime @default(now())
-  name        String
-  description String
-  paramType   String
-
-  ResponseObject   ResponseObject? @relation(fields: [responseObjectId], references: [id])
-  responseObjectId String?
-  RequestObject    RequestObject?  @relation(fields: [requestObjectId], references: [id])
-  requestObjectId  String?
+  // Reverse relations
+  ReferredFunctionArgs Function[] @relation("FunctionArgs")
+  ReferredObjectType   ObjectType @relation("ObjectTypeFields", fields: [referredObjectTypeId], references: [id])
+  referredObjectTypeId String
 }
 
 // DatabaseSchema represents the schema of a database.
@@ -180,6 +185,7 @@ model DatabaseTable {
   RelatedToTables   DatabaseTable[] @relation("TableRelations")
   DatabaseSchema    DatabaseSchema? @relation(fields: [databaseSchemaId], references: [id])
   databaseSchemaId  String?
+  ObjectType        ObjectType[]
 }
 
 // ------------------------- Developer Models ---------------------------- //
@@ -206,6 +212,10 @@ model Function {
   rawCode          String? // This is the unpocessed code returned form the llm
   importStatements String[] // These are the import statements for the function
   functionCode     String? // This is the code of the function being written
+
+  FunctionArgs     ObjectField[] @relation("FunctionArgs") // Function Args need name-type pairs
+  FunctionReturn   ObjectType?   @relation("FunctionReturns", fields: [functionReturnId], references: [id], onDelete: Cascade)
+  functionReturnId String?
 
   ParentFunction   Function?  @relation("ParentFunction", fields: [parentFunctionId], references: [id], onDelete: Cascade)
   parentFunctionId String?

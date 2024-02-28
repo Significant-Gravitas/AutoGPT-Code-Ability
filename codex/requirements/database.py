@@ -19,12 +19,12 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
         create_request = {
             "name": route.request_model.name,
             "description": route.request_model.description,
-            "Params": {
+            "Fields": {
                 "create": [
                     {
                         "name": param.name,
                         "description": param.description,
-                        "paramType": param.param_type,
+                        "typeName": param.param_type,
                     }
                     for param in route.request_model.params
                 ],
@@ -33,12 +33,12 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
         create_response = {
             "name": route.response_model.name,
             "description": route.response_model.description,
-            "Params": {
+            "Fields": {
                 "create": [
                     {
                         "name": param.name,
                         "description": param.description,
-                        "paramType": param.param_type,
+                        "typeName": param.param_type,
                     }
                     for param in route.response_model.params
                 ],
@@ -85,8 +85,8 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
         include={
             "ApiRouteSpecs": {
                 "include": {
-                    "RequestObject": {"include": {"Params": True}},
-                    "ResponseObject": {"include": {"Params": True}},
+                    "RequestObject": {"include": {"Fields": True}},
+                    "ResponseObject": {"include": {"Fields": True}},
                     "DatabaseSchema": {"include": {"DatabaseTables": True}},
                 }
             }
@@ -105,8 +105,8 @@ async def get_specification(user_id: str, app_id: str, spec_id: str) -> Specific
         include={
             "ApiRouteSpecs": {
                 "include": {
-                    "RequestObject": {"include": {"Params": True}},
-                    "ResponseObject": {"include": {"Params": True}},
+                    "RequestObject": {"include": {"Fields": True}},
+                    "ResponseObject": {"include": {"Fields": True}},
                 }
             }
         },
@@ -135,8 +135,8 @@ async def get_latest_specification(user_id: str, app_id: str) -> Specification:
         include={
             "ApiRouteSpecs": {
                 "include": {
-                    "RequestObject": {"include": {"Params": True}},
-                    "ResponseObject": {"include": {"Params": True}},
+                    "RequestObject": {"include": {"Fields": True}},
+                    "ResponseObject": {"include": {"Fields": True}},
                 }
             }
         },
@@ -168,8 +168,8 @@ async def list_specifications(
             include={
                 "ApiRouteSpecs": {
                     "include": {
-                        "RequestObject": {"include": {"Params": True}},
-                        "ResponseObject": {"include": {"Params": True}},
+                        "RequestObject": {"include": {"Fields": True}},
+                        "ResponseObject": {"include": {"Fields": True}},
                     }
                 }
             },

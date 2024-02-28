@@ -5,7 +5,12 @@ from fastapi.testclient import TestClient
 load_dotenv()
 
 from codex import app
+from codex.common.ai_model import OpenAIChatClient
+from codex.common.logging import setup_logging
 from codex.common.test_const import *
+
+OpenAIChatClient.configure({})
+setup_logging(local=True)
 
 
 @pytest.fixture
@@ -75,7 +80,7 @@ def test_apps_apis(client):
     assert next((a for a in apps if a["id"] == app["id"]), None) is None
 
 
-def test_specs_and_deliverables_apis(client):
+def test_specs_apis(client):
     # List Specs
     response = client.get(f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/")
     assert response.status_code == 200
@@ -88,14 +93,6 @@ def test_specs_and_deliverables_apis(client):
     assert response.status_code == 200
     spec = response.json()
     assert spec["id"] == spec_id
-
-    # List Deliverables
-    response = client.get(
-        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/"
-    )
-    assert response.status_code == 200
-    deliverables = response.json()["deliverables"]
-    assert len(deliverables) >= 0
 
     ## Create (and Delete) is skipped for now, since it's taking too long to create a spec ##
 
@@ -113,25 +110,84 @@ def test_specs_and_deliverables_apis(client):
     # assert next((s for s in specs if s['id'] == spec['id']), None) is None
 
 
-from codex.app import db_client
-from codex.common.ai_model import OpenAIChatClient
-from codex.common.logging import setup_logging
-from codex.develop import agent
-from codex.requirements.database import get_latest_specification
+def test_deliverables_and_deployments_apis(client):
+    ###### Deliverables ######
+    spec_id = client.get(f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/").json()[
+        "specs"
+    ][0]["id"]
 
-
-@pytest.mark.asyncio
-async def test_recursive_create_code_graphs():
-    await db_client.connect()
-    OpenAIChatClient.configure({})
-    setup_logging(local=True)
-
-    ids = Identifiers(
-        user_id=user_id_1,
-        app_id=app_id_1,
+    # Create Deliverable
+    response = client.post(
+        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/"
     )
-    spec = await get_latest_specification(ids.user_id, ids.app_id)
-    ans = await agent.develop_application(ids=ids, spec=spec)
+    assert response.status_code == 200
+    deliverable = response.json()
+    assert deliverable["id"] is not None
+    assert deliverable["name"] is not None
 
-    assert ans is not None
-    await db_client.disconnect()
+    # List Deliverables
+    response = client.get(
+        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/"
+    )
+    assert response.status_code == 200
+    deliverables = response.json()["deliverables"]
+    assert len(deliverables) > 0
+
+    # Get Deliverable
+    deliverable_id = deliverables[0]["id"]
+    response = client.get(
+        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/{deliverable_id}"
+    )
+    assert response.status_code == 200
+    deliverable = response.json()
+    assert deliverable["id"] == deliverable_id
+
+    ##### Deployments #####
+
+    # Create Deployment
+    response = client.post(
+        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/"
+    )
+    assert response.status_code == 200
+    deployment = response.json()
+    assert deployment["id"] is not None
+    assert deployment["file_name"] is not None
+
+    # List Deployments
+    response = client.get(
+        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/"
+    )
+    assert response.status_code == 200
+    deployments = response.json()["deployments"]
+    assert len(deployments) > 0
+
+    # Get Deployment
+    deployment_id = deployments[0]["id"]
+    response = client.get(
+        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/{deployment_id}"
+    )
+    assert response.status_code == 200
+    deployment = response.json()
+    assert deployment["id"] == deployment_id
+
+    # Delete Deliverable
+    response = client.delete(
+        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/{deliverable_id}"
+    )
+    assert response.status_code == 200
+    response = client.get(
+        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/"
+    )
+    deliverables = response.json()["deliverables"]
+    assert next((d for d in deliverables if d["id"] == deliverable_id), None) is None
+
+    # Delete Deployment
+    response = client.delete(
+        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/{deployment_id}"
+    )
+    assert response.status_code == 200
+    response = client.get(
+        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/"
+    )
+    deployments = response.json()["deployments"]
+    assert next((d for d in deployments if d["id"] == deployment_id), None) is None
