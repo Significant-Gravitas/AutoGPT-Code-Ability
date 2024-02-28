@@ -6,7 +6,7 @@ from codex.api_model import DeploymentMetadata, DeploymentsListResponse, Paginat
 
 async def get_deployment(deployment_id: str) -> Deployment:
     deployment = await Deployment.prisma().find_unique_or_raise(
-        where={"id": deployment_id},
+        where={"id": deployment_id, "deleted": False},
     )
 
     return deployment
@@ -27,8 +27,9 @@ async def list_deployments(
     skip = (page - 1) * page_size
     total_items = await Deployment.prisma().count(
         where=DeploymentWhereInput(
-            id=deliverable_id,
+            completedAppId=deliverable_id,
             userId=user_id,
+            deleted=False,
         )
     )
     if total_items == 0:
@@ -43,8 +44,9 @@ async def list_deployments(
         skip=skip,
         take=page_size,
         where=DeploymentWhereInput(
-            id=deliverable_id,
+            completedAppId=deliverable_id,
             userId=user_id,
+            deleted=False,
         ),
     )
 

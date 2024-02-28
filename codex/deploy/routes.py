@@ -12,8 +12,7 @@ from prisma.types import (
     CompiledRouteIncludeFromCompiledRouteRecursive1,
     CompletedAppInclude,
     FindManyCompiledRouteArgsFromCompletedApp,
-    RequestObjectArgsFromAPIRouteSpecRecursive4,
-    ResponseObjectArgsFromAPIRouteSpecRecursive4,
+    ObjectTypeArgsFromAPIRouteSpecRecursive4,
 )
 
 import codex.database
@@ -52,11 +51,11 @@ async def create_deployment(
                 include=CompiledRouteIncludeFromCompiledRouteRecursive1(
                     ApiRouteSpec=APIRouteSpecArgsFromCompiledRouteRecursive2(
                         include=APIRouteSpecIncludeFromAPIRouteSpecRecursive3(
-                            RequestObject=RequestObjectArgsFromAPIRouteSpecRecursive4(
-                                **{"include": {"Params": True}}
+                            RequestObject=ObjectTypeArgsFromAPIRouteSpecRecursive4(
+                                **{"include": {"Fields": True}}
                             ),
-                            ResponseObject=ResponseObjectArgsFromAPIRouteSpecRecursive4(
-                                **{"include": {"Params": True}}
+                            ResponseObject=ObjectTypeArgsFromAPIRouteSpecRecursive4(
+                                **{"include": {"Fields": True}}
                             ),
                         )
                     )
@@ -82,12 +81,10 @@ async def create_deployment(
         deployment = await deploy_agent.create_deployment(ids, completedApp)
 
         return DeploymentResponse(
-            deployment=DeploymentMetadata(
-                id=deployment.id,
-                created_at=deployment.createdAt,
-                file_name=deployment.fileName,
-                file_size=deployment.fileSize,
-            )
+            id=deployment.id,
+            created_at=deployment.createdAt,
+            file_name=deployment.fileName,
+            file_size=deployment.fileSize,
         )
     except Exception as e:
         logger.error(f"Error creating deployment: {e}")
@@ -117,12 +114,10 @@ async def get_deployment(
             deployment_id=deployment_id
         )
         return DeploymentResponse(
-            deployment=DeploymentMetadata(
-                id=deployment.id,
-                created_at=deployment.createdAt,
-                file_name=deployment.fileName,
-                file_size=deployment.fileSize,
-            )
+            id=deployment.id,
+            created_at=deployment.createdAt,
+            file_name=deployment.fileName,
+            file_size=deployment.fileSize,
         )
     except ValueError as e:
         return Response(

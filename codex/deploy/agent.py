@@ -94,9 +94,9 @@ app = FastAPI(title="{name}", description='''{desc}''')"""
         # TODO: pass the request method from the APIRouteSpec
         response_type = "return JSONResponse(content=response)"
         # horrible if if if for type checking
-        if response.Params:
-            params = response.Params
-            if (len(params) > 0) and (params[0].paramType == "bytes"):
+        if response.Fields:
+            params = response.Fields
+            if (len(params) > 0) and (params[0].typeName == "bytes"):
                 response_type = """
     # Convert the bytes to a BytesIO object for streaming
     file_stream = io.BytesIO(response)
@@ -111,12 +111,12 @@ app = FastAPI(title="{name}", description='''{desc}''')"""
         content=file_stream, media_type="application/zip", headers=headers
     )
 """
-        assert request.Params is not None, f"RequestObject {request.id} has no Params"
+        assert request.Fields is not None, f"RequestObject {request.id} has no Fields"
 
         request_param_str = ", ".join(
-            [f"{param.name}: {param.paramType}" for param in request.Params]
+            [f"{param.name}: {param.typeName}" for param in request.Fields]
         )
-        param_names_str = ", ".join([param.name for param in request.Params])
+        param_names_str = ", ".join([param.name for param in request.Fields])
 
         # method is a string here even though it should be an enum in the model
         method_name = compiled_route.ApiRouteSpec.method.lower()  # type: ignore

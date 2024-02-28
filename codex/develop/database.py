@@ -9,7 +9,7 @@ async def get_deliverable(
     user_id: str, app_id: str, spec_id: str, deliverable_id: str
 ) -> CompletedApp:
     completed_app = await CompletedApp.prisma().find_unique_or_raise(
-        where={"id": deliverable_id},
+        where={"id": deliverable_id, "deleted": False},
         include={"CompiledRoutes": True},
     )
 
@@ -33,7 +33,9 @@ async def list_deliverables(
     page_size: int = 10,
 ) -> Tuple[List[CompletedApp], Pagination]:
     skip = (page - 1) * page_size
-    total_items = await CompletedApp.prisma().count(where={"specificationId": spec_id})
+    total_items = await CompletedApp.prisma().count(
+        where={"deleted": False, "specificationId": spec_id}
+    )
     if total_items == 0:
         return [], Pagination(total_items=0, total_pages=0, current_page=0, page_size=0)
     total_pages = (total_items + page_size - 1) // page_size
@@ -42,6 +44,7 @@ async def list_deliverables(
         skip=skip,
         take=page_size,
         include={"CompiledRoutes": True},
+        where={"deleted": False, "specificationId": spec_id},
     )
 
     pagination = Pagination(
