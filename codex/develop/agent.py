@@ -47,8 +47,8 @@ async def develop_route(
     api_route: APIRouteSpec,
     goal_description: str,
     function_name: str,
-    function_id: str = None,
-    function_template: str = None,
+    function_id: str | None = None,
+    function_template: str | None = None,
     depth: int = 0,
 ) -> Function:
     """
@@ -56,12 +56,14 @@ async def develop_route(
     based on the provided function definition and api route spec.
 
     Args:
-        generated_functions (list[Function]): The list of already generated functions, used to promote function re-use.
+        generated_functions (list[Function]): The list of already generated functions,
+                                              used to promote function re-use.
         ids (Identifiers): The identifiers for the function.
         api_route (APIRouteSpec): The API route specification.
         goal_description (str): The high-level goal of the function to create.
         function_name (str): The name of the function to create.
-        function_id (str): The id of the function to create. If not provided, a new root-function will be created.
+        function_id (str): The id of the function to create. If not provided,
+                           a new root-function will be created.
         function_template (str): The docstring/template of the function to create.
         depth (int): The depth of the recursion.
 
@@ -69,7 +71,8 @@ async def develop_route(
         Function: The developed route function.
     """
     logger.info(
-        f"Developing for route: {api_route.path} - Func: {function_name}, depth: {depth}"
+        f"Developing for route: {api_route.path} - "
+        "Func: {function_name}, depth: {depth}"
     )
     if depth >= RECURSION_DEPTH_LIMIT:
         raise ValueError("Recursion depth exceeded")
