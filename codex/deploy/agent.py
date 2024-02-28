@@ -121,7 +121,7 @@ app = FastAPI(title="{name}", description='''{desc}''')"""
         # method is a string here even though it should be an enum in the model
         method_name = compiled_route.ApiRouteSpec.method.lower()  # type: ignore
         route_code = f"""@app.{method_name}("{route_path}")
-async def {compiled_route.mainFunctionName}_route({request_param_str}):
+async def {method_name}_{compiled_route.mainFunctionName}_route({request_param_str}):
     try:
         response = {compiled_route.mainFunctionName}({param_names_str})
     except Exception as e:
