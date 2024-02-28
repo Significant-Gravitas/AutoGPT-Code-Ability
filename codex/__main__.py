@@ -61,8 +61,8 @@ async def fetch_deliverable(session, user_id, app_id):
             deploy_url = f"http://127.0.0.1:8000/api/v1/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/"
             async with session.post(deploy_url) as dresponse:
                 deploy_data = await dresponse.json()
-                deployment_id = deploy_data["deployment"]["id"]
-                deployment_file_name = deploy_data["deployment"]["file_name"]
+                deployment_id = deploy_data["id"]
+                deployment_file_name = deploy_data["file_name"]
 
                 # Download the zip file
                 download_url = (
@@ -108,7 +108,23 @@ async def run_benchmark():
             fetch_deliverable(session, test_const.user_id_1, test_const.app_id_8),
         ]
         results = await asyncio.gather(*tasks)
-        print(results)
+    await client.disconnect()
+
+
+async def run_specific_benchmark(task):
+    from prisma import Prisma
+
+    from codex.requirements.model import ExampleTask
+
+    client = Prisma(auto_register=True)
+    await client.connect()
+    async with aiohttp.ClientSession() as session:
+        tasks = [
+            fetch_deliverable(
+                session, test_const.user_id_1, ExampleTask.get_app_id(task)
+            ),
+        ]
+        results = await asyncio.gather(*tasks)
     await client.disconnect()
 
 
@@ -116,6 +132,23 @@ async def run_benchmark():
 def benchmark():
     """Run the benchmark tests"""
     asyncio.run(run_benchmark())
+
+
+@cli.command()
+def run_example():
+    from codex.requirements.model import ExampleTask
+
+    i = 1
+    click.echo("Select a test case:")
+
+    for task in list(ExampleTask):
+        click.echo(f"[{i}] {task.value}")
+        i += 1
+
+    case = int(input("Case: "))
+
+    task = list(ExampleTask)[case - 1]
+    asyncio.run(run_specific_benchmark(task))
 
 
 @cli.command()
