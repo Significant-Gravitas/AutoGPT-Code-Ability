@@ -122,7 +122,7 @@ app = FastAPI(title="{name}", description='''{desc}''')"""
 
         # method is a string here even though it should be an enum in the model
         method_name = compiled_route.ApiRouteSpec.method.lower()  # type: ignore
-        api_route_name = "{method_name}_{compiled_route.mainFunctionName}_route"
+        api_route_name = f"{method_name}_{compiled_route.mainFunctionName}_route"
         if compiled_route.mainFunctionName in main_function_names:
             main_function_names.add(compiled_route.mainFunctionName)
 
