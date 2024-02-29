@@ -167,35 +167,6 @@ async def recursive_compile_route(
         )
 
 
-async def create_app(
-    ids: Identifiers, spec: Specification, compiled_routes: List[CompiledRoute]
-) -> CompletedApp:
-    """
-    Create an app using the given identifiers, specification, and compiled routes.
-
-    Args:
-        ids (Identifiers): The identifiers for the app.
-        spec (Specification): The specification for the app.
-        compiled_routes (List[CompiledRoute]): The compiled routes for the app.
-
-    Returns:
-        CompletedApp: The completed app object.
-    """
-    if spec.ApiRouteSpecs is None:
-        raise ValueError("Specification must have at least one API route.")
-
-    data = CompletedAppCreateInput(
-        name=spec.name,
-        description=spec.context,
-        User={"connect": {"id": ids.user_id}},
-        CompiledRoutes={"connect": [{"id": route.id} for route in compiled_routes]},
-        Specification={"connect": {"id": spec.id}},
-        Application={"connect": {"id": ids.app_id}},
-    )
-    app = await CompletedApp.prisma().create(data)
-    return app
-
-
 def process_object_type(obj: ObjectType, object_type_ids: Set[str] = set()) -> str:
     """
     Generate a Pydantic object based on the given ObjectType.
@@ -269,6 +240,35 @@ def process_object_field(field: ObjectField, object_type_ids: Set[str]) -> str:
     pydantic_classes = process_object_type(field.Type, object_type_ids)
 
     return pydantic_classes
+
+
+async def create_app(
+    ids: Identifiers, spec: Specification, compiled_routes: List[CompiledRoute]
+) -> CompletedApp:
+    """
+    Create an app using the given identifiers, specification, and compiled routes.
+
+    Args:
+        ids (Identifiers): The identifiers for the app.
+        spec (Specification): The specification for the app.
+        compiled_routes (List[CompiledRoute]): The compiled routes for the app.
+
+    Returns:
+        CompletedApp: The completed app object.
+    """
+    if spec.ApiRouteSpecs is None:
+        raise ValueError("Specification must have at least one API route.")
+
+    data = CompletedAppCreateInput(
+        name=spec.name,
+        description=spec.context,
+        User={"connect": {"id": ids.user_id}},
+        CompiledRoutes={"connect": [{"id": route.id} for route in compiled_routes]},
+        Specification={"connect": {"id": spec.id}},
+        Application={"connect": {"id": ids.app_id}},
+    )
+    app = await CompletedApp.prisma().create(data)
+    return app
 
 
 def create_server_code(completed_app: CompletedApp) -> Application:
