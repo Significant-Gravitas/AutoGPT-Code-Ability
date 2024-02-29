@@ -101,7 +101,7 @@ async def take_next_step(
     user_id: str,
     app_id: str,
     interview_id: str,
-    answers: list[InterviewMessageWithResponse],
+    answers: list[InterviewMessageWithResponse | InterviewMessage],
 ) -> Response | InterviewResponse:
     """
     Retrieve a specific specification by its ID for a given application and user.
@@ -139,11 +139,16 @@ async def take_next_step(
             user_id, app_id, interview_id
         )
 
-        # Add Answers to questions
+        # Add Answers to questions that were answered by the user
+        # TODO: check what happens if the user answers a question that was not asked
+        # TODO: check if the user answers a question that was already answered
+        # TODO: check if the user answers a question that was not asked
         updated_interview = await codex.interview.database.answer_questions(
-            interview_id=interview.id, answers=answers
+            interview_id=interview.id,
+            answers=[x for x in answers if isinstance(x, InterviewMessageWithResponse)],
         )
         # Turn the questions into a list of InterviewMessageWithResponse and InterviewMessage
+        # TODO: Check that all the questions (answered or not) are in the memory with ids
         memory: List[InterviewMessage | InterviewMessageWithResponse] = []
         for x in updated_interview.Questions or []:
             if x.answer:
@@ -162,16 +167,23 @@ async def take_next_step(
             task=interview.task, ids=ids, memory=memory, tools=tools
         )
 
-        # TODO: Debug from here on
-        # update the existing questions
+        # TODO: Debug from here on... does this add answered search to the db?
+        # Add the answers from the tool usage in next_step to the db
         updated_interview = await codex.interview.database.answer_questions(
-            interview_id=interview_id, answers=answers
+            interview_id=interview_id,
+            answers=[
+                x
+                for x in next_set.memory
+                if isinstance(x, InterviewMessageWithResponse)
+            ],
         )
 
-        # Insert new questions into db
+        # Insert new questions built by next_step into db
         updated_interview = await codex.interview.database.add_questions(
             interview_id=interview_id, questions=next_set.questions_to_ask
         )
+
+        # If the interview is finished, add the finished content to the db
         if (
             next_set.finished
             and next_set.finished_text
