@@ -79,7 +79,8 @@ async def develop_route(
 
     Args:
         generated_objects (list[ObjectType]): The list of already generated objects, used to promote object re-use.
-        generated_functions (list[Function]): The list of already generated functions, used to promote function re-use.
+        generated_functions (list[Function]): The list of already generated functions,
+                                              used to promote function re-use.
         ids (Identifiers): The identifiers for the function.
         api_route (APIRouteSpec): The API route specification.
         goal_description (str): The high-level goal of the function to create.

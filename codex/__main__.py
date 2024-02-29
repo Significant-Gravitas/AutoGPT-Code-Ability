@@ -4,6 +4,7 @@ import os
 import shutil
 import zipfile
 import logging
+from datetime import datetime
 
 import aiohttp
 import click
@@ -49,15 +50,18 @@ def populate_db(database):
 async def fetch_deliverable(session, user_id, app_id):
     from codex.requirements.database import get_latest_specification
 
+    start_time = datetime.now()
     spec = await get_latest_specification(user_id, app_id)
     spec_id = spec.id
-    print(f"Fetching deliverable for {spec.name}")
+    click.echo(f"Developing the application for {spec.name}")
     url = f"http://127.0.0.1:8000/api/v1/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/"
-    async with session.post(url) as response:
+    async with session.post(url, timeout=600) as response:
         try:
+            creation_time = datetime.now()
+            click.echo(f"Development took {creation_time - start_time}")
             data = await response.json()
             deliverable_id = data["id"]
-            click.echo(f"Created deliverable: {data}")
+            click.echo(f"Created application: {data}")
             deploy_url = f"http://127.0.0.1:8000/api/v1/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/"
             async with session.post(deploy_url) as dresponse:
                 deploy_data = await dresponse.json()
@@ -82,8 +86,11 @@ async def fetch_deliverable(session, user_id, app_id):
                     os.makedirs(extracted_folder)
                 with zipfile.ZipFile(content, "r") as zip_ref:
                     zip_ref.extractall(extracted_folder)
-
-                click.echo(f"Downloaded and extracted: {extracted_folder}")
+                end_time = datetime.now()
+                click.echo(
+                    f"Downloaded and extracted: "
+                    f"{extracted_folder} in {end_time - start_time}"
+                )
 
                 return deploy_data
         except Exception as e:
@@ -105,9 +112,28 @@ async def run_benchmark():
             fetch_deliverable(session, test_const.user_id_1, test_const.app_id_3),
             fetch_deliverable(session, test_const.user_id_1, test_const.app_id_4),
             fetch_deliverable(session, test_const.user_id_1, test_const.app_id_5),
+            fetch_deliverable(session, test_const.user_id_1, test_const.app_id_6),
+            fetch_deliverable(session, test_const.user_id_1, test_const.app_id_7),
+            fetch_deliverable(session, test_const.user_id_1, test_const.app_id_8),
         ]
         results = await asyncio.gather(*tasks)
-        print(results)
+    await client.disconnect()
+
+
+async def run_specific_benchmark(task):
+    from prisma import Prisma
+
+    from codex.requirements.model import ExampleTask
+
+    client = Prisma(auto_register=True)
+    await client.connect()
+    async with aiohttp.ClientSession() as session:
+        tasks = [
+            fetch_deliverable(
+                session, test_const.user_id_1, ExampleTask.get_app_id(task)
+            ),
+        ]
+        results = await asyncio.gather(*tasks)
     await client.disconnect()
 
 
@@ -115,6 +141,23 @@ async def run_benchmark():
 def benchmark():
     """Run the benchmark tests"""
     asyncio.run(run_benchmark())
+
+
+@cli.command()
+def run_example():
+    from codex.requirements.model import ExampleTask
+
+    i = 1
+    click.echo("Select a test case:")
+
+    for task in list(ExampleTask):
+        click.echo(f"[{i}] {task.value}")
+        i += 1
+    print("------")
+    case = int(input("Enter number of the case to run: "))
+
+    task = list(ExampleTask)[case - 1]
+    asyncio.run(run_specific_benchmark(task))
 
 
 @cli.command()

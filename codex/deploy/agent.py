@@ -1,6 +1,7 @@
 import ast
 import base64
 import logging
+import uuid
 from typing import Tuple
 
 import black
@@ -69,7 +70,8 @@ app = FastAPI(title="{name}", description='''{desc}''')"""
         raise ValueError("Application must have at least one compiled route.")
 
     packages = []
-    for compiled_route in completed_app.CompiledRoutes:
+    main_function_names = set()
+    for i, compiled_route in enumerate(completed_app.CompiledRoutes):
         if compiled_route.ApiRouteSpec is None:
             raise ValueError(f"Compiled route {compiled_route.id} has no APIRouteSpec")
 
@@ -120,8 +122,15 @@ app = FastAPI(title="{name}", description='''{desc}''')"""
 
         # method is a string here even though it should be an enum in the model
         method_name = compiled_route.ApiRouteSpec.method.lower()  # type: ignore
+        api_route_name = f"{method_name}_{compiled_route.mainFunctionName}_route"
+        if compiled_route.mainFunctionName in main_function_names:
+            main_function_names.add(compiled_route.mainFunctionName)
+
+            unique_end = uuid.uuid4().hex[:2]
+            api_route_name += f"_{unique_end}"
+
         route_code = f"""@app.{method_name}("{route_path}")
-async def {compiled_route.mainFunctionName}_route({request_param_str}):
+async def {api_route_name}({request_param_str}):
     try:
         response = {compiled_route.mainFunctionName}({param_names_str})
     except Exception as e:

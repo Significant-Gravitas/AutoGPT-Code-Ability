@@ -56,6 +56,7 @@ from codex.requirements.model import (
     DBResponse,
     Endpoint,
     EndpointSchemaRefinementResponse,
+    ExampleTask,
     Feature,
     FeaturesSuperObject,
     ModuleRefinement,
@@ -394,7 +395,7 @@ async def generate_requirements(
 
     full_spec = ApplicationRequirements(
         name=running_state_obj.product_name,
-        context=running_state_obj.__str__(),
+        context=running_state_obj.project_description,
         api_routes=api_routes,
     )
     logger.info(f"Full Spec Done")
@@ -404,45 +405,31 @@ async def generate_requirements(
     return saved_spec
 
 
-def hardcoded_requirements(task: str) -> ApplicationRequirements:
+def hardcoded_requirements(task: ExampleTask) -> ApplicationRequirements:
     """
     This will take the application name and return the manually
     defined requirements for the application in the correct format
     """
     logger.warning("⚠️ Using hardcoded requirements")
     match task:
-        case "Availability Checker":
+        case ExampleTask.AVAILABILITY_CHECKER:
             return availability_checker_requirements()
-        case "Invoice Generator":
+        case ExampleTask.INVOICE_GENERATOR:
             return invoice_generator_requirements()
-        case "Appointment Optimization Tool":
+        case ExampleTask.APPOINTMENT_OPTIMIZATION_TOOL:
             return appointment_optimization_requirements()
-        case "Distance Calculator":
+        case ExampleTask.DISTANCE_CALCULATOR:
             return distance_calculator_requirements()
-        case "Profile Management System":
+        case ExampleTask.PROFILE_MANAGEMENT_SYSTEM:
             return profile_management()
-        case "Appointment Scheduling System":
+        case ExampleTask.CALENDAR_BOOKING_SYSTEM:
             return calendar_booking_system()
-        case "Survey Tool":
-            raise NotImplementedError("Survey Tool not implemented")
-        case "Inventory Management System":
+        case ExampleTask.INVENTORY_MANAGEMENT_SYSTEM:
             return inventory_mgmt_system()
-        case "Invoiceing and Payment Tracking System":
+        case ExampleTask.INVOICING_AND_PAYMENT_TRACKING_SYSTEM:
             return invoice_payment_tracking()
-        case "TicTacToe Game":
+        case ExampleTask.TICTACTOE_GAME:
             return tictactoe_game_requirements()
-        case "Client Portal":
-            raise NotImplementedError("Client Portal not implemented")
-        case "Tutor Scheduling App":
-            raise NotImplementedError("Tutor Scheduling App not implemented")
-        case "Cleaning Services App":
-            raise NotImplementedError("Cleaning Services App not implemented")
-        case "Personal Trainer App":
-            raise NotImplementedError("Personal Trainer App not implemented")
-        case "Plumber App":
-            raise NotImplementedError("Plumber App not implemented")
-        case "Property Management System":
-            raise NotImplementedError("Property Management System not implemented")
         case _:
             raise NotImplementedError(f"Task {task} not implemented")
 
@@ -474,20 +461,10 @@ async def populate_database_specs():
         app_id_9,
     )
 
-    requirements = [
-        ("Availability Checker", app_id_1),
-        ("Invoice Generator", app_id_2),
-        ("Appointment Optimization Tool", app_id_3),
-        ("Distance Calculator", app_id_4),
-        ("Profile Management System", app_id_5),
-        # ("Appointment Scheduling System", app_id_6),
-        # ("Inventory Management System", app_id_7),
-        # ("Invoiceing and Payment Tracking System", app_id_8),
-        ("TicTacToe Game", app_id_9),
-    ]
     ids = identifier_1
 
-    for task, app_id in requirements:
+    for task in list(ExampleTask):
+        app_id = ExampleTask.get_app_id(task)
         print(f"Creating Spec for {task}, with app_id {app_id}")
         spec = hardcoded_requirements(task)
         ids.app_id = app_id
