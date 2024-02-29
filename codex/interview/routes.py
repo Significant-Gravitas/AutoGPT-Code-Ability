@@ -34,7 +34,7 @@ async def start_interview(
     interview_primer: InterviewCreate,
 ) -> Response | InterviewResponse:
     """
-    Create a new specification for a given application and user.
+    Create a new Interview for a given application and user.
     """
     try:
         app = await codex.database.get_app_by_id(user_id, app_id)
@@ -83,11 +83,9 @@ async def start_interview(
         )
 
     except Exception as e:
-        logger.error(f"Error creating a new specification: {e}")
+        logger.error(f"Error creating a new Interview: {e}")
         return Response(
-            content=json.dumps(
-                {"error": f"Error creating a new specification: {str(e)}"}
-            ),
+            content=json.dumps({"error": f"Error creating a new Interview: {str(e)}"}),
             status_code=500,
             media_type="application/json",
         )
@@ -104,7 +102,7 @@ async def take_next_step(
     answers: list[InterviewMessageWithResponse | InterviewMessage],
 ) -> Response | InterviewResponse:
     """
-    Retrieve a specific specification by its ID for a given application and user.
+    Keep working through the interview until it is finished
     """
 
     tools: list[Tool] = [
@@ -140,15 +138,12 @@ async def take_next_step(
         )
 
         # Add Answers to questions that were answered by the user
-        # TODO: check what happens if the user answers a question that was not asked
-        # TODO: check if the user answers a question that was already answered
         # TODO: check if the user answers a question that was not asked
         updated_interview = await codex.interview.database.answer_questions(
             interview_id=interview.id,
             answers=[x for x in answers if isinstance(x, InterviewMessageWithResponse)],
         )
         # Turn the questions into a list of InterviewMessageWithResponse and InterviewMessage
-        # TODO: Check that all the questions (answered or not) are in the memory with ids
         memory: List[InterviewMessage | InterviewMessageWithResponse] = []
         for x in updated_interview.Questions or []:
             if x.answer:
@@ -167,7 +162,6 @@ async def take_next_step(
             task=interview.task, ids=ids, memory=memory, tools=tools
         )
 
-        # TODO: Debug from here on... does this add answered search to the db?
         # Add the answers from the tool usage in next_step to the db
         updated_interview = await codex.interview.database.answer_questions(
             interview_id=interview_id,
@@ -202,30 +196,30 @@ async def take_next_step(
             uses=[x for x in updated_interview.Questions or [] if not x.answer],
         )
     except Exception as e:
-        logger.error(f"Error retrieving specification: {e}")
+        logger.exception(f"Error generating Interview: {e}")
         return Response(
-            content=json.dumps({"error": "Error retrieving specification"}),
+            content=json.dumps({"error": "Error Generating Interview"}),
             status_code=500,
             media_type="application/json",
         )
 
 
 @interview_router.delete("/user/{user_id}/apps/{app_id}/interview/{interview_id}")
-async def delete_spec(user_id: str, app_id: str, interview_id: str):
+async def delete_interview(user_id: str, app_id: str, interview_id: str):
     """
     Delete a specific interview by its ID for a given application and user.
     """
     try:
         await codex.interview.database.delete_interview(interview_id)
         return Response(
-            content=json.dumps({"message": "Specification deleted successfully"}),
+            content=json.dumps({"message": "Interview deleted successfully"}),
             status_code=200,
             media_type="application/json",
         )
     except Exception as e:
-        logger.error(f"Error deleting specification: {e}")
+        logger.error(f"Error deleting Interview: {e}")
         return Response(
-            content=json.dumps({"error": "Error deleting specification"}),
+            content=json.dumps({"error": "Error deleting Interview"}),
             status_code=500,
             media_type="application/json",
         )

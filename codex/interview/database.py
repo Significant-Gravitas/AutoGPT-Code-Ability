@@ -35,7 +35,6 @@ async def answer_questions(
     interview_id: str, answers: list[InterviewMessageWithResponse]
 ) -> Interview:
     for a in answers:
-        # TODO: Check this exists in a better way
         await Question.prisma().find_unique_or_raise(
             where={"id": a.id, "interviewId": interview_id}
         )

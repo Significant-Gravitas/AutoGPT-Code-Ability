@@ -6,7 +6,7 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
-from codex.interview.model import InterviewMessageWithResponse
+from codex.interview.model import InterviewMessageOptionalId, InterviewMessageWithResponse, InterviewMessageWithResponseOptionalId
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class FinishBlock(AIBlock):
     # Should we force the LLM to reply in JSON
     is_json_response = True
     # If we are using is_json_response, what is the response model
-    pydantic_object = InterviewMessageWithResponse
+    pydantic_object = InterviewMessageWithResponseOptionalId
 
     def validate(
         self, invoke_params: dict, response: ValidatedResponse
@@ -36,8 +36,8 @@ class FinishBlock(AIBlock):
         blocks this is much more complex. If validation failes it triggers a retry.
         """
         try:
-            model: InterviewMessageWithResponse = (
-                InterviewMessageWithResponse.model_validate_json(response.response)
+            model: InterviewMessageWithResponseOptionalId = (
+                InterviewMessageWithResponseOptionalId.model_validate_json(response.response)
             )
             response.response = model
         except Exception as e:

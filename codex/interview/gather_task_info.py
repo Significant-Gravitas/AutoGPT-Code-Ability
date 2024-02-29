@@ -10,6 +10,7 @@ from codex.interview.model import (
     InterviewMessageOptionalId,
     InterviewMessageUse,
     InterviewMessageWithResponse,
+    InterviewMessageWithResponseOptionalId,
     NextStepResponse,
 )
 
@@ -55,6 +56,7 @@ async def next_step(
         memory=[x for x in memory if isinstance(x, InterviewMessageWithResponse)],
         ids=ids,
     )
+
     # remove all memory that was used to ask questions
     memory_removals = [
         i
@@ -75,6 +77,7 @@ async def next_step(
         memory=[x for x in memory if isinstance(x, InterviewMessageWithResponse)],
         ids=ids,
     )
+
     # remove all memory that was used to search
     memory_removals = [
         i
@@ -96,6 +99,19 @@ async def next_step(
             "memory": memory,
         },
     )
+
+    # convert all InterviewMessageWithResponseOptionalId to InterviewMessageWithResponse
+    new_mem = []
+    for i in memory:
+        if isinstance(i, InterviewMessageWithResponseOptionalId):
+            new_mem.append(
+                InterviewMessageWithResponse(
+                    id=i.id, tool=i.tool, content=i.content, response=i.response
+                )
+            )
+        else:
+            new_mem.append(i)
+    memory = new_mem
 
     # if there is only a finished message, return next reponse with it set
     if (
