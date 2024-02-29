@@ -6,7 +6,12 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
-from codex.interview.model import InterviewMessageOptionalId, InterviewMessageWithResponse, InterviewMessageWithResponseOptionalId
+from codex.common.ai_model import OpenAIChatClient
+from codex.common.logging_config import setup_logging
+from codex.interview.model import (
+    InterviewMessageWithResponse,
+    InterviewMessageWithResponseOptionalId,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +42,9 @@ class FinishBlock(AIBlock):
         """
         try:
             model: InterviewMessageWithResponseOptionalId = (
-                InterviewMessageWithResponseOptionalId.model_validate_json(response.response)
+                InterviewMessageWithResponseOptionalId.model_validate_json(
+                    response.response
+                )
             )
             response.response = model
         except Exception as e:
@@ -56,124 +63,136 @@ class FinishBlock(AIBlock):
         pass
 
 
-# if __name__ == "__main__":
-#     """
-#     This is a simple test to run the block
-#     """
-#     from asyncio import run
+if __name__ == "__main__":
+    """
+    This is a simple test to run the block
+    """
+    from asyncio import run
 
-#     from openai import AsyncOpenAI
-#     from prisma import Prisma
+    from prisma import Prisma
 
-#     from codex.common.test_const import identifier_1
+    from codex.common.test_const import identifier_1
 
-#     ids = identifier_1
-#     db_client = Prisma(auto_register=True)
-#     oai = AsyncOpenAI()
+    ids = identifier_1
 
-#     finish_block = FinishBlock(
-#         oai_client=oai,
-#     )
+    setup_logging(local=True)
 
-#     async def run_ai() -> dict[str, InterviewMessageWithResponse]:
-#         await db_client.connect()
-#         memory: list[InterviewMessageWithResponse] = [
-#             InterviewMessageWithResponse(
-#                 tool="ask",
-#                 content="How do you currently manage your tutoring appointments and invoices?",
-#                 response="I currently use a combination of Google Calendar and a spreadsheet to manage my tutoring appointments and invoices. I manually create appointments in Google Calendar and then manually create invoices in a spreadsheet. It is a very manual process and I am looking for a more automated solution.",
-#             ),
-#             InterviewMessageWithResponse(
-#                 tool="ask",
-#                 content="Do you prefer signing up with OAuth2 providers or traditional sign-in methods for your applications?",
-#                 response="I prefer signing up with OAuth2 providers. It is more convenient and secure. However, I also need the option for traditional sign-in methods for users who do not want to use OAuth2.",
-#             ),
-#             InterviewMessageWithResponse(
-#                 tool="ask",
-#                 content="What security measures do you expect for traditional sign-in methods?",
-#                 response="For traditional sign-in methods, I expect strong password requirements, secure password storage, and the ability to reset passwords if needed.",
-#             ),
-#             InterviewMessageWithResponse(
-#                 tool="ask",
-#                 content="How do you distinguish between clients and tutors in your current system?",
-#                 response="In my current system, I am the only tutor, so I do not need to distinguish between clients and tutors. However, in the future, I may need to be able to distinguish between clients and tutors.",
-#             ),
-#             InterviewMessageWithResponse(
-#                 tool="ask",
-#                 content="How important is financial management, such as invoice management and payment tracking, in your tutoring activities?",
-#                 response="Financial management is very important to me. I need to be able to easily create and send invoices, track payments, and generate reports on my tutoring income.",
-#             ),
-#             InterviewMessageWithResponse(
-#                 tool="ask",
-#                 content="Do you need detailed reports on your tutoring income, and how often do you usually review these reports?",
-#                 response="I need detailed reports on my tutoring income, including paid/failed invoice notifications, unpaid invoice follow-up, and summarizing d/w/m/y income. I review these reports monthly.",
-#             ),
-#             InterviewMessageWithResponse(
-#                 tool="search",
-#                 content="best practices for implementing OAuth2 in mobile applications",
-#                 response="Best practices for implementing OAuth2 in mobile applications include using secure and well-maintained libraries, following the OAuth2 specification, and using secure token storage and transmission.",
-#             ),
-#             InterviewMessageWithResponse(
-#                 tool="search",
-#                 content="secure password storage and reset methodologies",
-#                 response="Secure password storage and reset methodologies include using strong hashing algorithms, salting passwords, and implementing multi-factor authentication. Password reset methodologies include using secure token-based reset links and requiring additional verification before resetting a password.",
-#             ),
-#             InterviewMessageWithResponse(
-#                 tool="ask",
-#                 content="How important is the feature of scheduling, rescheduling, and canceling appointments for you?",
-#                 response="Scheduling, rescheduling, and canceling appointments is very important for me. I have a very busy schedule and need to be able to easily manage my appointments.",
-#             ),
-#             InterviewMessageWithResponse(
-#                 tool="ask",
-#                 content="Do you need the ability to set up recurring appointments?",
-#                 response="Yes, I need the ability to set up recurring appointments. I have many clients who have regular tutoring sessions with me.",
-#             ),
-#             InterviewMessageWithResponse(
-#                 tool="search",
-#                 content="Financial management tools for freelancers",
-#                 response="Financial management tools for freelancers include FreshBooks, QuickBooks Self-Employed, and Wave. These tools can help freelancers create and send invoices, track payments, and generate reports on their income.",
-#             ),
-#         ]
+    db_client = Prisma(auto_register=True)
+    OpenAIChatClient.configure({})
 
-#         content = """The Tutor App is designed to streamline the management process for tutors in handling their client engagements, schedules, and financial transactions. The primary functionalities outlined for implementation include a robust appointment system that supports scheduling, rescheduling, and canceling appointments, which is vital for managing a busy tutoring schedule. Following an appointment, the system will automatically manage invoicing, sending detailed invoices to clients reflecting the session's conclusion.
+    finish_block = FinishBlock()
 
-# To accommodate various user preferences, the app will offer dual signup options: OAuth2 for users seeking a convenient and secure single sign-on experience, and traditional sign-in methods for those desiring or necessitating an alternative. Essential to the traditional sign-in method is the implementation of contemporary security practices, including stringent password requirements, secure hash-based storage, and a user-friendly password reset mechanism.
+    async def run_ai() -> dict[str, InterviewMessageWithResponseOptionalId]:
+        await db_client.connect()
+        memory: list[InterviewMessageWithResponse] = [
+            InterviewMessageWithResponse(
+                id="129e8e9e-501f-4f3e-8f3e-6f88e3e1e0e8",
+                tool="ask",
+                content="How do you currently manage your tutoring appointments and invoices?",
+                response="I currently use a combination of Google Calendar and a spreadsheet to manage my tutoring appointments and invoices. I manually create appointments in Google Calendar and then manually create invoices in a spreadsheet. It is a very manual process and I am looking for a more automated solution.",
+            ),
+            InterviewMessageWithResponse(
+                id="129e8e9e-501f-4f3e-8f3e-6f88e3e1e0e9",
+                tool="ask",
+                content="Do you prefer signing up with OAuth2 providers or traditional sign-in methods for your applications?",
+                response="I prefer signing up with OAuth2 providers. It is more convenient and secure. However, I also need the option for traditional sign-in methods for users who do not want to use OAuth2.",
+            ),
+            InterviewMessageWithResponse(
+                id="129e8e9e-501f-4b3e-8f3e-6f88e3e1e0e9",
+                tool="ask",
+                content="What security measures do you expect for traditional sign-in methods?",
+                response="For traditional sign-in methods, I expect strong password requirements, secure password storage, and the ability to reset passwords if needed.",
+            ),
+            InterviewMessageWithResponse(
+                id="129e8e9e-501f-4b3e-8f3e-6f88e3e1e0e2",
+                tool="ask",
+                content="How do you distinguish between clients and tutors in your current system?",
+                response="In my current system, I am the only tutor, so I do not need to distinguish between clients and tutors. However, in the future, I may need to be able to distinguish between clients and tutors.",
+            ),
+            InterviewMessageWithResponse(
+                id="129e879e-501f-4b3e-8f3e-6f88e3e1e0e3",
+                tool="ask",
+                content="How important is financial management, such as invoice management and payment tracking, in your tutoring activities?",
+                response="Financial management is very important to me. I need to be able to easily create and send invoices, track payments, and generate reports on my tutoring income.",
+            ),
+            InterviewMessageWithResponse(
+                id="129e8e9e-501f-4b3e-8f3e-6f88e3e1e0e4",
+                tool="ask",
+                content="Do you need detailed reports on your tutoring income, and how often do you usually review these reports?",
+                response="I need detailed reports on my tutoring income, including paid/failed invoice notifications, unpaid invoice follow-up, and summarizing d/w/m/y income. I review these reports monthly.",
+            ),
+            InterviewMessageWithResponse(
+                id="129e8e9e-501f-4b3e-8f3e-6f88e3e1e0e5",
+                tool="search",
+                content="best practices for implementing OAuth2 in mobile applications",
+                response="Best practices for implementing OAuth2 in mobile applications include using secure and well-maintained libraries, following the OAuth2 specification, and using secure token storage and transmission.",
+            ),
+            InterviewMessageWithResponse(
+                id="129e8e9e-501f-4b3e-8f3e-6f88e3e1e0e6",
+                tool="search",
+                content="secure password storage and reset methodologies",
+                response="Secure password storage and reset methodologies include using strong hashing algorithms, salting passwords, and implementing multi-factor authentication. Password reset methodologies include using secure token-based reset links and requiring additional verification before resetting a password.",
+            ),
+            InterviewMessageWithResponse(
+                id="129e8e9e-501f-4b3e-8f3e-6f88e3e1e0e7",
+                tool="ask",
+                content="How important is the feature of scheduling, rescheduling, and canceling appointments for you?",
+                response="Scheduling, rescheduling, and canceling appointments is very important for me. I have a very busy schedule and need to be able to easily manage my appointments.",
+            ),
+            InterviewMessageWithResponse(
+                id="129e8e9e-501f-4b3e-8f3e-6f88e3e1e0e8",
+                tool="ask",
+                content="Do you need the ability to set up recurring appointments?",
+                response="Yes, I need the ability to set up recurring appointments. I have many clients who have regular tutoring sessions with me.",
+            ),
+            InterviewMessageWithResponse(
+                id="129e8e9e-501f-4b3e-8f3e-6f88e3e1e0e9",
+                tool="search",
+                content="Financial management tools for freelancers",
+                response="Financial management tools for freelancers include FreshBooks, QuickBooks Self-Employed, and Wave. These tools can help freelancers create and send invoices, track payments, and generate reports on their income.",
+            ),
+        ]
 
-# Authorization features within the app will distinctly identify clients and the tutor, safeguarding against unauthorized access and ensuring a tailored user experience for both parties. Enhanced financial management tools are also a cornerstone of the app’s design, encompassing comprehensive invoice management and payment tracking functionalities. These will facilitate immediate feedback on payment statuses, efficient follow-up on outstanding invoices, and the generation of detailed financial reports spanning daily, weekly, monthly, and yearly overviews.
+        content = """The Tutor App is designed to streamline the management process for tutors in handling their client engagements, schedules, and financial transactions. The primary functionalities outlined for implementation include a robust appointment system that supports scheduling, rescheduling, and canceling appointments, which is vital for managing a busy tutoring schedule. Following an appointment, the system will automatically manage invoicing, sending detailed invoices to clients reflecting the session's conclusion.
 
-# Informed by discussions around user needs and industry best practices, the app will incorporate secure password storage methodologies, leveraging strong hashing algorithms and multi-factor authentication where necessary. This aligns with the expressed need for high data security, especially in conventional authentication contexts.
+To accommodate various user preferences, the app will offer dual signup options: OAuth2 for users seeking a convenient and secure single sign-on experience, and traditional sign-in methods for those desiring or necessitating an alternative. Essential to the traditional sign-in method is the implementation of contemporary security practices, including stringent password requirements, secure hash-based storage, and a user-friendly password reset mechanism.
 
-# OAuth2 integration will follow acknowledged best practices, emphasizing the secure handling of tokens and the utilization of reliable libraries to ensure the integrity of this authentication pathway.
+Authorization features within the app will distinctly identify clients and the tutor, safeguarding against unauthorized access and ensuring a tailored user experience for both parties. Enhanced financial management tools are also a cornerstone of the app’s design, encompassing comprehensive invoice management and payment tracking functionalities. These will facilitate immediate feedback on payment statuses, efficient follow-up on outstanding invoices, and the generation of detailed financial reports spanning daily, weekly, monthly, and yearly overviews.
 
-# The financial management aspect, a critical component, will be designed to emulate the functionalities of successful freelancing tools, providing intuitive and comprehensive management of tutoring income and expenses. This portion of the app will offer detailed insights and reminders to support tutors in maintaining a clear view of their business's financial health.
+Informed by discussions around user needs and industry best practices, the app will incorporate secure password storage methodologies, leveraging strong hashing algorithms and multi-factor authentication where necessary. This aligns with the expressed need for high data security, especially in conventional authentication contexts.
 
-# In summary, The Tutor App aims to offer a comprehensive solution to the administrative challenges faced by tutors, emphasizing ease of use, security, and efficient management of appointments and finances."""
+OAuth2 integration will follow acknowledged best practices, emphasizing the secure handling of tokens and the utilization of reliable libraries to ensure the integrity of this authentication pathway.
 
-#         response_ref: InterviewMessageWithResponse = await finish_block.invoke(
-#             ids=ids,
-#             invoke_params={
-#                 "content": content,
-#                 "memory": memory,
-#             },
-#         )
+The financial management aspect, a critical component, will be designed to emulate the functionalities of successful freelancing tools, providing intuitive and comprehensive management of tutoring income and expenses. This portion of the app will offer detailed insights and reminders to support tutors in maintaining a clear view of their business's financial health.
 
-#         await db_client.disconnect()
-#         return {
-#             "response_ref": response_ref,
-#         }
+In summary, The Tutor App aims to offer a comprehensive solution to the administrative challenges faced by tutors, emphasizing ease of use, security, and efficient management of appointments and finances."""
 
-#     responses = run(run_ai())
+        response_ref: InterviewMessageWithResponseOptionalId = (
+            await finish_block.invoke(
+                ids=ids,
+                invoke_params={
+                    "content": content,
+                    "memory": memory,
+                },
+            )
+        )
 
-#     for key, item in responses.items():
-#         if isinstance(item, InterviewMessageWithResponse):
-#             logger.info(f"\t{item.tool}: {item.content}: {item.response}")
-#         else:
-#             logger.info(f"????")
-#             breakpoint()
+        await db_client.disconnect()
+        return {
+            "response_ref": response_ref,
+        }
 
-#     # # If you want to test the block in an interactive environment
-#     # import IPython
+    responses = run(run_ai())
 
-#     # IPython.embed()
-#     breakpoint()
-#     breakpoint()
+    for key, item in responses.items():
+        if isinstance(item, InterviewMessageWithResponseOptionalId):
+            logger.info(f"\t{item.tool}: {item.content}: {item.response}")
+        else:
+            logger.info(f"????")
+            breakpoint()
+
+    # # If you want to test the block in an interactive environment
+    # import IPython
+
+    # IPython.embed()
+    breakpoint()

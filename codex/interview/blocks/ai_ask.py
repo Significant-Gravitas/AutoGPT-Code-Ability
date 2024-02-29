@@ -3,7 +3,8 @@ import logging
 from pydantic import ValidationError
 
 from codex.common.ai_block import AIBlock, Identifiers, ValidatedResponse
-from codex.interview.model import InterviewMessageOptionalId, InterviewMessageWithResponse, InterviewMessageWithResponseOptionalId
+from codex.common.logging_config import setup_logging
+from codex.interview.model import InterviewMessageWithResponseOptionalId
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,9 @@ class AskBlock(AIBlock):
         """
         try:
             model: InterviewMessageWithResponseOptionalId = (
-                InterviewMessageWithResponseOptionalId.model_validate_json(response.response)
+                InterviewMessageWithResponseOptionalId.model_validate_json(
+                    response.response
+                )
             )
             response.response = model
         except Exception as e:
@@ -53,54 +56,50 @@ class AskBlock(AIBlock):
         pass
 
 
-# if __name__ == "__main__":
-#     """
-#     This is a simple test to run the block
-#     """
-#     from asyncio import run
+if __name__ == "__main__":
+    """
+    This is a simple test to run the block
+    """
+    from asyncio import run
 
-#     from openai import AsyncOpenAI
-#     from prisma import Prisma
+    from openai import AsyncOpenAI
+    from prisma import Prisma
 
-#     from codex.common.test_const import identifier_1
+    from codex.common.ai_model import OpenAIChatClient
+    from codex.common.test_const import identifier_1
+    from codex.common.ai_model import OpenAIChatClient
+    from codex.common.test_const import identifier_1
 
-#     ids = identifier_1
-#     db_client = Prisma(auto_register=True)
-#     oai = AsyncOpenAI()
+    ids = identifier_1
 
-#     ask_block = AskBlock(
-#         oai_client=oai,
-#     )
+    setup_logging(local=True)
 
-#     async def run_ai() -> dict[str, InterviewMessageWithResponse]:
-#         await db_client.connect()
-#         memory: list[InterviewMessageWithResponse] = []
-#         response_ref: InterviewMessageWithResponse = await ask_block.invoke(
-#             ids=ids,
-#             invoke_params={
-#                 "content": "Do you prefer signing up with OAuth2 providers or traditional sign-in methods for your applications?",
-#                 "memory": memory,
-#             },
-#         )
+    OpenAIChatClient.configure({})
+    db_client = Prisma(auto_register=True)
 
-#         await db_client.disconnect()
-#         return {
-#             "response_ref": response_ref,
-#         }
+    ask_block = AskBlock()
 
-#     responses = run(run_ai())
+    async def run_ai() -> dict[str, InterviewMessageWithResponseOptionalId]:
+        await db_client.connect()
+        memory: list[InterviewMessageWithResponseOptionalId] = []
+        response_ref: InterviewMessageWithResponseOptionalId = await ask_block.invoke(
+            ids=ids,
+            invoke_params={
+                "content": "Do you prefer signing up with OAuth2 providers or traditional sign-in methods for your applications?",
+                "memory": memory,
+            },
+        )
 
-#     for key, item in responses.items():
-#         if isinstance(item, InterviewMessageWithResponse):
-#             logger.info(f"\t{item.tool}: {item.content}: {item.response}")
-#         else:
-#             logger.info(f"{key}: {item}")
-#             breakpoint()
+        await db_client.disconnect()
+        return {
+            "response_ref": response_ref,
+        }
 
-#     # # If you want to test the block in an interactive environment
-#     # import IPython
+    responses = run(run_ai())
 
-#     # IPython.embed()
-#     breakpoint()
-#     breakpoint()
-#     breakpoint()
+    for key, item in responses.items():
+        if isinstance(item, InterviewMessageWithResponseOptionalId):
+            logger.info(f"\t{item.tool}: {item.content}: {item.response}")
+        else:
+            logger.info(f"{key}: {item}")
+            breakpoint()
