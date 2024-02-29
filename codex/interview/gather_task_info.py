@@ -119,7 +119,7 @@ async def next_step(
             questions_to_ask=[],
             finished=True,
             # this should only ever be one message
-            finished_text=(finish_response.content,finish_response.response),
+            finished_text=(finish_response.content, finish_response.response),
         )
     else:
         # Filter out the finished message if it exists, because we clearly aren't

@@ -91,7 +91,7 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
     # User Interview
 
     interview = await get_interview(
-        user_id=ids.user_id, app_id=ids.app_id, interview_id=ids.interview_id or ''
+        user_id=ids.user_id, app_id=ids.app_id, interview_id=ids.interview_id or ""
     )
 
     if not interview:
@@ -514,9 +514,7 @@ Additionally, it will have proper management of financials, including invoice ma
     async def run_gen():
         await db_client.connect()
         logger.info("Starting Requirements Generation")
-        output = await generate_requirements(
-            ids=ids,  description=task
-        )
+        output = await generate_requirements(ids=ids, description=task)
         logger.info("Requirements Generation Done")
         return output
 

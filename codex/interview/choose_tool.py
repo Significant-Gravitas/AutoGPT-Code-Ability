@@ -2,7 +2,12 @@
 import logging
 
 from codex.common.ai_block import Identifiers, Tool
-from codex.interview.model import InterviewMessage, InterviewMessageOptionalId, InterviewMessageWithResponse, InterviewMessageWithResponseOptionalId
+from codex.interview.model import (
+    InterviewMessage,
+    InterviewMessageOptionalId,
+    InterviewMessageWithResponse,
+    InterviewMessageWithResponseOptionalId,
+)
 from codex.requirements.matching import find_best_match
 
 logger = logging.getLogger(__name__)
@@ -12,7 +17,7 @@ async def use_tool(
     input: InterviewMessageOptionalId | InterviewMessageWithResponseOptionalId,
     ids: Identifiers,
     memory: list[InterviewMessageWithResponse],
-    available_tools: list[Tool]
+    available_tools: list[Tool],
 ) -> InterviewMessageWithResponseOptionalId:
     # Use best match here
     match = find_best_match(

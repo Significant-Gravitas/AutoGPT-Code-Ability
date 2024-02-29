@@ -44,8 +44,6 @@ class ValidatedResponse(BaseModel):
         arbitrary_types_allowed = True
 
 
-
-
 class AIBlock:
     """
     The AI BLock is a base class for all AI Blocks. It provides a common interface for
