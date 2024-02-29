@@ -7,7 +7,7 @@ from codex.common.ai_block import (
     ValidationError,
 )
 from codex.common.logging_config import setup_logging
-from codex.requirements.model import InterviewMessageWithResponse
+from codex.interview.model import InterviewMessageWithResponse
 
 logger = logging.getLogger(__name__)
 
@@ -57,53 +57,53 @@ class SearchBlock(AIBlock):
         pass
 
 
-if __name__ == "__main__":
-    """
-    This is a simple test to run the block
-    """
-    from asyncio import run
+# if __name__ == "__main__":
+#     """
+#     This is a simple test to run the block
+#     """
+#     from asyncio import run
 
-    from openai import AsyncOpenAI
-    from prisma import Prisma
+#     from openai import AsyncOpenAI
+#     from prisma import Prisma
 
-    from codex.common.test_const import identifier_1
+#     from codex.common.test_const import identifier_1
 
-    ids = identifier_1
-    db_client = Prisma(auto_register=True)
-    oai = AsyncOpenAI()
+#     ids = identifier_1
+#     db_client = Prisma(auto_register=True)
+#     oai = AsyncOpenAI()
 
-    search_block = SearchBlock(
-        oai_client=oai,
-    )
+#     search_block = SearchBlock(
+#         oai_client=oai,
+#     )
 
-    async def run_ai() -> dict[str, InterviewMessageWithResponse]:
-        await db_client.connect()
-        memory: list[InterviewMessageWithResponse] = []
-        response_ref: InterviewMessageWithResponse = await search_block.invoke(
-            ids=ids,
-            invoke_params={
-                "content": "best practices for implementing OAuth2 in mobile applications",
-                "memory": memory,
-            },
-        )
+#     async def run_ai() -> dict[str, InterviewMessageWithResponse]:
+#         await db_client.connect()
+#         memory: list[InterviewMessageWithResponse] = []
+#         response_ref: InterviewMessageWithResponse = await search_block.invoke(
+#             ids=ids,
+#             invoke_params={
+#                 "content": "best practices for implementing OAuth2 in mobile applications",
+#                 "memory": memory,
+#             },
+#         )
 
-        await db_client.disconnect()
-        return {
-            "response_ref": response_ref,
-        }
+#         await db_client.disconnect()
+#         return {
+#             "response_ref": response_ref,
+#         }
 
-    responses = run(run_ai())
+#     responses = run(run_ai())
 
-    for key, item in responses.items():
-        if isinstance(item, InterviewMessageWithResponse):
-            logger.info(f"\t{item.tool}: {item.content}: {item.response}")
-        else:
-            logger.info(f"????")
-            breakpoint()
+#     for key, item in responses.items():
+#         if isinstance(item, InterviewMessageWithResponse):
+#             logger.info(f"\t{item.tool}: {item.content}: {item.response}")
+#         else:
+#             logger.info(f"????")
+#             breakpoint()
 
-    # # If you want to test the block in an interactive environment
-    # import IPython
+#     # # If you want to test the block in an interactive environment
+#     # import IPython
 
-    # IPython.embed()
-    breakpoint()
-    breakpoint()
+#     # IPython.embed()
+#     breakpoint()
+#     breakpoint()

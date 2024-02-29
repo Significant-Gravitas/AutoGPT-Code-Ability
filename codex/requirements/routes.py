@@ -1,7 +1,7 @@
 import json
 import logging
 
-from fastapi import APIRouter, BackgroundTasks, Query, Response
+from fastapi import APIRouter, Query, Response
 
 import codex.database
 import codex.requirements.database
@@ -11,6 +11,7 @@ from codex.api_model import (
     SpecificationResponse,
     SpecificationsListResponse,
 )
+from codex.interview.database import get_interview
 from codex.requirements.agent import generate_requirements
 
 logger = logging.getLogger(__name__)
@@ -29,8 +30,8 @@ spec_router = APIRouter()
 async def create_spec(
     user_id: str,
     app_id: str,
+    interview_id: str,
     spec: SpecificationCreate,
-    background_tasks: BackgroundTasks,
 ) -> Response | SpecificationResponse:
     """
     Create a new specification for a given application and user.
@@ -41,27 +42,20 @@ async def create_spec(
         ids = Identifiers(
             user_id=user_id,
             app_id=app_id,
+            interview_id=interview_id,
             cloud_services_id=user.cloudServicesId if user else "",
         )
-        if spec.webhook_url:
-            # Make this a background task and send the webhook_url to the agent
-            background_tasks.add_task(
-                generate_requirements,
-                ids=ids,
-                app_name=app.name,
-                description=spec.description,
-                webhook_url=spec.webhook_url,
-            )
+        interview = await get_interview(
+            user_id=ids.user_id, app_id=ids.app_id, interview_id=interview_id
+        )
+        if not interview:
             return Response(
-                content=json.dumps(
-                    {"message": "Specification scheduled for creation successfully"}
-                ),
-                status_code=200,
+                content=json.dumps({"error": "Interview not found"}),
+                status_code=500,
                 media_type="application/json",
             )
-        else:
-            new_spec = await generate_requirements(ids, app.name, spec.description)
-            return SpecificationResponse.from_specification(new_spec)
+        new_spec = await generate_requirements(ids, spec.description)
+        return SpecificationResponse.from_specification(new_spec)
     except Exception as e:
         logger.error(f"Error creating a new specification: {e}")
         return Response(

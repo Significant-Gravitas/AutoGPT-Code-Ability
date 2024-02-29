@@ -1,23 +1,19 @@
 # Tools
 import logging
 
-from codex.common.ai_block import Identifiers
+from codex.common.ai_block import Identifiers, Tool
+from codex.interview.model import InterviewMessage, InterviewMessageOptionalId, InterviewMessageWithResponse, InterviewMessageWithResponseOptionalId
 from codex.requirements.matching import find_best_match
-from codex.requirements.model import (
-    InterviewMessage,
-    InterviewMessageWithResponse,
-    Tool,
-)
 
 logger = logging.getLogger(__name__)
 
 
 async def use_tool(
-    input: InterviewMessage | InterviewMessageWithResponse,
+    input: InterviewMessageOptionalId | InterviewMessageWithResponseOptionalId,
     ids: Identifiers,
     memory: list[InterviewMessageWithResponse],
-    available_tools: list[Tool],
-) -> InterviewMessageWithResponse:
+    available_tools: list[Tool]
+) -> InterviewMessageWithResponseOptionalId:
     # Use best match here
     match = find_best_match(
         target=input.tool, choices=[tool.name for tool in available_tools]
@@ -30,8 +26,11 @@ async def use_tool(
             case _:
                 if tool.func:
                     if resp := tool.func(input.content):
-                        return InterviewMessageWithResponse(
-                            tool=input.tool, content=input.content, response=resp
+                        return InterviewMessageWithResponseOptionalId(
+                            id=input.id,
+                            tool=input.tool,
+                            content=input.content,
+                            response=resp,
                         )
                 # If no function is available, use the block
                 logger.info(f"Generating Response for {tool.name}")
@@ -43,14 +42,16 @@ async def use_tool(
                         "memory": memory,
                     },
                 )
-                return InterviewMessageWithResponse(
+                return InterviewMessageWithResponseOptionalId(
+                    id=input.id,
                     tool=input.tool,
                     content=input.content,
                     response=response.response,
                 )
 
     logger.error("No Match Found")
-    return InterviewMessageWithResponse(
+    return InterviewMessageWithResponseOptionalId(
+        id=input.id,
         tool=input.tool,
         content=input.content,
         response="No match found for tool name supplied",

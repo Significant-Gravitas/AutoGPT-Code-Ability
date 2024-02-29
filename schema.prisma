@@ -36,6 +36,7 @@ model User {
   LLMCallAttempts LLMCallAttempt[]
   Deployments     Deployment[]
   CompletedApp    CompletedApp[]
+  Interview       Interview[]
 }
 
 enum Role {
@@ -57,6 +58,38 @@ model Application {
   LLMCallAttempts LLMCallAttempt[]
   User            User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId          String?
+  Interviews      Interview[]
+}
+
+// ------------------------- Interview Models ---------------------------- //
+// Interview models for the interview process
+// ------------------------------------------------------------------------ //
+
+model Interview {
+  id            String       @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  deleted       Boolean      @default(false)
+  finished      Boolean      @default(false)
+  name          String
+  task          String
+  User          User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String?
+  Questions     Question[]
+  application   Application? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId String?
+}
+
+model Question {
+  id          String     @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  deleted     Boolean    @default(false)
+  question    String
+  tool        String
+  answer      String?
+  Interview   Interview? @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  interviewId String?
 }
 
 // ------------------------- Requirements Models ------------------------------ //

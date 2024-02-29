@@ -2,19 +2,16 @@ import asyncio
 import json
 import logging
 from asyncio import run
-from enum import Enum
-from typing import Literal, Optional
 
 import openai
 import prisma
-import requests
 from prisma.enums import AccessLevel
 from prisma.models import Specification
-from pydantic import BaseModel
 from pydantic.json import pydantic_encoder
 
 from codex.api_model import Identifiers
 from codex.common.test_const import identifier_1
+from codex.interview.database import get_interview
 from codex.prompts.claude.requirements.NestJSDocs import (
     NEST_JS_CRUD_GEN,
     NEST_JS_FIRST_STEPS,
@@ -40,7 +37,6 @@ from codex.requirements.blocks.ai_requirements import (
     FuncNonFuncRequirementsBlock,
 )
 from codex.requirements.database import create_spec
-from codex.requirements.gather_task_info import gather_task_info_loop
 from codex.requirements.hardcoded import (
     appointment_optimization_requirements,
     availability_checker_requirements,
@@ -75,45 +71,7 @@ from codex.requirements.unwrap_schemas import convert_db_schema, convert_endpoin
 logger = logging.getLogger(__name__)
 
 
-def generate_callback(webhook_url: str, ids: Identifiers):
-    # async def callback(input):
-    #     async with aiohttp.ClientSession() as session:
-    #         async with session.post(webhook_url, data=input) as response:
-    #             return await response.json()
-
-    class WebhookType(Enum):
-        SPECIFICATION = "specification"
-        QUESTION = "question"
-        DELIVERABLE = "deliverable"
-        DEPLOYMENT = "deployment"
-        DOWNLOAD_ZIP = "download_zip"
-
-    class QuestionResponse(BaseModel):
-        response: str
-        question: str
-        identifiers: Identifiers
-        type: Literal["question"]
-
-    # convert the above to requests sync
-    def callback(input):
-        params = {
-            "type": str(WebhookType.QUESTION.value),
-        }
-        data = {
-            "message": {"question": input},
-            "identifiers": ids.model_dump(),
-        }
-        response = requests.post(webhook_url, params=params, json=data)
-        response_json = response.json()
-        q_response = QuestionResponse(**response_json)
-        return q_response.response
-
-    return callback
-
-
-async def generate_requirements(
-    ids: Identifiers, app_name: str, description: str, webhook_url: Optional[str] = None
-) -> Specification:
+async def generate_requirements(ids: Identifiers, description: str) -> Specification:
     """
     Runs the Requirements Agent to generate the system requirements based
     upon the provided task
@@ -130,24 +88,21 @@ async def generate_requirements(
     running_state_obj = StateObj(task=description)
 
     logger.info("State Object Created")
-
-    callback = None
-    if webhook_url:
-        callback = generate_callback(webhook_url, ids)
-
     # User Interview
-    project_description, memory = await gather_task_info_loop(
-        task=running_state_obj.task, ask_callback=callback, ids=ids
+
+    interview = await get_interview(
+        user_id=ids.user_id, app_id=ids.app_id, interview_id=ids.interview_id or ''
     )
-    running_state_obj.project_description = project_description
-    # convert the memory to `tool`: `content`: `response` format
-    project_description_thoughts = [
-        f"{item.tool}: {item.content} :{item.response}"
-        for item in memory
-        if item.response
-    ]
+
+    if not interview:
+        raise ValueError("Interview not found")
+
+    questions = interview.Questions or []
+    running_state_obj.project_description = [
+        question for question in questions if question.tool == "finished"
+    ][0].question
     running_state_obj.project_description_thoughts = "\n".join(
-        project_description_thoughts
+        [f"{item.tool}: {item.question} :{item.answer}" for item in questions]
     )
 
     logger.info("User Interview Done")
@@ -560,7 +515,7 @@ Additionally, it will have proper management of financials, including invoice ma
         await db_client.connect()
         logger.info("Starting Requirements Generation")
         output = await generate_requirements(
-            ids=ids, app_name="Tutor", description=task
+            ids=ids,  description=task
         )
         logger.info("Requirements Generation Done")
         return output

@@ -17,29 +17,6 @@ Q_AND_A_FORMAT_WITH_THOUGHTS = """- "{question}": "{answer}" : Reasoning: "{thou
 """
 
 
-class Tool(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    name: str
-    description: str
-    func: Optional[Callable[..., str]] = None
-    block: Type[AIBlock]
-
-
-class InterviewMessage(BaseModel):
-    model_config = ConfigDict(strict=False)
-
-    tool: str
-    content: str
-
-
-class InterviewMessageWithResponse(InterviewMessage):
-    response: str
-
-
-class InterviewMessageUse(BaseModel):
-    uses: List[InterviewMessage | InterviewMessageWithResponse]
-
-
 class DecomposeTask(BaseModel):
     # Placeholder until so I have something to test the ai_block with
     thoughts: str
