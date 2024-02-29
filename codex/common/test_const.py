@@ -3,6 +3,10 @@ from codex.api_model import Identifiers
 user_id_1 = "123e4567-e89b-12d3-a456-426614174000"
 user_id_2 = "456e7890-f12b-23d4-b567-537625285000"
 
+discord_id_1 = "698489167281127474"
+discord_id_2 = "1188760123011776594"
+discord_id_3 = "1113853244066779156"
+
 cloud_services_id_1 = "123e4567-e89b-12d3-a456-426614174000"
 cloud_services_id_2 = "456e7890-f12b-23d4-b567-537625285000"
 
@@ -19,6 +23,20 @@ app_id_10 = "789n0123-p45q-56r7-s890-t12345678900"
 app_id_11 = "890o1234-q56r-67s8-t901-u23456789000"
 app_id_12 = "901p2345-r67s-78t9-u012-v34567890100"
 app_id_13 = "012q3456-s78t-89u0-v123-w45678901200"
+
+interview_id_1 = "d5cf71f4-068c-44aa-97c1-db864526d0cf"
+interview_id_2 = "24fefb91-5eae-472e-ab15-0c1ad158bea3"
+interview_id_3 = "51de45a0-d00d-40c6-9494-fc0941288a55"
+interview_id_4 = "571c30fc-5b22-4da5-8558-9b98e6da4dd2"
+interview_id_5 = "6aecf5eb-ea4c-4ba7-96d7-8847a41af480"
+interview_id_6 = "d1f0fba7-15e9-41a3-83e2-093d1f64138a"
+interview_id_7 = "e5c3386d-814c-4108-b09c-10e807238c8a"
+interview_id_8 = "11d9607e-3638-48c5-baac-6f0f9d96fb42"
+interview_id_9 = "2b5ccea7-347b-4940-bfe6-ae999fe874fc"
+interview_id_10 = "400a8c69-f448-4481-a996-134abb9fa1c0"
+interview_id_11 = "a0248eaf-3cac-4c9a-8757-fdda9e840a7c"
+interview_id_12 = "daf074f4-eac9-40c6-a6dd-f928aa6717ab"
+interview_id_13 = "b2ca05ca-3a41-4a89-9afd-7bd48eb170bd"
 
 
 identifier_1 = Identifiers(

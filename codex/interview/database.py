@@ -31,6 +31,32 @@ async def create_interview(ids: Identifiers, interview: InterviewDBBase) -> Inte
     return new_interview
 
 
+async def _create_interview_testing_only(
+    ids: Identifiers, interview: InterviewDBBase, id: str
+) -> Interview:
+    new_interview = await Interview.prisma().create(
+        data={
+            "id": id,
+            "applicationId": ids.app_id,
+            "userId": ids.user_id,
+            "task": interview.project_description,
+            "name": interview.app_name,
+            "finished": interview.finished,
+            "Questions": {
+                "create": [
+                    {
+                        "question": q.content,
+                        "tool": q.tool,
+                    }
+                    for q in interview.questions
+                ]
+            },
+        },
+        include={"Questions": True},
+    )
+    return new_interview
+
+
 async def answer_questions(
     interview_id: str, answers: list[InterviewMessageWithResponse]
 ) -> Interview:

@@ -50,6 +50,28 @@ class ExampleTask(Enum):
             case _:
                 raise NotImplementedError(f"Example Task {task.value} not implemented")
 
+    @staticmethod
+    def get_interview_id(task):
+        match task:
+            case ExampleTask.AVAILABILITY_CHECKER:
+                return test_consts.interview_id_1
+            case ExampleTask.INVOICE_GENERATOR:
+                return test_consts.interview_id_2
+            case ExampleTask.APPOINTMENT_OPTIMIZATION_TOOL:
+                return test_consts.interview_id_3
+            case ExampleTask.DISTANCE_CALCULATOR:
+                return test_consts.interview_id_4
+            case ExampleTask.PROFILE_MANAGEMENT_SYSTEM:
+                return test_consts.interview_id_5
+            case ExampleTask.CALENDAR_BOOKING_SYSTEM:
+                return test_consts.interview_id_6
+            case ExampleTask.INVENTORY_MANAGEMENT_SYSTEM:
+                return test_consts.interview_id_7
+            case ExampleTask.INVOICING_AND_PAYMENT_TRACKING_SYSTEM:
+                return test_consts.interview_id_8
+            case _:
+                raise NotImplementedError(f"Example Task {task.value} not implemented")
+
 
 class DecomposeTask(BaseModel):
     # Placeholder until so I have something to test the ai_block with
