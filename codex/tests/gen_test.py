@@ -17,6 +17,7 @@ setup_logging(local=True)
 
 is_connected = False
 
+
 async def generate_function():
     global is_connected
 
