@@ -191,9 +191,9 @@ def process_object_type(obj: ObjectType, object_type_ids: Set[str] = set()) -> s
     if obj.Fields is None:
         raise ValueError(f"ObjectType {obj.name} has no fields.")
 
-    # TODO: handle generated subtypes
+    template: str = ""
     sub_types: List[str] = []
-    field_strings = []
+    field_strings: List[str] = []
     for field in obj.Fields:
         if field.typeId is not None:
             sub_types.append(process_object_field(field, object_type_ids))
@@ -209,9 +209,10 @@ def process_object_type(obj: ObjectType, object_type_ids: Set[str] = set()) -> s
         ]
     )
 
-    fields = "\n".join(field_strings)
+    fields: str = "\n".join(field_strings)
+    template += "\n\n".join(sub_types)
+    template += f"""
 
-    template = f"""
 class {obj.name}(BaseModel):
     \"\"\"
     {obj.description}
