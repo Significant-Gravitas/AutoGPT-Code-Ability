@@ -178,7 +178,7 @@ async def create_app(
     return app
 
 
-def process_object_type(obj: ObjectType, object_type_ids: Set[str]= set()) -> str:
+def process_object_type(obj: ObjectType, object_type_ids: Set[str] = set()) -> str:
     """
     Generate a Pydantic object based on the given ObjectType.
 
