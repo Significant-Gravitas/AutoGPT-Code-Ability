@@ -1,7 +1,8 @@
 from typing import Dict, List
 
-from prisma.models import APIRouteSpec, ObjectType
+from prisma.models import APIRouteSpec
 from prisma.models import Function as FunctionDBModel
+from prisma.models import ObjectType
 from pydantic import BaseModel
 
 
@@ -23,8 +24,13 @@ class FunctionDef(BaseModel):
     function_template: str = None
 
     def __generate_function_template(f) -> str:
-        args_str = ''.join([f'{name}: {type}' for name, type in f.arg_types])
-        arg_desc = '\n      '.join([f'{name} ({type}): {f.arg_descs.get(name, "-")}' for name, type in f.arg_types])
+        args_str = "".join([f"{name}: {type}" for name, type in f.arg_types])
+        arg_desc = "\n      ".join(
+            [
+                f'{name} ({type}): {f.arg_descs.get(name, "-")}'
+                for name, type in f.arg_types
+            ]
+        )
 
         template = f"""
         def {f.name}({args_str}) -> {f.return_type}:
@@ -43,7 +49,9 @@ class FunctionDef(BaseModel):
 
     def __init__(self, function_template: str = None, **data):
         super().__init__(**data)
-        self.function_template = function_template or self.__generate_function_template()
+        self.function_template = (
+            function_template or self.__generate_function_template()
+        )
 
 
 class ObjectDef(BaseModel):

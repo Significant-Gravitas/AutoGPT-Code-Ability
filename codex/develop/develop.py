@@ -17,7 +17,12 @@ from codex.common.ai_block import (
     ValidationError,
 )
 from codex.develop.function import construct_function
-from codex.develop.model import FunctionDef, ObjectDef, GeneratedFunctionResponse, Package
+from codex.develop.model import (
+    FunctionDef,
+    GeneratedFunctionResponse,
+    ObjectDef,
+    Package,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +100,9 @@ class FunctionVisitor(ast.NodeVisitor):
 
         # Raise validation error on nested functions
         if any(isinstance(v, ast.FunctionDef) for v in node.body):
-            raise ValidationError("Nested functions are not allowed in the code: " + node.name)
+            raise ValidationError(
+                "Nested functions are not allowed in the code: " + node.name
+            )
 
         # Extract doc_string & function body
         if (
@@ -120,11 +127,11 @@ class FunctionVisitor(ast.NodeVisitor):
         self.functions[node.name] = FunctionDef(
             name=node.name,
             arg_types=args,
-            arg_descs={}, # TODO: Extract out Args and Returns from doc_string
+            arg_descs={},  # TODO: Extract out Args and Returns from doc_string
             return_type=return_type,
-            return_desc="", # TODO: Extract out Args and Returns from doc_string
+            return_desc="",  # TODO: Extract out Args and Returns from doc_string
             is_implemented=is_implemented,
-            function_desc=doc_string, # TODO: Exclude Args and Returns from doc_string,
+            function_desc=doc_string,  # TODO: Exclude Args and Returns from doc_string,
             function_template=function_template,
             function_code=ast.unparse(node),
         )
@@ -135,27 +142,32 @@ class FunctionVisitor(ast.NodeVisitor):
         Visits a ClassDef node in the AST and checks if it is a Pydantic class.
         If it is a Pydantic class, adds its name to the list of Pydantic classes.
         """
-        is_pydantic = any([
-            (isinstance(base, ast.Name) and base.id == "BaseModel") or (isinstance(base, ast.Attribute) and base.attr == "BaseModel")
-        ] for base in node.bases)
+        is_pydantic = any(
+            [
+                (isinstance(base, ast.Name) and base.id == "BaseModel")
+                or (isinstance(base, ast.Attribute) and base.attr == "BaseModel")
+            ]
+            for base in node.bases
+        )
 
         self.objects[node.name] = ObjectDef(
             name=node.name,
             fields={
                 ast.unparse(v.target): ast.unparse(v.annotation)
-                for v in node.body if isinstance(v, ast.AnnAssign)
+                for v in node.body
+                if isinstance(v, ast.AnnAssign)
             },
             is_pydantic=is_pydantic,
-            is_implemented=not any(isinstance(v, ast.Pass) for v in node.body)
+            is_implemented=not any(isinstance(v, ast.Pass) for v in node.body),
         )
 
         self.generic_visit(node)
 
     def visit(self, node):
         if (
-            isinstance(node, ast.Assign) or
-            isinstance(node, ast.AnnAssign) or
-            isinstance(node, ast.AugAssign)
+            isinstance(node, ast.Assign)
+            or isinstance(node, ast.AnnAssign)
+            or isinstance(node, ast.AugAssign)
         ) and node.col_offset == 0:
             self.globals.append(ast.unparse(node))
         super().visit(node)
@@ -214,15 +226,21 @@ class DevelopAIBlock(AIBlock):
                     "Main Function body is empty, it should contain"
                     + " the implementation of this function!"
                 )
-            function_code = '\n'.join(visitor.globals) + '\n\n' + requested_func.function_code
+            function_code = (
+                "\n".join(visitor.globals) + "\n\n" + requested_func.function_code
+            )
 
             # Validate the requested_func.args and requested_func.returns to the invoke_params
             expected_args = invoke_params["function_args"]
             expected_rets = invoke_params["function_rets"]
             if expected_args != requested_func.arg_types:
-                raise ValidationError(f"Function {func_name} has different arguments than expected, expected {expected_args} but got {requested_func.arg_types}")
+                raise ValidationError(
+                    f"Function {func_name} has different arguments than expected, expected {expected_args} but got {requested_func.arg_types}"
+                )
             if expected_rets != requested_func.return_type:
-                raise ValidationError(f"Function {func_name} has different return type than expected, expected {expected_rets} but got {requested_func.return_type}")
+                raise ValidationError(
+                    f"Function {func_name} has different return type than expected, expected {expected_rets} but got {requested_func.return_type}"
+                )
 
             functions = visitor.functions.copy()
             del functions[invoke_params["function_name"]]
@@ -319,11 +337,13 @@ class DevelopAIBlock(AIBlock):
             where={"id": func.id},
             include={
                 "ParentFunction": True,
-                "ChildFunction": {"include": {
-                    "ApiRouteSpec": True,
-                    "FunctionArgs": True,
-                    "FunctionReturn": True,
-                }},
+                "ChildFunction": {
+                    "include": {
+                        "ApiRouteSpec": True,
+                        "FunctionArgs": True,
+                        "FunctionReturn": True,
+                    }
+                },
             },
         )
 

@@ -1,6 +1,7 @@
 import ast
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from codex.develop.develop import FunctionVisitor
@@ -396,5 +397,6 @@ def test_visiting_function_with_pass_body():
     assert function_def.return_type is None
     assert not function_def.is_implemented
 
+
 def get_pydantic_classes(visitor):
-    return [name for name,c in visitor.objects.items() if c.is_pydantic]
+    return [name for name, c in visitor.objects.items() if c.is_pydantic]

@@ -117,7 +117,7 @@ async def create_test_data():
                 "id": test_const.app_id_11,
                 "userId": user_id_2,
                 "updatedAt": datetime.now(),
-            }
+            },
         ]
     )
 
