@@ -1,12 +1,14 @@
 import ast
 import logging
-from typing import List
+from typing import List, Set
 
 from prisma.models import (
     APIRouteSpec,
     CompiledRoute,
     CompletedApp,
     Function,
+    ObjectField,
+    ObjectType,
     Package,
     Specification,
 )
@@ -22,6 +24,7 @@ class CompiledFunction(BaseModel):
     packages: List[Package]
     imports: List[str]
     code: str
+    pydantic_models: List[str] = []
 
 
 async def compile_route(
@@ -59,7 +62,9 @@ async def compile_route(
     return compiled_route
 
 
-async def recursive_compile_route(in_function: Function) -> CompiledFunction:
+async def recursive_compile_route(
+    in_function: Function, object_type_ids: Set[str] = set()
+) -> CompiledFunction:
     """
     Recursively compiles a function and its child functions
     into a single CompiledFunction object.
@@ -74,7 +79,6 @@ async def recursive_compile_route(in_function: Function) -> CompiledFunction:
     Raises:
         ValueError: If the function code is missing.
     """
-
     # Can't see how to do recursive lookup with prisma, so I'm checking the next
     # layer down each time. This is a bit of a hack, can be improved later.
     function = await Function.prisma().find_unique_or_raise(
@@ -85,6 +89,25 @@ async def recursive_compile_route(in_function: Function) -> CompiledFunction:
         },
     )
     logger.info(f"Compiling function: {function.id}")
+
+    # Possible States - doesnt matter if it is a leaf function or not
+    # 1. Function Arg is not a pydantic model
+    # 2. Function Arg is a pydantic model
+    #    a. The pydantic model has already been added
+    #        - Do nothing
+    #    b. The pydantic model has not been added
+    #        - Add the model id to the set of known object_type_ids
+    #        - Recursively explore the model structure adding newly discovered pydantic
+    #          models to the known object_type_ids and build the model
+    #        - Add the model to the list of models
+
+    new_object_types = []
+    if function.FunctionArgs is not None:
+        for arg in function.FunctionArgs:
+            if (arg.id is not None) and (arg.id not in object_type_ids):
+                object_type_ids.add(arg.id)
+                new_object_types.append(arg.id)
+
     if function.ChildFunction is None:
         packages = []
         if function.Packages:
@@ -164,3 +187,31 @@ async def create_app(
     )
     app = await CompletedApp.prisma().create(data)
     return app
+
+
+def generate_pydantic_object(obj: ObjectType) -> str:
+    """
+    Generate a Pydantic object based on the given ObjectType.
+
+    Args:
+        obj (ObjectType): The ObjectType to generate the Pydantic object for.
+
+    Returns:
+        str: The generated Pydantic object as a string.
+    """
+    if obj.Fields is None:
+        raise ValueError(f"ObjectType {obj.name} has no fields.")
+    fields = "\n".join(
+        [
+            f"{' '*8}{field.name}: {field.typeName} # {field.description}"
+            for field in obj.Fields
+        ]
+    )
+    template = f"""
+class {obj.name}(BaseModel):
+    \"\"\"
+    {obj.description}
+    \"\"\"
+{fields}
+    """
+    return "\n".join([line[4:] for line in template.split("\n")])
