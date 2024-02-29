@@ -2952,6 +2952,68 @@ def invoice_payment_tracking() -> ApplicationRequirements:
         ],
     )
 
+def tictactoe_game_requirements() -> ApplicationRequirements:
+    request = RequestModel(
+        name="TurnRequest",
+        description="A request to make a move in the tictactoe game.",
+        params=[
+            Parameter(
+                name="row",
+                param_type="int",
+                description="The row in which the move is made, the value should be between 1 and 3.",
+            ),
+            Parameter(
+                name="column",
+                param_type="int",
+                description="The column in which the move is made, the value should be between 1 and 3.",
+            ),
+        ],
+    )
+
+    response = ResponseModel(
+        name="GameStateResponse",
+        description="A response containing the current state of the game.",
+        params=[
+            Parameter(
+                name="gameId",
+                param_type="str",
+                description="The unique identifier of the game.",
+            ),
+            Parameter(
+                name="turn",
+                param_type="str",
+                description="The current turn of the game. Possible values are 'X' or 'O'.",
+            ),
+            Parameter(
+                name="state",
+                param_type="str",
+                description="The current state of the game. Possible values are 'In Progress', 'Draw', 'Win' or 'Loss'.",
+            ),
+            Parameter(
+                name="board",
+                param_type="str",
+                description="Printed representation of the current game board.",
+            ),
+        ],
+    )
+
+    return ApplicationRequirements(
+        name="TicTacToe Game",
+        context="Two Players TicTacToe Game communicate through an API.",
+        api_routes=[
+            APIRouteRequirement(
+                method="POST",
+                path="/turn/{game_id}",
+                function_name="make_turn",
+                access_level=AccessLevel.PUBLIC,
+                description="Function that allows a player to make a move and return the current state of the game. "
+                            "It will also initiate a new game if the game is not started.",
+                request_model=request,
+                response_model=response,
+                database_schema=None,
+            ),
+        ],
+    )
 
 if __name__ == "__main__":
     from codex.common.logging_config import setup_logging

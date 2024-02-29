@@ -29,7 +29,7 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
                     for param in route.request_model.params
                 ],
             },
-        }
+        } if route.request_model else None
         create_response = {
             "name": route.response_model.name,
             "description": route.response_model.description,
@@ -43,7 +43,7 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
                     for param in route.response_model.params
                 ],
             },
-        }
+        } if route.response_model else None
 
         create_db = None
         if route.database_schema:
@@ -65,9 +65,11 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
             "functionName": route.function_name,
             "AccessLevel": route.access_level.value,
             "description": route.description,
-            "RequestObject": {"create": create_request},
-            "ResponseObject": {"create": create_response},
         }
+        if create_request:
+            create_route["RequestObject"] = {"create": create_request}
+        if create_response:
+            create_route["ResponseObject"] = {"create": create_response}
         if create_db:
             create_route["DatabaseSchema"] = {"create": create_db}
         routes.append(create_route)

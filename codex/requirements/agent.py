@@ -46,6 +46,7 @@ from codex.requirements.hardcoded import (
     invoice_generator_requirements,
     invoice_payment_tracking,
     profile_management,
+    tictactoe_game_requirements,
 )
 from codex.requirements.matching import find_best_match
 from codex.requirements.model import (
@@ -428,6 +429,8 @@ def hardcoded_requirements(task: str) -> ApplicationRequirements:
             return inventory_mgmt_system()
         case "Invoiceing and Payment Tracking System":
             return invoice_payment_tracking()
+        case "TicTacToe Game":
+            return tictactoe_game_requirements()
         case "Client Portal":
             raise NotImplementedError("Client Portal not implemented")
         case "Tutor Scheduling App":
@@ -468,6 +471,7 @@ async def populate_database_specs():
         app_id_6,
         app_id_7,
         app_id_8,
+        app_id_9,
     )
 
     requirements = [
@@ -479,6 +483,7 @@ async def populate_database_specs():
         # ("Appointment Scheduling System", app_id_6),
         # ("Inventory Management System", app_id_7),
         # ("Invoiceing and Payment Tracking System", app_id_8),
+        ("TicTacToe Game", app_id_9),
     ]
     ids = identifier_1
 

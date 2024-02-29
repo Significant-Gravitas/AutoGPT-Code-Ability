@@ -135,7 +135,6 @@ model ObjectType {
   databaseTableId String?
 
   // Reverse relations
-  ReferredFunctionReturns   Function[]     @relation("FunctionReturns")
   ReferredRequestAPIRoutes  APIRouteSpec[] @relation("RequestObjectForAPI")
   ReferredResponseAPIRoutes APIRouteSpec[] @relation("ResponseObjectForAPI")
   ReferredObjectFields      ObjectField[]  @relation("ObjectFieldType")
@@ -152,9 +151,10 @@ model ObjectField {
   typeName String // list,dict,etc for primitive types, Type.name for composite types.
 
   // Reverse relations
-  ReferredFunctionArgs Function[] @relation("FunctionArgs")
-  ReferredObjectType   ObjectType @relation("ObjectTypeFields", fields: [referredObjectTypeId], references: [id])
-  referredObjectTypeId String
+  ReferredFunctionReturns Function[]  @relation("FunctionReturns")
+  ReferredFunctionArgs    Function[]  @relation("FunctionArgs")
+  ReferredObjectType      ObjectType? @relation("ObjectTypeFields", fields: [referredObjectTypeId], references: [id])
+  referredObjectTypeId    String?
 }
 
 // DatabaseSchema represents the schema of a database.
@@ -205,7 +205,8 @@ model Function {
   updatedAt DateTime @updatedAt
 
   functionName String
-  template     String // This is the template of the function along with the docstring 
+  description  String?
+  template     String // This is the template of the function along with the docstring
   state        FunctionState
 
   Packages         Package[]
@@ -213,9 +214,9 @@ model Function {
   importStatements String[] // These are the import statements for the function
   functionCode     String? // This is the code of the function being written
 
-  FunctionArgs     ObjectField[] @relation("FunctionArgs") // Function Args need name-type pairs
-  FunctionReturn   ObjectType?   @relation("FunctionReturns", fields: [functionReturnId], references: [id], onDelete: Cascade)
-  functionReturnId String?
+  FunctionArgs           ObjectField[] @relation("FunctionArgs") // Function Args need name-type pairs
+  FunctionReturn         ObjectField?  @relation("FunctionReturns", fields: [functionReturnObjectId], references: [id], onDelete: Cascade)
+  functionReturnObjectId String?
 
   ParentFunction   Function?  @relation("ParentFunction", fields: [parentFunctionId], references: [id], onDelete: Cascade)
   parentFunctionId String?
