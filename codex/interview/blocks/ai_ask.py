@@ -67,8 +67,6 @@ if __name__ == "__main__":
 
     from codex.common.ai_model import OpenAIChatClient
     from codex.common.test_const import identifier_1
-    from codex.common.ai_model import OpenAIChatClient
-    from codex.common.test_const import identifier_1
 
     ids = identifier_1
 
