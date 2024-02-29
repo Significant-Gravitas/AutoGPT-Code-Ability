@@ -90,17 +90,6 @@ async def recursive_compile_route(
     )
     logger.info(f"Compiling function: {function.id}")
 
-    # Possible States - doesnt matter if it is a leaf function or not
-    # 1. Function Arg is not a pydantic model
-    # 2. Function Arg is a pydantic model
-    #    a. The pydantic model has already been added
-    #        - Do nothing
-    #    b. The pydantic model has not been added
-    #        - Add the model id to the set of known object_type_ids
-    #        - Recursively explore the model structure adding newly discovered pydantic
-    #          models to the known object_type_ids and build the model
-    #        - Add the model to the list of models
-
     new_object_types = []
     if function.FunctionArgs is not None:
         for arg in function.FunctionArgs:
@@ -189,7 +178,7 @@ async def create_app(
     return app
 
 
-def generate_pydantic_object(obj: ObjectType) -> str:
+def process_object_type(obj: ObjectType) -> str:
     """
     Generate a Pydantic object based on the given ObjectType.
 
@@ -201,6 +190,8 @@ def generate_pydantic_object(obj: ObjectType) -> str:
     """
     if obj.Fields is None:
         raise ValueError(f"ObjectType {obj.name} has no fields.")
+
+
     fields = "\n".join(
         [
             f"{' '*4}{field.name}: {field.typeName}  # {field.description}"
@@ -215,3 +206,40 @@ class {obj.name}(BaseModel):
 {fields}
     """
     return "\n".join([line for line in template.split("\n")])
+
+
+def process_object_field(field: ObjectField, object_type_ids: Set[str]) -> str:
+    """
+    Process the fields of an ObjectType and generate Pydantic objects for any
+    ObjectFields that are ObjectTypes.
+
+    Args:
+        field (ObjectField): The ObjectField to process.
+        object_type_ids (Set[str]): The set of known ObjectType ids.
+
+    Returns:
+        str: The generated Pydantic object as a string.
+    """
+    # Possible States - doesnt matter if it is a leaf function or not
+    # 1. Function Arg is not a pydantic model
+    # 2. Function Arg is a pydantic model
+    #    a. The pydantic model has already been added
+    #        - Do nothing
+    #    b. The pydantic model has not been added
+    #        - Add the model id to the set of known object_type_ids
+    #        - Recursively explore the model structure adding newly discovered pydantic
+    #          models to the known object_type_ids and build the model
+    #        - Add the model to the list of models
+    if field.typeId is None:
+        # If the field is a primative type we don't need to do anything
+        return ""
+    
+    
+    
+    if field.referredObjectTypeId in object_type_ids:
+        return ""
+    object_type_ids.add(field.referredObjectTypeId)
+    obj = ObjectType.prisma().find_unique(where={"id": field.referredObjectTypeId})
+    if obj is None:
+        raise ValueError(f"ObjectType {field.referredObjectTypeId} not found.")
+    return generate_pydantic_object(obj)

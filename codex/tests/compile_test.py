@@ -2,10 +2,10 @@ from datetime import datetime
 
 from prisma.models import ObjectField, ObjectType
 
-from codex.develop.compile import generate_pydantic_object
+from codex.develop.compile import process_object_type
 
 
-def test_generate_pydantic_object():
+def test_process_object_type():
     obj = ObjectType(
         id="a",
         createdAt=datetime.now(),
@@ -32,7 +32,7 @@ def test_generate_pydantic_object():
         importStatements=[],
     )
 
-    pydantic_output = generate_pydantic_object(obj)
+    pydantic_output = process_object_type(obj)
     expected_output = """
 class Person(BaseModel):
     \"\"\"
