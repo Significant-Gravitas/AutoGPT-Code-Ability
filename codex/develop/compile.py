@@ -14,6 +14,7 @@ from prisma.models import (
 )
 from prisma.types import CompiledRouteCreateInput, CompletedAppCreateInput
 from pydantic import BaseModel
+from sqlalchemy import func
 
 from codex.api_model import Identifiers
 
@@ -97,6 +98,11 @@ async def recursive_compile_route(
     if function.FunctionArgs is not None:
         for arg in function.FunctionArgs:
             pydantic_models.append(process_object_field(arg, new_object_types))
+
+    if function.FunctionReturn is not None:
+        pydantic_models.append(
+            process_object_field(function.FunctionReturn, new_object_types)
+        )
 
     if function.ChildFunction is None:
         packages = []
