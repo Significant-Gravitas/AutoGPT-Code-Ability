@@ -11,7 +11,7 @@ from codex.common.ai_block import Tool
 from codex.interview.blocks.ai_ask import AskBlock
 from codex.interview.blocks.ai_finish import FinishBlock
 from codex.interview.blocks.ai_search import SearchBlock
-from codex.interview.gather_task_info import next_step
+from codex.interview.agent import next_step
 from codex.interview.model import (
     InterviewDBBase,
     InterviewMessage,
