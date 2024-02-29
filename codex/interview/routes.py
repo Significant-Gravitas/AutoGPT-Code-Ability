@@ -8,10 +8,10 @@ import codex.database
 import codex.interview.database
 from codex.api_model import Identifiers, InterviewCreate, InterviewResponse
 from codex.common.ai_block import Tool
+from codex.interview.agent import next_step
 from codex.interview.blocks.ai_ask import AskBlock
 from codex.interview.blocks.ai_finish import FinishBlock
 from codex.interview.blocks.ai_search import SearchBlock
-from codex.interview.agent import next_step
 from codex.interview.model import (
     InterviewDBBase,
     InterviewMessage,

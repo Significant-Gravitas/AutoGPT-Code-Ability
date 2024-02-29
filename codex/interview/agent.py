@@ -166,8 +166,6 @@ async def next_step(
         )
 
 
-
-
 def hardcoded_interview(task: ExampleTask) -> Interview:
     """
     This will take the application name and return the manually
@@ -196,7 +194,6 @@ def hardcoded_interview(task: ExampleTask) -> Interview:
 
 
 async def populate_database_interviews():
-
     from codex.api_model import Identifiers
     from codex.common.test_const import (
         app_id_1,
@@ -207,7 +204,7 @@ async def populate_database_interviews():
         app_id_6,
         app_id_7,
         app_id_8,
-        identifier_1
+        identifier_1,
     )
 
     ids = identifier_1
@@ -220,7 +217,6 @@ async def populate_database_interviews():
         ids.app_id = app_id
         print(ids)
         await _create_interview_testing_only(ids, interview, id=interview_id)
-
 
 
 # if __name__ == "__main__":
