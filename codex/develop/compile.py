@@ -265,9 +265,29 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
 
     # Steps:
     # 1. Add addtional imports
+    import_statements = [
+        "from fastapi import APIRouter",
+    ]
     # 2. Create the router to add the route to
+    router_code = f"router = APIRouter()"
     # 3. Determine response type
+    if return_type is not None:
+        if (
+            return_type.Type
+            and return_type.Type.Fields
+            and return_type.Type.Fields[0].typeName == "bytes"
+        ):
+            # TODO: File type
+            response_type = "StreamingResponse"
+        else:
+            # TODO: Object type
+            response_type = "JSONResponse"
+    else:
+        # response is a primative type
+        # TODO: force privivite type response to be json?
+        response_type = "JSONResponse"
     # 4. Determine path parameters
+
     # 4. Determine request method
     #    a. Determine query parameters
     #    b. Determine request body
