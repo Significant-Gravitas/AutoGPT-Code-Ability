@@ -178,7 +178,7 @@ async def create_app(
     return app
 
 
-def process_object_type(obj: ObjectType) -> str:
+def process_object_type(obj: ObjectType, object_type_ids: Set[str]= set()) -> str:
     """
     Generate a Pydantic object based on the given ObjectType.
 
@@ -191,12 +191,26 @@ def process_object_type(obj: ObjectType) -> str:
     if obj.Fields is None:
         raise ValueError(f"ObjectType {obj.name} has no fields.")
 
+    # TODO: handle generated subtypes
+    sub_types: List[str] = []
+    field_strings = []
+    for field in obj.Fields:
+        if field.typeId is not None:
+            sub_types.append(process_object_field(field, object_type_ids))
+
+        field_strings.append(
+            f"{' '*4}{field.name}: {field.typeName}  # {field.description}"
+        )
+
     fields = "\n".join(
         [
             f"{' '*4}{field.name}: {field.typeName}  # {field.description}"
             for field in obj.Fields
         ]
     )
+
+    fields = "\n".join(field_strings)
+
     template = f"""
 class {obj.name}(BaseModel):
     \"\"\"
@@ -204,7 +218,7 @@ class {obj.name}(BaseModel):
     \"\"\"
 {fields}
     """
-    return "\n".join([line for line in template.split("\n")])
+    return template
 
 
 def process_object_field(field: ObjectField, object_type_ids: Set[str]) -> str:
