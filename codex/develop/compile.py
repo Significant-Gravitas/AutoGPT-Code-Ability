@@ -191,7 +191,6 @@ def process_object_type(obj: ObjectType) -> str:
     if obj.Fields is None:
         raise ValueError(f"ObjectType {obj.name} has no fields.")
 
-
     fields = "\n".join(
         [
             f"{' '*4}{field.name}: {field.typeName}  # {field.description}"
@@ -233,9 +232,7 @@ def process_object_field(field: ObjectField, object_type_ids: Set[str]) -> str:
     if field.typeId is None:
         # If the field is a primative type we don't need to do anything
         return ""
-    
-    
-    
+
     if field.referredObjectTypeId in object_type_ids:
         return ""
     object_type_ids.add(field.referredObjectTypeId)
