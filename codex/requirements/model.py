@@ -49,6 +49,8 @@ class ExampleTask(Enum):
                 return test_consts.app_id_7
             case ExampleTask.INVOICING_AND_PAYMENT_TRACKING_SYSTEM:
                 return test_consts.app_id_8
+            case ExampleTask.TICTACTOE_GAME:
+                return test_consts.app_id_11
             case _:
                 raise NotImplementedError(f"Example Task {task.value} not implemented")
 

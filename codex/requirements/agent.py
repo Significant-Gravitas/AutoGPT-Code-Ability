@@ -448,19 +448,6 @@ async def populate_database_specs():
       6 | 2024-02-08 11:51:15.216 | 2024-02-08 11:51:15.216 | Survey Tool                   | f       |      2
       7 | 2024-02-08 11:51:15.216 | 2024-02-08 11:51:15.216 | Scurvey Tool                  | t       |      2
     """
-    from codex.api_model import Identifiers
-    from codex.common.test_const import (
-        app_id_1,
-        app_id_2,
-        app_id_3,
-        app_id_4,
-        app_id_5,
-        app_id_6,
-        app_id_7,
-        app_id_8,
-        app_id_9,
-    )
-
     ids = identifier_1
 
     for task in list(ExampleTask):

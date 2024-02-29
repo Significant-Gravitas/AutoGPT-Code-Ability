@@ -19,7 +19,7 @@ setup_logging(local=True)
 async def generate_function():
     await db_client.connect()
 
-    ids = Identifiers(user_id=user_id_1, app_id=app_id_9)
+    ids = Identifiers(user_id=user_id_1, app_id=app_id_11)
     spec = await get_latest_specification(ids.user_id, ids.app_id)
     func = await agent.develop_application(ids=ids, spec=spec)
 
