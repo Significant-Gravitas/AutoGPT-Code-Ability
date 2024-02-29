@@ -31,7 +31,6 @@ async def create_spec(
     user_id: str,
     app_id: str,
     interview_id: str,
-    spec: SpecificationCreate,
 ) -> Response | SpecificationResponse:
     """
     Create a new specification for a given application and user.
@@ -54,7 +53,7 @@ async def create_spec(
                 status_code=500,
                 media_type="application/json",
             )
-        new_spec = await generate_requirements(ids, spec.description)
+        new_spec = await generate_requirements(ids, interview.task)
         return SpecificationResponse.from_specification(new_spec)
     except Exception as e:
         logger.error(f"Error creating a new specification: {e}")
