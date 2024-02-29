@@ -2952,6 +2952,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
         ],
     )
 
+
 def tictactoe_game_requirements() -> ApplicationRequirements:
     request = RequestModel(
         name="TurnRequest",
@@ -3007,13 +3008,14 @@ def tictactoe_game_requirements() -> ApplicationRequirements:
                 function_name="make_turn",
                 access_level=AccessLevel.PUBLIC,
                 description="Function that allows a player to make a move and return the current state of the game. "
-                            "It will also initiate a new game if the game is not started.",
+                "It will also initiate a new game if the game is not started.",
                 request_model=request,
                 response_model=response,
                 database_schema=None,
             ),
         ],
     )
+
 
 if __name__ == "__main__":
     from codex.common.logging_config import setup_logging

@@ -1,9 +1,9 @@
 import asyncio
 import io
+import logging
 import os
 import shutil
 import zipfile
-import logging
 from datetime import datetime
 
 import aiohttp
@@ -14,6 +14,7 @@ import codex.common.test_const as test_const
 from codex.common.logging_config import setup_logging
 
 logger = logging.getLogger(__name__)
+
 
 @click.group()
 def cli():

@@ -352,7 +352,8 @@ class AIBlock:
             return ValidatedResponse(
                 response=MOCK_RESPONSE,
                 usage_statistics=CompletionUsage(
-                    completion_tokens=0, prompt_tokens=0, total_tokens=0),
+                    completion_tokens=0, prompt_tokens=0, total_tokens=0
+                ),
                 message=MOCK_RESPONSE,
             )
         response = await self.oai_client.chat.completions.create(**request_params)

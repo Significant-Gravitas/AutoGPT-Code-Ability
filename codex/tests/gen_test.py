@@ -3,12 +3,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from codex.common.test_const import *
 from codex.app import db_client
-from codex.common.ai_model import OpenAIChatClient
-from codex.common.logging import setup_logging
 from codex.common import ai_block
 from codex.common.ai_block import LLMFailure
+from codex.common.ai_model import OpenAIChatClient
+from codex.common.logging import setup_logging
+from codex.common.test_const import *
 from codex.develop import agent
 from codex.requirements.database import get_latest_specification
 
@@ -27,11 +27,13 @@ async def generate_function():
 
     return func
 
+
 @pytest.mark.asyncio
 async def test_simple_function():
     ai_block.MOCK_RESPONSE = SIMPLE_RESPONSE
     func = await generate_function()
     assert func is not None
+
 
 @pytest.mark.asyncio
 async def test_global_variable():
@@ -47,12 +49,14 @@ async def test_unimplemented_function():
         await generate_function()
         assert "unimplemented" in str(e.value)
 
+
 @pytest.mark.asyncio
 async def test_mismatching_arguments():
     ai_block.MOCK_RESPONSE = WITH_MISMATCHING_ARGUMENTS_RESPONSE
     with pytest.raises(LLMFailure) as e:
         await generate_function()
         assert "arguments" in str(e.value)
+
 
 @pytest.mark.asyncio
 async def test_mismatching_return_type():
@@ -61,6 +65,7 @@ async def test_mismatching_return_type():
         await generate_function()
         assert "return type" in str(e.value)
 
+
 @pytest.mark.asyncio
 async def test_nested_function():
     ai_block.MOCK_RESPONSE = WITH_NESTED_FUNCTION_RESPONSE
@@ -68,11 +73,13 @@ async def test_nested_function():
         await generate_function()
         assert "nested" in str(e.value)
 
+
 @pytest.mark.asyncio
 async def test_with_llm_function_generation():
     ai_block.MOCK_RESPONSE = COMPLEX_RESPONSE
     func = await generate_function()
     assert func is not None
+
 
 COMPLEX_RESPONSE = """
 ```requirements

@@ -3,14 +3,20 @@ import logging
 import os
 
 from prisma.enums import FunctionState
-from prisma.models import APIRouteSpec, CompletedApp, Function, Specification, ObjectType, ObjectField
+from prisma.models import (
+    APIRouteSpec,
+    CompletedApp,
+    Function,
+    ObjectField,
+    ObjectType,
+    Specification,
+)
 
-from codex.develop.function import generate_object_template
 from codex.api_model import Identifiers
-from codex.develop.model import FunctionDef
 from codex.develop.compile import compile_route, create_app
 from codex.develop.develop import DevelopAIBlock
-from codex.develop.function import construct_function
+from codex.develop.function import construct_function, generate_object_template
+from codex.develop.model import FunctionDef
 
 RECURSION_DEPTH_LIMIT = int(os.environ.get("RECURSION_DEPTH_LIMIT", 3))
 
@@ -34,15 +40,25 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
         for api_route in spec.ApiRouteSpecs:
             function_def = FunctionDef(
                 name=api_route.functionName,
-                arg_types=[("request", api_route.RequestObject.name)] if api_route.RequestObject else [],
-                arg_descs={"request": api_route.RequestObject.description} if api_route.RequestObject else {},
-                return_type=api_route.ResponseObject.name if api_route.ResponseObject else None,
-                return_desc=api_route.ResponseObject.description if api_route.ResponseObject else None,
+                arg_types=[("request", api_route.RequestObject.name)]
+                if api_route.RequestObject
+                else [],
+                arg_descs={"request": api_route.RequestObject.description}
+                if api_route.RequestObject
+                else {},
+                return_type=api_route.ResponseObject.name
+                if api_route.ResponseObject
+                else None,
+                return_desc=api_route.ResponseObject.description
+                if api_route.ResponseObject
+                else None,
                 is_implemented=False,
                 function_desc=api_route.description,
                 function_code="",
             )
-            generated_objects = [v for v in [api_route.RequestObject, api_route.ResponseObject] if v]
+            generated_objects = [
+                v for v in [api_route.RequestObject, api_route.ResponseObject] if v
+            ]
             model = construct_function(function_def, generated_objects)
             function = await Function.prisma().create(
                 data=model,
@@ -105,15 +121,15 @@ async def develop_route(
             # function_args is not used by the prompt, but is used by the function validation
             "function_args": [(f.name, f.typeName) for f in function.FunctionArgs],
             # function_rets is not used by the prompt, but is used by the function validation
-            "function_rets": function.FunctionReturn.typeName if function.FunctionReturn else None,
+            "function_rets": function.FunctionReturn.typeName
+            if function.FunctionReturn
+            else None,
             "provided_functions": [
                 f.template
                 for f in generated_functions
                 if f.functionName != function.functionName and f.parentFunctionId
-            ] + [
-                generate_object_template(obj)
-                for obj in generated_objects
-            ],
+            ]
+            + [generate_object_template(obj) for obj in generated_objects],
             # api_route is not used by the prompt, but is used by the function
             "api_route": api_route,
             "available_objects": generated_objects,
