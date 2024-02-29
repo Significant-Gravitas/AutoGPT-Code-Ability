@@ -34,6 +34,7 @@ def test_process_object_type():
 
     pydantic_output = process_object_type(obj)
     expected_output = """
+
 class Person(BaseModel):
     \"\"\"
     Represents a person
