@@ -15,15 +15,22 @@ from codex.requirements.database import get_latest_specification
 OpenAIChatClient.configure({})
 setup_logging(local=True)
 
+is_connected = False
 
 async def generate_function():
-    await db_client.connect()
+    global is_connected
+
+    if not is_connected:
+        await db_client.connect()
+        is_connected = True
 
     ids = Identifiers(user_id=user_id_1, app_id=app_id_11)
     spec = await get_latest_specification(ids.user_id, ids.app_id)
     func = await agent.develop_application(ids=ids, spec=spec)
 
-    await db_client.disconnect()
+    if is_connected:
+        await db_client.disconnect()
+        is_connected = False
 
     return func
 
