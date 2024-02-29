@@ -242,6 +242,44 @@ def process_object_field(field: ObjectField, object_type_ids: Set[str]) -> str:
     return pydantic_classes
 
 
+def create_server_route_code(complied_route: CompiledRoute) -> str:
+    """
+    Create the server route code for a compiled route.
+
+    Args:
+        complied_route (CompiledRoute): The compiled route to create the
+                                        server route code for.
+
+    Returns:
+        str: The server route code.
+    """
+    main_function = complied_route.RootFunction
+
+    if main_function is None:
+        raise ValueError("Compiled route must have a root function.")
+
+    return_type = main_function.FunctionReturn
+    args = main_function.FunctionArgs
+
+    route_spec = complied_route.ApiRouteSpec
+
+    # Steps:
+    # 1. Add addtional imports
+    # 2. Create the router to add the route to
+    # 3. Determine response type
+    # 4. Determine path parameters
+    # 4. Determine request method
+    #    a. Determine query parameters
+    #    b. Determine request body
+    # 5. Create the route decorator
+    # 6. Create the route function with return type
+    # 7. Create function body, with error handling and logging
+    # 8. Validate route code.
+    # 9. Return route code
+
+    return ""
+
+
 async def create_app(
     ids: Identifiers, spec: Specification, compiled_routes: List[CompiledRoute]
 ) -> CompletedApp:
