@@ -1,12 +1,13 @@
 import enum
 import logging
 from dataclasses import dataclass
-from typing import Callable, List, Literal, Optional, Type
+from enum import Enum
+from typing import List, Literal, Optional
 
 from prisma.enums import AccessLevel
 from pydantic import BaseModel, ConfigDict
 
-from codex.common.ai_block import AIBlock
+import codex.common.test_const as test_consts
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +16,39 @@ Q_AND_A_FORMAT = """- "{question}": "{answer}"
 
 Q_AND_A_FORMAT_WITH_THOUGHTS = """- "{question}": "{answer}" : Reasoning: "{thoughts}"
 """
+
+
+class ExampleTask(Enum):
+    AVAILABILITY_CHECKER = "Availability Checker"
+    INVOICE_GENERATOR = "Invoice Generator"
+    APPOINTMENT_OPTIMIZATION_TOOL = "Appointment Optimization Tool"
+    DISTANCE_CALCULATOR = "Distance Calculator"
+    PROFILE_MANAGEMENT_SYSTEM = "Profile Management System"
+    CALENDAR_BOOKING_SYSTEM = "Calendar Booking System"
+    INVENTORY_MANAGEMENT_SYSTEM = "Inventory Management System"
+    INVOICING_AND_PAYMENT_TRACKING_SYSTEM = "Invoiceing and Payment Tracking System"
+
+    @staticmethod
+    def get_app_id(task):
+        match task:
+            case ExampleTask.AVAILABILITY_CHECKER:
+                return test_consts.app_id_1
+            case ExampleTask.INVOICE_GENERATOR:
+                return test_consts.app_id_2
+            case ExampleTask.APPOINTMENT_OPTIMIZATION_TOOL:
+                return test_consts.app_id_3
+            case ExampleTask.DISTANCE_CALCULATOR:
+                return test_consts.app_id_4
+            case ExampleTask.PROFILE_MANAGEMENT_SYSTEM:
+                return test_consts.app_id_5
+            case ExampleTask.CALENDAR_BOOKING_SYSTEM:
+                return test_consts.app_id_6
+            case ExampleTask.INVENTORY_MANAGEMENT_SYSTEM:
+                return test_consts.app_id_7
+            case ExampleTask.INVOICING_AND_PAYMENT_TRACKING_SYSTEM:
+                return test_consts.app_id_8
+            case _:
+                raise NotImplementedError(f"Example Task {task.value} not implemented")
 
 
 class DecomposeTask(BaseModel):
