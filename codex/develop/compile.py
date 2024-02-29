@@ -203,7 +203,7 @@ def generate_pydantic_object(obj: ObjectType) -> str:
         raise ValueError(f"ObjectType {obj.name} has no fields.")
     fields = "\n".join(
         [
-            f"{' '*8}{field.name}: {field.typeName} # {field.description}"
+            f"{' '*4}{field.name}: {field.typeName}  # {field.description}"
             for field in obj.Fields
         ]
     )
@@ -214,4 +214,4 @@ class {obj.name}(BaseModel):
     \"\"\"
 {fields}
     """
-    return "\n".join([line[4:] for line in template.split("\n")])
+    return "\n".join([line for line in template.split("\n")])
