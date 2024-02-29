@@ -45,8 +45,10 @@ async def compile_route(
     compiled_function = await recursive_compile_route(route_root_func)
 
     unique_packages = list(set([package.id for package in compiled_function.packages]))
-
+    compiled_function.imports.append("from pydantic import BaseModel")
     code = "\n".join(compiled_function.imports)
+    code += "\n\n"
+    code += "\n\n".join(compiled_function.pydantic_models)
     code += "\n\n"
     code += compiled_function.code
     data = CompiledRouteCreateInput(
@@ -90,12 +92,11 @@ async def recursive_compile_route(
     )
     logger.info(f"Compiling function: {function.id}")
 
-    new_object_types = []
+    pydantic_models = []
+    new_object_types = set()
     if function.FunctionArgs is not None:
         for arg in function.FunctionArgs:
-            if (arg.id is not None) and (arg.id not in object_type_ids):
-                object_type_ids.add(arg.id)
-                new_object_types.append(arg.id)
+            pydantic_models.append(process_object_field(arg, new_object_types))
 
     if function.ChildFunction is None:
         packages = []
@@ -116,15 +117,18 @@ async def recursive_compile_route(
             packages=packages,
             imports=function.importStatements,
             code=function.functionCode,
+            pydantic_models=pydantic_models,
         )
     else:
         packages = []
         imports = []
+        pydantic_models = []
         code = ""
         for child_function in function.ChildFunction:
             compiled_function = await recursive_compile_route(child_function)
             packages.extend(compiled_function.packages)
             imports.extend(compiled_function.imports)
+            pydantic_models.extend(compiled_function.pydantic_models)
             code += "\n\n"
             code += compiled_function.code
 
@@ -146,7 +150,12 @@ async def recursive_compile_route(
         except Exception as e:
             raise ValueError(f"Syntax error in function code: {e}, {code}")
 
-        return CompiledFunction(packages=packages, imports=imports, code=code)
+        return CompiledFunction(
+            packages=packages,
+            imports=imports,
+            code=code,
+            pydantic_models=pydantic_models,
+        )
 
 
 async def create_app(
@@ -210,6 +219,7 @@ def process_object_type(obj: ObjectType, object_type_ids: Set[str] = set()) -> s
     )
 
     fields: str = "\n".join(field_strings)
+    # Returned as a string to preserve class declaration order
     template += "\n\n".join(sub_types)
     template += f"""
 
@@ -224,34 +234,29 @@ class {obj.name}(BaseModel):
 
 def process_object_field(field: ObjectField, object_type_ids: Set[str]) -> str:
     """
-    Process the fields of an ObjectType and generate Pydantic objects for any
-    ObjectFields that are ObjectTypes.
+    Process an object field and return the Pydantic classes
+    generated from the field's type.
 
     Args:
-        field (ObjectField): The ObjectField to process.
-        object_type_ids (Set[str]): The set of known ObjectType ids.
+        field (ObjectField): The object field to process.
+        object_type_ids (Set[str]): A set of object type IDs that
+                                    have already been processed.
 
     Returns:
-        str: The generated Pydantic object as a string.
+        str: The Pydantic classes generated from the field's type.
+
+    Raises:
+        AssertionError: If the field type is None.
     """
-    # Possible States - doesnt matter if it is a leaf function or not
-    # 1. Function Arg is not a pydantic model
-    # 2. Function Arg is a pydantic model
-    #    a. The pydantic model has already been added
-    #        - Do nothing
-    #    b. The pydantic model has not been added
-    #        - Add the model id to the set of known object_type_ids
-    #        - Recursively explore the model structure adding newly discovered pydantic
-    #          models to the known object_type_ids and build the model
-    #        - Add the model to the list of models
-    if field.typeId is None:
-        # If the field is a primative type we don't need to do anything
+    if field.typeId is None or field.typeId in object_type_ids:
+        # If the field is a primitive type or we have already processed this object,
+        # we don't need to do anything
         return ""
 
-    if field.referredObjectTypeId in object_type_ids:
-        return ""
-    object_type_ids.add(field.referredObjectTypeId)
-    obj = ObjectType.prisma().find_unique(where={"id": field.referredObjectTypeId})
-    if obj is None:
-        raise ValueError(f"ObjectType {field.referredObjectTypeId} not found.")
-    return generate_pydantic_object(obj)
+    assert field.Type is not None, "Field type is None"
+
+    object_type_ids.add(field.typeId)
+
+    pydantic_classes = process_object_type(field.Type, object_type_ids)
+
+    return pydantic_classes
