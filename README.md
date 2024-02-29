@@ -6,7 +6,6 @@
 
 The Codex System is an innovative coding agent designed to streamline the software development process. It consists of four key sub-agents, each specialized in a different aspect of software development. These sub-agents work in harmony to ensure efficient and effective delivery of software applications. This README provides an overview of the Codex System and its components.
 
-
 ## Getting Started
 
 Welcome to the initial setup guide for your project. Follow these easy steps to get everything up and running.
@@ -83,7 +82,7 @@ This starts your application's server, making it available for development use.
 Access your application's documentation at:
 
 ```
-http://127.0.0.1:8007/docs
+http://127.0.0.1:8000/docs
 ```
 
 Here, you'll find detailed guides and references on interacting with your application.
@@ -167,26 +166,26 @@ sequenceDiagram
       User->>API: Modifies App Spec Element
       API->>User: Returns a new App Spec ID
     end
-    
+
     User->>API: Request App Spec ID is Developed
     API->>+Codex: Runs Architect and Develop Flow
 
     Codex->>-User: Returns Developed App ID
-    
+
     User->>API: Requests Deveoped App ID is deployed
     Note right of API: When we have added deployment flow
 
     API->>+Codex: Runs Deployment Flow
     Codex-->>-User: Returns Deployment details (id, url etc)
 
-    
+
     User->>API: Requests Code for Developed App ID
     Note right of API: During Beta
 
     API->>+Codex: Runs Package flow
 
     Codex-->>-User: Returns Zipfile
-    
+
 ```
 
 ## Workflow
@@ -198,7 +197,6 @@ sequenceDiagram
 3. **Development**: The Developer sub-agent uses the templates and architecture guidelines to write the actual code for each module of the application.
 
 4. **Deployment**: Once the coding is complete, the Deploy sub-agent takes over to package, compile, and deploy the application to the desired environment.
-
 
 ```mermaid
 sequenceDiagram
@@ -221,13 +219,11 @@ sequenceDiagram
     Deploy->>+User: Deploy to Production
 ```
 
-
-##  Database Schema
+## Database Schema
 
 <p align="center">
     <img src="docs/mermaid.png" alt="Mermaid Diagram of Schema" style="border-radius: 50px;" width="600">
 </p>
-
 
 The schema revolves around key models:
 
@@ -333,9 +329,9 @@ erDiagram
     }
 ```
 
-## Useful commands 
-> docker buildx build --platform linux/amd64 -t gcr.io/agpt-dev/mvp/codegen . --push
+## Useful commands
 
+> docker buildx build --platform linux/amd64 -t gcr.io/agpt-dev/mvp/codegen . --push
 
 ## Prisma with Python: Quick Setup and Usage Guide
 
@@ -344,18 +340,21 @@ Prisma is an open-source database toolkit that simplifies database access and ma
 ### 1. Setting Up Prisma
 
 #### Prerequisites:
+
 - Node.js installed (for Prisma CLI)
 - Python environment setup
 
 #### Steps:
 
 1. **Install Prisma CLI**:
+
    - Use npm to install Prisma globally:
      ```bash
      npm install -g prisma
      ```
 
 2. **Initialize Prisma in Your Project**:
+
    - Navigate to your Python project directory and initialize Prisma:
      ```bash
      prisma init
@@ -410,6 +409,7 @@ Prisma is an open-source database toolkit that simplifies database access and ma
 ### 5. Using Prisma with Python
 
 - Since Prisma Client is native to JavaScript/TypeScript, using it in Python requires a workaround. You can execute Prisma Client through a child process. For example:
+
   ```python
   import subprocess
   import json
