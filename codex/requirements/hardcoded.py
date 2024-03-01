@@ -1428,7 +1428,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="reports",
-                            param_type="list of ReportSummary",
+                            param_type="List[ReportSummary]",
                             description="A list of report summaries",
                         ),
                         Parameter(
