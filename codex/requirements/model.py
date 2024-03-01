@@ -27,6 +27,7 @@ class ExampleTask(Enum):
     CALENDAR_BOOKING_SYSTEM = "Calendar Booking System"
     INVENTORY_MANAGEMENT_SYSTEM = "Inventory Management System"
     INVOICING_AND_PAYMENT_TRACKING_SYSTEM = "Invoiceing and Payment Tracking System"
+    TICTACTOE_GAME = "TicTacToe Game"
 
     @staticmethod
     def get_app_id(task):
@@ -47,6 +48,8 @@ class ExampleTask(Enum):
                 return test_consts.app_id_7
             case ExampleTask.INVOICING_AND_PAYMENT_TRACKING_SYSTEM:
                 return test_consts.app_id_8
+            case ExampleTask.TICTACTOE_GAME:
+                return test_consts.app_id_11
             case _:
                 raise NotImplementedError(f"Example Task {task.value} not implemented")
 
@@ -496,8 +499,8 @@ class APIRouteRequirement(BaseModel):
     access_level: AccessLevel
 
     # This is the model for the request and response
-    request_model: RequestModel
-    response_model: ResponseModel
+    request_model: RequestModel | None
+    response_model: ResponseModel | None
 
     # This is the database schema this api route will use
     # I'm thinking it will be a prisma table schema or maybe a list of table schemas

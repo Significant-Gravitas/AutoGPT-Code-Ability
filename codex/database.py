@@ -121,6 +121,13 @@ async def create_test_data():
                 "userId": user_1.user_id,
                 "updatedAt": datetime.now(),
             },
+            {
+                "name": "TicTacToe Game",
+                "deleted": False,
+                "id": test_const.app_id_11,
+                "userId": user_id_2,
+                "updatedAt": datetime.now(),
+            },
         ]
     )
 

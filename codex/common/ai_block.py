@@ -44,6 +44,10 @@ class ValidatedResponse(BaseModel):
         arbitrary_types_allowed = True
 
 
+# This can be used for synchronous testing without making an actual API call
+MOCK_RESPONSE = ""
+
+
 class AIBlock:
     """
     The AI BLock is a base class for all AI Blocks. It provides a common interface for
@@ -195,7 +199,7 @@ class AIBlock:
         )
         return call_attempt
 
-    def load_temaplate(self, template: str, invoke_params: dict) -> str:
+    def load_template(self, template: str, invoke_params: dict) -> str:
         try:
             lang_str = ""
             if self.langauge:
@@ -269,8 +273,8 @@ class AIBlock:
         try:
             if self.is_json_response:
                 invoke_params["format_instructions"] = self.get_format_instructions()
-            system_prompt = self.load_temaplate("system", invoke_params)
-            user_prompt = self.load_temaplate("user", invoke_params)
+            system_prompt = self.load_template("system", invoke_params)
+            user_prompt = self.load_template("user", invoke_params)
 
             request_params = {
                 "model": self.model,
@@ -287,9 +291,7 @@ class AIBlock:
             logger.error(f"Error creating request params: {e}")
             raise LLMFailure(f"Error creating request params: {e}")
         try:
-            response = await self.oai_client.chat.completions.create(**request_params)
-
-            presponse = self.parse(response)
+            presponse = await self.call_llm(request_params)
 
             await self.store_call_attempt(
                 ids.user_id,
@@ -312,15 +314,12 @@ class AIBlock:
                         invoke_params["generation"] = "Error generating response"
                     invoke_params["error"] = str(error_message)
 
-                    retry_prompt = self.load_temaplate("retry", invoke_params)
+                    retry_prompt = self.load_template("retry", invoke_params)
                     request_params["messages"] = [
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": retry_prompt},
                     ]
-                    response = await self.oai_client.chat.completions.create(
-                        **request_params
-                    )
-                    presponse = self.parse(response)
+                    presponse = await self.call_llm(request_params)
                     assert request_params["messages"], "Messages not set"
 
                     await self.store_call_attempt(
@@ -332,20 +331,33 @@ class AIBlock:
                     )
                     validated_response = self.validate(invoke_params, presponse)
                     break
-                except Exception as retry_error:
+                except ValidationError as retry_error:
                     logger.warning(
                         f"{retries}/{max_retries}"
                         + f" Failed validating response: {retry_error}"
                     )
+                    error_message = retry_error
                     continue
             if not validated_response:
                 raise LLMFailure(f"Error validating response: {validation_error}")
         except Exception as unkown_error:
-            logger.error(f"Error invoking AIBlock: {unkown_error}")
+            logger.exception(f"Error invoking AIBlock: {unkown_error}", unkown_error)
             raise LLMFailure(f"Error invoking AIBlock: {unkown_error}")
 
         stored_obj = await self.create_item(ids, validated_response)
         return stored_obj if stored_obj else validated_response.response
+
+    async def call_llm(self, request_params: dict) -> ValidatedResponse:
+        if MOCK_RESPONSE:
+            return ValidatedResponse(
+                response=MOCK_RESPONSE,
+                usage_statistics=CompletionUsage(
+                    completion_tokens=0, prompt_tokens=0, total_tokens=0
+                ),
+                message=MOCK_RESPONSE,
+            )
+        response = await self.oai_client.chat.completions.create(**request_params)
+        return self.parse(response)
 
     async def create_item(
         self, ids: Identifiers, validated_response: ValidatedResponse

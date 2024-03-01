@@ -1,7 +1,8 @@
 import ast
 
-import pytest
-from numpy import VisibleDeprecationWarning
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from codex.develop.develop import FunctionVisitor
 
@@ -135,11 +136,11 @@ def test_function_visitor():
     visitor.visit(tree)
 
     # Check that all Pydantic classes are identified
-    assert "SomeClass" not in visitor.pydantic_classes
-    assert "ProfessionalWorkingHours" in visitor.pydantic_classes
+    assert "SomeClass" not in get_pydantic_classes(visitor)
+    assert "ProfessionalWorkingHours" in get_pydantic_classes(visitor)
 
     # Check that all functions are identified
-    assert len(visitor.pydantic_classes) == 4
+    assert len(get_pydantic_classes(visitor)) == 4
     assert len(visitor.functions) == 3
 
     assert visitor.functions["create_schedule"].is_implemented
@@ -164,8 +165,8 @@ def test_simple_function_definition():
     # Assert the properties of the FunctionDef object
     function_def = visitor.functions["my_function"]
     assert function_def.name == "my_function"
-    assert function_def.args == ""
-    assert function_def.return_type == "Unknown"
+    assert function_def.arg_types == []
+    assert function_def.return_type is None
     assert function_def.function_template == "def my_function():\n    pass"
     assert function_def.function_code == "def my_function():\n    pass"
 
@@ -187,8 +188,8 @@ def test_function_with_default_arguments():
     # Assert the properties of the FunctionDef object
     function_def = visitor.functions["my_function"]
     assert function_def.name == "my_function"
-    assert function_def.args == "Unknown, Unknown, Unknown"
-    assert function_def.return_type == "Unknown"
+    assert function_def.arg_types == [("arg1", None), ("arg2", None), ("arg3", None)]
+    assert function_def.return_type is None
     assert (
         function_def.function_template
         == "def my_function(arg1, arg2='default', arg3=123):\n    pass"
@@ -216,8 +217,8 @@ def test_visiting_function_with_decorator():
     # Assert the properties of the FunctionDef object
     function_def = visitor.functions["my_function"]
     assert function_def.name == "my_function"
-    assert function_def.args == ""
-    assert function_def.return_type == "Unknown"
+    assert function_def.arg_types == []
+    assert function_def.return_type is None
     assert function_def.function_template == "@decorator\ndef my_function():\n    pass"
     assert function_def.function_code == "@decorator\ndef my_function():\n    pass"
 
@@ -234,7 +235,7 @@ def test_visiting_class_definition_no_pydantic_inheritance():
     visitor.visit(code)
 
     # Assert that the pydantic_classes list is empty
-    assert len(visitor.pydantic_classes) == 0
+    assert len(get_pydantic_classes(visitor)) == 0
 
 
 # Visiting a class definition with Pydantic inheritance
@@ -249,7 +250,7 @@ def test_visiting_class_with_pydantic_inheritance():
     visitor.visit(code)
 
     # Assert that the class name was added to the list of Pydantic classes
-    assert "MyClass" in visitor.pydantic_classes
+    assert "MyClass" in get_pydantic_classes(visitor)
 
 
 # Visiting an import statement with an alias
@@ -301,7 +302,7 @@ def test_visiting_function_with_non_string_annotations():
     # Assert the properties of the FunctionDef object
     function_def = visitor.functions["my_function"]
     assert function_def.name == "my_function"
-    assert function_def.args == "int, List[str]"
+    assert function_def.arg_types == [("arg1", "int"), ("arg2", "List[str]")]
     assert function_def.return_type == "Dict[str, int]"
     assert (
         function_def.function_template
@@ -330,7 +331,7 @@ def test_visiting_function_with_non_string_return_annotation():
     # Assert the properties of the FunctionDef object
     function_def = visitor.functions["my_function"]
     assert function_def.name == "my_function"
-    assert function_def.args == ""
+    assert function_def.arg_types == []
     assert function_def.return_type == "int"
     assert function_def.function_template == "def my_function() -> int:\n    pass"
     assert function_def.function_code == "def my_function() -> int:\n    pass"
@@ -348,7 +349,7 @@ def test_visiting_class_definition_with_non_list_body():
     visitor.visit(code)
 
     # Assert that the class was not added to the pydantic_classes list
-    assert "MyClass" not in visitor.pydantic_classes
+    assert "MyClass" not in get_pydantic_classes(visitor)
 
 
 # Visiting a function definition with a body that is not a list of statements
@@ -368,8 +369,8 @@ def test_visiting_function_with_non_list_body():
     # Assert the properties of the FunctionDef object
     function_def = visitor.functions["my_function"]
     assert function_def.name == "my_function"
-    assert function_def.args == ""
-    assert function_def.return_type == "Unknown"
+    assert function_def.arg_types == []
+    assert function_def.return_type is None
     assert function_def.function_template == "def my_function():\n    pass"
     assert (
         function_def.function_code == "def my_function():\n    print('Hello, World!')"
@@ -392,6 +393,10 @@ def test_visiting_function_with_pass_body():
     # Assert the properties of the FunctionDef object
     function_def = visitor.functions["my_function"]
     assert function_def.name == "my_function"
-    assert function_def.args == ""
-    assert function_def.return_type == "Unknown"
+    assert function_def.arg_types == []
+    assert function_def.return_type is None
     assert not function_def.is_implemented
+
+
+def get_pydantic_classes(visitor):
+    return [name for name, c in visitor.objects.items() if c.is_pydantic]

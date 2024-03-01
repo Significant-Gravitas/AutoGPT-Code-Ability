@@ -1,5 +1,6 @@
 import asyncio
 import io
+import logging
 import os
 import shutil
 import zipfile
@@ -12,7 +13,7 @@ from dotenv import load_dotenv
 import codex.common.test_const as test_const
 from codex.common.logging_config import setup_logging
 
-# from networkx import is_valid_degree_sequence_havel_hakimi
+logger = logging.getLogger(__name__)
 
 
 @click.group()
@@ -95,6 +96,8 @@ async def fetch_deliverable(session, user_id, app_id):
                 return deploy_data
         except Exception as e:
             click.echo(f"Error fetching deliverable: {e}")
+            print("Problematic URL: ", url)
+            logger.exception(e)
             return
 
 
@@ -142,7 +145,7 @@ def benchmark():
 
 
 @cli.command()
-def run_example():
+def example():
     from codex.requirements.model import ExampleTask
 
     i = 1

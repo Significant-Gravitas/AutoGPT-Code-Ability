@@ -2,6 +2,7 @@ from typing import Dict, List
 
 from prisma.models import APIRouteSpec
 from prisma.models import Function as FunctionDBModel
+from prisma.models import ObjectType
 from pydantic import BaseModel
 
 
@@ -13,11 +14,51 @@ class Package(BaseModel):
 
 class FunctionDef(BaseModel):
     name: str
-    args: str
-    return_type: str
+    arg_types: List[tuple[str, str]]
+    arg_descs: dict[str, str]
+    return_type: str | None
+    return_desc: str
     is_implemented: bool
-    function_template: str
+    function_desc: str
     function_code: str
+    function_template: str = None
+
+    def __generate_function_template(f) -> str:
+        args_str = "".join([f"{name}: {type}" for name, type in f.arg_types])
+        arg_desc = "\n      ".join(
+            [
+                f'{name} ({type}): {f.arg_descs.get(name, "-")}'
+                for name, type in f.arg_types
+            ]
+        )
+
+        template = f"""
+        def {f.name}({args_str}) -> {f.return_type}:
+            \"\"\"
+            {f.function_desc}
+
+            Args:
+            {arg_desc}
+
+            Returns:
+            {f.return_type}: {f.return_desc}
+            \"\"\"
+            pass
+        """
+        return "\n".join([line[8:] for line in template.split("\n")]).strip()
+
+    def __init__(self, function_template: str = None, **data):
+        super().__init__(**data)
+        self.function_template = (
+            function_template or self.__generate_function_template()
+        )
+
+
+class ObjectDef(BaseModel):
+    name: str
+    fields: Dict[str, str]
+    is_pydantic: bool = True
+    is_implemented: bool = True
 
 
 class GeneratedFunctionResponse(BaseModel):
@@ -25,6 +66,7 @@ class GeneratedFunctionResponse(BaseModel):
 
     function_name: str
     api_route_spec: APIRouteSpec
+    available_objects: List[ObjectType]
     template: str
 
     rawCode: str
@@ -34,6 +76,7 @@ class GeneratedFunctionResponse(BaseModel):
     functionCode: str
 
     functions: Dict[str, FunctionDef] | None = None
+    objects: Dict[str, ObjectDef] | None = None
 
 
 class ApplicationGraphs(BaseModel):

@@ -6,7 +6,6 @@ from prisma.enums import DevelopmentPhase, FunctionState
 from prisma.models import Function
 from prisma.types import (
     FunctionCreateInput,
-    FunctionCreateWithoutRelationsInput,
     FunctionUpdateInput,
     PackageCreateWithoutRelationsInput,
 )
@@ -17,7 +16,13 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
-from codex.develop.model import FunctionDef, GeneratedFunctionResponse, Package
+from codex.develop.function import construct_function
+from codex.develop.model import (
+    FunctionDef,
+    GeneratedFunctionResponse,
+    ObjectDef,
+    Package,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -66,8 +71,9 @@ def parse_requirements(requirements_str: str) -> List[Package]:
 class FunctionVisitor(ast.NodeVisitor):
     def __init__(self):
         self.functions = {}
+        self.objects = {}
         self.imports = []
-        self.pydantic_classes = []
+        self.globals = []
 
     def visit_Import(self, node):
         for alias in node.names:
@@ -85,47 +91,51 @@ class FunctionVisitor(ast.NodeVisitor):
             self.imports.append(import_line)
         self.generic_visit(node)
 
-    # TODO(AGPT-425):
-    #  - Add visit_ClassDef and parse input output complex types
-    #  - Exclude function inside the class and 'unexpected' nested functions.
-
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        if node.name == "__init__":
+            self.generic_visit(node)
+            return
+
         args = []
         for arg in node.args.args:
-            arg_type = ast.unparse(arg.annotation) if arg.annotation else "Unknown"
-            args.append(arg_type)
-        args_str = ", ".join(args)
-        return_type = ast.unparse(node.returns) if node.returns else "Unknown"
+            arg_type = ast.unparse(arg.annotation) if arg.annotation else "object"
+            args.append((arg.arg, arg_type))
+        return_type = ast.unparse(node.returns) if node.returns else None
+
+        # Raise validation error on nested functions
+        if any(isinstance(v, ast.FunctionDef) for v in node.body):
+            raise ValidationError(
+                "Nested functions are not allowed in the code: " + node.name
+            )
 
         # Extract doc_string & function body
-        pass_block = ast.parse("pass").body[0]
         if (
             node.body
             and isinstance(node.body[0], ast.Expr)
             and isinstance(node.body[0].value, (ast.Str, ast.Constant))
         ):
-            doc_string_body = [node.body[0], pass_block]
-            code_body = node.body[1:]
+            doc_string = ast.unparse(node.body[0])
+            template_body = [node.body[0], ast.Pass()]
+            is_implemented = not isinstance(node.body[1], ast.Pass)
         else:
-            doc_string_body = [pass_block]
-            code_body = node.body
+            doc_string = ""
+            template_body = [ast.Pass()]
+            is_implemented = not isinstance(node.body[0], ast.Pass)
 
         # Construct function template
         original_body = node.body.copy()
-        node.body = doc_string_body
+        node.body = template_body
         function_template = ast.unparse(node)
         node.body = original_body
 
-        # Function is not implemented if it has pass_block as its body
-        is_implemented = len(code_body) > 1 or ast.unparse(code_body[0]) != ast.unparse(
-            pass_block
-        )
-
         self.functions[node.name] = FunctionDef(
             name=node.name,
-            args=args_str,
+            arg_types=args,
+            arg_descs={},  # TODO: Extract out Args and Returns from doc_string
             return_type=return_type,
+            return_desc="",  # TODO: Extract out Args and Returns from doc_string
             is_implemented=is_implemented,
+            function_desc=doc_string,  # TODO: Exclude Args and Returns from doc_string,
             function_template=function_template,
             function_code=ast.unparse(node),
         )
@@ -136,16 +146,35 @@ class FunctionVisitor(ast.NodeVisitor):
         Visits a ClassDef node in the AST and checks if it is a Pydantic class.
         If it is a Pydantic class, adds its name to the list of Pydantic classes.
         """
-        for base in node.bases:
-            base_id = getattr(base, "id", None)
-            # This will only work for direct children of BaseModel
-            is_pydantic = (isinstance(base, ast.Name) and base.id == "BaseModel") or (
-                isinstance(base, ast.Attribute) and base.attr == "BaseModel"
-            )
-            if is_pydantic:
-                self.pydantic_classes.append(node.name)
+        is_pydantic = any(
+            [
+                (isinstance(base, ast.Name) and base.id == "BaseModel")
+                or (isinstance(base, ast.Attribute) and base.attr == "BaseModel")
+            ]
+            for base in node.bases
+        )
+
+        self.objects[node.name] = ObjectDef(
+            name=node.name,
+            fields={
+                ast.unparse(v.target): ast.unparse(v.annotation)
+                for v in node.body
+                if isinstance(v, ast.AnnAssign)
+            },
+            is_pydantic=is_pydantic,
+            is_implemented=not any(isinstance(v, ast.Pass) for v in node.body),
+        )
 
         self.generic_visit(node)
+
+    def visit(self, node):
+        if (
+            isinstance(node, ast.Assign)
+            or isinstance(node, ast.AnnAssign)
+            or isinstance(node, ast.AugAssign)
+        ) and node.col_offset == 0:
+            self.globals.append(ast.unparse(node))
+        super().visit(node)
 
 
 class DevelopAIBlock(AIBlock):
@@ -201,6 +230,21 @@ class DevelopAIBlock(AIBlock):
                     "Main Function body is empty, it should contain"
                     + " the implementation of this function!"
                 )
+            function_code = (
+                "\n".join(visitor.globals) + "\n\n" + requested_func.function_code
+            )
+
+            # Validate the requested_func.args and requested_func.returns to the invoke_params
+            expected_args = invoke_params["function_args"]
+            expected_rets = invoke_params["function_rets"]
+            if expected_args != requested_func.arg_types:
+                raise ValidationError(
+                    f"Function {func_name} has different arguments than expected, expected {expected_args} but got {requested_func.arg_types}"
+                )
+            if expected_rets != requested_func.return_type:
+                raise ValidationError(
+                    f"Function {func_name} has different return type than expected, expected {expected_rets} but got {requested_func.return_type}"
+                )
 
             functions = visitor.functions.copy()
             del functions[invoke_params["function_name"]]
@@ -211,11 +255,13 @@ class DevelopAIBlock(AIBlock):
                 else None,
                 function_name=invoke_params["function_name"],
                 api_route_spec=invoke_params["api_route"],
+                available_objects=invoke_params["available_objects"],
                 rawCode=code,
                 packages=packages,
                 imports=visitor.imports,
+                objects=visitor.objects,
                 template=requested_func.function_template,
-                functionCode=requested_func.function_code,
+                functionCode=function_code,
                 functions=functions,
             )
             return response
@@ -226,94 +272,6 @@ class DevelopAIBlock(AIBlock):
     async def create_item(
         self, ids: Identifiers, validated_response: ValidatedResponse
     ) -> Function:
-        """This is just a temporary that doesnt have a database model"""
-        generated_response: GeneratedFunctionResponse = validated_response.response
-        if generated_response.function_id:
-            # Detect if the function already exists and update it
-            return await self.update_item(ids, validated_response)
-
-        try:
-            generated_response: GeneratedFunctionResponse = validated_response.response
-            function_defs: list[FunctionCreateWithoutRelationsInput] = []
-            if generated_response.functions:
-                for key, value in generated_response.functions.items():
-                    model = FunctionCreateWithoutRelationsInput(
-                        functionName=value.name,
-                        template=value.function_template,
-                        apiRouteSpecId=generated_response.api_route_spec.id,
-                        state=FunctionState.WRITTEN
-                        if value.is_implemented
-                        else FunctionState.DEFINITION,
-                        rawCode=value.function_code,
-                        functionCode=value.function_code,
-                    )
-
-                    function_defs.append(model)
-
-            logger.info(f"Child Functions Detected: {len(function_defs)}")
-
-            create_input = FunctionCreateInput(
-                functionName=generated_response.function_name,
-                template=generated_response.template,
-                state=FunctionState.WRITTEN,
-                Packages={
-                    "create": [
-                        PackageCreateWithoutRelationsInput(
-                            packageName=p.package_name,
-                            version=p.version if p.version else "",
-                            specifier=p.specifier if p.specifier else "",
-                        )
-                        for p in generated_response.packages
-                    ]
-                },
-                rawCode=generated_response.rawCode,
-                importStatements=generated_response.imports,
-                functionCode=generated_response.functionCode,
-                ChildFunction={"create": function_defs},
-                ApiRouteSpec={"connect": {"id": generated_response.api_route_spec.id}},
-            )
-            if generated_response.api_route_spec.DatabaseSchema:
-                create_input["DatabaseSchema"] = {
-                    "connect": {
-                        "id": generated_response.api_route_spec.DatabaseSchema.id
-                    }
-                }
-
-            # Child Functions Must be created without relations
-            # Here we add the relations after the function is created
-            func = await Function.prisma().create(data=create_input)
-            if func.ChildFunction:
-                for function_def in func.ChildFunction:
-                    await Function.prisma().update(
-                        where={"id": function_def.id},
-                        data={
-                            "ApiRouteSpec": {
-                                "connect": {"id": generated_response.api_route_spec.id}
-                            }
-                        },
-                    )
-            # We need to reload from the database the child functions so they
-            # have the api route spec attached
-            func = await Function.prisma().find_unique_or_raise(
-                where={"id": func.id},
-                include={
-                    "ParentFunction": True,
-                    "ChildFunction": {"include": {"ApiRouteSpec": True}},
-                },
-            )
-            num_child_functions = len(func.ChildFunction) if func.ChildFunction else 0
-            logger.info(
-                f"✅ Created Function. - {func.id} Child Functions: "
-                f"{len(function_defs)}/{num_child_functions}"
-            )
-            return func
-        except Exception as e:
-            logger.error(f"Error saving Function: {e}")
-            raise e
-
-    async def update_item(  # type: ignore
-        self, ids: Identifiers, validated_response: ValidatedResponse
-    ) -> Function:  # type: ignore
         """
         Update an item in the database with the given identifiers
         and validated response.
@@ -327,16 +285,10 @@ class DevelopAIBlock(AIBlock):
             func: The updated item
         """
         generated_response: GeneratedFunctionResponse = validated_response.response
-        function_defs: list[FunctionCreateWithoutRelationsInput] = []
+        function_defs: list[FunctionCreateInput] = []
         if generated_response.functions:
             for key, value in generated_response.functions.items():
-                model = FunctionCreateWithoutRelationsInput(
-                    functionName=value.name,
-                    template=value.function_template,
-                    apiRouteSpecId=generated_response.api_route_spec.id,
-                    state=FunctionState.DEFINITION,
-                )
-
+                model = construct_function(value, generated_response.available_objects)
                 function_defs.append(model)
 
         update_obj = FunctionUpdateInput(
@@ -389,7 +341,15 @@ class DevelopAIBlock(AIBlock):
             where={"id": func.id},
             include={
                 "ParentFunction": True,
-                "ChildFunction": {"include": {"ApiRouteSpec": True}},
+                "FunctionArgs": True,
+                "FunctionReturn": True,
+                "ChildFunction": {
+                    "include": {
+                        "ApiRouteSpec": True,
+                        "FunctionArgs": True,
+                        "FunctionReturn": True,
+                    }
+                },
             },
         )
 

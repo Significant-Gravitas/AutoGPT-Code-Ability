@@ -46,6 +46,7 @@ from codex.requirements.hardcoded import (
     invoice_generator_requirements,
     invoice_payment_tracking,
     profile_management,
+    tictactoe_game_requirements,
 )
 from codex.requirements.matching import find_best_match
 from codex.requirements.model import (
@@ -424,6 +425,8 @@ def hardcoded_requirements(task: ExampleTask) -> ApplicationRequirements:
             return inventory_mgmt_system()
         case ExampleTask.INVOICING_AND_PAYMENT_TRACKING_SYSTEM:
             return invoice_payment_tracking()
+        case ExampleTask.TICTACTOE_GAME:
+            return tictactoe_game_requirements()
         case _:
             raise NotImplementedError(f"Task {task} not implemented")
 
@@ -442,18 +445,6 @@ async def populate_database_specs():
       6 | 2024-02-08 11:51:15.216 | 2024-02-08 11:51:15.216 | Survey Tool                   | f       |      2
       7 | 2024-02-08 11:51:15.216 | 2024-02-08 11:51:15.216 | Scurvey Tool                  | t       |      2
     """
-    from codex.api_model import Identifiers
-    from codex.common.test_const import (
-        app_id_1,
-        app_id_2,
-        app_id_3,
-        app_id_4,
-        app_id_5,
-        app_id_6,
-        app_id_7,
-        app_id_8,
-    )
-
     ids = identifier_1
 
     for task in list(ExampleTask):
