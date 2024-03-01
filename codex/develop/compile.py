@@ -60,12 +60,18 @@ async def compile_route(
     code += "\n\n".join(compiled_function.pydantic_models)
     code += "\n\n"
     code += compiled_function.code
+    try:
+        formatted_code = isort.code(code)
+        formatted_code = black.format_str(formatted_code, mode=black.FileMode())
+    except Exception as e:
+        logger.exception(f"Error formatting code: {e}")
+        raise ComplicationFailure(f"Error formatting code: {e}")
     data = CompiledRouteCreateInput(
         description=api_route.description,
         Packages={"connect": [{"id": package_id} for package_id in unique_packages]},
         fileName=api_route.functionName + "_service.py",
         mainFunctionName=route_root_func.functionName,
-        compiledCode=code,
+        compiledCode=formatted_code,
         RootFunction={"connect": {"id": route_root_func.id}},
         ApiRouteSpec={"connect": {"id": api_route.id}},
     )
@@ -96,21 +102,33 @@ async def recursive_compile_route(
         where={"id": in_function.id},
         include={
             "ParentFunction": True,
-            "ChildFunction": {"include": {"ApiRouteSpec": True}},
+            "FunctionArgs": True,
+            "FunctionReturn": True,
+            "ChildFunction": {
+                "include": {
+                    "ApiRouteSpec": True,
+                    "FunctionArgs": True,
+                    "FunctionReturn": True,
+                }
+            },
         },
     )
     logger.info(f"Compiling function: {function.id}")
-
     pydantic_models = []
+
     new_object_types = set()
     if function.FunctionArgs is not None:
         for arg in function.FunctionArgs:
-            pydantic_models.append(process_object_field(arg, new_object_types))
+            pydantic_models.append(await process_object_field(arg, new_object_types))
+    else:
+        raise ValueError(f"Function {function.functionName} has no arguments.")
 
     if function.FunctionReturn is not None:
         pydantic_models.append(
-            process_object_field(function.FunctionReturn, new_object_types)
+            await process_object_field(function.FunctionReturn, new_object_types)
         )
+    else:
+        raise ValueError(f"Function {function.functionName} has no return type.")
 
     if function.ChildFunction is None:
         packages = []
@@ -136,7 +154,6 @@ async def recursive_compile_route(
     else:
         packages = []
         imports = []
-        pydantic_models = []
         code = ""
         for child_function in function.ChildFunction:
             compiled_function = await recursive_compile_route(child_function)
@@ -172,7 +189,9 @@ async def recursive_compile_route(
         )
 
 
-def process_object_type(obj: ObjectType, object_type_ids: Set[str] = set()) -> str:
+async def process_object_type(
+    obj: ObjectType, object_type_ids: Set[str] = set()
+) -> str:
     """
     Generate a Pydantic object based on the given ObjectType.
 
@@ -190,7 +209,7 @@ def process_object_type(obj: ObjectType, object_type_ids: Set[str] = set()) -> s
     field_strings: List[str] = []
     for field in obj.Fields:
         if field.typeId is not None:
-            sub_types.append(process_object_field(field, object_type_ids))
+            sub_types.append(await process_object_field(field, object_type_ids))
 
         field_strings.append(
             f"{' '*4}{field.name}: {field.typeName}  # {field.description}"
@@ -214,10 +233,11 @@ class {obj.name}(BaseModel):
     \"\"\"
 {fields}
     """
+    logger.warning(f"Generated Pydantic class for {obj.name}:\n\n{template}")
     return template
 
 
-def process_object_field(field: ObjectField, object_type_ids: Set[str]) -> str:
+async def process_object_field(field: ObjectField, object_type_ids: Set[str]) -> str:
     """
     Process an object field and return the Pydantic classes
     generated from the field's type.
@@ -233,16 +253,25 @@ def process_object_field(field: ObjectField, object_type_ids: Set[str]) -> str:
     Raises:
         AssertionError: If the field type is None.
     """
+    # Lookup the field object getting all its subfields
+    field = await ObjectField.prisma().find_unique_or_raise(
+        where={"id": field.id}, include={"Type": {"include": {"Fields": True}}}
+    )
+
     if field.typeId is None or field.typeId in object_type_ids:
         # If the field is a primitive type or we have already processed this object,
         # we don't need to do anything
+        logger.warning(
+            f"Skipping field {field.name} as it is a primitive type or already processed"
+        )
         return ""
 
     assert field.Type is not None, "Field type is None"
 
+    logger.info(f"Processing field {field.name} of type {field.Type.name}")
     object_type_ids.add(field.typeId)
 
-    pydantic_classes = process_object_type(field.Type, object_type_ids)
+    pydantic_classes = await process_object_type(field.Type, object_type_ids)
 
     return pydantic_classes
 
@@ -272,13 +301,16 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
     assert route_spec is not None, "Compiled route must have an API route spec."
 
     is_file_response = False
-
+    response_model = "JSONResponse"
     if (
         return_type.Type
         and return_type.Type.Fields
         and return_type.Type.Fields[0].typeName == "bytes"
     ):
         is_file_response = True
+    else:
+        if return_type.Type is not None:
+            response_model = f"{return_type.Type.name} | JSONResponse"
 
     # 4. Determine path parameters
     path_params = extract_path_params(route_spec.path)
@@ -288,14 +320,14 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
             f"Path parameters {path_params} not in function arguments {func_args_names}"
         )
 
-    route_decorator = f"@app.{route_spec.method.value.lower()}('{route_spec.path}'"
+    http_verb = str(route_spec.method)
+    route_decorator = f"@app.{http_verb.lower()}('{route_spec.path}'"
     if is_file_response:
         route_decorator += ", response_class=StreamingResponse"
     else:
-        # TODO: Add response model
-        route_decorator += ", response_model=ResponseModel"
+        route_decorator += f", response_model={response_model}"
 
-    route_decorator += ")"
+    route_decorator += ")\n"
     route_fucntion_def = f"def {main_function.functionName}("
     route_fucntion_def += ", ".join([f"{arg.name}: {arg.typeName}" for arg in args])
     route_fucntion_def += ")"
@@ -316,8 +348,7 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
             headers=headers)
     """
     else:
-        # TODO: Add response model
-        route_fucntion_def += " -> ResponseModel:"
+        route_fucntion_def += f" -> {response_model}:"
         return_response = "return res"
 
     function_body = f"""
@@ -424,6 +455,13 @@ app = FastAPI(title="{name}", description='''{desc}''')"""
             createdAt=datetime.now(),
         ),
         Package(
+            packageName="pydantic",
+            specifier="",
+            version="",
+            id="pydantic",
+            createdAt=datetime.now(),
+        ),
+        Package(
             packageName="uvicorn",
             specifier="",
             version="",
@@ -439,7 +477,7 @@ app = FastAPI(title="{name}", description='''{desc}''')"""
             packages.extend(compiled_route.Packages)
 
         server_code_imports.append(
-            f"from {compiled_route.fileName.replace('.py', '')} import *"
+            f"from project.{compiled_route.fileName.replace('.py', '')} import *"
         )
 
         service_routes_code.append(create_server_route_code(compiled_route))
