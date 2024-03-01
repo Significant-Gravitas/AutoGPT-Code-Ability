@@ -113,7 +113,7 @@ async def recursive_compile_route(
             },
         },
     )
-    logger.info(f"Compiling function: {function.id}")
+    logger.info(f"⚙️ Compiling function: {function.functionName}")
     pydantic_models = []
 
     new_object_types = set()
