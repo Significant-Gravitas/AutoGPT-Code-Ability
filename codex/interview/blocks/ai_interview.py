@@ -103,6 +103,13 @@ Additionally, it will have proper management of financials, including invoice ma
                     "finished": "finish the task and provide a comprehensive project to the user. Include the important notes from the task as well. This should be very detailed and comprehensive. Do NOT use this if there are unsettled questions.",
                 },
                 "memory": [],
+                "tech_stack": {
+                    "programming_language": "Python",
+                    "api_framework": "FastAPI",
+                    "frontend_framework": "React",
+                    "database": "PostgreSQL",
+                    "orm": "Prisma",
+                },
             },
         )
 
@@ -128,6 +135,13 @@ Additionally, it will have proper management of financials, including invoice ma
                     "ask": "ask the user a question",
                     "search": "search the web for information",
                     "finished": "finish the task and provide a comprehensive project to the user. Include the important notes from the task as well. This should be very detailed and comprehensive. Do NOT use this if there are unsettled questions.",
+                },
+                "tech_stack": {
+                    "programming_language": "Python",
+                    "api_framework": "FastAPI",
+                    "frontend_framework": "React",
+                    "database": "PostgreSQL",
+                    "orm": "Prisma",
                 },
                 "memory": [
                     {

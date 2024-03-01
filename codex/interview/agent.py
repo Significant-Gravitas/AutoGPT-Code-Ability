@@ -5,7 +5,7 @@ import logging
 from codex.common.ai_block import Identifiers, Tool
 from codex.interview.blocks.ai_interview import InterviewBlock
 from codex.interview.choose_tool import use_tool
-from codex.interview.database import _create_interview_testing_only, create_interview
+from codex.interview.database import _create_interview_testing_only
 from codex.interview.hardcoded import (
     appointment_optimization_interview,
     availability_checker_interview,
@@ -110,6 +110,12 @@ async def next_step(
             "task": task,
             "tools": {tool.name: tool.description for tool in tools},
             "memory": memory,
+            'tech_stack':{
+                'programming_language':'Python',
+                'api_framework':'FastAPI',
+                'database':'PostgreSQL',
+                'orm':'Prisma',
+            }
         },
     )
 
