@@ -2,7 +2,6 @@ import json
 import logging
 
 from fastapi import APIRouter, Query, Response
-from prisma.models import Specification
 
 import codex.database
 import codex.requirements.database
@@ -12,6 +11,7 @@ from codex.api_model import (
     SpecificationResponse,
     SpecificationsListResponse,
 )
+from codex.interview.database import get_interview
 from codex.requirements.agent import generate_requirements
 
 logger = logging.getLogger(__name__)
@@ -27,16 +27,33 @@ spec_router = APIRouter()
     tags=["specs"],
     response_model=SpecificationResponse,
 )
-async def create_spec(user_id: str, app_id: str, spec: SpecificationCreate):
+async def create_spec(
+    user_id: str,
+    app_id: str,
+    interview_id: str,
+) -> Response | SpecificationResponse:
     """
     Create a new specification for a given application and user.
     """
     try:
         app = await codex.database.get_app_by_id(user_id, app_id)
-        ids = Identifiers(user_id=user_id, app_id=app_id)
-        new_spec: Specification = await generate_requirements(
-            ids, app.name, spec.description
+        user = await codex.database.get_user(user_id)
+        ids = Identifiers(
+            user_id=user_id,
+            app_id=app_id,
+            interview_id=interview_id,
+            cloud_services_id=user.cloudServicesId if user else "",
         )
+        interview = await get_interview(
+            user_id=ids.user_id, app_id=ids.app_id, interview_id=interview_id
+        )
+        if not interview:
+            return Response(
+                content=json.dumps({"error": "Interview not found"}),
+                status_code=404,
+                media_type="application/json",
+            )
+        new_spec = await generate_requirements(ids, interview.task)
         return SpecificationResponse.from_specification(new_spec)
     except Exception as e:
         logger.error(f"Error creating a new specification: {e}")
@@ -67,7 +84,7 @@ async def get_spec(user_id: str, app_id: str, spec_id: str):
         else:
             return Response(
                 content=json.dumps({"error": "Specification not found"}),
-                status_code=500,
+                status_code=404,
                 media_type="application/json",
             )
     except Exception as e:

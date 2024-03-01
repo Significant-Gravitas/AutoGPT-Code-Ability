@@ -2,13 +2,12 @@ import enum
 import logging
 from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, List, Literal, Optional, Type
+from typing import List, Literal, Optional
 
 from prisma.enums import AccessLevel
 from pydantic import BaseModel, ConfigDict
 
 import codex.common.test_const as test_consts
-from codex.common.ai_block import AIBlock
 
 logger = logging.getLogger(__name__)
 
@@ -51,28 +50,27 @@ class ExampleTask(Enum):
             case _:
                 raise NotImplementedError(f"Example Task {task.value} not implemented")
 
-
-class Tool(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    name: str
-    description: str
-    func: Optional[Callable[..., str]] = None
-    block: Type[AIBlock]
-
-
-class InterviewMessage(BaseModel):
-    model_config = ConfigDict(strict=False)
-
-    tool: str
-    content: str
-
-
-class InterviewMessageWithResponse(InterviewMessage):
-    response: str
-
-
-class InterviewMessageUse(BaseModel):
-    uses: List[InterviewMessage | InterviewMessageWithResponse]
+    @staticmethod
+    def get_interview_id(task):
+        match task:
+            case ExampleTask.AVAILABILITY_CHECKER:
+                return test_consts.interview_id_1
+            case ExampleTask.INVOICE_GENERATOR:
+                return test_consts.interview_id_2
+            case ExampleTask.APPOINTMENT_OPTIMIZATION_TOOL:
+                return test_consts.interview_id_3
+            case ExampleTask.DISTANCE_CALCULATOR:
+                return test_consts.interview_id_4
+            case ExampleTask.PROFILE_MANAGEMENT_SYSTEM:
+                return test_consts.interview_id_5
+            case ExampleTask.CALENDAR_BOOKING_SYSTEM:
+                return test_consts.interview_id_6
+            case ExampleTask.INVENTORY_MANAGEMENT_SYSTEM:
+                return test_consts.interview_id_7
+            case ExampleTask.INVOICING_AND_PAYMENT_TRACKING_SYSTEM:
+                return test_consts.interview_id_8
+            case _:
+                raise NotImplementedError(f"Example Task {task.value} not implemented")
 
 
 class DecomposeTask(BaseModel):

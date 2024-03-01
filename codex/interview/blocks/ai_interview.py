@@ -6,8 +6,9 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
+from codex.common.ai_model import OpenAIChatClient
 from codex.common.logging_config import setup_logging
-from codex.requirements.model import InterviewMessageUse
+from codex.interview.model import InterviewMessageUse
 
 logger = logging.getLogger(__name__)
 
@@ -63,18 +64,18 @@ if __name__ == "__main__":
     """
     from asyncio import run
 
-    from openai import AsyncOpenAI
     from prisma import Prisma
 
     from codex.common.test_const import identifier_1
 
     ids = identifier_1
-    db_client = Prisma(auto_register=True)
-    oai = AsyncOpenAI()
 
-    interview_block = InterviewBlock(
-        oai_client=oai,
-    )
+    setup_logging(local=True)
+
+    OpenAIChatClient.configure({})
+    db_client = Prisma(auto_register=True)
+
+    interview_block = InterviewBlock()
 
     async def run_ai() -> dict[str, InterviewMessageUse]:
         await db_client.connect()
@@ -204,5 +205,4 @@ Additionally, it will have proper management of financials, including invoice ma
     # import IPython
 
     # IPython.embed()
-    breakpoint()
     breakpoint()

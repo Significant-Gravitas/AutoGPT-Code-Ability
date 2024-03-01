@@ -11,6 +11,7 @@ from pydantic.json import pydantic_encoder
 
 from codex.api_model import Identifiers
 from codex.common.test_const import identifier_1
+from codex.interview.database import get_interview
 from codex.prompts.claude.requirements.NestJSDocs import (
     NEST_JS_CRUD_GEN,
     NEST_JS_FIRST_STEPS,
@@ -36,7 +37,6 @@ from codex.requirements.blocks.ai_requirements import (
     FuncNonFuncRequirementsBlock,
 )
 from codex.requirements.database import create_spec
-from codex.requirements.gather_task_info import gather_task_info_loop
 from codex.requirements.hardcoded import (
     appointment_optimization_requirements,
     availability_checker_requirements,
@@ -72,11 +72,7 @@ from codex.requirements.unwrap_schemas import convert_db_schema, convert_endpoin
 logger = logging.getLogger(__name__)
 
 
-async def generate_requirements(
-    ids: Identifiers,
-    app_name: str,
-    description: str,
-) -> Specification:
+async def generate_requirements(ids: Identifiers, description: str) -> Specification:
     """
     Runs the Requirements Agent to generate the system requirements based
     upon the provided task
@@ -93,20 +89,21 @@ async def generate_requirements(
     running_state_obj = StateObj(task=description)
 
     logger.info("State Object Created")
-
     # User Interview
-    project_description, memory = await gather_task_info_loop(
-        task=running_state_obj.task, ask_callback=None, ids=ids
+
+    interview = await get_interview(
+        user_id=ids.user_id, app_id=ids.app_id, interview_id=ids.interview_id or ""
     )
-    running_state_obj.project_description = project_description
-    # convert the memory to `tool`: `content`: `response` format
-    project_description_thoughts = [
-        f"{item.tool}: {item.content} :{item.response}"
-        for item in memory
-        if item.response
-    ]
+
+    if not interview:
+        raise ValueError("Interview not found")
+
+    questions = interview.Questions or []
+    running_state_obj.project_description = [
+        question for question in questions if question.tool == "finished"
+    ][0].question
     running_state_obj.project_description_thoughts = "\n".join(
-        project_description_thoughts
+        [f"{item.tool}: {item.question} :{item.answer}" for item in questions]
     )
 
     logger.info("User Interview Done")
@@ -495,9 +492,7 @@ Additionally, it will have proper management of financials, including invoice ma
     async def run_gen():
         await db_client.connect()
         logger.info("Starting Requirements Generation")
-        output = await generate_requirements(
-            ids=ids, app_name="Tutor", description=task
-        )
+        output = await generate_requirements(ids=ids, description=task)
         logger.info("Requirements Generation Done")
         return output
 

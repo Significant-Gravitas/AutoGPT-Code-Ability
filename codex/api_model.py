@@ -3,15 +3,19 @@ from datetime import datetime
 from typing import List, Optional
 
 from prisma.enums import Role
-from prisma.models import Specification
+from prisma.models import Question, Specification
 from pydantic import BaseModel, Field
+
+from codex.interview.model import InterviewMessage, InterviewMessageWithResponse
 
 logger = logging.getLogger(__name__)
 
 
 class Identifiers(BaseModel):
     user_id: str
+    cloud_services_id: str
     app_id: str
+    interview_id: str | None = None
     spec_id: str | None = None
     completed_app_id: str | None = None
     deployment_id: str | None = None
@@ -80,6 +84,7 @@ class ApplicationResponse(BaseModel):
     updatedAt: datetime
     name: str
     userid: str
+    cloud_services_id: str
 
 
 class ApplicationsListResponse(BaseModel):
@@ -122,6 +127,25 @@ class APIRouteSpecModel(BaseModel):
     description: str
     requestObject: Optional[RequestObjectModel] = None
     responseObject: Optional[ResponseObjectModel] = None
+
+
+class InterviewCreate(BaseModel):
+    name: str
+    task: str
+
+
+class InterviewResponse(BaseModel):
+    id: str = Field(..., description="The unique identifier of the interview")
+    finished: bool = Field(bool, description="Whether the interview is finished")
+    uses: List[Question] = Field(
+        ..., description="The list of messages in the interview"
+    )
+
+
+class InterviewNextCreate(BaseModel):
+    uses: List[InterviewMessageWithResponse] = Field(
+        ..., description="The list of messages in the interview"
+    )
 
 
 class SpecificationCreate(BaseModel):
