@@ -1,5 +1,6 @@
 import ast
 import logging
+import re
 import uuid
 from typing import List, Set
 
@@ -262,7 +263,7 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
     args = main_function.FunctionArgs
 
     route_spec = complied_route.ApiRouteSpec
-
+    is_file_response = False
     # Steps:
     # 1. Add addtional imports
     import_statements = [
@@ -278,15 +279,9 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
             and return_type.Type.Fields[0].typeName == "bytes"
         ):
             # TODO: File type
-            response_type = "StreamingResponse"
-        else:
-            # TODO: Object type
-            response_type = "JSONResponse"
-    else:
-        # response is a primative type
-        # TODO: force privivite type response to be json?
-        response_type = "JSONResponse"
+            is_file_response = True
     # 4. Determine path parameters
+    # route_spec.path
 
     # 4. Determine request method
     #    a. Determine query parameters
@@ -298,6 +293,20 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
     # 9. Return route code
 
     return ""
+
+
+def extract_path_params(path: str) -> List[str]:
+    """
+    Extracts path parameters from a given path.
+
+    Args:
+        path (str): The path string containing path parameters.
+
+    Returns:
+        List[str]: A list of path parameters extracted from the path.
+    """
+    matches = re.findall(r"\{(.*?)\}", path)
+    return matches
 
 
 async def create_app(
