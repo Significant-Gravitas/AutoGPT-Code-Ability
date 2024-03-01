@@ -250,7 +250,7 @@ class DevelopAIBlock(AIBlock):
                 if "function_id" in invoke_params
                 else None,
                 function_name=invoke_params["function_name"],
-                api_route_spec=invoke_params["api_route"],
+                api_route_spec_i=invoke_params["api_route"],
                 available_objects=invoke_params["available_objects"],
                 rawCode=code,
                 packages=packages,
@@ -304,8 +304,8 @@ class DevelopAIBlock(AIBlock):
             rawCode=generated_response.rawCode,
             importStatements=generated_response.imports,
             functionCode=generated_response.functionCode,
-            ChildFunction={"create": function_defs},
-            ApiRouteSpec={"connect": {"id": generated_response.api_route_spec.id}},
+            ChildFunctions={"create": function_defs},
+            ApiRouteSpec={"connect": {"id": generated_response.api_route_spec_id}},
         )
 
         if not generated_response.function_id:
@@ -321,13 +321,13 @@ class DevelopAIBlock(AIBlock):
 
         # Child Functions Must be created without relations
         # Here we add the relations after the function is created
-        if func.ChildFunction:
-            for function_def in func.ChildFunction:
+        if func.ChildFunctions:
+            for function_def in func.ChildFunctions:
                 await Function.prisma().update(
                     where={"id": function_def.id},
                     data={
                         "ApiRouteSpec": {
-                            "connect": {"id": generated_response.api_route_spec.id}
+                            "connect": {"id": generated_response.api_route_spec_id}
                         }
                     },
                 )
@@ -337,7 +337,7 @@ class DevelopAIBlock(AIBlock):
             where={"id": func.id},
             include={
                 "ParentFunction": True,
-                "ChildFunction": {
+                "ChildFunctions": {
                     "include": {
                         "ApiRouteSpec": True,
                         "FunctionArgs": True,

@@ -56,18 +56,12 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
                 function_desc=api_route.description,
                 function_code="",
             )
-            generated_objects = [
-                v for v in [api_route.RequestObject, api_route.ResponseObject] if v
-            ]
-            model = construct_function(function_def, generated_objects)
             function = await Function.prisma().create(
-                data=model,
+                data=construct_function(function_def, [api_route.RequestObject, api_route.ResponseObject]),
                 include={"FunctionArgs": True, "FunctionReturn": True},
             )
 
             route_root_func = await develop_route(
-                generated_objects=generated_objects,
-                generated_functions=[],
                 ids=ids,
                 api_route=api_route,
                 goal_description=spec.context,
@@ -81,8 +75,6 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
 
 
 async def develop_route(
-    generated_objects: list[ObjectType],
-    generated_functions: list[Function],
     ids: Identifiers,
     api_route: APIRouteSpec,
     goal_description: str,
@@ -139,9 +131,8 @@ async def develop_route(
         },
     )
 
-    if route_function.ChildFunction:
-        generated_functions.extend(route_function.ChildFunction)
-        logger.info(f"\tDeveloping {len(route_function.ChildFunction)} child functions")
+    if route_function.ChildFunctions:
+        logger.info(f"\tDeveloping {len(route_function.ChildFunctions)} child functions")
         tasks = [
             develop_route(
                 ids=ids,
@@ -149,10 +140,8 @@ async def develop_route(
                 function=child,
                 api_route=api_route,
                 depth=depth + 1,
-                generated_functions=generated_functions,
-                generated_objects=generated_objects,
             )
-            for child in route_function.ChildFunction
+            for child in route_function.ChildFunctions
             if child.state == FunctionState.DEFINITION
         ]
         await asyncio.gather(*tasks)

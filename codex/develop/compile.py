@@ -81,11 +81,11 @@ async def recursive_compile_route(in_function: Function) -> CompiledFunction:
         where={"id": in_function.id},
         include={
             "ParentFunction": True,
-            "ChildFunction": {"include": {"ApiRouteSpec": True}},
+            "ChildFunctions": {"include": {"ApiRouteSpec": True}},
         },
     )
     logger.info(f"Compiling function: {function.id}")
-    if function.ChildFunction is None:
+    if function.ChildFunctions is None:
         packages = []
         if function.Packages:
             packages = function.Packages
@@ -109,7 +109,7 @@ async def recursive_compile_route(in_function: Function) -> CompiledFunction:
         packages = []
         imports = []
         code = ""
-        for child_function in function.ChildFunction:
+        for child_function in function.ChildFunctions:
             compiled_function = await recursive_compile_route(child_function)
             packages.extend(compiled_function.packages)
             imports.extend(compiled_function.imports)
