@@ -14,6 +14,7 @@ from prisma.types import (
     FindManyCompiledRouteArgsFromCompletedApp,
     ObjectTypeArgsFromAPIRouteSpecRecursive4,
 )
+from regex import R
 
 import codex.database
 import codex.deploy.agent as deploy_agent
@@ -58,7 +59,13 @@ async def create_deployment(
                                 **{"include": {"Fields": True}}
                             ),
                         )
-                    )
+                    ),
+                    RootFunction={  # type: ignore
+                        "include": {
+                            "FunctionArgs": {"include": {"Type": True}},
+                            "FunctionReturn": {"include": {"Type": True}},
+                        }
+                    },
                 )
             )
         )
@@ -87,7 +94,7 @@ async def create_deployment(
             file_size=deployment.fileSize,
         )
     except Exception as e:
-        logger.error(f"Error creating deployment: {e}")
+        logger.exception(f"Error creating deployment: {e}")
         # File upload handling and metadata storage implementation goes here
         return Response(
             content=json.dumps(

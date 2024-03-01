@@ -227,7 +227,7 @@ model Function {
   DatabaseSchema   DatabaseSchema? @relation(fields: [databaseSchemaId], references: [id], onDelete: Cascade)
   databaseSchemaId String?
   CompiledRoute    CompiledRoute[]
-  compiledRouteId  String?         @unique
+  compiledRouteId  String?
 }
 
 model Package {
