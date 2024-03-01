@@ -81,15 +81,15 @@ model Interview {
 }
 
 model Question {
-  id          String     @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  deleted     Boolean    @default(false)
+  id          String    @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deleted     Boolean   @default(false)
   question    String
   tool        String
   answer      String?
-  Interview   Interview? @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-  interviewId String?
+  Interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  interviewId String
 }
 
 // ------------------------- Requirements Models ------------------------------ //
