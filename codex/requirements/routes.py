@@ -50,7 +50,7 @@ async def create_spec(
         if not interview:
             return Response(
                 content=json.dumps({"error": "Interview not found"}),
-                status_code=500,
+                status_code=404,
                 media_type="application/json",
             )
         new_spec = await generate_requirements(ids, interview.task)
@@ -84,7 +84,7 @@ async def get_spec(user_id: str, app_id: str, spec_id: str):
         else:
             return Response(
                 content=json.dumps({"error": "Specification not found"}),
-                status_code=500,
+                status_code=404,
                 media_type="application/json",
             )
     except Exception as e:
