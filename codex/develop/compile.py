@@ -10,7 +10,7 @@ from prisma.models import (
     Package,
     Specification,
 )
-from prisma.types import CompiledRouteCreateInput, CompletedAppCreateInput
+from prisma.types import CompiledRouteUpdateInput, CompletedAppCreateInput
 from pydantic import BaseModel
 
 from codex.api_model import Identifiers
@@ -25,7 +25,7 @@ class CompiledFunction(BaseModel):
 
 
 async def compile_route(
-    ids: Identifiers, route_root_func: Function, api_route: APIRouteSpec
+    id: int, route_root_func: Function, api_route: APIRouteSpec
 ) -> CompiledRoute:
     """
     Compiles a route by generating a CompiledRoute object.
@@ -46,16 +46,11 @@ async def compile_route(
     code = "\n".join(compiled_function.imports)
     code += "\n\n"
     code += compiled_function.code
-    data = CompiledRouteCreateInput(
-        description=api_route.description,
+    data = CompiledRouteUpdateInput(
         Packages={"connect": [{"id": package_id} for package_id in unique_packages]},
-        fileName=api_route.functionName + "_service.py",
-        mainFunctionName=route_root_func.functionName,
         compiledCode=code,
-        RootFunction={"connect": {"id": route_root_func.id}},
-        ApiRouteSpec={"connect": {"id": api_route.id}},
     )
-    compiled_route = await CompiledRoute.prisma().create(data)
+    compiled_route = await CompiledRoute.prisma().update(where={"id": id}, data=data)
     return compiled_route
 
 

@@ -216,15 +216,12 @@ class DevelopAIBlock(AIBlock):
                 # Important: ValidationErrors are used in the retry prompt
                 raise ValidationError(f"Function {func_name} not found in code")
 
-            requested_func: FunctionDef = visitor.functions[
-                invoke_params["function_name"]
-            ]
+            requested_func = visitor.functions.get(invoke_params["function_name"])
 
-            if not requested_func.is_implemented:
-                # Important: ValidationErrors are used in the retry prompt
+            if not requested_func or not requested_func.is_implemented:
                 raise ValidationError(
-                    "Main Function body is empty, it should contain"
-                    + " the implementation of this function!"
+                    f"Main Function body {func_name} is not implemented."
+                    f" Please complete the implementation of this function!"
                 )
             function_code = (
                 "\n".join(visitor.globals) + "\n\n" + requested_func.function_code
@@ -250,7 +247,7 @@ class DevelopAIBlock(AIBlock):
                 if "function_id" in invoke_params
                 else None,
                 function_name=invoke_params["function_name"],
-                api_route_spec_i=invoke_params["api_route"],
+                compiled_route_id=invoke_params["compiled_route_id"],
                 available_objects=invoke_params["available_objects"],
                 rawCode=code,
                 packages=packages,
@@ -281,15 +278,36 @@ class DevelopAIBlock(AIBlock):
             func: The updated item
         """
         generated_response: GeneratedFunctionResponse = validated_response.response
+
+        # Create objects if they don't exist
+        available_objects = {
+            obj.name: obj for obj in generated_response.available_objects if obj
+        }
+        for name, obj in generated_response.objects.items():
+            if name in available_objects:
+                continue
+
+            available_objects[name] = await ObjectType.prisma().create(
+                data={
+                    "name": obj.name,
+                    "description": obj.description,
+                    "Fields": {
+                        "create": [
+                            {"name": name, "typeName": type}
+                            for name, type in obj.fields.items()
+                        ]
+                    },
+                }
+            )
+
         function_defs: list[FunctionCreateInput] = []
         if generated_response.functions:
             for key, value in generated_response.functions.items():
                 model = construct_function(value, generated_response.available_objects)
+                model["compiledRouteId"] = generated_response.compiled_route_id
                 function_defs.append(model)
 
         update_obj = FunctionUpdateInput(
-            functionName=generated_response.function_name,
-            template=generated_response.template,
             state=FunctionState.WRITTEN,
             Packages={
                 "create": [
@@ -305,7 +323,6 @@ class DevelopAIBlock(AIBlock):
             importStatements=generated_response.imports,
             functionCode=generated_response.functionCode,
             ChildFunctions={"create": function_defs},
-            ApiRouteSpec={"connect": {"id": generated_response.api_route_spec_id}},
         )
 
         if not generated_response.function_id:
@@ -319,18 +336,6 @@ class DevelopAIBlock(AIBlock):
                 f"Function with id {generated_response.function_id} not found"
             )
 
-        # Child Functions Must be created without relations
-        # Here we add the relations after the function is created
-        if func.ChildFunctions:
-            for function_def in func.ChildFunctions:
-                await Function.prisma().update(
-                    where={"id": function_def.id},
-                    data={
-                        "ApiRouteSpec": {
-                            "connect": {"id": generated_response.api_route_spec_id}
-                        }
-                    },
-                )
         # We need to reload from the database the child functions so they
         # have the api route spec attached
         func = await Function.prisma().find_unique_or_raise(

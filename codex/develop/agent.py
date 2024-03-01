@@ -7,10 +7,10 @@ from prisma.models import (
     APIRouteSpec,
     CompletedApp,
     Function,
-    ObjectField,
-    ObjectType,
+    CompiledRoute,
     Specification,
 )
+from prisma.types import CompiledRouteCreateInput, CompletedAppCreateInput
 
 from codex.api_model import Identifiers
 from codex.develop.compile import compile_route, create_app
@@ -35,7 +35,8 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
         CompletedApp: The completed application.
 
     """
-    compiled_routes = []
+    app = await create_app(ids, spec, [])
+
     if spec.ApiRouteSpecs:
         for api_route in spec.ApiRouteSpecs:
             function_def = FunctionDef(
@@ -56,41 +57,50 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
                 function_desc=api_route.description,
                 function_code="",
             )
-            function = await Function.prisma().create(
-                data=construct_function(function_def, [api_route.RequestObject, api_route.ResponseObject]),
-                include={"FunctionArgs": True, "FunctionReturn": True},
+
+            compiled_route = await CompiledRoute.prisma().create(
+                data=CompiledRouteCreateInput(
+                    description=api_route.description,
+                    fileName=api_route.functionName + "_service.py",
+                    mainFunctionName=api_route.functionName,
+                    compiledCode="", # This will be updated by compile_route
+                    RootFunction={"create": construct_function(
+                        function_def,
+                        [api_route.RequestObject, api_route.ResponseObject],
+                    )},
+                    CompletedApp={"connect": {"id": app.id}},
+                ),
+                include={"RootFunction": {
+                    "include": {"FunctionArgs": True, "FunctionReturn": True}
+                }},
             )
 
             route_root_func = await develop_route(
                 ids=ids,
-                api_route=api_route,
+                compiled_route_id=compiled_route.id,
                 goal_description=spec.context,
-                function=function,
+                function=compiled_route.RootFunction,
             )
             logger.info(f"Route function id: {route_root_func.id}")
-            compiled_route = await compile_route(ids, route_root_func, api_route)
-            compiled_routes.append(compiled_route)
+            await compile_route(ids, route_root_func, api_route)
 
-    return await create_app(ids, spec, compiled_routes)
+    return app
 
 
 async def develop_route(
-    ids: Identifiers,
-    api_route: APIRouteSpec,
-    goal_description: str,
-    function: Function,
-    depth: int = 0,
+        ids: Identifiers,
+        compiled_route_id: int,
+        goal_description: str,
+        function: Function,
+        depth: int = 0,
 ) -> Function:
     """
     Recursively develops a function and its child functions
     based on the provided function definition and api route spec.
 
     Args:
-        generated_objects (list[ObjectType]): The list of already generated objects, used to promote object re-use.
-        generated_functions (list[Function]): The list of already generated functions,
-                                              used to promote function re-use.
         ids (Identifiers): The identifiers for the function.
-        api_route (APIRouteSpec): The API route specification.
+        compiled_route_id (int): The id for which CompiledRoute the function is being developed.
         goal_description (str): The high-level goal of the function to create.
         function (Function): The function to develop.
         depth (int): The depth of the recursion.
@@ -98,33 +108,45 @@ async def develop_route(
     Returns:
         Function: The developed route function.
     """
-    logger.info(
-        f"Developing for route: {api_route.path} - Func: {function.functionName}, depth: {depth}"
-    )
+    logger.info(f"Developing for compiled route: "
+                f"{compiled_route_id} - Func: {function.functionName}, depth: {depth}")
     if depth >= RECURSION_DEPTH_LIMIT:
         raise ValueError("Recursion depth exceeded")
 
-    route_function: Function = await DevelopAIBlock().invoke(
+    compiled_route = await CompiledRoute.prisma().find_unique_or_raise(
+        where={"id": compiled_route_id},
+        include={"Functions": {
+            "include": {"FunctionArgs": True, "FunctionReturn": True}
+        }}
+    )
+    generated_func = {}
+    generated_objs = {}
+    for func in compiled_route.Functions:
+        if func.functionName != function.functionName:
+            generated_func[func.functionName] = func
+        for arg in func.FunctionArgs:
+            generated_objs[arg.typeName] = arg
+        if func.FunctionReturn:
+            generated_objs[func.FunctionReturn.typeName] = func.FunctionReturn
+
+    route_function = await DevelopAIBlock().invoke(
         ids=ids,
         invoke_params={
             "function_name": function.functionName,
             "goal": goal_description,
             "function_signature": function.template,
-            # function_args is not used by the prompt, but is used by the function validation
+            # function_args is not used by the prompt, but used for function validation
             "function_args": [(f.name, f.typeName) for f in function.FunctionArgs],
-            # function_rets is not used by the prompt, but is used by the function validation
-            "function_rets": function.FunctionReturn.typeName
-            if function.FunctionReturn
-            else None,
-            "provided_functions": [
-                f.template
-                for f in generated_functions
-                if f.functionName != function.functionName and f.parentFunctionId
-            ]
-            + [generate_object_template(obj) for obj in generated_objects],
-            # api_route is not used by the prompt, but is used by the function
-            "api_route": api_route,
-            "available_objects": generated_objects,
+            # function_rets is not used by the prompt, but used for function validation
+            "function_rets":
+                function.FunctionReturn.typeName if function.FunctionReturn else None,
+            "provided_functions":
+                [func.template for func in generated_func.values()] +
+                [generate_object_template(f) for f in generated_objs.values()],
+            # compiled_route_id is not used by the prompt, but is used by the function
+            "compiled_route_id": compiled_route_id,
+            # available_objects is not used by the prompt, but is used by the function
+            "available_objects": generated_objs,
             # function_id is used, so we can update the function with the implementation
             "function_id": function.id,
             "allow_stub": depth < RECURSION_DEPTH_LIMIT,
@@ -132,7 +154,8 @@ async def develop_route(
     )
 
     if route_function.ChildFunctions:
-        logger.info(f"\tDeveloping {len(route_function.ChildFunctions)} child functions")
+        logger.info(
+            f"\tDeveloping {len(route_function.ChildFunctions)} child functions")
         tasks = [
             develop_route(
                 ids=ids,
@@ -166,6 +189,7 @@ if __name__ == "__main__":
     setup_logging(local=True)
     client = prisma.Prisma(auto_register=True)
 
+
     async def run_me():
         await client.connect()
         ids = test_consts.identifier_1
@@ -173,6 +197,7 @@ if __name__ == "__main__":
         ans = await develop_application(ids=ids, spec=spec)
         await client.disconnect()
         return ans
+
 
     ans = asyncio.run(run_me())
     logger.info(ans)

@@ -65,7 +65,7 @@ class GeneratedFunctionResponse(BaseModel):
     function_id: str | None = None
 
     function_name: str
-    api_route_spec: APIRouteSpec
+    compiled_route_id: int
     available_objects: List[ObjectType]
     template: str
 
