@@ -60,11 +60,11 @@ async def create_deployment(
                             ),
                         )
                     ),
-                    RootFunction={ # type: ignore
+                    RootFunction={  # type: ignore
                         "include": {
                             "FunctionArgs": {"include": {"Type": True}},
                             "FunctionReturn": {"include": {"Type": True}},
-                            }
+                        }
                     },
                 )
             )
