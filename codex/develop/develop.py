@@ -337,6 +337,8 @@ class DevelopAIBlock(AIBlock):
             where={"id": func.id},
             include={
                 "ParentFunction": True,
+                "FunctionArgs": True,
+                "FunctionReturn": True,
                 "ChildFunction": {
                     "include": {
                         "ApiRouteSpec": True,
