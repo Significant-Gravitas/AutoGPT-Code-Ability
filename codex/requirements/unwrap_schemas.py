@@ -54,8 +54,8 @@ def convert_endpoint(
             params=request_params,
         )
         response_model = ResponseModel(
-            name=input.api_endpoint.request_model.name,
-            description=input.api_endpoint.request_model.name,
+            name=input.api_endpoint.response_model.name,
+            description=input.api_endpoint.response_model.name,
             params=response_params,
         )
         existing.database_schema = database
