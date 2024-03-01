@@ -632,8 +632,8 @@ def calendar_booking_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="UserLogoutInput",
-                    description="UserLogoutInput",
+                    name="UserLogoutOutput",
+                    description="UserLogoutOutput",
                     params=[
                         Parameter(
                             name="message",
@@ -703,8 +703,8 @@ def calendar_booking_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="UpdateNotificationSettingsRequest",
-                    description="UpdateNotificationSettingsRequest",
+                    name="UpdateNotificationSettingsResponse",
+                    description="UpdateNotificationSettingsResponse",
                     params=[
                         Parameter(
                             name="success",
@@ -781,8 +781,8 @@ def calendar_booking_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="CreateAppointmentInput",
-                    description="CreateAppointmentInput",
+                    name="CreateAppointmentOutput",
+                    description="CreateAppointmentOutput",
                     params=[
                         Parameter(
                             name="success",
@@ -842,8 +842,8 @@ def calendar_booking_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="AppointmentUpdateInput",
-                    description="AppointmentUpdateInput",
+                    name="AppointmentUpdateOutput",
+                    description="AppointmentUpdateOutput",
                     params=[
                         Parameter(
                             name="id",
@@ -883,8 +883,8 @@ def calendar_booking_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="CancelAppointmentInput",
-                    description="CancelAppointmentInput",
+                    name="CancelAppointmentOutput",
+                    description="CancelAppointmentOutput",
                     params=[
                         Parameter(
                             name="success",
@@ -934,8 +934,8 @@ def calendar_booking_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="ConfigureNotificationsRequest",
-                    description="ConfigureNotificationsRequest",
+                    name="ConfigureNotificationsResponse",
+                    description="ConfigureNotificationsResponse",
                     params=[
                         Parameter(
                             name="success",
@@ -992,8 +992,8 @@ def calendar_booking_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="DispatchNotificationInput",
-                    description="DispatchNotificationInput",
+                    name="DispatchNotificationOutput",
+                    description="DispatchNotificationOutput",
                     params=[
                         Parameter(
                             name="success",
@@ -1098,8 +1098,8 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="ListInventoryRequest",
-                    description="ListInventoryRequest",
+                    name="ListInventoryResponse",
+                    description="ListInventoryResponse",
                     params=[
                         Parameter(
                             name="items",
@@ -1207,8 +1207,8 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="UpdateInventoryItemInput",
-                    description="UpdateInventoryItemInput",
+                    name="UpdateInventoryItemOutput",
+                    description="UpdateInventoryItemOutput",
                     params=[
                         Parameter(
                             name="success",
@@ -1248,8 +1248,8 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="CreateInventoryItemRequest",
-                    description="CreateInventoryItemRequest",
+                    name="CreateInventoryItemResponse",
+                    description="CreateInventoryItemResponse",
                     params=[
                         Parameter(
                             name="success",
@@ -1321,8 +1321,8 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="DeleteInventoryItemInput",
-                    description="DeleteInventoryItemInput",
+                    name="DeleteInventoryItemOutput",
+                    description="DeleteInventoryItemOutput",
                     params=[
                         Parameter(
                             name="success",
@@ -1357,8 +1357,8 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="CreateReportRequest",
-                    description="CreateReportRequest",
+                    name="CreateReportResponse",
+                    description="CreateReportResponse",
                     params=[
                         Parameter(
                             name="result",
