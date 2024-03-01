@@ -1423,8 +1423,8 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     name="GetReportsRequest", description="GetReportsRequest", params=[]
                 ),
                 response_model=ResponseModel(
-                    name="GetReportsRequest",
-                    description="GetReportsRequest",
+                    name="GetReportsResponse",
+                    description="GetReportsResponse",
                     params=[
                         Parameter(
                             name="reports",
@@ -1574,8 +1574,8 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     params=[],
                 ),
                 response_model=ResponseModel(
-                    name="ListIntegrationsRequest",
-                    description="ListIntegrationsRequest",
+                    name="ListIntegrationsResponse",
+                    description="ListIntegrationsResponse",
                     params=[
                         Parameter(
                             name="integrations",
@@ -1820,8 +1820,8 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     name="LogoutInput", description="LogoutInput", params=[]
                 ),
                 response_model=ResponseModel(
-                    name="LogoutInput",
-                    description="LogoutInput",
+                    name="LogoutOutput",
+                    description="LogoutOutput",
                     params=[
                         Parameter(
                             name="success",
@@ -1980,8 +1980,8 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="InvoiceCreationRequest",
-                    description="InvoiceCreationRequest",
+                    name="InvoiceCreationResponse",
+                    description="InvoiceCreationResponse",
                     params=[
                         Parameter(
                             name="invoiceId",
@@ -2074,8 +2074,8 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="EditInvoiceInput",
-                    description="EditInvoiceInput",
+                    name="EditInvoiceOutput",
+                    description="EditInvoiceOutput",
                     params=[
                         Parameter(
                             name="success",
@@ -2163,8 +2163,8 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="GetInvoiceInput",
-                    description="GetInvoiceInput",
+                    name="GetInvoiceOutput",
+                    description="GetInvoiceOutput",
                     params=[
                         Parameter(
                             name="id",
@@ -2224,8 +2224,8 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="ListInvoicesRequest",
-                    description="ListInvoicesRequest",
+                    name="ListInvoicesResponse",
+                    description="ListInvoicesResponse",
                     params=[
                         Parameter(
                             name="invoices",
@@ -2312,8 +2312,8 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="PaymentInitiationRequest",
-                    description="PaymentInitiationRequest",
+                    name="PaymentInitiationResponse",
+                    description="PaymentInitiationResponse",
                     params=[
                         Parameter(
                             name="paymentId",
@@ -2386,8 +2386,8 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="PaymentConfirmationRequest",
-                    description="PaymentConfirmationRequest",
+                    name="PaymentConfirmationResponse",
+                    description="PaymentConfirmationResponse",
                     params=[
                         Parameter(
                             name="success",
@@ -2480,8 +2480,8 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="ReminderNotificationInput",
-                    description="ReminderNotificationInput",
+                    name="ReminderNotificationOutput",
+                    description="ReminderNotificationOutput",
                     params=[
                         Parameter(
                             name="success",
@@ -2579,8 +2579,8 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="GenerateReportInput",
-                    description="GenerateReportInput",
+                    name="GenerateReportOutput",
+                    description="GenerateReportOutput",
                     params=[
                         Parameter(
                             name="report",
@@ -2704,8 +2704,8 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="FinancialInsightsRequest",
-                    description="FinancialInsightsRequest",
+                    name="FinancialInsightsResponse",
+                    description="FinancialInsightsResponse",
                     params=[
                         Parameter(
                             name="insights",
@@ -2762,8 +2762,8 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="UpdateSecuritySettingsRequest",
-                    description="UpdateSecuritySettingsRequest",
+                    name="UpdateSecuritySettingsResponse",
+                    description="UpdateSecuritySettingsResponse",
                     params=[
                         Parameter(
                             name="success",
@@ -2841,8 +2841,8 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="LogComplianceActionInput",
-                    description="LogComplianceActionInput",
+                    name="LogComplianceActionOutput",
+                    description="LogComplianceActionOutput",
                     params=[
                         Parameter(
                             name="success",
@@ -2904,8 +2904,8 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="PaymentGatewayConnectionRequest",
-                    description="PaymentGatewayConnectionRequest",
+                    name="PaymentGatewayConnectionResponse",
+                    description="PaymentGatewayConnectionResponse",
                     params=[
                         Parameter(
                             name="success",
