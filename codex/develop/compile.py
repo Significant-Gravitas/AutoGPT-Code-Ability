@@ -2,6 +2,7 @@ import ast
 import logging
 import re
 import uuid
+from os import path
 from typing import List, Set
 
 import black
@@ -30,6 +31,10 @@ class CompiledFunction(BaseModel):
     imports: List[str]
     code: str
     pydantic_models: List[str] = []
+
+
+class ComplicationFailure(Exception):
+    pass
 
 
 async def compile_route(
@@ -260,39 +265,101 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
         raise ValueError("Compiled route must have a root function.")
 
     return_type = main_function.FunctionReturn
+    assert return_type is not None, "Compiled route must have a return type."
     args = main_function.FunctionArgs
+    assert args is not None, "Compiled route must have function arguments."
 
     route_spec = complied_route.ApiRouteSpec
+    assert route_spec is not None, "Compiled route must have an API route spec."
+
     is_file_response = False
     # Steps:
     # 1. Add addtional imports
     import_statements = [
         "from fastapi import APIRouter",
+        "from fastapi.responses import JSONResponse, StreamingResponse",
+        f'from project.{complied_route.fileName.replace(".py", "")} '
+        f'import {main_function.functionName}',
     ]
     # 2. Create the router to add the route to
     router_code = f"router = APIRouter()"
     # 3. Determine response type
-    if return_type is not None:
-        if (
-            return_type.Type
-            and return_type.Type.Fields
-            and return_type.Type.Fields[0].typeName == "bytes"
-        ):
-            # TODO: File type
-            is_file_response = True
+    if (
+        return_type.Type
+        and return_type.Type.Fields
+        and return_type.Type.Fields[0].typeName == "bytes"
+    ):
+        # TODO: File type
+        is_file_response = True
+
     # 4. Determine path parameters
-    # route_spec.path
+    path_params = extract_path_params(route_spec.path)
+    func_args_names = set([arg.name for arg in args])
+    if not set(path_params).issubset(func_args_names):
+        raise ComplicationFailure(
+            f"Path parameters {path_params} not in function arguments {func_args_names}"
+        )
 
-    # 4. Determine request method
-    #    a. Determine query parameters
-    #    b. Determine request body
-    # 5. Create the route decorator
+    route_decorator = f"@router.{route_spec.method.value.lower()}('{route_spec.path}'"
+    if is_file_response:
+        route_decorator += ", response_class=StreamingResponse"
+    else:
+        # TODO: Add response model
+        route_decorator += ", response_model=ResponseModel"
+    route_decorator += ")"
     # 6. Create the route function with return type
-    # 7. Create function body, with error handling and logging
-    # 8. Validate route code.
-    # 9. Return route code
+    route_fucntion_def = f"def {main_function.functionName}("
+    route_fucntion_def += ", ".join([f"{arg.name}: {arg.typeName}" for arg in args])
+    route_fucntion_def += ")"
 
-    return ""
+    return_response = ""
+    if is_file_response:
+        route_fucntion_def += " -> StreamingResponse:"
+        headers = """
+        headers = {
+        "Content-Disposition": f"attachment; filename={res.file_name}"
+    }
+        """
+        return_response = f"""
+        {headers}
+        return StreamingResponse(content=res.data, media_type=res.media_type, headers=headers)
+    """
+    else:
+        # TODO: Add response model
+        route_fucntion_def += " -> ResponseModel:"
+        return_response = "return res"
+
+    # 7. Create function body, with error handling and logging
+    function_body = f"""
+    \"\"\"
+    {route_spec.description}
+    \"\"\"
+    try:
+        res = {main_function.functionName}({", ".join([arg.name for arg in args])})
+        {return_response}
+    except Exception as e:
+        logger.exception("Error processing request")
+        res = dict()
+        res["error"] =  str(e)
+        return JSONResponse(content=res)
+    """
+    # 8. Validate route code.
+    route_code = "\n".join(import_statements)
+    route_code += "\n\n"
+    route_code += router_code
+    route_code += "\n\n"
+    route_code += route_decorator
+    route_code += route_fucntion_def
+    router_code += function_body
+    route_code += "\n\n"
+
+    # 9. Return route code
+    try:
+        ast.parse(route_code)
+    except Exception as e:
+        raise ComplicationFailure(f"Syntax error in route code: {e}, {route_code}")
+
+    return route_code
 
 
 def extract_path_params(path: str) -> List[str]:
