@@ -1749,8 +1749,8 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="UserLoginInput",
-                    description="UserLoginInput",
+                    name="UserLoginOutput",
+                    description="UserLoginOutput",
                     params=[
                         Parameter(
                             name="success",
@@ -1861,8 +1861,8 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="CheckPermissionsInput",
-                    description="CheckPermissionsInput",
+                    name="CheckPermissionsOutput",
+                    description="CheckPermissionsOutput",
                     params=[
                         Parameter(
                             name="userId",
