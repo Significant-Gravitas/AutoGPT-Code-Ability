@@ -2,13 +2,15 @@ from codex.api_model import Identifiers
 
 user_id_1 = "123e4567-e89b-12d3-a456-426614174000"
 user_id_2 = "456e7890-f12b-23d4-b567-537625285000"
+user_id_3 = "789a1234-c56d-67e8-c901-637636396000"
 
 discord_id_1 = "698489167281127474"
 discord_id_2 = "1188760123011776594"
 discord_id_3 = "1113853244066779156"
 
-cloud_services_id_1 = "123e4567-e89b-12d3-a456-426614174000"
-cloud_services_id_2 = "456e7890-f12b-23d4-b567-537625285000"
+cloud_services_id_1 = "9c7c6f29-c15e-40c9-afb3-c2c94f621a5c"
+cloud_services_id_2 = "78f3b489-e99e-4e50-a3aa-e78f8ad9b5b2"
+cloud_services_id_3 = "44286240-d819-4c57-beef-0bc815ca1934"
 
 app_id_1 = "789e0123-g34c-45d6-e789-012345678900"
 app_id_2 = "901f2345-h56i-67j8-k901-l23456789000"
