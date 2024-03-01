@@ -156,7 +156,9 @@ async def recursive_compile_route(
         imports = []
         code = ""
         for child_function in function.ChildFunction:
-            compiled_function = await recursive_compile_route(child_function)
+            compiled_function = await recursive_compile_route(
+                child_function, new_object_types
+            )
             packages.extend(compiled_function.packages)
             imports.extend(compiled_function.imports)
             pydantic_models.extend(compiled_function.pydantic_models)
