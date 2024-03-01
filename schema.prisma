@@ -66,18 +66,18 @@ model Application {
 // ------------------------------------------------------------------------ //
 
 model Interview {
-  id            String       @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  deleted       Boolean      @default(false)
-  finished      Boolean      @default(false)
+  id            String      @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  deleted       Boolean     @default(false)
+  finished      Boolean     @default(false)
   name          String
   task          String
-  User          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  User          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId        String
   Questions     Question[]
-  application   Application? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  applicationId String?
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId String
 }
 
 model Question {
