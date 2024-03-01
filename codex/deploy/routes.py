@@ -19,12 +19,7 @@ from regex import R
 import codex.database
 import codex.deploy.agent as deploy_agent
 import codex.deploy.database
-from codex.api_model import (
-    DeploymentMetadata,
-    DeploymentResponse,
-    DeploymentsListResponse,
-    Identifiers,
-)
+from codex.api_model import DeploymentResponse, DeploymentsListResponse, Identifiers
 
 logger = logging.getLogger(__name__)
 
@@ -67,12 +62,14 @@ async def create_deployment(
                         }
                     },
                 )
-            )
+            ),
         )
         completedApp = await CompletedApp.prisma().find_unique(
             where={"id": deliverable_id},
             include=include,
         )
+
+        user = await codex.database.get_user(user_id)
 
         if not completedApp:
             raise ValueError(f"Completed app {deliverable_id} not found")
@@ -83,6 +80,7 @@ async def create_deployment(
             app_id=app_id,
             spec_id=spec_id,
             completed_app_id=deliverable_id,
+            cloud_services_id=user.cloudServicesId if user else "",
         )
 
         deployment = await deploy_agent.create_deployment(ids, completedApp)

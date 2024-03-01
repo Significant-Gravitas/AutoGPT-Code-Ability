@@ -2,7 +2,7 @@ import hashlib
 import logging
 import os
 import pathlib
-from typing import Any
+from typing import Any, Callable, Optional, Type
 
 from jinja2 import Environment, FileSystemLoader
 from openai import AsyncOpenAI
@@ -11,7 +11,7 @@ from openai.types.chat import ChatCompletion
 from prisma.enums import DevelopmentPhase
 from prisma.fields import Json
 from prisma.models import LLMCallAttempt, LLMCallTemplate
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from codex.api_model import Identifiers
 from codex.common.ai_model import OpenAIChatClient
@@ -405,3 +405,11 @@ class AIBlock:
             query_params (dict): _description_
         """
         raise NotImplementedError("List Items Method not implemented")
+
+
+class Tool(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    name: str
+    description: str
+    func: Optional[Callable[..., str]] = None
+    block: Type[AIBlock]
