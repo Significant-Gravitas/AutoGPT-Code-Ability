@@ -1,8 +1,7 @@
 import ast
 import logging
 import re
-import uuid
-from os import path
+from datetime import datetime
 from typing import List, Set
 
 import black
@@ -273,23 +272,12 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
     assert route_spec is not None, "Compiled route must have an API route spec."
 
     is_file_response = False
-    # Steps:
-    # 1. Add addtional imports
-    import_statements = [
-        "from fastapi import APIRouter",
-        "from fastapi.responses import JSONResponse, StreamingResponse",
-        f'from project.{complied_route.fileName.replace(".py", "")} '
-        f'import {main_function.functionName}',
-    ]
-    # 2. Create the router to add the route to
-    router_code = f"router = APIRouter()"
-    # 3. Determine response type
+
     if (
         return_type.Type
         and return_type.Type.Fields
         and return_type.Type.Fields[0].typeName == "bytes"
     ):
-        # TODO: File type
         is_file_response = True
 
     # 4. Determine path parameters
@@ -300,14 +288,14 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
             f"Path parameters {path_params} not in function arguments {func_args_names}"
         )
 
-    route_decorator = f"@router.{route_spec.method.value.lower()}('{route_spec.path}'"
+    route_decorator = f"@app.{route_spec.method.value.lower()}('{route_spec.path}'"
     if is_file_response:
         route_decorator += ", response_class=StreamingResponse"
     else:
         # TODO: Add response model
         route_decorator += ", response_model=ResponseModel"
+
     route_decorator += ")"
-    # 6. Create the route function with return type
     route_fucntion_def = f"def {main_function.functionName}("
     route_fucntion_def += ", ".join([f"{arg.name}: {arg.typeName}" for arg in args])
     route_fucntion_def += ")"
@@ -322,14 +310,16 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
         """
         return_response = f"""
         {headers}
-        return StreamingResponse(content=res.data, media_type=res.media_type, headers=headers)
+        return StreamingResponse(
+            content=res.data,
+            media_type=res.media_type,
+            headers=headers)
     """
     else:
         # TODO: Add response model
         route_fucntion_def += " -> ResponseModel:"
         return_response = "return res"
 
-    # 7. Create function body, with error handling and logging
     function_body = f"""
     \"\"\"
     {route_spec.description}
@@ -343,17 +333,11 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
         res["error"] =  str(e)
         return JSONResponse(content=res)
     """
-    # 8. Validate route code.
-    route_code = "\n".join(import_statements)
-    route_code += "\n\n"
-    route_code += router_code
-    route_code += "\n\n"
-    route_code += route_decorator
+    route_code = route_decorator
     route_code += route_fucntion_def
-    router_code += function_body
+    route_code += function_body
     route_code += "\n\n"
 
-    # 9. Return route code
     try:
         ast.parse(route_code)
     except Exception as e:
@@ -418,7 +402,7 @@ def create_server_code(completed_app: CompletedApp) -> Application:
 
     server_code_imports = [
         "from fastapi import FastAPI",
-        "from fastapi.responses import JSONResponse",
+        "from fastapi.responses import JSONResponse, StreamingResponse",
         "import logging",
         "import io",
         "from typing import *",
@@ -431,78 +415,34 @@ app = FastAPI(title="{name}", description='''{desc}''')"""
     if completed_app.CompiledRoutes is None:
         raise ValueError("Application must have at least one compiled route.")
 
-    packages = []
-    main_function_names = set()
+    packages = [
+        Package(
+            packageName="fastapi",
+            specifier="",
+            version="",
+            id="fastapi",
+            createdAt=datetime.now(),
+        ),
+        Package(
+            packageName="uvicorn",
+            specifier="",
+            version="",
+            id="uvicorn",
+            createdAt=datetime.now(),
+        ),
+    ]
     for i, compiled_route in enumerate(completed_app.CompiledRoutes):
         if compiled_route.ApiRouteSpec is None:
             raise ValueError(f"Compiled route {compiled_route.id} has no APIRouteSpec")
 
         if compiled_route.Packages:
             packages.extend(compiled_route.Packages)
-        request = compiled_route.ApiRouteSpec.RequestObject
-        response = compiled_route.ApiRouteSpec.ResponseObject
 
-        assert request is not None, f"RequestObject is required for {compiled_route.id}"
-        assert (
-            response is not None
-        ), f"ResponseObject is required for {compiled_route.id}"
-
-        route_path = compiled_route.ApiRouteSpec.path
-        logger.info(f"Creating route for {route_path}")
-        # import the main function from the service file
-        compiled_route_module = compiled_route.fileName.replace(".py", "")
-        service_import = f"from {compiled_route_module} import *"
-        server_code_imports.append(service_import)
-
-        # Write the api endpoint
-        # TODO: pass the request method from the APIRouteSpec
-        response_type = "return JSONResponse(content=response)"
-        # horrible if if if for type checking
-        if response.Fields:
-            params = response.Fields
-            if (len(params) > 0) and (params[0].typeName == "bytes"):
-                response_type = """
-    # Convert the bytes to a BytesIO object for streaming
-    file_stream = io.BytesIO(response)
-
-    # Set the correct content-type for zip files
-    headers = {
-        "Content-Disposition": f"attachment; filename="new_file.zip""
-    }
-
-    # Return the streaming response
-    return StreamingResponse(
-        content=file_stream, media_type="application/zip", headers=headers
-    )
-"""
-        assert request.Fields is not None, f"RequestObject {request.id} has no Fields"
-
-        request_param_str = ", ".join(
-            [f"{param.name}: {param.typeName}" for param in request.Fields]
+        server_code_imports.append(
+            f"from {compiled_route.fileName.replace('.py', '')} import *"
         )
-        param_names_str = ", ".join([param.name for param in request.Fields])
 
-        # method is a string here even though it should be an enum in the model
-        method_name = compiled_route.ApiRouteSpec.method.lower()  # type: ignore
-        api_route_name = f"{method_name}_{compiled_route.mainFunctionName}_route"
-        if compiled_route.mainFunctionName in main_function_names:
-            main_function_names.add(compiled_route.mainFunctionName)
-
-            unique_end = uuid.uuid4().hex[:2]
-            api_route_name += f"_{unique_end}"
-
-        route_code = f"""@app.{method_name}("{route_path}")
-async def {api_route_name}({request_param_str}):
-    try:
-        response = {compiled_route.mainFunctionName}({param_names_str})
-    except Exception as e:
-        logger.exception("Error processing request")
-        response = dict()
-        response["error"] =  str(e)
-        return JSONResponse(content=response)
-    {response_type}
-"""
-        service_routes_code.append(route_code)
+        service_routes_code.append(create_server_route_code(compiled_route))
 
     # Compile the server code
     server_code = "\n".join(server_code_imports)
@@ -514,6 +454,7 @@ async def {api_route_name}({request_param_str}):
     # Update the application with the server code
     sorted_content = isort.code(server_code)
     formatted_code = black.format_str(sorted_content, mode=black.FileMode())
+
     return Application(
         name=name,
         description=desc,
