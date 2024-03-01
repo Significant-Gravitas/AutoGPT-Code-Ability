@@ -14,7 +14,6 @@ from prisma.types import (
     FindManyCompiledRouteArgsFromCompletedApp,
     ObjectTypeArgsFromAPIRouteSpecRecursive4,
 )
-from regex import R
 
 import codex.database
 import codex.deploy.agent as deploy_agent
