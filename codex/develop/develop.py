@@ -92,6 +92,10 @@ class FunctionVisitor(ast.NodeVisitor):
         self.generic_visit(node)
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        if node.name == "__init__":
+            self.generic_visit(node)
+            return
+
         args = []
         for arg in node.args.args:
             arg_type = ast.unparse(arg.annotation) if arg.annotation else "object"
