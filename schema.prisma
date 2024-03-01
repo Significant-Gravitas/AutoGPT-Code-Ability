@@ -73,8 +73,8 @@ model Interview {
   finished      Boolean      @default(false)
   name          String
   task          String
-  User          User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId        String?
+  User          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
   Questions     Question[]
   application   Application? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   applicationId String?
