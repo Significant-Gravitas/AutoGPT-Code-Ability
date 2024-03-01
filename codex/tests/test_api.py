@@ -80,6 +80,38 @@ def test_apps_apis(client):
     assert next((a for a in apps if a["id"] == app["id"]), None) is None
 
 
+def test_interview_apis(client):
+    # Create Interview
+    response = client.post(
+        f"{API}/user/{user_id_1}/apps/{app_id_1}/interview/",
+        json={"task": "Test Task", "name": "Test Interview"},
+    )
+    assert response.status_code == 200
+    interview = response.json()
+    assert interview["id"]
+    assert isinstance(interview["finished"], bool)
+    assert isinstance(interview["uses"], list)
+
+    interview_id = interview["id"]
+
+    # Next Step Interview
+    response = client.post(
+        f"{API}/user/{user_id_1}/apps/{app_id_1}/interview/{interview_id}/next",
+        json=[],
+    )
+    assert response.status_code == 200
+    interview = response.json()
+    assert interview["id"] == interview_id
+    assert isinstance(interview["finished"], bool)
+    assert isinstance(interview["uses"], list)
+
+    # Delete Interview
+    response = client.delete(
+        f"{API}/user/{user_id_1}/apps/{app_id_1}/interview/{interview['id']}"
+    )
+    assert response.status_code == 200
+
+
 def test_specs_apis(client):
     # List Specs
     response = client.get(f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/")
