@@ -233,7 +233,7 @@ class {obj.name}(BaseModel):
     \"\"\"
 {fields}
     """
-    logger.warning(f"Generated Pydantic class for {obj.name}:\n\n{template}")
+    logger.debug(f"Generated Pydantic class for {obj.name}:{template}")
     return template
 
 
@@ -261,14 +261,14 @@ async def process_object_field(field: ObjectField, object_type_ids: Set[str]) ->
     if field.typeId is None or field.typeId in object_type_ids:
         # If the field is a primitive type or we have already processed this object,
         # we don't need to do anything
-        logger.warning(
-            f"Skipping field {field.name} as it is a primitive type or already processed"
+        logger.debug(
+            f"Skipping field {field.name} as it's a primitive type or already processed"
         )
         return ""
 
     assert field.Type is not None, "Field type is None"
 
-    logger.info(f"Processing field {field.name} of type {field.Type.name}")
+    logger.debug(f"Processing field {field.name} of type {field.Type.name}")
     object_type_ids.add(field.typeId)
 
     pydantic_classes = await process_object_type(field.Type, object_type_ids)
