@@ -110,12 +110,12 @@ async def next_step(
             "task": task,
             "tools": {tool.name: tool.description for tool in tools},
             "memory": memory,
-            'tech_stack':{
-                'programming_language':'Python',
-                'api_framework':'FastAPI',
-                'database':'PostgreSQL',
-                'orm':'Prisma',
-            }
+            "tech_stack": {
+                "programming_language": "Python",
+                "api_framework": "FastAPI",
+                "database": "PostgreSQL",
+                "orm": "Prisma",
+            },
         },
     )
 
