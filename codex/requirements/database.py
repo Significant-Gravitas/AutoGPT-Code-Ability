@@ -1,5 +1,5 @@
-from prisma.models import Specification, ObjectType, ObjectField
-from prisma.types import SpecificationCreateInput, ObjectTypeCreateInput
+from prisma.models import ObjectField, ObjectType, Specification
+from prisma.types import ObjectTypeCreateInput, SpecificationCreateInput
 
 from codex.api_model import (
     Identifiers,
@@ -24,21 +24,23 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
         ObjectTypeCreateInput(
             name=model.name,
             description=model.description,
-            Fields={"create": [
-                {
-                    "name": param.name,
-                    "description": param.description,
-                    "typeName": param.param_type,
-                }
-                for param in model.params
-            ]}
+            Fields={
+                "create": [
+                    {
+                        "name": param.name,
+                        "description": param.description,
+                        "typeName": param.param_type,
+                    }
+                    for param in model.params
+                ]
+            },
         )
         for route in spec.api_routes
         for model in [route.request_model, route.response_model]
         if model
     ]
     type_map = {
-        ci['name']: await ObjectType.prisma().create(data=ci, include={"Fields": True})
+        ci["name"]: await ObjectType.prisma().create(data=ci, include={"Fields": True})
         for ci in type_create_inputs
     }
 
@@ -52,7 +54,6 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
         for field in type.Fields
         if field.typeName in type_map
     ]
-
 
     # Persist all routes from the spec
     for route in spec.api_routes:
