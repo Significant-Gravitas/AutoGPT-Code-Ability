@@ -375,13 +375,13 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
                         request_model=route.request_model
                         or RequestModel(
                             name="None Provided",
-                            description="None Proviced",
+                            description="None Provided",
                             params=[],
                         ),
                         response_model=route.response_model
                         or ResponseModel(
                             name="None Provided",
-                            description="None Proviced",
+                            description="None Provided",
                             params=[],
                         ),
                         database_schema=route.database_schema,

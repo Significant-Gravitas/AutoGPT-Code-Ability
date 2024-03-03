@@ -217,13 +217,6 @@ async def process_object_type(
             f"{' '*4}{field.name}: {field.typeName}  # {field.description}"
         )
 
-    fields = "\n".join(
-        [
-            f"{' '*4}{field.name}: {field.typeName}  # {field.description}"
-            for field in obj.Fields
-        ]
-    )
-
     fields: str = "\n".join(field_strings)
     # Returned as a string to preserve class declaration order
     template += "\n\n".join(sub_types)
