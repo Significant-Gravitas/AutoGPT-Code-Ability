@@ -312,7 +312,8 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
         is_file_response = True
     else:
         if return_type.Type is not None:
-            response_model = f"{return_type.Type.name} | JSONResponse"
+            # TODO(SwiftyOS): consider revert, `| JSONResponse` was removed from here.
+            response_model = return_type.Type.name
 
     # 4. Determine path parameters
     path_params = extract_path_params(route_spec.path)
@@ -333,13 +334,15 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
         route_decorator += f", response_model={response_model}"
 
     route_decorator += ")\n"
-    route_fucntion_def = f"def {main_function.functionName}("
-    route_fucntion_def += ", ".join([f"{arg.name}: {arg.typeName}" for arg in args])
-    route_fucntion_def += ")"
+
+    # TODO(SwiftyOS): consider replacing the prefix with a proper import and func call.
+    route_function_def = f"def api_{http_verb.lower()}_{main_function.functionName}("
+    route_function_def += ", ".join([f"{arg.name}: {arg.typeName}" for arg in args])
+    route_function_def += ")"
 
     return_response = ""
     if is_file_response:
-        route_fucntion_def += " -> StreamingResponse:"
+        route_function_def += " -> StreamingResponse:"
         headers = """
         headers = {
         "Content-Disposition": f"attachment; filename={res.file_name}"
@@ -353,7 +356,7 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
             headers=headers)
     """
     else:
-        route_fucntion_def += f" -> {response_model}:"
+        route_function_def += f" -> {response_model}:"
         return_response = "return res"
 
     function_body = f"""
@@ -370,7 +373,7 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
         return JSONResponse(content=res)
     """
     route_code = route_decorator
-    route_code += route_fucntion_def
+    route_code += route_function_def
     route_code += function_body
     route_code += "\n\n"
 
