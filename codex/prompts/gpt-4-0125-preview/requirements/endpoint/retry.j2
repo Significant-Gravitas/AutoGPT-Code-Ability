@@ -6,8 +6,15 @@ Here's some context
 Your available database models are: {{ db_models }}
 
 
-If there are no params, put [] in the params field rather than leaving it blank
+If there are no params, put [] in the params field rather than leaving it blank.
+Ensure all path, query, and body params are included in the request model params. 
+For path params, the name should be the name of the path param, the param_type should be the type of the path param, and the description should be a description of the path param. It should not go into any wrapping object.
 
+for example, if an endpoint is /r/{id}/s/{name}, the request model should have two params, one for id and one for name.  The name of the first param should be "id", the name of the second param should be "name", and the param_type should be the type of the path param.  The description should be a description of the path param.  It should not go into any wrapping object. 
+If there is also a body, that should be included in the request model params as well.  
+an example would be something like POST /update/{id}/name/{name} with a body of the update. The request model should have three params, one for id, one for name, and one for the body.  The name of the first param should be "id", the name of the second param should be "name", and the name of the third param should be "body".  The param_type should be the type of the path param for the first two, and the type of the body for the third.  The description should be a description of the path param for the first two, and a description of the body for the third.  It should not go into any wrapping object.
+
+Ensure all response params are included in the response model params.
 
 ```json
 {

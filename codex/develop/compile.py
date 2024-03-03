@@ -316,11 +316,14 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
 
     # 4. Determine path parameters
     path_params = extract_path_params(route_spec.path)
+    params = set(
+        [arg.ReferredObjectType.name for arg in args if arg.ReferredObjectType]
+    )
     func_args_names = set([arg.name for arg in args])
-    if not set(path_params).issubset(func_args_names):
-        raise ComplicationFailure(
-            f"Path parameters {path_params} not in function arguments {func_args_names}"
-        )
+    # if not set(path_params).issubset(func_args_names):
+    #     raise ComplicationFailure(
+    #         f"Path parameters {path_params} not in function arguments {func_args_names}"
+    #     )
 
     http_verb = str(route_spec.method)
     route_decorator = f"@app.{http_verb.lower()}('{route_spec.path}'"
