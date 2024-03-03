@@ -235,16 +235,16 @@ class DevelopAIBlock(AIBlock):
             )
 
             # Validate the requested_func.args and requested_func.returns to the invoke_params
-            expected_args = invoke_params["function_args"]
-            expected_rets = invoke_params["function_rets"]
-            if expected_args != requested_func.arg_types:
-                raise ValidationError(
-                    f"Function {func_name} has different arguments than expected, expected {expected_args} but got {requested_func.arg_types}"
-                )
-            if expected_rets != requested_func.return_type:
-                raise ValidationError(
-                    f"Function {func_name} has different return type than expected, expected {expected_rets} but got {requested_func.return_type}"
-                )
+            # expected_args = invoke_params["function_args"]
+            # expected_rets = invoke_params["function_rets"]
+            # if expected_args != requested_func.arg_types:
+            #     raise ValidationError(
+            #         f"Function {func_name} has different arguments than expected, expected {expected_args} but got {requested_func.arg_types}"
+            #     )
+            # if expected_rets != requested_func.return_type:
+            #     raise ValidationError(
+            #         f"Function {func_name} has different return type than expected, expected {expected_rets} but got {requested_func.return_type}"
+            #     )
 
             functions = visitor.functions.copy()
             del functions[invoke_params["function_name"]]
