@@ -6,7 +6,6 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
-from codex.common.logging_config import setup_logging
 from codex.requirements.model import EndpointSchemaRefinementResponse
 
 logger = logging.getLogger(__name__)
@@ -103,12 +102,12 @@ if __name__ == "__main__":
 
     for key, item in endpoints.items():
         if isinstance(item, EndpointSchemaRefinementResponse):
-            logger.info(f"Endpoint:")
+            logger.info("Endpoint:")
             logger.info(f"\tThink: {item.think}")
             logger.info(f"\tDB Models Needed: {item.db_models_needed}")
             logger.info(f"\tNew API Models: {item.new_api_models}")
             logger.info(f"\tEnd Thoughts: {item.end_thoughts}")
-            logger.info(f"\tAPI Endpoint Request: ")
+            logger.info("\tAPI Endpoint Request: ")
             logger.info(
                 f"\t\tRequest Model Name: {item.api_endpoint.request_model.name}"
             )
@@ -118,7 +117,7 @@ if __name__ == "__main__":
             logger.info(
                 f"\t\tRequest Model Parameters: {item.api_endpoint.request_model.params}"
             )
-            logger.info(f"\tAPI Endpoint Response:")
+            logger.info("\tAPI Endpoint Response:")
             logger.info(
                 f"\t\tResponse Model Name: {item.api_endpoint.response_model.name}"
             )
@@ -129,7 +128,7 @@ if __name__ == "__main__":
                 f"\t\tResponse Model Parameters: {item.api_endpoint.response_model.params}"
             )
         else:
-            logger.info(f"????")
+            logger.info("????")
             breakpoint()
 
     # # If you want to test the block in an interactive environment

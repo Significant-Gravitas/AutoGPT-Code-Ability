@@ -6,7 +6,7 @@ from prisma.enums import Role
 from prisma.models import Question, Specification
 from pydantic import BaseModel, Field
 
-from codex.interview.model import InterviewMessage, InterviewMessageWithResponse
+from codex.interview.model import InterviewMessageWithResponse
 
 logger = logging.getLogger(__name__)
 

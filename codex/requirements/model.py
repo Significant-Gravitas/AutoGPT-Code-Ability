@@ -647,9 +647,9 @@ class StateObj:
         project_description = getattr(self, "project_description", "Not provided")
         product_description = getattr(self, "product_description", "Not provided")
         product_name = getattr(self, "product_name", "Not provided")
-        features = getattr(self, "features", [])
-        clarifying_questions = getattr(self, "clarifying_questions", [])
-        requirements_q_and_a = getattr(self, "requirements_q_and_a", [])
+        getattr(self, "features", [])
+        getattr(self, "clarifying_questions", [])
+        getattr(self, "requirements_q_and_a", [])
         modules: List[Module] = getattr(self, "modules", [])
 
         modules_text = "\n".join(module.__str__() for module in modules if module)

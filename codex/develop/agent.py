@@ -1,10 +1,8 @@
-import asyncio
 import logging
 import os
 
 from prisma.enums import FunctionState
 from prisma.models import (
-    APIRouteSpec,
     CompiledRoute,
     CompletedApp,
     Function,
@@ -39,14 +37,21 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
 
     if spec.ApiRouteSpecs:
         for api_route in spec.ApiRouteSpecs:
+            if not api_route.RequestObject:
+                types = []
+                descs = {}
+            elif api_route.RequestObject.Fields:
+                # Unwrap the first level of the fields if it's a nested object.
+                types = [(f.name, f.typeName) for f in api_route.RequestObject.Fields]
+                descs = {f.name: f.description for f in api_route.RequestObject.Fields}
+            else:
+                types = [("request", api_route.RequestObject.name)]
+                descs = {"request": api_route.RequestObject.description}
+
             function_def = FunctionDef(
                 name=api_route.functionName,
-                arg_types=[("request", api_route.RequestObject.name)]
-                if api_route.RequestObject
-                else [],
-                arg_descs={"request": api_route.RequestObject.description}
-                if api_route.RequestObject
-                else {},
+                arg_types=types,
+                arg_descs=descs,
                 return_type=api_route.ResponseObject.name
                 if api_route.ResponseObject
                 else None,
@@ -178,7 +183,7 @@ async def develop_route(
         ]
         await asyncio.gather(*tasks)
     else:
-        logger.info(f"📦 No child functions to develop")
+        logger.info("📦 No child functions to develop")
         logger.debug(route_function.rawCode)
     return route_function
 

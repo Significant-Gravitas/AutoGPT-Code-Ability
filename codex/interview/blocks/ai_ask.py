@@ -62,7 +62,6 @@ if __name__ == "__main__":
     """
     from asyncio import run
 
-    from openai import AsyncOpenAI
     from prisma import Prisma
 
     from codex.common.ai_model import OpenAIChatClient
