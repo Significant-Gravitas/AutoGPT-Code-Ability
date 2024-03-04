@@ -5,9 +5,9 @@ import os
 from prisma.enums import FunctionState
 from prisma.models import (
     APIRouteSpec,
+    CompiledRoute,
     CompletedApp,
     Function,
-    CompiledRoute,
     Specification,
 )
 from prisma.types import CompiledRouteCreateInput, CompletedAppCreateInput
@@ -63,16 +63,20 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
                     description=api_route.description,
                     fileName=api_route.functionName + "_service.py",
                     mainFunctionName=api_route.functionName,
-                    compiledCode="", # This will be updated by compile_route
-                    RootFunction={"create": construct_function(
-                        function_def,
-                        [api_route.RequestObject, api_route.ResponseObject],
-                    )},
+                    compiledCode="",  # This will be updated by compile_route
+                    RootFunction={
+                        "create": construct_function(
+                            function_def,
+                            [api_route.RequestObject, api_route.ResponseObject],
+                        )
+                    },
                     CompletedApp={"connect": {"id": app.id}},
                 ),
-                include={"RootFunction": {
-                    "include": {"FunctionArgs": True, "FunctionReturn": True}
-                }},
+                include={
+                    "RootFunction": {
+                        "include": {"FunctionArgs": True, "FunctionReturn": True}
+                    }
+                },
             )
 
             route_root_func = await develop_route(
@@ -88,11 +92,11 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
 
 
 async def develop_route(
-        ids: Identifiers,
-        compiled_route_id: int,
-        goal_description: str,
-        function: Function,
-        depth: int = 0,
+    ids: Identifiers,
+    compiled_route_id: int,
+    goal_description: str,
+    function: Function,
+    depth: int = 0,
 ) -> Function:
     """
     Recursively develops a function and its child functions
@@ -108,16 +112,18 @@ async def develop_route(
     Returns:
         Function: The developed route function.
     """
-    logger.info(f"Developing for compiled route: "
-                f"{compiled_route_id} - Func: {function.functionName}, depth: {depth}")
+    logger.info(
+        f"Developing for compiled route: "
+        f"{compiled_route_id} - Func: {function.functionName}, depth: {depth}"
+    )
     if depth >= RECURSION_DEPTH_LIMIT:
         raise ValueError("Recursion depth exceeded")
 
     compiled_route = await CompiledRoute.prisma().find_unique_or_raise(
         where={"id": compiled_route_id},
-        include={"Functions": {
-            "include": {"FunctionArgs": True, "FunctionReturn": True}
-        }}
+        include={
+            "Functions": {"include": {"FunctionArgs": True, "FunctionReturn": True}}
+        },
     )
     generated_func = {}
     generated_objs = {}
@@ -138,11 +144,11 @@ async def develop_route(
             # function_args is not used by the prompt, but used for function validation
             "function_args": [(f.name, f.typeName) for f in function.FunctionArgs],
             # function_rets is not used by the prompt, but used for function validation
-            "function_rets":
-                function.FunctionReturn.typeName if function.FunctionReturn else None,
-            "provided_functions":
-                [func.template for func in generated_func.values()] +
-                [generate_object_template(f) for f in generated_objs.values()],
+            "function_rets": function.FunctionReturn.typeName
+            if function.FunctionReturn
+            else None,
+            "provided_functions": [func.template for func in generated_func.values()]
+            + [generate_object_template(f) for f in generated_objs.values()],
             # compiled_route_id is not used by the prompt, but is used by the function
             "compiled_route_id": compiled_route_id,
             # available_objects is not used by the prompt, but is used by the function
@@ -155,7 +161,8 @@ async def develop_route(
 
     if route_function.ChildFunctions:
         logger.info(
-            f"\tDeveloping {len(route_function.ChildFunctions)} child functions")
+            f"\tDeveloping {len(route_function.ChildFunctions)} child functions"
+        )
         tasks = [
             develop_route(
                 ids=ids,
@@ -189,7 +196,6 @@ if __name__ == "__main__":
     setup_logging(local=True)
     client = prisma.Prisma(auto_register=True)
 
-
     async def run_me():
         await client.connect()
         ids = test_consts.identifier_1
@@ -197,7 +203,6 @@ if __name__ == "__main__":
         ans = await develop_application(ids=ids, spec=spec)
         await client.disconnect()
         return ans
-
 
     ans = asyncio.run(run_me())
     logger.info(ans)
