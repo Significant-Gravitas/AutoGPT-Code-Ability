@@ -5,6 +5,7 @@ import tempfile
 import zipfile
 from collections import defaultdict
 from typing import List
+from pipreqs import pipreqs
 
 from prisma.models import Package
 
@@ -13,30 +14,15 @@ from codex.deploy.model import Application
 logger = logging.getLogger(__name__)
 
 
-def generate_requirements_txt(packages: List[Package]) -> str:
-    resolved_packages = defaultdict(list)
+def generate_requirements_txt(
+    packages: List[Package], pipreq_pacakages: List[str]
+) -> str:
+    requirements = set(pipreq_pacakages)
 
-    # Aggregate versions and specifiers for each package
     for package in packages:
-        resolved_packages[package.packageName].append(
-            (package.version, package.specifier)
-        )
+        requirements.add(package.packageName)
 
-    requirements = []
-    for package, versions_specifiers in resolved_packages.items():
-        # Handle different cases of version and specifier here
-        # For simplicity, we just pick the first version and specifier encountered
-        # More complex logic might be needed depending on the requirement
-        version, specifier = versions_specifiers[0]
-        if version and specifier:
-            requirement = f"{package}{specifier}{version}"
-        elif version:
-            requirement = f"{package}=={version}"
-        else:
-            requirement = package
-        requirements.append(requirement)
-
-    return "\n".join(requirements)
+    return "\n".join(sorted(requirements))
 
 
 def create_zip_file(application: Application) -> bytes:
@@ -77,18 +63,41 @@ def create_zip_file(application: Application) -> bytes:
             with open(server_file_path, "w") as server_file:
                 server_file.write(application.server_code)
 
-            requirements_file_path = os.path.join(app_dir, "requirements.txt")
-            packages = ""
-            if application.packages:
-                packages = generate_requirements_txt(application.packages)
-
-            with open(requirements_file_path, "w") as requirements_file:
-                requirements_file.write(packages)
-
             for compiled_route in application.completed_app.CompiledRoutes:
                 service_file_path = os.path.join(app_dir, compiled_route.fileName)
                 with open(service_file_path, "w") as service_file:
                     service_file.write(compiled_route.compiledCode)
+
+            pipreqs.init(
+                {
+                    "<path>": app_dir,
+                    "--savepath": os.path.join(app_dir, "requirements.txt"),
+                    "--print": False,
+                    "--use-local": None,
+                    "--force": True,
+                    "--proxy": None,
+                    "--pypi-server": None,
+                    "--diff": None,
+                    "--clean": None,
+                    "--mode": "no-pin",
+                }
+            )
+
+            requirements_file_path = os.path.join(app_dir, "requirements.txt")
+            pipreq_pacakages = []
+            with open(file=requirements_file_path, mode="r") as requirements_file:
+                pipreq_pacakages = requirements_file.readlines()
+
+            packages = ""
+            if application.packages:
+                packages = generate_requirements_txt(
+                    application.packages, pipreq_pacakages
+                )
+
+            os.remove(requirements_file_path)
+
+            with open(requirements_file_path, mode="w") as requirements_file:
+                requirements_file.write(packages)
             logger.info("Created server code")
             # Create a zip file of the directory
             zip_file_path = os.path.join(app_dir, "server.zip")

@@ -1,5 +1,5 @@
-from prisma.models import Specification
-from prisma.types import SpecificationCreateInput
+from prisma.models import ObjectField, ObjectType, Specification
+from prisma.types import ObjectTypeCreateInput, SpecificationCreateInput
 
 from codex.api_model import (
     Identifiers,
@@ -15,44 +15,48 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
 
     if not spec.api_routes:
         raise ValueError("No routes found in the specification")
-    for route in spec.api_routes:
-        create_request = (
-            {
-                "name": route.request_model.name,
-                "description": route.request_model.description,
-                "Fields": {
-                    "create": [
-                        {
-                            "name": param.name,
-                            "description": param.description,
-                            "typeName": param.param_type,
-                        }
-                        for param in route.request_model.params
-                    ],
-                },
-            }
-            if route.request_model
-            else None
-        )
-        create_response = (
-            {
-                "name": route.response_model.name,
-                "description": route.response_model.description,
-                "Fields": {
-                    "create": [
-                        {
-                            "name": param.name,
-                            "description": param.description,
-                            "typeName": param.param_type,
-                        }
-                        for param in route.response_model.params
-                    ],
-                },
-            }
-            if route.response_model
-            else None
-        )
 
+    # TODO(ntindle): review and refactor this logic persisting ObjectType.
+    #   For loop can be converted into a batch query or at least an async tasks.
+
+    # Persist all ObjectTypes from the spec
+    type_create_inputs = [
+        ObjectTypeCreateInput(
+            name=model.name,
+            description=model.description,
+            Fields={
+                "create": [
+                    {
+                        "name": param.name,
+                        "description": param.description,
+                        "typeName": param.param_type,
+                    }
+                    for param in model.params
+                ]
+            },
+        )
+        for route in spec.api_routes
+        for model in [route.request_model, route.response_model]
+        if model
+    ]
+    type_map = {
+        ci["name"]: await ObjectType.prisma().create(data=ci, include={"Fields": True})
+        for ci in type_create_inputs
+    }
+
+    # Link the typeId of ObjectType's Fields if it is defined in the spec.
+    [
+        await ObjectField.prisma().update(
+            where={"id": field.id},
+            data={"typeId": type_map[field.typeName].id},
+        )
+        for type in type_map.values()
+        for field in type.Fields
+        if field.typeName in type_map
+    ]
+
+    # Persist all routes from the spec
+    for route in spec.api_routes:
         create_db = None
         if route.database_schema:
             create_db = {
@@ -74,10 +78,14 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
             "AccessLevel": route.access_level.value,
             "description": route.description,
         }
-        if create_request:
-            create_route["RequestObject"] = {"create": create_request}
-        if create_response:
-            create_route["ResponseObject"] = {"create": create_response}
+        if route.request_model:
+            create_route["RequestObject"] = {
+                "connect": {"id": type_map[route.request_model.name].id}
+            }
+        if route.response_model:
+            create_route["ResponseObject"] = {
+                "connect": {"id": type_map[route.response_model.name].id}
+            }
         if create_db:
             create_route["DatabaseSchema"] = {"create": create_db}
         routes.append(create_route)
