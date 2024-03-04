@@ -1,5 +1,8 @@
 import ast
 import logging
+import os
+import subprocess
+import tempfile
 from typing import List
 
 from prisma.enums import DevelopmentPhase, FunctionState
@@ -92,7 +95,7 @@ class FunctionVisitor(ast.NodeVisitor):
         self.generic_visit(node)
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
-        if node.name == "__init__":
+        if node.name in ["__init__", "__repr__"]:
             self.generic_visit(node)
             return
 
@@ -206,6 +209,34 @@ class DevelopAIBlock(AIBlock):
                     + "There should be exactly 1"
                 )
             code = code_blocks[0].split("```")[0]
+
+            ruff_errors = ""
+            # Run ruff to validate the code
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".py") as temp_file:
+                temp_file_path = temp_file.name
+                temp_file.write(code.encode("utf-8"))
+                temp_file.flush()
+
+                # Run Ruff on the temporary file
+                try:
+                    result = subprocess.run(
+                        ["ruff", "check", temp_file_path, "--fix"],
+                        capture_output=True,
+                        text=True,
+                    )
+                    logger.info(f"Ruff Output: {result.stdout}")
+                    if temp_file_path in result.stdout:
+                        stderr = result.stdout.replace(temp_file.name, "generated code")
+                        logger.error(f"Ruff Errors: {stderr}")
+                        ruff_errors = stderr
+                    with open(temp_file_path, "r") as f:
+                        code = f.read()
+                finally:
+                    # Ensure the temporary file is deleted
+                    os.remove(temp_file_path)
+
+            if ruff_errors:
+                raise ValidationError(f"Errors with code generation: {ruff_errors}")
 
             try:
                 tree = ast.parse(code)
