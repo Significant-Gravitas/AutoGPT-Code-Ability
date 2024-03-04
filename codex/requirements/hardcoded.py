@@ -2964,7 +2964,7 @@ def tictactoe_game_requirements() -> ApplicationRequirements:
                 description="The row in which the move is made, the value should be between 1 and 3.",
             ),
             Parameter(
-                name="column",
+                name="col",
                 param_type="int",
                 description="The column in which the move is made, the value should be between 1 and 3.",
             ),

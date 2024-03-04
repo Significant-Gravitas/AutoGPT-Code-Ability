@@ -16,6 +16,7 @@ from prisma.models import (
     Package,
     Specification,
 )
+from codex.common.ai_block import ValidationError
 from prisma.types import CompiledRouteUpdateInput, CompletedAppCreateInput
 from pydantic import BaseModel
 
@@ -114,15 +115,11 @@ async def recursive_compile_route(
     if function.FunctionArgs is not None:
         for arg in function.FunctionArgs:
             pydantic_models.append(await process_object_field(arg, new_object_types))
-    else:
-        raise ValueError(f"Function {function.functionName} has no arguments.")
 
     if function.FunctionReturn is not None:
         pydantic_models.append(
             await process_object_field(function.FunctionReturn, new_object_types)
         )
-    else:
-        raise ValueError(f"Function {function.functionName} has no return type.")
 
     if function.ChildFunctions is None:
         packages = []

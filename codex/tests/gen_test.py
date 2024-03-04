@@ -1,6 +1,8 @@
 import pytest
 from dotenv import load_dotenv
 
+load_dotenv()
+
 from codex.app import db_client
 from codex.common import ai_block
 from codex.common.ai_block import LLMFailure
@@ -10,7 +12,6 @@ from codex.common.test_const import Identifiers, app_id_11, user_id_1
 from codex.develop import agent
 from codex.requirements.database import get_latest_specification
 
-load_dotenv()
 
 
 OpenAIChatClient.configure({})
@@ -105,10 +106,10 @@ class TurnRequest(BaseModel):
 
     Args:
         row (int): The row in which the move is made, value should be between 1 and 3 inclusively.
-        column (int): The column in which the move is made, value should be between 1 and 3 inclusively.
+        col (int): The column in which the move is made, value should be between 1 and 3 inclusively.
     \"\"\"
     row: int
-    column: int
+    col: int
 
 class GameStateResponse(BaseModel):
     \"\"\"
@@ -162,12 +163,13 @@ def check_win_or_draw(board: Board) -> str:
 
     return 'In Progress'
 
-def make_turn(request: TurnRequest) -> GameStateResponse:
+def make_turn(row: int, col: int) -> GameStateResponse:
     \"\"\"
     Processes a player's move in the Tic-Tac-Toe game and returns the current state of the game.
 
     Args:
-        request (TurnRequest): Contains the details of the player's move (row and column).
+        row (int): The row in which the move is made, value should be between 1 and 3 inclusively.
+        col (int): The column in which the move is made, value should be between 1 and 3 inclusively.
 
     Returns:
         GameStateResponse: The current state of the game after processing the move.
@@ -180,7 +182,7 @@ def make_turn(request: TurnRequest) -> GameStateResponse:
         cells = [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']
         current_game['state'] = 'In Progress'
 
-    index = (request.row - 1) * 3 + (request.column - 1)
+    index = (row - 1) * 3 + (col - 1)
     if cells[index] == ' ':
         cells[index] = current_game['turn']
 
@@ -199,7 +201,7 @@ def make_turn(request: TurnRequest) -> GameStateResponse:
 
 WITH_NESTED_FUNCTION_RESPONSE = """
 ```python
-def make_turn(request: TurnRequest) -> GameStateResponse:
+def make_turn(row: int, col: int) -> GameStateResponse:
     def nested_function():
         pass
     return GameStateResponse()
@@ -214,35 +216,35 @@ global_here = 1
 def dependency_function():
     return
 
-def make_turn(request: TurnRequest) -> GameStateResponse:
+def make_turn(row: int, col: int) -> GameStateResponse:
     return GameStateResponse()
 ```
 """
 
 WITH_UNIMPLEMENTED_FUNCTION_RESPONSE = """
 ```python
-def make_turn(request: TurnRequest) -> GameStateResponse:
+def make_turn(row: int, col: int) -> GameStateResponse:
     pass
 ```
 """
 
 WITH_MISMATCHING_ARGUMENTS_RESPONSE = """
 ```python
-def make_turn(turn: int, request: TurnRequest) -> GameStateResponse:
+def make_turn(turn: int, row: int, col: int) -> GameStateResponse:
     return GameStateResponse()
 ```
 """
 
 WITH_MISMATCHING_RETURN_TYPE_RESPONSE = """
 ```python
-def make_turn(request: TurnRequest) -> int:
+def make_turn(row: int, col: int) -> int:
     return 1
 ```
 """
 
 SIMPLE_RESPONSE = """
 ```python
-def make_turn(request: TurnRequest) -> GameStateResponse:
+def make_turn(row: int, col: int) -> GameStateResponse:
     return GameStateResponse()
 ```
 """
