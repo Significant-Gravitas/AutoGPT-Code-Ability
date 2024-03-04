@@ -12,9 +12,9 @@ logger = logging.getLogger(__name__)
 
 
 class Identifiers(BaseModel):
-    user_id: str
-    cloud_services_id: str
-    app_id: str
+    user_id: str | None = None
+    cloud_services_id: str | None = None
+    app_id: str | None = None
     interview_id: str | None = None
     spec_id: str | None = None
     completed_app_id: str | None = None

@@ -65,8 +65,8 @@ class GeneratedFunctionResponse(BaseModel):
     function_id: str | None = None
 
     function_name: str
-    compiled_route_id: int
-    available_objects: List[ObjectType]
+    compiled_route_id: str
+    available_objects: dict[str, ObjectType]
     template: str
 
     rawCode: str

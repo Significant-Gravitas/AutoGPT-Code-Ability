@@ -37,7 +37,7 @@ class ComplicationFailure(Exception):
 
 
 async def compile_route(
-    id: int, route_root_func: Function, api_route: APIRouteSpec
+    id: str, route_root_func: Function, api_route: APIRouteSpec
 ) -> CompiledRoute:
     """
     Compiles a route by generating a CompiledRoute object.
@@ -101,7 +101,6 @@ async def recursive_compile_route(
             "FunctionReturn": True,
             "ChildFunctions": {
                 "include": {
-                    "ApiRouteSpec": True,
                     "FunctionArgs": True,
                     "FunctionReturn": True,
                 }
@@ -273,18 +272,18 @@ async def process_object_field(field: ObjectField, object_type_ids: Set[str]) ->
     return pydantic_classes
 
 
-def create_server_route_code(complied_route: CompiledRoute) -> str:
+def create_server_route_code(compiled_route: CompiledRoute) -> str:
     """
     Create the server route code for a compiled route.
 
     Args:
-        complied_route (CompiledRoute): The compiled route to create the
+        compiled_route (CompiledRoute): The compiled route to create the
                                         server route code for.
 
     Returns:
         str: The server route code.
     """
-    main_function = complied_route.RootFunction
+    main_function = compiled_route.RootFunction
 
     if main_function is None:
         raise ValueError("Compiled route must have a root function.")
@@ -294,7 +293,7 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
     args = main_function.FunctionArgs
     assert args is not None, "Compiled route must have function arguments."
 
-    route_spec = complied_route.ApiRouteSpec
+    route_spec = compiled_route.ApiRouteSpec
     assert route_spec is not None, "Compiled route must have an API route spec."
 
     is_file_response = False

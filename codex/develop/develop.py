@@ -16,6 +16,7 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
+from codex.develop.database import create_object_type
 from codex.develop.function import construct_function
 from codex.develop.model import (
     FunctionDef,
@@ -153,6 +154,7 @@ class FunctionVisitor(ast.NodeVisitor):
             ]
             for base in node.bases
         )
+        is_implemented = not any(isinstance(v, ast.Pass) for v in node.body)
 
         self.objects[node.name] = ObjectDef(
             name=node.name,
@@ -162,8 +164,12 @@ class FunctionVisitor(ast.NodeVisitor):
                 if isinstance(v, ast.AnnAssign)
             },
             is_pydantic=is_pydantic,
-            is_implemented=not any(isinstance(v, ast.Pass) for v in node.body),
+            is_implemented=is_implemented,
         )
+
+        if not is_implemented:
+            raise ValidationError(f"Class {node.name} is not implemented. "
+                                  f"Please complete the implementation of this class!")
 
         self.generic_visit(node)
 
@@ -283,32 +289,17 @@ class DevelopAIBlock(AIBlock):
         """
         generated_response: GeneratedFunctionResponse = validated_response.response
 
-        # Create objects if they don't exist
-        available_objects = {
-            obj.name: obj for obj in generated_response.available_objects if obj
-        }
-        for name, obj in generated_response.objects.items():
-            if name in available_objects:
-                continue
-
-            available_objects[name] = await ObjectType.prisma().create(
-                data={
-                    "name": obj.name,
-                    "description": obj.description,
-                    "Fields": {
-                        "create": [
-                            {"name": name, "typeName": type}
-                            for name, type in obj.fields.items()
-                        ]
-                    },
-                }
-            )
+        available_objects = generated_response.available_objects
+        for obj in generated_response.objects.values():
+            available_objects = await create_object_type(obj, available_objects)
 
         function_defs: list[FunctionCreateInput] = []
         if generated_response.functions:
             for key, value in generated_response.functions.items():
                 model = construct_function(value, generated_response.available_objects)
-                model["compiledRouteId"] = generated_response.compiled_route_id
+                model["CompiledRoute"] = {"connect": {
+                    "id": generated_response.compiled_route_id
+                }}
                 function_defs.append(model)
 
         update_obj = FunctionUpdateInput(
@@ -333,30 +324,24 @@ class DevelopAIBlock(AIBlock):
             raise AssertionError("Function ID is required to update")
 
         func: Function | None = await Function.prisma().update(
-            where={"id": generated_response.function_id}, data=update_obj
-        )
-        if not func:
-            raise AssertionError(
-                f"Function with id {generated_response.function_id} not found"
-            )
-
-        # We need to reload from the database the child functions so they
-        # have the api route spec attached
-        func = await Function.prisma().find_unique_or_raise(
-            where={"id": func.id},
+            where={"id": generated_response.function_id},
+            data=update_obj,
             include={
                 "ParentFunction": True,
                 "FunctionArgs": True,
                 "FunctionReturn": True,
                 "ChildFunctions": {
                     "include": {
-                        "ApiRouteSpec": True,
                         "FunctionArgs": True,
                         "FunctionReturn": True,
                     }
                 },
-            },
+            }
         )
+        if not func:
+            raise AssertionError(
+                f"Function with id {generated_response.function_id} not found"
+            )
 
         logger.info(f"✅ Updated Function: {func.functionName} - {func.id}")
 

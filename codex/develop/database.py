@@ -1,8 +1,9 @@
 from typing import List, Tuple
 
-from prisma.models import CompletedApp
+from prisma.models import CompletedApp, ObjectType
 
-from codex.api_model import DeliverableResponse, DeliverablesListResponse, Pagination
+from codex.develop.model import ObjectDef
+from codex.api_model import Pagination
 
 
 async def get_deliverable(
@@ -54,3 +55,41 @@ async def list_deliverables(
         page_size=page_size,
     )
     return completed_apps_data, pagination
+
+
+async def create_object_type(
+        object: ObjectDef,
+        available_objects: dict[str, ObjectType],
+) -> dict[str, ObjectType]:
+    """
+    Creates and store object types in the database.
+
+    Args:
+    objects (ObjectDef): The object definitions to be created.
+    available_objects (dict[str, ObjectType]):
+        The set of object definitions that have already been created.
+        This will be used to link the related object fields and avoid duplicates.
+
+    Returns:
+        dict[str, ObjectType]: Updated available_objects with the newly created objects.
+    """
+    if object.name in available_objects:
+        return available_objects
+
+    available_objects[object.name] = await ObjectType.prisma().create(
+        data={
+            "name": object.name,
+            "Fields": {
+                "create": [{
+                    "name": field_name,
+                    "typeName": field_type,
+                    "typeId": available_objects[field_type].id
+                    if field_type in available_objects else None,
+                } for field_name, field_type in object.fields.items()]
+            },
+        },
+        include={"Fields": True},
+    )
+    # TODO(majdyz): connect the fields of available objects to the newly created object.
+
+    return available_objects
