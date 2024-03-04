@@ -253,7 +253,7 @@ async def process_object_field(field: ObjectField, object_type_ids: Set[str]) ->
         where={"id": field.id}, include={"Type": {"include": {"Fields": True}}}
     )
 
-    if field.typeId is None or field.typeId in object_type_ids:
+    if (field.typeId is None) or (field.typeId in object_type_ids):
         # If the field is a primitive type or we have already processed this object,
         # we don't need to do anything
         logger.debug(
