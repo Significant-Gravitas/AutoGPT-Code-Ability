@@ -297,6 +297,7 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
 
     is_file_response = False
     response_model = "JSONResponse"
+    route_response_annotation = "JSONResponse"
     if (
         return_type.Type
         and return_type.Type.Fields
@@ -305,8 +306,8 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
         is_file_response = True
     else:
         if return_type.Type is not None:
-            # TODO(SwiftyOS): consider revert, `| JSONResponse` was removed from here.
-            response_model = return_type.Type.name
+            response_model = f"{return_type.Type.name} | JSONResponse"
+            route_response_annotation = return_type.Type.name
 
     # 4. Determine path parameters
     path_params = extract_path_params(route_spec.path)
@@ -316,7 +317,8 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
     func_args_names = set([arg.name for arg in args])
     # if not set(path_params).issubset(func_args_names):
     #     raise ComplicationFailure(
-    #         f"Path parameters {path_params} not in function arguments {func_args_names}"
+    #         f"Path parameters {path_params} not "
+    #         f"in function arguments {func_args_names}"
     #     )
 
     http_verb = str(route_spec.method)
@@ -324,7 +326,7 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
     if is_file_response:
         route_decorator += ", response_class=StreamingResponse"
     else:
-        route_decorator += f", response_model={response_model}"
+        route_decorator += f", response_model={route_response_annotation}"
 
     route_decorator += ")\n"
 
@@ -363,7 +365,7 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
         logger.exception("Error processing request")
         res = dict()
         res["error"] =  str(e)
-        return JSONResponse(content=res)
+        return JSONResponse(content=jsonable_encoder(res))
     """
     route_code = route_decorator
     route_code += route_function_def
@@ -435,6 +437,7 @@ def create_server_code(completed_app: CompletedApp) -> Application:
     server_code_imports = [
         "from fastapi import FastAPI",
         "from fastapi.responses import JSONResponse, StreamingResponse",
+        "from fastapi.encoders import jsonable_encoder",
         "import logging",
         "import io",
         "from typing import *",
