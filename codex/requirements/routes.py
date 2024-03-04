@@ -35,7 +35,7 @@ async def create_spec(
     Create a new specification for a given application and user.
     """
     try:
-        app = await codex.database.get_app_by_id(user_id, app_id)
+        await codex.database.get_app_by_id(user_id, app_id)
         user = await codex.database.get_user(user_id)
         ids = Identifiers(
             user_id=user_id,

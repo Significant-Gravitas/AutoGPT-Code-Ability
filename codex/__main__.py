@@ -117,7 +117,7 @@ async def run_benchmark():
             fetch_deliverable(session, test_const.user_id_1, test_const.app_id_7),
             fetch_deliverable(session, test_const.user_id_1, test_const.app_id_8),
         ]
-        results = await asyncio.gather(*tasks)
+        await asyncio.gather(*tasks)
     await client.disconnect()
 
 
@@ -134,7 +134,7 @@ async def run_specific_benchmark(task):
                 session, test_const.user_id_1, ExampleTask.get_app_id(task)
             ),
         ]
-        results = await asyncio.gather(*tasks)
+        await asyncio.gather(*tasks)
     await client.disconnect()
 
 
@@ -168,7 +168,7 @@ def serve() -> None:
     from codex.common.ai_model import OpenAIChatClient
 
     OpenAIChatClient.configure({})
-    reload = os.environ.get("ENV", "CLOUD").lower() == "local"
+    os.environ.get("ENV", "CLOUD").lower() == "local"
 
     uvicorn.run(
         "codex.app:app",

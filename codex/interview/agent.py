@@ -200,9 +200,7 @@ def hardcoded_interview(task: ExampleTask) -> Interview:
 
 
 async def populate_database_interviews():
-    from codex.common.test_const import (
-        identifier_1,
-    )
+    from codex.common.test_const import identifier_1
 
     ids = identifier_1
 

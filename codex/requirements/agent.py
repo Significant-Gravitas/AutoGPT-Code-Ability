@@ -290,7 +290,7 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
         match = find_best_match(module.module_name, existing_module_names, threshold=80)
 
         if match:
-            best_match, similarity = match[0], match[1]
+            best_match, _similarity = match[0], match[1]
             # If a good match is found, proceed to update the module details
             for index, existing in enumerate(running_state_obj.modules):
                 if existing.name == best_match:
