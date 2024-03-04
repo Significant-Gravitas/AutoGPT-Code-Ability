@@ -188,7 +188,7 @@ In summary, The Tutor App aims to offer a comprehensive solution to the administ
         if isinstance(item, InterviewMessageWithResponseOptionalId):
             logger.info(f"\t{item.tool}: {item.content}: {item.response}")
         else:
-            logger.info(f"????")
+            logger.info("????")
             breakpoint()
 
     # # If you want to test the block in an interactive environment

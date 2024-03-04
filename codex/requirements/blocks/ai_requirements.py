@@ -6,7 +6,6 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
-from codex.common.logging_config import setup_logging
 from codex.requirements.build_requirements_refinement_object import convert_requirements
 from codex.requirements.model import (
     RequirementsGenResponse,
@@ -180,7 +179,7 @@ if __name__ == "__main__":
     for key, item in requirements.items():
         if isinstance(item, RequirementsRefined):
             logger.info(f"Requirement Base {key}")
-            logger.info(f"\tRequirementsRefined:")
+            logger.info("\tRequirementsRefined:")
             logger.info(f"\t\tneed_db: {item.need_db}")
             logger.info(f"\t\t\t{item.need_db_justification}")
             logger.info(f"\t\tneed_frontend_api: {item.need_frontend_api}")
@@ -225,7 +224,7 @@ if __name__ == "__main__":
             logger.info(f"\t\t\t{item.authorization_roles_justification}")
         elif isinstance(item, RequirementsGenResponse):
             logger.info(f"Requirement {key}")
-            logger.info(f"\tRequirementsGenResponse:")
+            logger.info("\tRequirementsGenResponse:")
             for req in item.answer.functional:
                 requirement = req
                 logger.info(f"\t\tfunctional_requirement: {requirement.name}")
@@ -237,7 +236,7 @@ if __name__ == "__main__":
                 logger.info(f"\t\t\t{requirement.thoughts}")
                 logger.info(f"\t\t\t{requirement.description}")
         else:
-            logger.info(f"????")
+            logger.info("????")
             breakpoint()
 
     # # If you want to test the block in an interactive environment

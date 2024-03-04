@@ -103,7 +103,7 @@ class AIBlock:
 
             template_dir = os.path.join(
                 os.path.dirname(__file__),
-                f"../prompts/techniques/",
+                "../prompts/techniques/",
             )
             try:
                 templates_env = Environment(loader=FileSystemLoader(template_dir))

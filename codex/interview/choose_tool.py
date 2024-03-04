@@ -3,7 +3,6 @@ import logging
 
 from codex.common.ai_block import Identifiers, Tool
 from codex.interview.model import (
-    InterviewMessage,
     InterviewMessageOptionalId,
     InterviewMessageWithResponse,
     InterviewMessageWithResponseOptionalId,

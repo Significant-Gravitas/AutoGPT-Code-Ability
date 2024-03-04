@@ -6,7 +6,6 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
-from codex.common.logging_config import setup_logging
 from codex.prompts.claude.requirements.NestJSDocs import (
     NEST_JS_CRUD_GEN,
     NEST_JS_FIRST_STEPS,
@@ -192,7 +191,7 @@ if __name__ == "__main__":
                 logger.info(f"\tRough Requirements: {module.rough_requirements}")
                 logger.info(f"\tThoughts: {module.thoughts}")
                 logger.info(f"\tNew Description: {module.new_description}")
-                logger.info(f"\tModule Requirements:")
+                logger.info("\tModule Requirements:")
                 for requirement in module.module_requirements:
                     logger.info(f"\t\tRequirement Name: {requirement.name}")
                     logger.info(
@@ -215,7 +214,7 @@ if __name__ == "__main__":
                         )
                         logger.info(f"\t\t\tEndpoint Path: {endpoint.path}")
         else:
-            logger.info(f"????")
+            logger.info("????")
             breakpoint()
 
     # # If you want to test the block in an interactive environment

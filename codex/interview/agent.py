@@ -200,16 +200,7 @@ def hardcoded_interview(task: ExampleTask) -> Interview:
 
 
 async def populate_database_interviews():
-    from codex.api_model import Identifiers
     from codex.common.test_const import (
-        app_id_1,
-        app_id_2,
-        app_id_3,
-        app_id_4,
-        app_id_5,
-        app_id_6,
-        app_id_7,
-        app_id_8,
         identifier_1,
     )
 

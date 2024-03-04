@@ -212,7 +212,7 @@ Additionally, it will have proper management of financials, including invoice ma
             for message in item.uses:
                 logger.info(f"\t{message.tool}: {message.content}")
         else:
-            logger.info(f"????")
+            logger.info("????")
             breakpoint()
 
     # # If you want to test the block in an interactive environment

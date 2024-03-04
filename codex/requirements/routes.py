@@ -7,7 +7,6 @@ import codex.database
 import codex.requirements.database
 from codex.api_model import (
     Identifiers,
-    SpecificationCreate,
     SpecificationResponse,
     SpecificationsListResponse,
 )

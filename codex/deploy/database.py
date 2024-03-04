@@ -1,5 +1,5 @@
 from prisma.models import Deployment
-from prisma.types import DeploymentCreateInput, DeploymentWhereInput
+from prisma.types import DeploymentWhereInput
 
 from codex.api_model import DeploymentMetadata, DeploymentsListResponse, Pagination
 

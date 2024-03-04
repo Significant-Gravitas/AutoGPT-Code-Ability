@@ -6,7 +6,6 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
-from codex.common.logging_config import setup_logging
 from codex.requirements.model import Clarification, QandA, QandAResponses
 
 logger = logging.getLogger(__name__)
@@ -260,14 +259,14 @@ if __name__ == "__main__":
             logger.info(f"\tAnswer: {clariifcation.answer}")
         elif isinstance(clariifcation, list):
             for qa in clariifcation:
-                logger.info(f"Q and A")
+                logger.info("Q and A")
                 logger.info(f"\tQuestion: {qa.question}")
                 logger.info(f"\tThoughts: {qa.thoughts}")
                 logger.info(f"\tConclusive: {qa.was_conclusive}")
                 logger.info(f"\tAnswer: {qa.team_answer}")
 
         else:
-            logger.info(f"????")
+            logger.info("????")
 
     # # If you want to test the block in an interactive environment
     # import IPython

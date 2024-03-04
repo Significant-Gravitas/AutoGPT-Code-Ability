@@ -1,6 +1,5 @@
 import logging
 
-from codex.common.logging_config import setup_logging
 
 
 # This is a custom logger that prints the exception stack trace on error by default
