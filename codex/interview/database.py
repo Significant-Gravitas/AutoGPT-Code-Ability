@@ -79,12 +79,12 @@ async def answer_questions(
 async def add_questions(
     interview_id: str, questions: list[InterviewMessageOptionalId]
 ) -> Interview:
-    interview = await Interview.prisma().find_unique_or_raise(
+    await Interview.prisma().find_unique_or_raise(
         where={"id": interview_id}, include={"Questions": True}
     )
     # add questions
     for q in questions:
-        question = await Question.prisma().create(
+        await Question.prisma().create(
             data={
                 "interviewId": interview_id,
                 "question": q.content,
@@ -102,7 +102,7 @@ async def add_questions(
 async def finsh_interview(
     interview_id: str, finished_content: str, finished_text: str
 ) -> Interview:
-    interview = await Interview.prisma().find_unique_or_raise(
+    await Interview.prisma().find_unique_or_raise(
         where={"id": interview_id}, include={"Questions": True}
     )
     updated_interview = await Interview.prisma().update(

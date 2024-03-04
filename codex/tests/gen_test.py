@@ -1,16 +1,17 @@
 import pytest
 from dotenv import load_dotenv
 
-load_dotenv()
-
 from codex.app import db_client
 from codex.common import ai_block
 from codex.common.ai_block import LLMFailure
 from codex.common.ai_model import OpenAIChatClient
-from codex.common.logging import setup_logging
-from codex.common.test_const import *
+from codex.common.logging_config import setup_logging
+from codex.common.test_const import Identifiers, app_id_11, user_id_1
 from codex.develop import agent
 from codex.requirements.database import get_latest_specification
+
+load_dotenv()
+
 
 OpenAIChatClient.configure({})
 setup_logging(local=True)
@@ -25,7 +26,7 @@ async def generate_function():
         await db_client.connect()
         is_connected = True
 
-    ids = Identifiers(user_id=user_id_1, app_id=app_id_11)
+    ids = Identifiers(user_id=user_id_1, app_id=app_id_11, cloud_services_id="")
     spec = await get_latest_specification(ids.user_id, ids.app_id)
     func = await agent.develop_application(ids=ids, spec=spec)
 

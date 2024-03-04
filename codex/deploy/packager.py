@@ -4,8 +4,8 @@ import os
 import tempfile
 import zipfile
 from typing import List
-from pipreqs import pipreqs
 
+from pipreqs import pipreqs
 from prisma.models import Package
 
 from codex.deploy.model import Application

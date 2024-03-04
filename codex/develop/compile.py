@@ -141,7 +141,7 @@ async def recursive_compile_route(
         code += function.functionCode
 
         try:
-            tree = ast.parse(code)
+            ast.parse(code)
         except Exception as e:
             raise ValueError(f"Syntax error in function code: {e}, {code}")
 
@@ -179,7 +179,7 @@ async def recursive_compile_route(
         check_code += code
 
         try:
-            tree = ast.parse(check_code)
+            ast.parse(check_code)
         except Exception as e:
             raise ValueError(f"Syntax error in function code: {e}, {code}")
 
@@ -311,13 +311,13 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
 
     # 4. Determine path parameters
     path_params = extract_path_params(route_spec.path)
-    params = set(
-        [arg.ReferredObjectType.name for arg in args if arg.ReferredObjectType]
-    )
+    # params = set(
+    #     [arg.ReferredObjectType.name for arg in args if arg.ReferredObjectType]
+    # )
     func_args_names = set([arg.name for arg in args])
     if not set(path_params).issubset(func_args_names):
         logger.warning(
-             f"Path parameters {path_params} not in function arguments {func_args_names}"
+            f"Path parameters {path_params} not in function arguments {func_args_names}"
         )
     #     raise ComplicationFailure(
     #         f"Path parameters {path_params} not "

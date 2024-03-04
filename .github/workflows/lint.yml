@@ -1,0 +1,28 @@
+name: Python Liniting
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.11
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install ruff
+
+    - name: Run ruff formatter
+      run: ruff check . 
+      
