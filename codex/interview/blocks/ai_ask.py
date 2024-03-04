@@ -3,7 +3,8 @@ import logging
 from pydantic import ValidationError
 
 from codex.common.ai_block import AIBlock, Identifiers, ValidatedResponse
-from codex.requirements.model import InterviewMessageWithResponse
+from codex.common.logging_config import setup_logging
+from codex.interview.model import InterviewMessageWithResponseOptionalId
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,7 @@ class AskBlock(AIBlock):
     # Should we force the LLM to reply in JSON
     is_json_response = True
     # If we are using is_json_response, what is the response model
-    pydantic_object = InterviewMessageWithResponse
+    pydantic_object = InterviewMessageWithResponseOptionalId
 
     def validate(
         self, invoke_params: dict, response: ValidatedResponse
@@ -33,8 +34,10 @@ class AskBlock(AIBlock):
         blocks this is much more complex. If validation failes it triggers a retry.
         """
         try:
-            model: InterviewMessageWithResponse = (
-                InterviewMessageWithResponse.model_validate_json(response.response)
+            model: InterviewMessageWithResponseOptionalId = (
+                InterviewMessageWithResponseOptionalId.model_validate_json(
+                    response.response
+                )
             )
             response.response = model
         except Exception as e:
@@ -62,20 +65,22 @@ if __name__ == "__main__":
     from openai import AsyncOpenAI
     from prisma import Prisma
 
+    from codex.common.ai_model import OpenAIChatClient
     from codex.common.test_const import identifier_1
 
     ids = identifier_1
+
+    setup_logging(local=True)
+
+    OpenAIChatClient.configure({})
     db_client = Prisma(auto_register=True)
-    oai = AsyncOpenAI()
 
-    ask_block = AskBlock(
-        oai_client=oai,
-    )
+    ask_block = AskBlock()
 
-    async def run_ai() -> dict[str, InterviewMessageWithResponse]:
+    async def run_ai() -> dict[str, InterviewMessageWithResponseOptionalId]:
         await db_client.connect()
-        memory: list[InterviewMessageWithResponse] = []
-        response_ref: InterviewMessageWithResponse = await ask_block.invoke(
+        memory: list[InterviewMessageWithResponseOptionalId] = []
+        response_ref: InterviewMessageWithResponseOptionalId = await ask_block.invoke(
             ids=ids,
             invoke_params={
                 "content": "Do you prefer signing up with OAuth2 providers or traditional sign-in methods for your applications?",
@@ -91,16 +96,8 @@ if __name__ == "__main__":
     responses = run(run_ai())
 
     for key, item in responses.items():
-        if isinstance(item, InterviewMessageWithResponse):
+        if isinstance(item, InterviewMessageWithResponseOptionalId):
             logger.info(f"\t{item.tool}: {item.content}: {item.response}")
         else:
             logger.info(f"{key}: {item}")
             breakpoint()
-
-    # # If you want to test the block in an interactive environment
-    # import IPython
-
-    # IPython.embed()
-    breakpoint()
-    breakpoint()
-    breakpoint()

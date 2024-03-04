@@ -145,7 +145,7 @@ def benchmark():
 
 
 @cli.command()
-def run_example():
+def example():
     from codex.requirements.model import ExampleTask
 
     i = 1

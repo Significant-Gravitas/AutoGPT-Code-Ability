@@ -524,12 +524,12 @@ def calendar_booking_system() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="email",
-                            param_type="String",
+                            param_type="str",
                             description="The new email address of the user.",
                         ),
                         Parameter(
                             name="password",
-                            param_type="String",
+                            param_type="str",
                             description="The new password of the user. Should be hashed in the database, not stored in plain text.",
                         ),
                         Parameter(
@@ -545,12 +545,12 @@ def calendar_booking_system() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="id",
-                            param_type="String",
+                            param_type="str",
                             description="The unique identifier of the user.",
                         ),
                         Parameter(
                             name="email",
-                            param_type="String",
+                            param_type="str",
                             description="The updated email address of the user.",
                         ),
                         Parameter(
@@ -560,7 +560,7 @@ def calendar_booking_system() -> ApplicationRequirements:
                         ),
                         Parameter(
                             name="updatedAt",
-                            param_type="DateTime",
+                            param_type="datetime",
                             description="The timestamp reflecting when the update was made.",
                         ),
                     ],
@@ -632,8 +632,8 @@ def calendar_booking_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="UserLogoutInput",
-                    description="UserLogoutInput",
+                    name="UserLogoutOutput",
+                    description="UserLogoutOutput",
                     params=[
                         Parameter(
                             name="message",
@@ -703,8 +703,8 @@ def calendar_booking_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="UpdateNotificationSettingsRequest",
-                    description="UpdateNotificationSettingsRequest",
+                    name="UpdateNotificationSettingsResponse",
+                    description="UpdateNotificationSettingsResponse",
                     params=[
                         Parameter(
                             name="success",
@@ -750,53 +750,53 @@ def calendar_booking_system() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="userId",
-                            param_type="String",
+                            param_type="str",
                             description="The ID of the user creating the appointment.",
                         ),
                         Parameter(
                             name="startTime",
-                            param_type="DateTime",
+                            param_type="datetime",
                             description="The start time for the appointment.",
                         ),
                         Parameter(
                             name="endTime",
-                            param_type="DateTime",
+                            param_type="datetime",
                             description="The end time for the appointment.",
                         ),
                         Parameter(
                             name="type",
-                            param_type="String",
+                            param_type="str",
                             description="Type of the appointment.",
                         ),
                         Parameter(
                             name="participants",
-                            param_type="[String]",
+                            param_type="[str]",
                             description="List of participating user IDs.",
                         ),
                         Parameter(
                             name="timeZone",
-                            param_type="String",
+                            param_type="str",
                             description="Timezone for the scheduled appointment.",
                         ),
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="CreateAppointmentInput",
-                    description="CreateAppointmentInput",
+                    name="CreateAppointmentOutput",
+                    description="CreateAppointmentOutput",
                     params=[
                         Parameter(
                             name="success",
-                            param_type="Boolean",
+                            param_type="bool",
                             description="Indicates success or failure of the operation.",
                         ),
                         Parameter(
                             name="appointmentId",
-                            param_type="String",
+                            param_type="str",
                             description="Unique identifier for the newly created appointment.",
                         ),
                         Parameter(
                             name="message",
-                            param_type="String",
+                            param_type="str",
                             description="Additional information or error message.",
                         ),
                     ],
@@ -816,17 +816,17 @@ def calendar_booking_system() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="startTime",
-                            param_type="DateTime",
+                            param_type="datetime",
                             description="The new start time for the appointment, accounting for any time zone considerations.",
                         ),
                         Parameter(
                             name="endTime",
-                            param_type="DateTime",
+                            param_type="datetime",
                             description="The new end time for the appointment, ensuring it follows logically after the start time.",
                         ),
                         Parameter(
                             name="type",
-                            param_type="String",
+                            param_type="str",
                             description="Optionally update the type/category of the appointment.",
                         ),
                         Parameter(
@@ -836,28 +836,28 @@ def calendar_booking_system() -> ApplicationRequirements:
                         ),
                         Parameter(
                             name="timeZone",
-                            param_type="String",
+                            param_type="str",
                             description="If the time zone needs adjusting to reflect the appropriate scheduling context.",
                         ),
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="AppointmentUpdateInput",
-                    description="AppointmentUpdateInput",
+                    name="AppointmentUpdateOutput",
+                    description="AppointmentUpdateOutput",
                     params=[
                         Parameter(
                             name="id",
-                            param_type="String",
+                            param_type="str",
                             description="The ID of the appointment that was updated.",
                         ),
                         Parameter(
                             name="success",
-                            param_type="Boolean",
+                            param_type="bool",
                             description="Indicates true if the appointment was successfully updated, false otherwise.",
                         ),
                         Parameter(
                             name="message",
-                            param_type="String",
+                            param_type="str",
                             description="Provides more information about the outcome of the update, such as 'Appointment updated successfully' or 'Update failed due to [reason]'.",
                         ),
                     ],
@@ -883,8 +883,8 @@ def calendar_booking_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="CancelAppointmentInput",
-                    description="CancelAppointmentInput",
+                    name="CancelAppointmentOutput",
+                    description="CancelAppointmentOutput",
                     params=[
                         Parameter(
                             name="success",
@@ -934,8 +934,8 @@ def calendar_booking_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="ConfigureNotificationsRequest",
-                    description="ConfigureNotificationsRequest",
+                    name="ConfigureNotificationsResponse",
+                    description="ConfigureNotificationsResponse",
                     params=[
                         Parameter(
                             name="success",
@@ -992,8 +992,8 @@ def calendar_booking_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="DispatchNotificationInput",
-                    description="DispatchNotificationInput",
+                    name="DispatchNotificationOutput",
+                    description="DispatchNotificationOutput",
                     params=[
                         Parameter(
                             name="success",
@@ -1098,8 +1098,8 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="ListInventoryRequest",
-                    description="ListInventoryRequest",
+                    name="ListInventoryResponse",
+                    description="ListInventoryResponse",
                     params=[
                         Parameter(
                             name="items",
@@ -1207,8 +1207,8 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="UpdateInventoryItemInput",
-                    description="UpdateInventoryItemInput",
+                    name="UpdateInventoryItemOutput",
+                    description="UpdateInventoryItemOutput",
                     params=[
                         Parameter(
                             name="success",
@@ -1248,8 +1248,8 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="CreateInventoryItemRequest",
-                    description="CreateInventoryItemRequest",
+                    name="CreateInventoryItemResponse",
+                    description="CreateInventoryItemResponse",
                     params=[
                         Parameter(
                             name="success",
@@ -1321,8 +1321,8 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="DeleteInventoryItemInput",
-                    description="DeleteInventoryItemInput",
+                    name="DeleteInventoryItemOutput",
+                    description="DeleteInventoryItemOutput",
                     params=[
                         Parameter(
                             name="success",
@@ -1357,8 +1357,8 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="CreateReportRequest",
-                    description="CreateReportRequest",
+                    name="CreateReportResponse",
+                    description="CreateReportResponse",
                     params=[
                         Parameter(
                             name="result",
@@ -1380,7 +1380,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                             ),
                             Parameter(
                                 name="reportType",
-                                param_type="String",
+                                param_type="str",
                                 description="Specifies the type of report to generate, such as 'inventoryLevel', 'reordering', or 'expiryTracking'.",
                             ),
                             Parameter(
@@ -1401,12 +1401,12 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                             ),
                             Parameter(
                                 name="reportId",
-                                param_type="int?",
+                                param_type="int",
                                 description="The unique identifier of the newly created report. Null if 'success' is false.",
                             ),
                             Parameter(
                                 name="message",
-                                param_type="String",
+                                param_type="str",
                                 description="A message detailing the outcome of the request.",
                             ),
                         ],
@@ -1423,12 +1423,12 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     name="GetReportsRequest", description="GetReportsRequest", params=[]
                 ),
                 response_model=ResponseModel(
-                    name="GetReportsRequest",
-                    description="GetReportsRequest",
+                    name="GetReportsResponse",
+                    description="GetReportsResponse",
                     params=[
                         Parameter(
                             name="reports",
-                            param_type="list of ReportSummary",
+                            param_type="List[ReportSummary]",
                             description="A list of report summaries",
                         ),
                         Parameter(
@@ -1501,8 +1501,8 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="CreateIntegrationInput",
-                    description="CreateIntegrationInput",
+                    name="CreateIntegrationOutput",
+                    description="CreateIntegrationOutput",
                     params=[
                         Parameter(
                             name="success",
@@ -1574,8 +1574,8 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     params=[],
                 ),
                 response_model=ResponseModel(
-                    name="ListIntegrationsRequest",
-                    description="ListIntegrationsRequest",
+                    name="ListIntegrationsResponse",
+                    description="ListIntegrationsResponse",
                     params=[
                         Parameter(
                             name="integrations",
@@ -1637,8 +1637,8 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="CreateAlertInput",
-                    description="CreateAlertInput",
+                    name="CreateAlertOutput",
+                    description="CreateAlertOutput",
                     params=[
                         Parameter(
                             name="success",
@@ -1647,7 +1647,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                         ),
                         Parameter(
                             name="alertId",
-                            param_type="int?",
+                            param_type="int",
                             description="The ID of the newly created alert if successful.",
                         ),
                         Parameter(
@@ -1691,7 +1691,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                             ),
                             Parameter(
                                 name="alertId",
-                                param_type="int?",
+                                param_type="int",
                                 description="The unique identifier of the newly created alert, provided when 'success' is true.",
                             ),
                             Parameter(
@@ -1713,8 +1713,8 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     name="ListAlertsRequest", description="ListAlertsRequest", params=[]
                 ),
                 response_model=ResponseModel(
-                    name="ListAlertsRequest",
-                    description="ListAlertsRequest",
+                    name="ListAlertsResponse",
+                    description="ListAlertsResponse",
                     params=[
                         Parameter(
                             name="alerts",
@@ -1749,8 +1749,8 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="UserLoginInput",
-                    description="UserLoginInput",
+                    name="UserLoginOutput",
+                    description="UserLoginOutput",
                     params=[
                         Parameter(
                             name="success",
@@ -1759,7 +1759,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                         ),
                         Parameter(
                             name="token",
-                            param_type="str?",
+                            param_type="str",
                             description="JWT token generated for the session if login is successful.",
                         ),
                         Parameter(
@@ -1798,7 +1798,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                             ),
                             Parameter(
                                 name="token",
-                                param_type="str?",
+                                param_type="str",
                                 description="The authentication token provided upon successful login. Null if login failed.",
                             ),
                             Parameter(
@@ -1820,8 +1820,8 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     name="LogoutInput", description="LogoutInput", params=[]
                 ),
                 response_model=ResponseModel(
-                    name="LogoutInput",
-                    description="LogoutInput",
+                    name="LogoutOutput",
+                    description="LogoutOutput",
                     params=[
                         Parameter(
                             name="success",
@@ -1861,8 +1861,8 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="CheckPermissionsInput",
-                    description="CheckPermissionsInput",
+                    name="CheckPermissionsOutput",
+                    description="CheckPermissionsOutput",
                     params=[
                         Parameter(
                             name="userId",
@@ -1959,43 +1959,43 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="userId",
-                            param_type="String",
+                            param_type="str",
                             description="Identifier for the user who is creating the invoice.",
                         ),
                         Parameter(
                             name="items",
-                            param_type="Array<InvoiceItemInput>",
+                            param_type="List[InvoiceItemInput]",
                             description="Array of line items to be included in the invoice.",
                         ),
                         Parameter(
                             name="currency",
-                            param_type="String",
+                            param_type="str",
                             description="Currency in which the invoice is being issued.",
                         ),
                         Parameter(
                             name="taxRate",
-                            param_type="Float",
+                            param_type="float",
                             description="Tax rate applicable to the invoice, represented as a percentage.",
                         ),
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="InvoiceCreationRequest",
-                    description="InvoiceCreationRequest",
+                    name="InvoiceCreationResponse",
+                    description="InvoiceCreationResponse",
                     params=[
                         Parameter(
                             name="invoiceId",
-                            param_type="String",
+                            param_type="str",
                             description="Unique identifier for the newly created invoice.",
                         ),
                         Parameter(
                             name="status",
-                            param_type="String",
+                            param_type="str",
                             description="Status of the invoice after creation. Expected values are 'Draft' or 'Finalized'.",
                         ),
                         Parameter(
                             name="creationDate",
-                            param_type="DateTime",
+                            param_type="datetime",
                             description="Timestamp reflecting when the invoice was created.",
                         ),
                     ],
@@ -2008,22 +2008,22 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         params=[
                             Parameter(
                                 name="userId",
-                                param_type="String",
+                                param_type="str",
                                 description="The ID of the user creating the invoice.",
                             ),
                             Parameter(
                                 name="items",
-                                param_type="Array<InvoiceItemInput>",
+                                param_type="List[InvoiceItemInput]",
                                 description="A collection of line items including description, quantity, and price.",
                             ),
                             Parameter(
                                 name="currency",
-                                param_type="String",
+                                param_type="str",
                                 description="Currency code (e.g., USD, EUR) for the invoice.",
                             ),
                             Parameter(
                                 name="taxRate",
-                                param_type="Float",
+                                param_type="float",
                                 description="Applicable tax rate for the invoice, if any.",
                             ),
                         ],
@@ -2034,17 +2034,17 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         params=[
                             Parameter(
                                 name="description",
-                                param_type="String",
+                                param_type="str",
                                 description="Description of the line item.",
                             ),
                             Parameter(
                                 name="quantity",
-                                param_type="Integer",
+                                param_type="int",
                                 description="Quantity of the line item.",
                             ),
                             Parameter(
                                 name="price",
-                                param_type="Float",
+                                param_type="float",
                                 description="Price per unit of the line item.",
                             ),
                         ],
@@ -2063,7 +2063,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="id",
-                            param_type="String",
+                            param_type="str",
                             description="The unique identifier of the invoice to be edited.",
                         ),
                         Parameter(
@@ -2074,17 +2074,17 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="EditInvoiceInput",
-                    description="EditInvoiceInput",
+                    name="EditInvoiceOutput",
+                    description="EditInvoiceOutput",
                     params=[
                         Parameter(
                             name="success",
-                            param_type="Boolean",
+                            param_type="bool",
                             description="Indicates whether the edit operation was successful.",
                         ),
                         Parameter(
                             name="message",
-                            param_type="String",
+                            param_type="str",
                             description="A message describing the result of the operation, particularly useful in case of failure.",
                         ),
                         Parameter(
@@ -2123,17 +2123,17 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         params=[
                             Parameter(
                                 name="description",
-                                param_type="String",
+                                param_type="str",
                                 description="Description of the invoice item.",
                             ),
                             Parameter(
                                 name="quantity",
-                                param_type="Integer",
+                                param_type="int",
                                 description="Quantity of the item.",
                             ),
                             Parameter(
                                 name="price",
-                                param_type="Float",
+                                param_type="float",
                                 description="Price per unit of the item.",
                             ),
                             Parameter(
@@ -2163,8 +2163,8 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="GetInvoiceInput",
-                    description="GetInvoiceInput",
+                    name="GetInvoiceOutput",
+                    description="GetInvoiceOutput",
                     params=[
                         Parameter(
                             name="id",
@@ -2208,43 +2208,43 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="userId",
-                            param_type="String",
+                            param_type="str",
                             description="The unique identifier of the user whose invoices are to be listed.",
                         ),
                         Parameter(
                             name="page",
-                            param_type="Integer",
+                            param_type="int",
                             description="Pagination parameter, denotes the page number of the invoice list to be retrieved.",
                         ),
                         Parameter(
                             name="pageSize",
-                            param_type="Integer",
+                            param_type="int",
                             description="Pagination parameter, denotes the number of invoices to be listed per page.",
                         ),
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="ListInvoicesRequest",
-                    description="ListInvoicesRequest",
+                    name="ListInvoicesResponse",
+                    description="ListInvoicesResponse",
                     params=[
                         Parameter(
                             name="invoices",
-                            param_type="Array<InvoiceSummary>",
+                            param_type="List[InvoiceSummary]",
                             description="An array of invoice summary objects.",
                         ),
                         Parameter(
                             name="total",
-                            param_type="Integer",
+                            param_type="int",
                             description="Total number of invoices available for the user.",
                         ),
                         Parameter(
                             name="currentPage",
-                            param_type="Integer",
+                            param_type="int",
                             description="The current page number being returned in the response.",
                         ),
                         Parameter(
                             name="pageSize",
-                            param_type="Integer",
+                            param_type="int",
                             description="The number of invoices returned per page.",
                         ),
                     ],
@@ -2257,32 +2257,32 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         params=[
                             Parameter(
                                 name="invoiceId",
-                                param_type="String",
+                                param_type="str",
                                 description="Unique identifier for the invoice.",
                             ),
                             Parameter(
                                 name="invoiceNumber",
-                                param_type="String",
+                                param_type="str",
                                 description="The unique number associated with the invoice.",
                             ),
                             Parameter(
                                 name="status",
-                                param_type="String",
+                                param_type="str",
                                 description="Current status of the invoice (e.g., draft, finalized).",
                             ),
                             Parameter(
                                 name="totalAmount",
-                                param_type="Float",
+                                param_type="float",
                                 description="Total amount of the invoice, taking into account item prices and quantities.",
                             ),
                             Parameter(
                                 name="currency",
-                                param_type="String",
+                                param_type="str",
                                 description="The currency in which the invoice was issued.",
                             ),
                             Parameter(
                                 name="createdAt",
-                                param_type="DateTime",
+                                param_type="datetime",
                                 description="The date and time when the invoice was created.",
                             ),
                         ],
@@ -2301,28 +2301,28 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="invoiceId",
-                            param_type="String",
+                            param_type="str",
                             description="Unique ID of the invoice for which the payment is being initiated.",
                         ),
                         Parameter(
                             name="gatewayId",
-                            param_type="String",
+                            param_type="str",
                             description="Identifier of the payment gateway through which the payment will be processed.",
                         ),
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="PaymentInitiationRequest",
-                    description="PaymentInitiationRequest",
+                    name="PaymentInitiationResponse",
+                    description="PaymentInitiationResponse",
                     params=[
                         Parameter(
                             name="paymentId",
-                            param_type="String",
+                            param_type="str",
                             description="Unique identifier for the payment transaction, provided by the system.",
                         ),
                         Parameter(
                             name="status",
-                            param_type="String",
+                            param_type="str",
                             description="Status of the payment initiation, which could be 'Pending', 'Failed', or other relevant terms.",
                         ),
                     ],
@@ -2335,12 +2335,12 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         params=[
                             Parameter(
                                 name="invoiceId",
-                                param_type="String",
+                                param_type="str",
                                 description="The unique identifier for the invoice being paid.",
                             ),
                             Parameter(
                                 name="gatewayId",
-                                param_type="String",
+                                param_type="str",
                                 description="The identifier for the chosen payment gateway.",
                             ),
                         ],
@@ -2351,12 +2351,12 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         params=[
                             Parameter(
                                 name="paymentId",
-                                param_type="String",
+                                param_type="str",
                                 description="A unique identifier generated for the initiated payment.",
                             ),
                             Parameter(
                                 name="status",
-                                param_type="String",
+                                param_type="str",
                                 description="The status of the payment initiation, e.g., 'Pending', 'Failed'.",
                             ),
                         ],
@@ -2375,28 +2375,28 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="paymentId",
-                            param_type="String",
+                            param_type="str",
                             description="The unique identifier of the payment to be confirmed.",
                         ),
                         Parameter(
                             name="confirmationStatus",
-                            param_type="String",
+                            param_type="str",
                             description="Indicates the status of the payment confirmation attempt.",
                         ),
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="PaymentConfirmationRequest",
-                    description="PaymentConfirmationRequest",
+                    name="PaymentConfirmationResponse",
+                    description="PaymentConfirmationResponse",
                     params=[
                         Parameter(
                             name="success",
-                            param_type="Boolean",
+                            param_type="bool",
                             description="Boolean flag indicating if the payment confirmation was successful.",
                         ),
                         Parameter(
                             name="message",
-                            param_type="String",
+                            param_type="str",
                             description="A message providing more details on the confirmation status.",
                         ),
                         Parameter(
@@ -2414,12 +2414,12 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         params=[
                             Parameter(
                                 name="paymentId",
-                                param_type="String",
+                                param_type="str",
                                 description="Unique identifier for the payment to be confirmed.",
                             ),
                             Parameter(
                                 name="confirmationStatus",
-                                param_type="String",
+                                param_type="str",
                                 description="The status of the payment confirmation, e.g., 'Confirmed', 'Failed'.",
                             ),
                         ],
@@ -2430,12 +2430,12 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         params=[
                             Parameter(
                                 name="success",
-                                param_type="Boolean",
+                                param_type="bool",
                                 description="Indicates if the payment confirmation was successful.",
                             ),
                             Parameter(
                                 name="message",
-                                param_type="String",
+                                param_type="str",
                                 description="A descriptive message about the outcome of the payment confirmation.",
                             ),
                             Parameter(
@@ -2459,38 +2459,38 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="invoiceId",
-                            param_type="String",
+                            param_type="str",
                             description="Unique identifier for the invoice the reminder pertains to.",
                         ),
                         Parameter(
                             name="userId",
-                            param_type="String",
+                            param_type="str",
                             description="Unique identifier for the user associated with the invoice to send the notification to.",
                         ),
                         Parameter(
                             name="medium",
-                            param_type="String",
+                            param_type="str",
                             description="Preferred medium of notification (e.g., Email, SMS).",
                         ),
                         Parameter(
                             name="sendTime",
-                            param_type="DateTime",
+                            param_type="datetime",
                             description="Scheduled time for sending the reminder.",
                         ),
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="ReminderNotificationInput",
-                    description="ReminderNotificationInput",
+                    name="ReminderNotificationOutput",
+                    description="ReminderNotificationOutput",
                     params=[
                         Parameter(
                             name="success",
-                            param_type="Boolean",
+                            param_type="bool",
                             description="Indicates if the reminder was successfully sent.",
                         ),
                         Parameter(
                             name="message",
-                            param_type="String",
+                            param_type="str",
                             description="A descriptive message about the outcome of the attempt.",
                         ),
                     ],
@@ -2503,22 +2503,22 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         params=[
                             Parameter(
                                 name="invoiceId",
-                                param_type="String",
+                                param_type="str",
                                 description="Unique identifier for the invoice the reminder pertains to.",
                             ),
                             Parameter(
                                 name="userId",
-                                param_type="String",
+                                param_type="str",
                                 description="Unique identifier for the user associated with the invoice to send the notification to.",
                             ),
                             Parameter(
                                 name="medium",
-                                param_type="String",
+                                param_type="str",
                                 description="Preferred medium of notification (e.g., Email, SMS).",
                             ),
                             Parameter(
                                 name="sendTime",
-                                param_type="DateTime",
+                                param_type="datetime",
                                 description="Scheduled time for sending the reminder.",
                             ),
                         ],
@@ -2529,12 +2529,12 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         params=[
                             Parameter(
                                 name="success",
-                                param_type="Boolean",
+                                param_type="bool",
                                 description="Indicates if the reminder was successfully sent.",
                             ),
                             Parameter(
                                 name="message",
-                                param_type="String",
+                                param_type="str",
                                 description="A descriptive message about the outcome of the attempt.",
                             ),
                         ],
@@ -2553,34 +2553,34 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="userId",
-                            param_type="String",
+                            param_type="str",
                             description="The user's ID for whom the report is being generated.",
                         ),
                         Parameter(
                             name="reportType",
-                            param_type="String",
+                            param_type="str",
                             description="Specifies the type of financial report required.",
                         ),
                         Parameter(
                             name="startDate",
-                            param_type="DateTime",
+                            param_type="datetime",
                             description="The start date for the reporting period.",
                         ),
                         Parameter(
                             name="endDate",
-                            param_type="DateTime",
+                            param_type="datetime",
                             description="The end date for the reporting period.",
                         ),
                         Parameter(
                             name="filters",
-                            param_type="Array<String>",
+                            param_type="List[str]",
                             description="Optional filters to refine the report data.",
                         ),
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="GenerateReportInput",
-                    description="GenerateReportInput",
+                    name="GenerateReportOutput",
+                    description="GenerateReportOutput",
                     params=[
                         Parameter(
                             name="report",
@@ -2597,27 +2597,27 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         params=[
                             Parameter(
                                 name="userId",
-                                param_type="String",
+                                param_type="str",
                                 description="Unique identifier of the user requesting the report.",
                             ),
                             Parameter(
                                 name="reportType",
-                                param_type="String",
+                                param_type="str",
                                 description="Type of the report required (e.g., revenue_growth, expense_tracking).",
                             ),
                             Parameter(
                                 name="startDate",
-                                param_type="DateTime",
+                                param_type="datetime",
                                 description="Start date for the time frame of the report.",
                             ),
                             Parameter(
                                 name="endDate",
-                                param_type="DateTime",
+                                param_type="datetime",
                                 description="End date for the time frame of the report.",
                             ),
                             Parameter(
                                 name="filters",
-                                param_type="Array<String>",
+                                param_type="List[str]",
                                 description="List of additional filters to apply to the report data (optional).",
                             ),
                         ],
@@ -2628,22 +2628,22 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         params=[
                             Parameter(
                                 name="reportType",
-                                param_type="String",
+                                param_type="str",
                                 description="Type of the generated report.",
                             ),
                             Parameter(
                                 name="generatedAt",
-                                param_type="DateTime",
+                                param_type="datetime",
                                 description="Timestamp of when the report was generated.",
                             ),
                             Parameter(
                                 name="metrics",
-                                param_type="Array<ReportMetric>",
+                                param_type="List[ReportMetric]",
                                 description="A collection of metrics included in the report.",
                             ),
                             Parameter(
                                 name="insights",
-                                param_type="Array<String>",
+                                param_type="List[str]",
                                 description="List of insights derived from the report data.",
                             ),
                         ],
@@ -2654,22 +2654,22 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         params=[
                             Parameter(
                                 name="metricName",
-                                param_type="String",
+                                param_type="str",
                                 description="Name of the metric.",
                             ),
                             Parameter(
                                 name="value",
-                                param_type="Float",
+                                param_type="float",
                                 description="Quantitative value of the metric.",
                             ),
                             Parameter(
                                 name="unit",
-                                param_type="String",
+                                param_type="str",
                                 description="Unit of measurement for the metric.",
                             ),
                             Parameter(
                                 name="description",
-                                param_type="String",
+                                param_type="str",
                                 description="A brief description or insight related to the metric.",
                             ),
                         ],
@@ -2688,28 +2688,28 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="startDate",
-                            param_type="DateTime",
+                            param_type="datetime",
                             description="The start date for the range of financial data to consider.",
                         ),
                         Parameter(
                             name="endDate",
-                            param_type="DateTime",
+                            param_type="datetime",
                             description="The end date for the range of financial data to consider.",
                         ),
                         Parameter(
                             name="metrics",
-                            param_type="Array<String>",
+                            param_type="List[str]",
                             description="Optional. A list of specific financial metrics to retrieve insights for.",
                         ),
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="FinancialInsightsRequest",
-                    description="FinancialInsightsRequest",
+                    name="FinancialInsightsResponse",
+                    description="FinancialInsightsResponse",
                     params=[
                         Parameter(
                             name="insights",
-                            param_type="Array<FinancialInsight>",
+                            param_type="List[FinancialInsight]",
                             description="A collection of financial insights.",
                         )
                     ],
@@ -2722,22 +2722,22 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         params=[
                             Parameter(
                                 name="label",
-                                param_type="String",
+                                param_type="str",
                                 description="The name of the financial insight or metric.",
                             ),
                             Parameter(
                                 name="value",
-                                param_type="Float",
+                                param_type="float",
                                 description="The numerical value of the insight.",
                             ),
                             Parameter(
                                 name="trend",
-                                param_type="String",
+                                param_type="str",
                                 description="Indicates the trend of this metric (e.g., 'increasing', 'decreasing', 'stable').",
                             ),
                             Parameter(
                                 name="interpretation",
-                                param_type="String",
+                                param_type="str",
                                 description="A brief expert analysis or interpretation of what this insight suggests about the business's financial health.",
                             ),
                         ],
@@ -2756,28 +2756,28 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="updates",
-                            param_type="Array<SecuritySettingUpdate>",
+                            param_type="List[SecuritySettingUpdate]",
                             description="A list of security settings to update, each indicating the setting name and its new value.",
                         )
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="UpdateSecuritySettingsRequest",
-                    description="UpdateSecuritySettingsRequest",
+                    name="UpdateSecuritySettingsResponse",
+                    description="UpdateSecuritySettingsResponse",
                     params=[
                         Parameter(
                             name="success",
-                            param_type="Boolean",
+                            param_type="bool",
                             description="Indicates if the update operation was successful.",
                         ),
                         Parameter(
                             name="updatedSettings",
-                            param_type="Array<SecuritySettingUpdate>",
+                            param_type="List[SecuritySettingUpdate]",
                             description="A list of all settings that were successfully updated.",
                         ),
                         Parameter(
                             name="failedSettings",
-                            param_type="Array<SecuritySettingUpdate>",
+                            param_type="List[SecuritySettingUpdate]",
                             description="A list of settings that failed to update, with descriptions of the failure reasons.",
                         ),
                     ],
@@ -2790,12 +2790,12 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         params=[
                             Parameter(
                                 name="settingName",
-                                param_type="String",
+                                param_type="str",
                                 description="The name of the security setting to update.",
                             ),
                             Parameter(
                                 name="newValue",
-                                param_type="String",
+                                param_type="str",
                                 description="The new value for the security setting.",
                             ),
                         ],
@@ -2806,17 +2806,17 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         params=[
                             Parameter(
                                 name="success",
-                                param_type="Boolean",
+                                param_type="bool",
                                 description="Indicates if the update operation was successful.",
                             ),
                             Parameter(
                                 name="updatedSettings",
-                                param_type="Array<SecuritySettingUpdate>",
+                                param_type="List[SecuritySettingUpdate]",
                                 description="A list of all settings that were successfully updated.",
                             ),
                             Parameter(
                                 name="failedSettings",
-                                param_type="Array<SecuritySettingUpdate>",
+                                param_type="List[SecuritySettingUpdate]",
                                 description="A list of settings that failed to update, with descriptions of the failure reasons.",
                             ),
                         ],
@@ -2841,17 +2841,17 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="LogComplianceActionInput",
-                    description="LogComplianceActionInput",
+                    name="LogComplianceActionOutput",
+                    description="LogComplianceActionOutput",
                     params=[
                         Parameter(
                             name="success",
-                            param_type="Boolean",
+                            param_type="bool",
                             description="Indicates whether the logging was successful.",
                         ),
                         Parameter(
                             name="message",
-                            param_type="String",
+                            param_type="str",
                             description="A descriptive message regarding the outcome of the log attempt.",
                         ),
                     ],
@@ -2864,22 +2864,22 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         params=[
                             Parameter(
                                 name="actionType",
-                                param_type="String",
+                                param_type="str",
                                 description="The type of action performed, e.g., 'Data Update', 'View Sensitive Information', etc.",
                             ),
                             Parameter(
                                 name="description",
-                                param_type="String",
+                                param_type="str",
                                 description="A detailed description of the action performed.",
                             ),
                             Parameter(
                                 name="performedBy",
-                                param_type="String",
+                                param_type="str",
                                 description="Identifier for the user or system component that performed the action.",
                             ),
                             Parameter(
                                 name="timestamp",
-                                param_type="DateTime",
+                                param_type="datetime",
                                 description="Timestamp when the action was performed.",
                             ),
                         ],
@@ -2904,22 +2904,22 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     ],
                 ),
                 response_model=ResponseModel(
-                    name="PaymentGatewayConnectionRequest",
-                    description="PaymentGatewayConnectionRequest",
+                    name="PaymentGatewayConnectionResponse",
+                    description="PaymentGatewayConnectionResponse",
                     params=[
                         Parameter(
                             name="success",
-                            param_type="Boolean",
+                            param_type="bool",
                             description="Indicates if the connection attempt was successful.",
                         ),
                         Parameter(
                             name="message",
-                            param_type="String",
+                            param_type="str",
                             description="Provides more detail on the connection status, including errors if any.",
                         ),
                         Parameter(
                             name="gatewayId",
-                            param_type="optional<String>",
+                            param_type="Optional[str]",
                             description="The unique identifier for the gateway in the system, provided upon a successful connection.",
                         ),
                     ],
@@ -2932,17 +2932,17 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         params=[
                             Parameter(
                                 name="gatewayName",
-                                param_type="String",
+                                param_type="str",
                                 description="The name of the payment gateway to connect.",
                             ),
                             Parameter(
                                 name="apiKey",
-                                param_type="String",
+                                param_type="str",
                                 description="The API key provided by the payment gateway for authentication.",
                             ),
                             Parameter(
                                 name="apiSecret",
-                                param_type="String",
+                                param_type="str",
                                 description="The API secret or other credentials required for secure access.",
                             ),
                         ],

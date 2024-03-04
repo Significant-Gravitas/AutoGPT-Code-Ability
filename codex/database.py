@@ -16,22 +16,32 @@ from codex.common import test_const
 
 
 async def create_test_data():
-    user_id_1 = test_const.user_id_1
-    user_id_2 = test_const.user_id_2
-
+    # user_id_1 = test_const.user_id_1
+    # user_id_2 = test_const.user_id_2
+    user_1 = test_const.identifier_1
+    user_1_discord = test_const.discord_id_1
+    user_2 = test_const.identifier_2
+    user_2_discord = test_const.discord_id_2
     await User.prisma().create_many(
         [
             UserCreateWithoutRelationsInput(
-                id=user_id_1,
-                cloudServicesId="123456789",
-                discordId="123456788",
+                id=user_1.user_id,
+                cloudServicesId=user_1.cloud_services_id,
+                discordId=user_1_discord,
                 role=Role.ADMIN,
                 deleted=False,
             ),
             UserCreateWithoutRelationsInput(
-                id=user_id_2,
-                cloudServicesId="234567890",
-                discordId="234567891",
+                id=user_2.user_id,
+                cloudServicesId=user_2.cloud_services_id,
+                discordId=user_2_discord,
+                role=Role.USER,
+                deleted=False,
+            ),
+            UserCreateWithoutRelationsInput(
+                id=test_const.user_id_3,
+                cloudServicesId=test_const.cloud_services_id_3,
+                discordId=test_const.discord_id_3,
                 role=Role.USER,
                 deleted=False,
             ),
@@ -45,77 +55,77 @@ async def create_test_data():
                 "name": "Availability Checker",
                 "deleted": False,
                 "id": test_const.app_id_1,
-                "userId": user_id_1,
+                "userId": user_1.user_id,
                 "updatedAt": datetime.now(),
             },
             {
                 "name": "Invoice Generator",
                 "deleted": False,
                 "id": test_const.app_id_2,
-                "userId": user_id_1,
+                "userId": user_1.user_id,
                 "updatedAt": datetime.now(),
             },
             {
                 "name": "Appointment Optimization Tool",
                 "deleted": False,
                 "id": test_const.app_id_3,
-                "userId": user_id_1,
+                "userId": user_1.user_id,
                 "updatedAt": datetime.now(),
             },
             {
                 "name": "Distance Calculator",
                 "deleted": False,
                 "id": test_const.app_id_4,
-                "userId": user_id_1,
+                "userId": user_1.user_id,
                 "updatedAt": datetime.now(),
             },
             {
                 "name": "Profile Management System",
                 "deleted": False,
                 "id": test_const.app_id_5,
-                "userId": user_id_1,
+                "userId": user_1.user_id,
                 "updatedAt": datetime.now(),
             },
             {
                 "name": "Calendar Booking System",
                 "deleted": False,
                 "id": test_const.app_id_6,
-                "userId": user_id_1,
+                "userId": user_1.user_id,
                 "updatedAt": datetime.now(),
             },
             {
                 "name": "Inventory Management System",
                 "deleted": False,
                 "id": test_const.app_id_7,
-                "userId": user_id_1,
+                "userId": user_1.user_id,
                 "updatedAt": datetime.now(),
             },
             {
                 "name": "Invoice Payment Tracking",
                 "deleted": False,
                 "id": test_const.app_id_8,
-                "userId": user_id_1,
+                "userId": user_1.user_id,
                 "updatedAt": datetime.now(),
             },
             {
                 "name": "Survey Tool",
                 "deleted": False,
                 "id": test_const.app_id_9,
-                "userId": user_id_2,
+                "userId": user_1.user_id,
                 "updatedAt": datetime.now(),
             },
             {
                 "name": "Scurvey Tool",
                 "deleted": True,
                 "id": test_const.app_id_10,
-                "userId": user_id_2,
+                "userId": user_1.user_id,
                 "updatedAt": datetime.now(),
             },
             {
                 "name": "TicTacToe Game",
                 "deleted": False,
                 "id": test_const.app_id_11,
-                "userId": user_id_2,
+                "userId": user_2.user_id,
                 "updatedAt": datetime.now(),
             },
         ]
@@ -195,7 +205,8 @@ async def get_app_by_id(user_id: str, app_id: str) -> ApplicationResponse:
             "id": app_id,
             "userId": user_id,
             "deleted": False,
-        }
+        },
+        include={"User": True},
     )
     assert app.userId, "Application not found"
 
@@ -205,6 +216,7 @@ async def get_app_by_id(user_id: str, app_id: str) -> ApplicationResponse:
         updatedAt=app.updatedAt,
         name=app.name,
         userid=app.userId,
+        cloud_services_id=app.User.cloudServicesId if app.User else "",
     )
 
 
@@ -213,7 +225,8 @@ async def create_app(user_id: str, app_data: ApplicationCreate) -> ApplicationRe
         data={
             "name": app_data.name,
             "userId": user_id,
-        }
+        },
+        include={"User": True},
     )
 
     assert app.userId, "Application not found"
@@ -224,6 +237,7 @@ async def create_app(user_id: str, app_data: ApplicationCreate) -> ApplicationRe
         updatedAt=app.updatedAt,
         name=app.name,
         userid=app.userId,
+        cloud_services_id=app.User.cloudServicesId if app.User else "",
     )
 
 
@@ -245,7 +259,10 @@ async def list_apps(
         where={"userId": user_id, "deleted": False}
     )
     apps = await Application.prisma().find_many(
-        where={"userId": user_id, "deleted": False}, skip=skip, take=page_size
+        where={"userId": user_id, "deleted": False},
+        include={"User": True},
+        skip=skip,
+        take=page_size,
     )
     if apps:
         total_pages = (total_items + page_size - 1) // page_size
@@ -257,6 +274,7 @@ async def list_apps(
                 updatedAt=app.updatedAt,
                 name=app.name,
                 userid=app.userId if app.userId else "",
+                cloud_services_id=app.User.cloudServicesId if app.User else "",
             )
             for app in apps
         ]

@@ -169,7 +169,7 @@ async def develop_route(
         ]
         await asyncio.gather(*tasks)
     else:
-        logger.info(f"❌ No child functions to develop")
+        logger.info(f"📦 No child functions to develop")
         logger.debug(route_function.rawCode)
     return route_function
 

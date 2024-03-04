@@ -18,12 +18,7 @@ from prisma.types import (
 import codex.database
 import codex.deploy.agent as deploy_agent
 import codex.deploy.database
-from codex.api_model import (
-    DeploymentMetadata,
-    DeploymentResponse,
-    DeploymentsListResponse,
-    Identifiers,
-)
+from codex.api_model import DeploymentResponse, DeploymentsListResponse, Identifiers
 
 logger = logging.getLogger(__name__)
 
@@ -58,14 +53,22 @@ async def create_deployment(
                                 **{"include": {"Fields": True}}
                             ),
                         )
-                    )
+                    ),
+                    RootFunction={  # type: ignore
+                        "include": {
+                            "FunctionArgs": {"include": {"Type": True}},
+                            "FunctionReturn": {"include": {"Type": True}},
+                        }
+                    },
                 )
-            )
+            ),
         )
         completedApp = await CompletedApp.prisma().find_unique(
             where={"id": deliverable_id},
             include=include,
         )
+
+        user = await codex.database.get_user(user_id)
 
         if not completedApp:
             raise ValueError(f"Completed app {deliverable_id} not found")
@@ -76,6 +79,7 @@ async def create_deployment(
             app_id=app_id,
             spec_id=spec_id,
             completed_app_id=deliverable_id,
+            cloud_services_id=user.cloudServicesId if user else "",
         )
 
         deployment = await deploy_agent.create_deployment(ids, completedApp)
@@ -87,7 +91,7 @@ async def create_deployment(
             file_size=deployment.fileSize,
         )
     except Exception as e:
-        logger.error(f"Error creating deployment: {e}")
+        logger.exception(f"Error creating deployment: {e}")
         # File upload handling and metadata storage implementation goes here
         return Response(
             content=json.dumps(

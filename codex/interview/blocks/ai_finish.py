@@ -6,8 +6,12 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
+from codex.common.ai_model import OpenAIChatClient
 from codex.common.logging_config import setup_logging
-from codex.requirements.model import InterviewMessageWithResponse
+from codex.interview.model import (
+    InterviewMessageWithResponse,
+    InterviewMessageWithResponseOptionalId,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +30,7 @@ class FinishBlock(AIBlock):
     # Should we force the LLM to reply in JSON
     is_json_response = True
     # If we are using is_json_response, what is the response model
-    pydantic_object = InterviewMessageWithResponse
+    pydantic_object = InterviewMessageWithResponseOptionalId
 
     def validate(
         self, invoke_params: dict, response: ValidatedResponse
@@ -37,8 +41,10 @@ class FinishBlock(AIBlock):
         blocks this is much more complex. If validation failes it triggers a retry.
         """
         try:
-            model: InterviewMessageWithResponse = (
-                InterviewMessageWithResponse.model_validate_json(response.response)
+            model: InterviewMessageWithResponseOptionalId = (
+                InterviewMessageWithResponseOptionalId.model_validate_json(
+                    response.response
+                )
             )
             response.response = model
         except Exception as e:
@@ -63,73 +69,84 @@ if __name__ == "__main__":
     """
     from asyncio import run
 
-    from openai import AsyncOpenAI
     from prisma import Prisma
 
     from codex.common.test_const import identifier_1
 
     ids = identifier_1
+
+    setup_logging(local=True)
+
     db_client = Prisma(auto_register=True)
-    oai = AsyncOpenAI()
+    OpenAIChatClient.configure({})
 
-    finish_block = FinishBlock(
-        oai_client=oai,
-    )
+    finish_block = FinishBlock()
 
-    async def run_ai() -> dict[str, InterviewMessageWithResponse]:
+    async def run_ai() -> dict[str, InterviewMessageWithResponseOptionalId]:
         await db_client.connect()
         memory: list[InterviewMessageWithResponse] = [
             InterviewMessageWithResponse(
+                id="129e8e9e-501f-4f3e-8f3e-6f88e3e1e0e8",
                 tool="ask",
                 content="How do you currently manage your tutoring appointments and invoices?",
                 response="I currently use a combination of Google Calendar and a spreadsheet to manage my tutoring appointments and invoices. I manually create appointments in Google Calendar and then manually create invoices in a spreadsheet. It is a very manual process and I am looking for a more automated solution.",
             ),
             InterviewMessageWithResponse(
+                id="129e8e9e-501f-4f3e-8f3e-6f88e3e1e0e9",
                 tool="ask",
                 content="Do you prefer signing up with OAuth2 providers or traditional sign-in methods for your applications?",
                 response="I prefer signing up with OAuth2 providers. It is more convenient and secure. However, I also need the option for traditional sign-in methods for users who do not want to use OAuth2.",
             ),
             InterviewMessageWithResponse(
+                id="129e8e9e-501f-4b3e-8f3e-6f88e3e1e0e9",
                 tool="ask",
                 content="What security measures do you expect for traditional sign-in methods?",
                 response="For traditional sign-in methods, I expect strong password requirements, secure password storage, and the ability to reset passwords if needed.",
             ),
             InterviewMessageWithResponse(
+                id="129e8e9e-501f-4b3e-8f3e-6f88e3e1e0e2",
                 tool="ask",
                 content="How do you distinguish between clients and tutors in your current system?",
                 response="In my current system, I am the only tutor, so I do not need to distinguish between clients and tutors. However, in the future, I may need to be able to distinguish between clients and tutors.",
             ),
             InterviewMessageWithResponse(
+                id="129e879e-501f-4b3e-8f3e-6f88e3e1e0e3",
                 tool="ask",
                 content="How important is financial management, such as invoice management and payment tracking, in your tutoring activities?",
                 response="Financial management is very important to me. I need to be able to easily create and send invoices, track payments, and generate reports on my tutoring income.",
             ),
             InterviewMessageWithResponse(
+                id="129e8e9e-501f-4b3e-8f3e-6f88e3e1e0e4",
                 tool="ask",
                 content="Do you need detailed reports on your tutoring income, and how often do you usually review these reports?",
                 response="I need detailed reports on my tutoring income, including paid/failed invoice notifications, unpaid invoice follow-up, and summarizing d/w/m/y income. I review these reports monthly.",
             ),
             InterviewMessageWithResponse(
+                id="129e8e9e-501f-4b3e-8f3e-6f88e3e1e0e5",
                 tool="search",
                 content="best practices for implementing OAuth2 in mobile applications",
                 response="Best practices for implementing OAuth2 in mobile applications include using secure and well-maintained libraries, following the OAuth2 specification, and using secure token storage and transmission.",
             ),
             InterviewMessageWithResponse(
+                id="129e8e9e-501f-4b3e-8f3e-6f88e3e1e0e6",
                 tool="search",
                 content="secure password storage and reset methodologies",
                 response="Secure password storage and reset methodologies include using strong hashing algorithms, salting passwords, and implementing multi-factor authentication. Password reset methodologies include using secure token-based reset links and requiring additional verification before resetting a password.",
             ),
             InterviewMessageWithResponse(
+                id="129e8e9e-501f-4b3e-8f3e-6f88e3e1e0e7",
                 tool="ask",
                 content="How important is the feature of scheduling, rescheduling, and canceling appointments for you?",
                 response="Scheduling, rescheduling, and canceling appointments is very important for me. I have a very busy schedule and need to be able to easily manage my appointments.",
             ),
             InterviewMessageWithResponse(
+                id="129e8e9e-501f-4b3e-8f3e-6f88e3e1e0e8",
                 tool="ask",
                 content="Do you need the ability to set up recurring appointments?",
                 response="Yes, I need the ability to set up recurring appointments. I have many clients who have regular tutoring sessions with me.",
             ),
             InterviewMessageWithResponse(
+                id="129e8e9e-501f-4b3e-8f3e-6f88e3e1e0e9",
                 tool="search",
                 content="Financial management tools for freelancers",
                 response="Financial management tools for freelancers include FreshBooks, QuickBooks Self-Employed, and Wave. These tools can help freelancers create and send invoices, track payments, and generate reports on their income.",
@@ -150,12 +167,14 @@ The financial management aspect, a critical component, will be designed to emula
 
 In summary, The Tutor App aims to offer a comprehensive solution to the administrative challenges faced by tutors, emphasizing ease of use, security, and efficient management of appointments and finances."""
 
-        response_ref: InterviewMessageWithResponse = await finish_block.invoke(
-            ids=ids,
-            invoke_params={
-                "content": content,
-                "memory": memory,
-            },
+        response_ref: InterviewMessageWithResponseOptionalId = (
+            await finish_block.invoke(
+                ids=ids,
+                invoke_params={
+                    "content": content,
+                    "memory": memory,
+                },
+            )
         )
 
         await db_client.disconnect()
@@ -166,7 +185,7 @@ In summary, The Tutor App aims to offer a comprehensive solution to the administ
     responses = run(run_ai())
 
     for key, item in responses.items():
-        if isinstance(item, InterviewMessageWithResponse):
+        if isinstance(item, InterviewMessageWithResponseOptionalId):
             logger.info(f"\t{item.tool}: {item.content}: {item.response}")
         else:
             logger.info(f"????")
@@ -176,5 +195,4 @@ In summary, The Tutor App aims to offer a comprehensive solution to the administ
     # import IPython
 
     # IPython.embed()
-    breakpoint()
     breakpoint()
