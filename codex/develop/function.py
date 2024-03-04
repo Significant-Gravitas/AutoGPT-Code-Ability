@@ -10,7 +10,7 @@ from codex.develop.model import FunctionDef
 
 
 def construct_function(
-        function: FunctionDef, available_types: dict[str, ObjectType]
+    function: FunctionDef, available_types: dict[str, ObjectType]
 ) -> FunctionCreateInput:
     input = FunctionCreateInput(
         functionName=function.name,
@@ -30,7 +30,8 @@ def construct_function(
                 "description": function.return_desc,
                 "typeName": function.return_type,
                 "typeId": available_types[function.return_type].id
-                if function.return_type in available_types else None,
+                if function.return_type in available_types
+                else None,
             }
         }
 
@@ -42,7 +43,8 @@ def construct_function(
                     "description": function.arg_descs.get(name, "-"),
                     "typeName": type,
                     "typeId": available_types[type].id
-                    if type in available_types else None,
+                    if type in available_types
+                    else None,
                 }
                 for name, type in function.arg_types
             ]
