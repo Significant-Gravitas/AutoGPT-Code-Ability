@@ -104,7 +104,7 @@ if __name__ == "__main__":
         if isinstance(item, InterviewMessageWithResponseOptionalId):
             logger.info(f"\t{item.tool}: {item.content}: {item.response}")
         else:
-            logger.info(f"????")
+            logger.info("????")
             breakpoint()
 
     # # If you want to test the block in an interactive environment

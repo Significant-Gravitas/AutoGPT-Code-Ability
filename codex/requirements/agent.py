@@ -395,9 +395,9 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
         context=running_state_obj.project_description,
         api_routes=api_routes,
     )
-    logger.info(f"Full Spec Done")
+    logger.info("Full Spec Done")
     saved_spec: Specification = await create_spec(ids, full_spec)
-    logger.info(f"Saved Spec Done")
+    logger.info("Saved Spec Done")
     # Step 8) Return the application requirements
     return saved_spec
 

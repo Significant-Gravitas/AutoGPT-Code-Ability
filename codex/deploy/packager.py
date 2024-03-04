@@ -3,7 +3,6 @@ import logging
 import os
 import tempfile
 import zipfile
-from collections import defaultdict
 from typing import List
 from pipreqs import pipreqs
 

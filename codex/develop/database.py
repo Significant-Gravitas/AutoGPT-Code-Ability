@@ -2,7 +2,7 @@ from typing import List, Tuple
 
 from prisma.models import CompletedApp
 
-from codex.api_model import DeliverableResponse, DeliverablesListResponse, Pagination
+from codex.api_model import Pagination
 
 
 async def get_deliverable(
