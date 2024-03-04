@@ -321,7 +321,7 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
     )
     func_args_names = set([arg.name for arg in args])
     if not set(path_params).issubset(func_args_names):
-        logger.error(
+        logger.warning(
              f"Path parameters {path_params} not in function arguments {func_args_names}"
         )
     #     raise ComplicationFailure(
