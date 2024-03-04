@@ -56,7 +56,7 @@ async def fetch_deliverable(session, user_id, app_id):
     spec_id = spec.id
     click.echo(f"Developing the application for {spec.name}")
     url = f"http://127.0.0.1:8000/api/v1/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/"
-    async with session.post(url, timeout=600) as response:
+    async with session.post(url, timeout=1200) as response:
         try:
             creation_time = datetime.now()
             click.echo(f"Development took {creation_time - start_time}")
