@@ -14,7 +14,9 @@ from codex.deploy.model import Application
 logger = logging.getLogger(__name__)
 
 
-def generate_requirements_txt(packages: List[Package], pipreq_pacakages: List[str]) -> str:
+def generate_requirements_txt(
+    packages: List[Package], pipreq_pacakages: List[str]
+) -> str:
     requirements = set(pipreq_pacakages)
 
     for package in packages:
@@ -88,7 +90,9 @@ def create_zip_file(application: Application) -> bytes:
 
             packages = ""
             if application.packages:
-                packages = generate_requirements_txt(application.packages, pipreq_pacakages)
+                packages = generate_requirements_txt(
+                    application.packages, pipreq_pacakages
+                )
 
             os.remove(requirements_file_path)
 

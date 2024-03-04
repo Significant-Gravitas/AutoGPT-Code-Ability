@@ -167,7 +167,7 @@ def make_turn(request: TurnRequest) -> GameStateResponse:
         # Resetting the game if not in progress
         current_game['board'] = [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']
         current_game['state'] = 'In Progress'
-        
+
     index = (request.row - 1) * 3 + (request.column - 1)
     if current_game['board'][index] == ' ':
         current_game['board'][index] = current_game['turn']
