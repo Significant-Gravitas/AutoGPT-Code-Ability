@@ -126,14 +126,14 @@ async def create_object_type(
         }
         if isinstance(field.type, ObjectTypeModel):
             available_objects = await create_object_type(field.type, available_objects)
-            field_type = field.type.name
+            field_input["typeName"] = field.type.name
         else:
-            field_type = field.type
+            field_input["typeName"] = field.type
 
-        field_input["typeName"] = field.type
         related_field = extract_field_type(field.type)
         if related_field in available_objects:
-            field["typeId"] = available_objects[related_field].id
+            field_input["typeId"] = available_objects[related_field].id
+
         field_inputs.append(field_input)
 
     available_objects[object.name] = await ObjectType.prisma().create(
