@@ -7,7 +7,6 @@ from typing import List, Set
 import black
 import isort
 from prisma.models import (
-    APIRouteSpec,
     CompiledRoute,
     CompletedApp,
     Function,
@@ -16,7 +15,7 @@ from prisma.models import (
     Package,
     Specification,
 )
-from prisma.types import CompiledRouteCreateInput, CompletedAppCreateInput
+from prisma.types import CompiledRouteUpdateInput, CompletedAppCreateInput
 from pydantic import BaseModel
 
 from codex.api_model import Identifiers
@@ -36,20 +35,15 @@ class ComplicationFailure(Exception):
     pass
 
 
-async def compile_route(
-    ids: Identifiers, route_root_func: Function, api_route: APIRouteSpec
-) -> CompiledRoute:
+async def compile_route(compiled_route_id: str, route_root_func: Function) -> CompiledRoute:
     """
     Compiles a route by generating a CompiledRoute object.
 
     Args:
-        ids (Identifiers): The identifiers used in the route.
+        compiled_route_id (str): The ID of the compiled route.
         route_root_func (Function): The root function of the route.
-        api_route (APIRouteSpec): The specification of the API route.
-
     Returns:
         CompiledRoute: The compiled route object.
-
     """
     compiled_function = await recursive_compile_route(route_root_func)
 
@@ -66,16 +60,14 @@ async def compile_route(
     except Exception as e:
         logger.exception(f"Error formatting code: {e}")
         raise ComplicationFailure(f"Error formatting code: {e}")
-    data = CompiledRouteCreateInput(
-        description=api_route.description,
+    data = CompiledRouteUpdateInput(
         Packages={"connect": [{"id": package_id} for package_id in unique_packages]},
-        fileName=api_route.functionName + "_service.py",
-        mainFunctionName=route_root_func.functionName,
         compiledCode=formatted_code,
-        RootFunction={"connect": {"id": route_root_func.id}},
-        ApiRouteSpec={"connect": {"id": api_route.id}},
     )
-    compiled_route = await CompiledRoute.prisma().create(data)
+    compiled_route = await CompiledRoute.prisma().update(
+        where={"id": compiled_route_id},
+        data=data
+    )
     return compiled_route
 
 
@@ -104,9 +96,8 @@ async def recursive_compile_route(
             "ParentFunction": True,
             "FunctionArgs": True,
             "FunctionReturn": True,
-            "ChildFunction": {
+            "ChildFunctions": {
                 "include": {
-                    "ApiRouteSpec": True,
                     "FunctionArgs": True,
                     "FunctionReturn": True,
                 }
@@ -120,17 +111,13 @@ async def recursive_compile_route(
     if function.FunctionArgs is not None:
         for arg in function.FunctionArgs:
             pydantic_models.append(await process_object_field(arg, new_object_types))
-    else:
-        raise ValueError(f"Function {function.functionName} has no arguments.")
 
     if function.FunctionReturn is not None:
         pydantic_models.append(
             await process_object_field(function.FunctionReturn, new_object_types)
         )
-    else:
-        raise ValueError(f"Function {function.functionName} has no return type.")
 
-    if function.ChildFunction is None:
+    if function.ChildFunctions is None:
         packages = []
         if function.Packages:
             packages = function.Packages
@@ -155,7 +142,7 @@ async def recursive_compile_route(
         packages = []
         imports = []
         code = ""
-        for child_function in function.ChildFunction:
+        for child_function in function.ChildFunctions:
             compiled_function = await recursive_compile_route(
                 child_function, new_object_types
             )
@@ -271,18 +258,18 @@ async def process_object_field(field: ObjectField, object_type_ids: Set[str]) ->
     return pydantic_classes
 
 
-def create_server_route_code(complied_route: CompiledRoute) -> str:
+def create_server_route_code(compiled_route: CompiledRoute) -> str:
     """
     Create the server route code for a compiled route.
 
     Args:
-        complied_route (CompiledRoute): The compiled route to create the
+        compiled_route (CompiledRoute): The compiled route to create the
                                         server route code for.
 
     Returns:
         str: The server route code.
     """
-    main_function = complied_route.RootFunction
+    main_function = compiled_route.RootFunction
 
     if main_function is None:
         raise ValueError("Compiled route must have a root function.")
@@ -292,7 +279,7 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
     args = main_function.FunctionArgs
     assert args is not None, "Compiled route must have function arguments."
 
-    route_spec = complied_route.ApiRouteSpec
+    route_spec = compiled_route.ApiRouteSpec
     assert route_spec is not None, "Compiled route must have an API route spec."
 
     is_file_response = False

@@ -11,8 +11,6 @@ from codex.develop import agent
 from codex.requirements.database import get_latest_specification
 
 load_dotenv()
-
-
 OpenAIChatClient.configure({})
 setup_logging(local=True)
 
@@ -105,10 +103,10 @@ class TurnRequest(BaseModel):
 
     Args:
         row (int): The row in which the move is made, value should be between 1 and 3 inclusively.
-        column (int): The column in which the move is made, value should be between 1 and 3 inclusively.
+        col (int): The column in which the move is made, value should be between 1 and 3 inclusively.
     \"\"\"
     row: int
-    column: int
+    col: int
 
 class GameStateResponse(BaseModel):
     \"\"\"
@@ -124,15 +122,24 @@ class GameStateResponse(BaseModel):
     turn: str
     state: str
     board: str
+    
+class Board(BaseModel):
+    size: int
+    cells: List[str]
+    
+    def __init__(self, size: int):
+        self.size = size
+        self.cells = [' ' for _ in range(size ** 2)]
 
-current_game: Dict[str, str] = {'gameId': '1', 'turn': 'X', 'state': 'In Progress', 'board': [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']}
 
-def check_win_or_draw(board: list) -> str:
+current_game: Dict[str, str] = {'gameId': '1', 'turn': 'X', 'state': 'In Progress', 'board': Board(3)}
+
+def check_win_or_draw(board: Board) -> str:
     \"\"\"
     Determines the current state of the Tic-Tac-Toe game board, whether it's a win, draw, or still in progress.
 
     Args:
-        board (list): The current state of the game board as a list of 9 strings.
+        board (Board): The current game board.
 
     Returns:
         str: The game status, being either 'Win', 'Loss', 'Draw', or 'In Progress'.
@@ -143,35 +150,38 @@ def check_win_or_draw(board: list) -> str:
         (0, 4, 8), (2, 4, 6)  # Diagonal
     ]
 
+    cells = board.cells
     for condition in win_conditions:
-        if board[condition[0]] == board[condition[1]] == board[condition[2]] != ' ':
+        if cells[condition[0]] == cells[condition[1]] == cells[condition[2]] != ' ':
             return 'Win' if current_game['turn'] == 'X' else 'Loss'
 
-    if ' ' not in board:
+    if ' ' not in cells:
         return 'Draw'
 
     return 'In Progress'
 
-def make_turn(request: TurnRequest) -> GameStateResponse:
+def make_turn(row: int, col: int) -> GameStateResponse:
     \"\"\"
     Processes a player's move in the Tic-Tac-Toe game and returns the current state of the game.
 
     Args:
-        request (TurnRequest): Contains the details of the player's move (row and column).
+        row (int): The row in which the move is made, value should be between 1 and 3 inclusively.
+        col (int): The column in which the move is made, value should be between 1 and 3 inclusively.
 
     Returns:
         GameStateResponse: The current state of the game after processing the move.
     \"\"\"
     global current_game  # Necessary for modifying the global variable
+    cells = current_game['board'].cells
 
     if not current_game['state'] == 'In Progress':
         # Resetting the game if not in progress
-        current_game['board'] = [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']
+        cells = [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']
         current_game['state'] = 'In Progress'
 
-    index = (request.row - 1) * 3 + (request.column - 1)
-    if current_game['board'][index] == ' ':
-        current_game['board'][index] = current_game['turn']
+    index = (row - 1) * 3 + (col - 1)
+    if cells[index] == ' ':
+        cells[index] = current_game['turn']
 
         # Check the game state after the move
         current_game['state'] = check_win_or_draw(current_game['board'])
@@ -179,7 +189,7 @@ def make_turn(request: TurnRequest) -> GameStateResponse:
         # Switch turns
         current_game['turn'] = 'O' if current_game['turn'] == 'X' else 'X'
 
-    board_str = '\\n'.join([' '.join(current_game['board'][i:i+3]) for i in range(0, 9, 3)])
+    board_str = '\\n'.join([' '.join(cells[i:i+3]) for i in range(0, 9, 3)])
 
     return GameStateResponse(**current_game, board=board_str)
 ```
@@ -188,7 +198,7 @@ def make_turn(request: TurnRequest) -> GameStateResponse:
 
 WITH_NESTED_FUNCTION_RESPONSE = """
 ```python
-def make_turn(request: TurnRequest) -> GameStateResponse:
+def make_turn(row: int, col: int) -> GameStateResponse:
     def nested_function():
         pass
     return GameStateResponse()
@@ -203,35 +213,35 @@ global_here = 1
 def dependency_function():
     return
 
-def make_turn(request: TurnRequest) -> GameStateResponse:
+def make_turn(row: int, col: int) -> GameStateResponse:
     return GameStateResponse()
 ```
 """
 
 WITH_UNIMPLEMENTED_FUNCTION_RESPONSE = """
 ```python
-def make_turn(request: TurnRequest) -> GameStateResponse:
+def make_turn(row: int, col: int) -> GameStateResponse:
     pass
 ```
 """
 
 WITH_MISMATCHING_ARGUMENTS_RESPONSE = """
 ```python
-def make_turn(turn: int, request: TurnRequest) -> GameStateResponse:
+def make_turn(turn: int, row: int, col: int) -> GameStateResponse:
     return GameStateResponse()
 ```
 """
 
 WITH_MISMATCHING_RETURN_TYPE_RESPONSE = """
 ```python
-def make_turn(request: TurnRequest) -> int:
+def make_turn(row: int, col: int) -> int:
     return 1
 ```
 """
 
 SIMPLE_RESPONSE = """
 ```python
-def make_turn(request: TurnRequest) -> GameStateResponse:
+def make_turn(row: int, col: int) -> GameStateResponse:
     return GameStateResponse()
 ```
 """

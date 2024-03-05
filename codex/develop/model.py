@@ -1,6 +1,5 @@
 from typing import Dict, List
 
-from prisma.models import APIRouteSpec
 from prisma.models import Function as FunctionDBModel
 from prisma.models import ObjectType
 from pydantic import BaseModel
@@ -65,8 +64,8 @@ class GeneratedFunctionResponse(BaseModel):
     function_id: str | None = None
 
     function_name: str
-    api_route_spec: APIRouteSpec
-    available_objects: List[ObjectType]
+    compiled_route_id: str
+    available_objects: dict[str, ObjectType]
     template: str
 
     rawCode: str

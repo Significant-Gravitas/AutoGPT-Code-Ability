@@ -29,7 +29,7 @@ def availability_checker_requirements() -> ApplicationRequirements:
             ),
             Parameter(
                 name="schedule_data",
-                param_type="List[Tuple[datetime, datetime]]",
+                param_type="list[tuple[datetime, datetime]]",
                 description="A list of tuples representing the schedule of the professional, where each tuple contains start and end times of appointments or busy periods.",
             ),
         ],
@@ -70,12 +70,12 @@ def availability_checker_requirements() -> ApplicationRequirements:
 def invoice_generator_requirements() -> ApplicationRequirements:
     # Define request and response models here
     invoice_model = RequestModel(
-        name="invoicemodel",
+        name="InvoiceRequest",
         description="An object used to generte an invoice",
         params=[
             Parameter(
                 name="services_rendered",
-                param_type="List[Tuple[float, string, List[Tuple[str, str, float, float]]]]",
+                param_type="list[tuple[float, str, list[tuple[str, str, float, float]]]]",
                 description="a list of the services being rendered broken down by hours, service_description, and items used for the service. Items used is further broken down by name, description, unit_cost, and units used",
             ),
             Parameter(
@@ -87,7 +87,7 @@ def invoice_generator_requirements() -> ApplicationRequirements:
     )
 
     invoice_response = ResponseModel(
-        name="inoviceresponse",
+        name="InvoiceResponse",
         description="A pdf of an invoice",
         params=[
             Parameter(
@@ -124,7 +124,7 @@ def appointment_optimization_requirements() -> ApplicationRequirements:
         description="An object used to make good times for an appointment",
         params=[
             Parameter(
-                name="availablility_calendar",
+                name="availability_calendar",
                 param_type="list[datetime]",
                 description="A data structure (like a list or array) containing the professional's available time slots for a given period (e.g., a week). Each time slot should include the start and end times.",
             ),
@@ -190,12 +190,12 @@ def distance_calculator_requirements() -> ApplicationRequirements:
         params=[
             Parameter(
                 name="start_location",
-                param_type="Tuple[float, float]",
-                description="AThe current location of the professional, provided as latitude and longitude coordinates.",
+                param_type="tuple[float, float]",
+                description="The current location of the professional, provided as latitude and longitude coordinates.",
             ),
             Parameter(
                 name="end_location",
-                param_type="Tuple[str,str]",
+                param_type="tuple[float,float]",
                 description="The location where the client wishes to have the appointment, provided as latitude and longitude coordinates.",
             ),
         ],
@@ -207,7 +207,7 @@ def distance_calculator_requirements() -> ApplicationRequirements:
         params=[
             Parameter(
                 name="distance",
-                param_type="Tuple[float, float]",
+                param_type="tuple[float, float]",
                 description="The calculated distance between the two locations, preferably in both kilometers and miles.",
             ),
             Parameter(
@@ -478,12 +478,12 @@ def calendar_booking_system() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="email",
-                            param_type="string",
+                            param_type="str",
                             description="Unique email address of the user. Acts as a login identifier.",
                         ),
                         Parameter(
                             name="password",
-                            param_type="string",
+                            param_type="str",
                             description="Password for the user account. Must comply with defined security standards.",
                         ),
                         Parameter(
@@ -499,12 +499,12 @@ def calendar_booking_system() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="user_id",
-                            param_type="string",
+                            param_type="str",
                             description="The unique identifier of the newly created user.",
                         ),
                         Parameter(
                             name="message",
-                            param_type="string",
+                            param_type="str",
                             description="A success message confirming user creation.",
                         ),
                     ],
@@ -637,7 +637,7 @@ def calendar_booking_system() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="message",
-                            param_type="string",
+                            param_type="str",
                             description="A confirmation message indicating successful logout.",
                         )
                     ],
@@ -682,7 +682,7 @@ def calendar_booking_system() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="userId",
-                            param_type="string",
+                            param_type="str",
                             description="The unique identifier of the user whose notification settings need to be updated.",
                         ),
                         # Parameter(
@@ -692,12 +692,12 @@ def calendar_booking_system() -> ApplicationRequirements:
                         # ),
                         Parameter(
                             name="emailFrequency",
-                            param_type="string",
+                            param_type="str",
                             description="The desired frequency of email notifications ('daily', 'weekly', 'never').",
                         ),
                         Parameter(
                             name="smsEnabled",
-                            param_type="boolean",
+                            param_type="bool",
                             description="Indicates whether SMS notifications are enabled (true/false).",
                         ),
                     ],
@@ -708,12 +708,12 @@ def calendar_booking_system() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="success",
-                            param_type="boolean",
+                            param_type="bool",
                             description="Indicates if the update operation was successful.",
                         ),
                         Parameter(
                             name="message",
-                            param_type="string",
+                            param_type="str",
                             description="A message detailing the outcome of the operation.",
                         ),
                     ],
@@ -726,12 +726,12 @@ def calendar_booking_system() -> ApplicationRequirements:
                     #     params=[
                     #         Parameter(
                     #             name="emailFrequency",
-                    #             param_type="string",
+                    #             param_type="str",
                     #             description="The desired frequency of email notifications ('daily', 'weekly', 'never').",
                     #         ),
                     #         Parameter(
                     #             name="smsEnabled",
-                    #             param_type="boolean",
+                    #             param_type="bool",
                     #             description="Indicates whether SMS notifications are enabled (true/false).",
                     #         ),
                     #     ],
@@ -913,22 +913,22 @@ def calendar_booking_system() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="userId",
-                            param_type="string",
+                            param_type="str",
                             description="The unique identifier of the user updating their preferences",
                         ),
                         Parameter(
                             name="emailEnabled",
-                            param_type="boolean",
+                            param_type="bool",
                             description="Indicates whether email notifications are enabled",
                         ),
                         Parameter(
                             name="emailFrequency",
-                            param_type="string",
+                            param_type="str",
                             description="Defines how often email notifications are sent ('immediately', 'daily', 'weekly')",
                         ),
                         Parameter(
                             name="smsEnabled",
-                            param_type="boolean",
+                            param_type="bool",
                             description="Indicates whether SMS notifications are enabled",
                         ),
                     ],
@@ -939,12 +939,12 @@ def calendar_booking_system() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="success",
-                            param_type="boolean",
+                            param_type="bool",
                             description="Indicates whether the update operation was successful",
                         ),
                         Parameter(
                             name="message",
-                            param_type="string",
+                            param_type="str",
                             description="Provides information about the operation's outcome or failure reason",
                         ),
                     ],
@@ -957,17 +957,17 @@ def calendar_booking_system() -> ApplicationRequirements:
                     #     params=[
                     #         Parameter(
                     #             name="emailEnabled",
-                    #             param_type="boolean",
+                    #             param_type="bool",
                     #             description="Indicates whether email notifications are enabled",
                     #         ),
                     #         Parameter(
                     #             name="emailFrequency",
-                    #             param_type="string",
+                    #             param_type="str",
                     #             description="Defines how often email notifications are sent ('immediately', 'daily', 'weekly')",
                     #         ),
                     #         Parameter(
                     #             name="smsEnabled",
-                    #             param_type="boolean",
+                    #             param_type="bool",
                     #             description="Indicates whether SMS notifications are enabled",
                     #         ),
                     #     ],
@@ -986,7 +986,7 @@ def calendar_booking_system() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="criteria",
-                            param_type="string",
+                            param_type="str",
                             description="Criteria for notification dispatch, such as 'allPendingWithin24h' to indicate all notifications for appointments occurring in the next 24 hours.",
                         )
                     ],
@@ -997,7 +997,7 @@ def calendar_booking_system() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="success",
-                            param_type="boolean",
+                            param_type="bool",
                             description="If the dispatch was successful overall.",
                         ),
                         Parameter(
@@ -1012,7 +1012,7 @@ def calendar_booking_system() -> ApplicationRequirements:
                         ),
                         Parameter(
                             name="errors",
-                            param_type="[string]",
+                            param_type="[str]",
                             description="List of errors for individual failures, if applicable.",
                         ),
                     ],
@@ -1141,7 +1141,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                             ),
                             Parameter(
                                 name="name",
-                                param_type="string",
+                                param_type="str",
                                 description="Allows filtering inventory items by a name or partial name match.",
                             ),
                         ],
@@ -1385,7 +1385,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                             ),
                             Parameter(
                                 name="inventoryItems",
-                                param_type="List[int]",
+                                param_type="list[int]",
                                 description="Optional. A list of inventory item IDs to include in the report. If not provided, the report covers all items.",
                             ),
                         ],
@@ -1428,7 +1428,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="reports",
-                            param_type="List[ReportSummary]",
+                            param_type="list[ReportSummary]",
                             description="A list of report summaries",
                         ),
                         Parameter(
@@ -1490,12 +1490,12 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="systemType",
-                            param_type="string",
+                            param_type="str",
                             description="The type of system to integrate.",
                         ),
                         Parameter(
                             name="details",
-                            param_type="string",
+                            param_type="str",
                             description="Configuration details for the integration.",
                         ),
                     ],
@@ -1516,7 +1516,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                         ),
                         Parameter(
                             name="message",
-                            param_type="string",
+                            param_type="str",
                             description="Outcome message.",
                         ),
                     ],
@@ -1529,12 +1529,12 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                         params=[
                             Parameter(
                                 name="systemType",
-                                param_type="string",
+                                param_type="str",
                                 description="The type of system being integrated; defines the integration protocol or standard.",
                             ),
                             Parameter(
                                 name="details",
-                                param_type="string",
+                                param_type="str",
                                 description="Configuration details necessary for establishing the connection with the external system.",
                             ),
                         ],
@@ -1555,7 +1555,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                             ),
                             Parameter(
                                 name="message",
-                                param_type="string",
+                                param_type="str",
                                 description="A message describing the outcome of the operation.",
                             ),
                         ],
@@ -1579,7 +1579,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="integrations",
-                            param_type="List[IntegrationSummary]",
+                            param_type="list[IntegrationSummary]",
                             description="A list of integration summaries detailing the available external system integrations.",
                         )
                     ],
@@ -1626,7 +1626,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                         ),
                         Parameter(
                             name="criteria",
-                            param_type="string",
+                            param_type="str",
                             description="Condition or event that triggers the alert.",
                         ),
                         Parameter(
@@ -1652,7 +1652,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                         ),
                         Parameter(
                             name="message",
-                            param_type="string",
+                            param_type="str",
                             description="Descriptive message of the alert creation outcome.",
                         ),
                     ],
@@ -1670,7 +1670,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                             ),
                             Parameter(
                                 name="criteria",
-                                param_type="string",
+                                param_type="str",
                                 description="The condition that triggers the alert.",
                             ),
                             Parameter(
@@ -1696,7 +1696,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                             ),
                             Parameter(
                                 name="message",
-                                param_type="string",
+                                param_type="str",
                                 description="A message describing the outcome of the alert creation attempt.",
                             ),
                         ],
@@ -1709,16 +1709,14 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                 function_name="list_alerts",
                 description="List all configured alerts.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
-                    name="ListAlertsRequest", description="ListAlertsRequest", params=[]
-                ),
+                request_model=None,
                 response_model=ResponseModel(
                     name="ListAlertsResponse",
                     description="ListAlertsResponse",
                     params=[
                         Parameter(
                             name="alerts",
-                            param_type="List[AlertDetail]",
+                            param_type="list[AlertDetail]",
                             description="List containing detailed configurations of all alerts.",
                         )
                     ],
@@ -1830,7 +1828,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                         ),
                         Parameter(
                             name="message",
-                            param_type="string",
+                            param_type="str",
                             description="Message providing more details on the outcome. It can indicate success or describe why the logout failed.",
                         ),
                     ],
@@ -1964,7 +1962,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         ),
                         Parameter(
                             name="items",
-                            param_type="List[InvoiceItemInput]",
+                            param_type="list[InvoiceItemInput]",
                             description="Array of line items to be included in the invoice.",
                         ),
                         Parameter(
@@ -2013,7 +2011,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                             ),
                             Parameter(
                                 name="items",
-                                param_type="List[InvoiceItemInput]",
+                                param_type="list[InvoiceItemInput]",
                                 description="A collection of line items including description, quantity, and price.",
                             ),
                             Parameter(
@@ -2157,7 +2155,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="id",
-                            param_type="string",
+                            param_type="str",
                             description="The unique ID of the invoice to retrieve.",
                         )
                     ],
@@ -2168,17 +2166,17 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="id",
-                            param_type="string",
+                            param_type="str",
                             description="The unique ID of the invoice.",
                         ),
                         Parameter(
                             name="number",
-                            param_type="string",
+                            param_type="str",
                             description="The unique invoice number.",
                         ),
                         Parameter(
                             name="status",
-                            param_type="string",
+                            param_type="str",
                             description="Current status of the invoice (e.g., draft, finalized).",
                         ),
                         Parameter(
@@ -2229,7 +2227,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="invoices",
-                            param_type="List[InvoiceSummary]",
+                            param_type="list[InvoiceSummary]",
                             description="An array of invoice summary objects.",
                         ),
                         Parameter(
@@ -2573,7 +2571,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         ),
                         Parameter(
                             name="filters",
-                            param_type="List[str]",
+                            param_type="list[str]",
                             description="Optional filters to refine the report data.",
                         ),
                     ],
@@ -2617,7 +2615,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                             ),
                             Parameter(
                                 name="filters",
-                                param_type="List[str]",
+                                param_type="list[str]",
                                 description="List of additional filters to apply to the report data (optional).",
                             ),
                         ],
@@ -2638,12 +2636,12 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                             ),
                             Parameter(
                                 name="metrics",
-                                param_type="List[ReportMetric]",
+                                param_type="list[ReportMetric]",
                                 description="A collection of metrics included in the report.",
                             ),
                             Parameter(
                                 name="insights",
-                                param_type="List[str]",
+                                param_type="list[str]",
                                 description="List of insights derived from the report data.",
                             ),
                         ],
@@ -2698,7 +2696,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         ),
                         Parameter(
                             name="metrics",
-                            param_type="List[str]",
+                            param_type="list[str]",
                             description="Optional. A list of specific financial metrics to retrieve insights for.",
                         ),
                     ],
@@ -2709,7 +2707,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="insights",
-                            param_type="List[FinancialInsight]",
+                            param_type="list[FinancialInsight]",
                             description="A collection of financial insights.",
                         )
                     ],
@@ -2756,7 +2754,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     params=[
                         Parameter(
                             name="updates",
-                            param_type="List[SecuritySettingUpdate]",
+                            param_type="list[SecuritySettingUpdate]",
                             description="A list of security settings to update, each indicating the setting name and its new value.",
                         )
                     ],
@@ -2772,12 +2770,12 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         ),
                         Parameter(
                             name="updatedSettings",
-                            param_type="List[SecuritySettingUpdate]",
+                            param_type="list[SecuritySettingUpdate]",
                             description="A list of all settings that were successfully updated.",
                         ),
                         Parameter(
                             name="failedSettings",
-                            param_type="List[SecuritySettingUpdate]",
+                            param_type="list[SecuritySettingUpdate]",
                             description="A list of settings that failed to update, with descriptions of the failure reasons.",
                         ),
                     ],
@@ -2811,12 +2809,12 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                             ),
                             Parameter(
                                 name="updatedSettings",
-                                param_type="List[SecuritySettingUpdate]",
+                                param_type="list[SecuritySettingUpdate]",
                                 description="A list of all settings that were successfully updated.",
                             ),
                             Parameter(
                                 name="failedSettings",
-                                param_type="List[SecuritySettingUpdate]",
+                                param_type="list[SecuritySettingUpdate]",
                                 description="A list of settings that failed to update, with descriptions of the failure reasons.",
                             ),
                         ],
@@ -2964,7 +2962,7 @@ def tictactoe_game_requirements() -> ApplicationRequirements:
                 description="The row in which the move is made, the value should be between 1 and 3.",
             ),
             Parameter(
-                name="column",
+                name="col",
                 param_type="int",
                 description="The column in which the move is made, the value should be between 1 and 3.",
             ),

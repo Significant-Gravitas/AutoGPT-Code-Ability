@@ -131,15 +131,13 @@ enum HTTPVerb {
 }
 
 model APIRouteSpec {
-  id           String      @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt    DateTime    @default(now())
-  functionName String
-  method       HTTPVerb
-  path         String
-  description  String
-  AccessLevel  AccessLevel
-
-  Functions      Function[]
+  id             String          @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt      DateTime        @default(now())
+  functionName   String
+  method         HTTPVerb
+  path           String
+  description    String
+  AccessLevel    AccessLevel
   CompiledRoutes CompiledRoute[]
 
   Specification    Specification?  @relation(fields: [specificationId], references: [id], onDelete: Cascade)
@@ -253,14 +251,15 @@ model Function {
 
   ParentFunction   Function?  @relation("ParentFunction", fields: [parentFunctionId], references: [id], onDelete: Cascade)
   parentFunctionId String?
-  ChildFunction    Function[] @relation("ParentFunction")
+  ChildFunctions   Function[] @relation("ParentFunction")
 
-  ApiRouteSpec     APIRouteSpec?   @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
-  apiRouteSpecId   String?
   DatabaseSchema   DatabaseSchema? @relation(fields: [databaseSchemaId], references: [id], onDelete: Cascade)
   databaseSchemaId String?
-  CompiledRoute    CompiledRoute[]
+  CompiledRoute    CompiledRoute?  @relation("CompiledRouteFunctions", fields: [compiledRouteId], references: [id], onDelete: Cascade)
   compiledRouteId  String?
+
+  // Reverse relations
+  ReferredFunctionRootCompiledRoute CompiledRoute? @relation("RootFunction")
 }
 
 model Package {
@@ -288,10 +287,12 @@ model CompiledRoute {
   mainFunctionName String
   compiledCode     String
 
-  CompletedApps CompletedApp[]
+  CompletedApp   CompletedApp @relation(fields: [completedAppId], references: [id], onDelete: Cascade)
+  completedAppId String
 
-  rootFunctionId String
-  RootFunction   Function @relation(fields: [rootFunctionId], references: [id], onDelete: Cascade)
+  Functions      Function[] @relation("CompiledRouteFunctions")
+  RootFunction   Function   @relation("RootFunction", fields: [rootFunctionId], references: [id], onDelete: Cascade)
+  rootFunctionId String     @unique
 
   ApiRouteSpec   APIRouteSpec? @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
   apiRouteSpecId String?

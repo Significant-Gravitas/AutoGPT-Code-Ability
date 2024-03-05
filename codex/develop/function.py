@@ -9,8 +9,68 @@ from prisma.types import FunctionCreateInput
 from codex.develop.model import FunctionDef
 
 
+def get_type_children(type: str) -> (str, [str]):
+    """
+    Get the type and children of a composite type.
+    Args:
+        type (str): The type to parse.
+    Returns:
+        str: The type.
+        [str]: The children types.
+    """
+    if type is None:
+        return None, []
+    if "list[" in type.lower():
+        return "list", [type[5:-1]]
+    if "[" == type[0] and "]" == type[-1]:
+        return "list", [type[1:-1]]
+    if "dict[" in type.lower():
+        return "dict", type[5:-1].split(",")
+    if "tuple[" in type.lower():
+        return "tuple", type[6:-1].split(",")
+    if "(" == type[0] and ")" == type[-1]:
+        return "tuple", type[1:-1].split(",")
+    if "str" == type or "String" == type:
+        return "str", []
+    if "int" == type or "Int" == type:
+        return "int", []
+    if "float" == type or "Float" == type:
+        return "float", []
+    if "bool" == type or "Boolean" == type:
+        return "bool", []
+    if "any" == type or "Any" == type:
+        return "any", []
+    return type, []
+
+
+def is_type_equal(type1: str, type2: str) -> bool:
+    """
+    Check if two types are equal.
+    This function handle composite types like list, dict, and tuple.
+    group similar types like list[str], List[str], and [str] as equal.
+    """
+    type1 = type1.replace(" ", "")
+    type2 = type2.replace(" ", "")
+    if type1 == type2:
+        return True
+
+    type1, children1 = get_type_children(type1)
+    type2, children2 = get_type_children(type2)
+
+    if type1 != type2:
+        return False
+
+    if len(children1) != len(children2):
+        return False
+
+    for c1, c2 in zip(children1, children2):
+        if not is_type_equal(c1, c2):
+            return False
+
+    return True
+
 def construct_function(
-    function: FunctionDef, available_types: list[ObjectType]
+    function: FunctionDef, available_types: dict[str, ObjectType]
 ) -> FunctionCreateInput:
     input = FunctionCreateInput(
         functionName=function.name,
@@ -22,7 +82,6 @@ def construct_function(
         rawCode=function.function_code,
         functionCode=function.function_code,
     )
-    type_map = {obj.name: obj for obj in available_types}
 
     if function.return_type:
         input["FunctionReturn"] = {
@@ -30,8 +89,8 @@ def construct_function(
                 "name": "return",
                 "description": function.return_desc,
                 "typeName": function.return_type,
-                "typeId": type_map[function.return_type].id
-                if function.return_type in type_map
+                "typeId": available_types[function.return_type].id
+                if function.return_type in available_types
                 else None,
             }
         }
@@ -43,7 +102,9 @@ def construct_function(
                     "name": name,
                     "description": function.arg_descs.get(name, "-"),
                     "typeName": type,
-                    "typeId": type_map[type].id if type in type_map else None,
+                    "typeId": available_types[type].id
+                    if type in available_types
+                    else None,
                 }
                 for name, type in function.arg_types
             ]
@@ -56,7 +117,7 @@ def generate_object_template(obj: ObjectType) -> str:
     fields = f"\n{' ' * 8}".join(
         [
             f"{field.name}: {field.typeName} # {field.description}"
-            for field in obj.Fields
+            for field in obj.Fields or []
         ]
     )
     template = f"""
