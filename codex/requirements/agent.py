@@ -40,11 +40,8 @@ from codex.requirements.database import create_spec
 from codex.requirements.hardcoded import (
     appointment_optimization_requirements,
     availability_checker_requirements,
-    calendar_booking_system,
     distance_calculator_requirements,
-    inventory_mgmt_system,
     invoice_generator_requirements,
-    invoice_payment_tracking,
     profile_management,
     tictactoe_game_requirements,
 )
@@ -419,12 +416,6 @@ def hardcoded_requirements(task: ExampleTask) -> ApplicationRequirements:
             return distance_calculator_requirements()
         case ExampleTask.PROFILE_MANAGEMENT_SYSTEM:
             return profile_management()
-        case ExampleTask.CALENDAR_BOOKING_SYSTEM:
-            return calendar_booking_system()
-        case ExampleTask.INVENTORY_MANAGEMENT_SYSTEM:
-            return inventory_mgmt_system()
-        case ExampleTask.INVOICING_AND_PAYMENT_TRACKING_SYSTEM:
-            return invoice_payment_tracking()
         case ExampleTask.TICTACTOE_GAME:
             return tictactoe_game_requirements()
         case _:
