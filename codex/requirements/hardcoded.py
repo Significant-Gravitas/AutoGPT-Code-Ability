@@ -92,7 +92,7 @@ def invoice_generator_requirements() -> ApplicationRequirements:
         params=[
             Parameter(
                 name="availability_status",
-                param_type="file",
+                param_type="bytes",
                 description="A PDF file for the invoice",
             )
         ],
@@ -157,7 +157,7 @@ def appointment_optimization_requirements() -> ApplicationRequirements:
             ),
             Parameter(
                 name="alternatives",
-                param_type="datetime[]",
+                param_type="list[datetime]",
                 description="If no optimal slots are available, provide a list of alternative slots, clearly indicating that they are outside the preferred criteria.",
             ),
         ],
@@ -212,8 +212,8 @@ def distance_calculator_requirements() -> ApplicationRequirements:
             ),
             Parameter(
                 name="travel_time",
-                param_type="time",
-                description="An estimation of the time it would take for the professional to travel from their location to the client's location, considering average travel conditions.",
+                param_type="float",
+                description="An estimation of the time it would take for the professional to travel from their location to the client's location in seconds, considering average travel conditions.",
             ),
         ],
     )
@@ -249,12 +249,12 @@ def profile_management() -> ApplicationRequirements:
             ),
             Parameter(
                 name="personal_details",
-                param_type="dict",
+                param_type="dict[str, str]",
                 description="Name and contact information",
             ),
             Parameter(
                 name="preferences",
-                param_type="dict",
+                param_type="dict[str, str]",
                 description="Optional settings specific to the user type",
             ),
         ],
@@ -269,7 +269,7 @@ def profile_management() -> ApplicationRequirements:
             ),
             Parameter(
                 name="profile_details",
-                param_type="dict",
+                param_type="dict[str, str]",
                 description="Details of the created profile",
             ),
         ],
@@ -286,7 +286,7 @@ def profile_management() -> ApplicationRequirements:
             ),
             Parameter(
                 name="fields_to_update",
-                param_type="dict",
+                param_type="dict[str, str]",
                 description="Fields to be updated with their new values",
             ),
         ],
@@ -301,7 +301,7 @@ def profile_management() -> ApplicationRequirements:
             ),
             Parameter(
                 name="updated_profile_details",
-                param_type="dict",
+                param_type="dict[str, str]",
                 description="Details of the updated profile",
             ),
         ],
@@ -325,7 +325,7 @@ def profile_management() -> ApplicationRequirements:
         params=[
             Parameter(
                 name="profile_details",
-                param_type="dict",
+                param_type="dict[str, str]",
                 description="Details of the retrieved profile",
             ),
             Parameter(
