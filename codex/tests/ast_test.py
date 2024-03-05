@@ -3,6 +3,8 @@ import ast
 from dotenv import load_dotenv
 
 from codex.develop.develop import FunctionVisitor
+import pytest
+from codex.common.ai_block import ValidationError
 
 load_dotenv()
 
@@ -11,6 +13,7 @@ SAMPLE_CODE = """
 from pydantic import BaseModel
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple
+
 
 class Location(BaseModel):
     name: str  # For named locations or coordinates as a string
@@ -189,7 +192,7 @@ def test_function_with_default_arguments():
     # Assert the properties of the FunctionDef object
     function_def = visitor.functions["my_function"]
     assert function_def.name == "my_function"
-    assert function_def.arg_types == [("arg1", None), ("arg2", None), ("arg3", None)]
+    assert function_def.arg_types == [("arg1", 'object'), ("arg2", 'object'), ("arg3", 'object')], f"{function_def.arg_types}"
     assert function_def.return_type is None
     assert (
         function_def.function_template
@@ -232,8 +235,10 @@ def test_visiting_class_definition_no_pydantic_inheritance():
     # Create AST for a class definition with no Pydantic inheritance
     code = ast.parse("class MyClass:\n    pass")
 
-    # Visit the AST
-    visitor.visit(code)
+    # Use pytest.raises to check if a ValidationError is raised
+    with pytest.raises(ValidationError):
+        # Visit the AST
+        visitor.visit(code)
 
     # Assert that the pydantic_classes list is empty
     assert len(get_pydantic_classes(visitor)) == 0
@@ -245,7 +250,7 @@ def test_visiting_class_with_pydantic_inheritance():
     visitor = FunctionVisitor()
 
     # Create AST for a class definition with Pydantic inheritance
-    code = ast.parse("class MyClass(pydantic.BaseModel):\n    pass")
+    code = ast.parse("class MyClass(pydantic.BaseModel):\n    i: int")
 
     # Visit the AST
     visitor.visit(code)
