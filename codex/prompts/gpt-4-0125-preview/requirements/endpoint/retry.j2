@@ -6,60 +6,83 @@ Here's some context
 Your available database models are: {{ db_models }}
 
 
-If there are no params, put [] in the params field rather than leaving it blank.
-Ensure all path, query, and body params are included in the request model params. 
-For path params, the name should be the name of the path param, the param_type should be the type of the path param, and the description should be a description of the path param. It should not go into any wrapping object.
+If there are no request/response parmas, put [] in the respective field rather than leaving it blank.
+Ensure all path, query, and body params are included in the request model as separate fields as needed.
+For path params, the object name should be the name of the path param, the Field Type should be the type of the path param, and the description should be a description of the path param. It should not go into any wrapping object.
 
-for example, if an endpoint is /r/{id}/s/{name}, the request model should have two params, one for id and one for name.  The name of the first param should be "id", the name of the second param should be "name", and the param_type should be the type of the path param.  The description should be a description of the path param.  It should not go into any wrapping object. 
-If there is also a body, that should be included in the request model params as well.  
-an example would be something like POST /update/{id}/name/{name} with a body of the update. The request model should have three params, one for id, one for name, and one for the body.  The name of the first param should be "id", the name of the second param should be "name", and the name of the third param should be "body".  The param_type should be the type of the path param for the first two, and the type of the body for the third.  The description should be a description of the path param for the first two, and a description of the body for the third.  It should not go into any wrapping object.
+For example, if an endpoint is /r/{id}/s/{name},
+ the request model should have two objects, one for id and one for name.  
+ The name of the first param should be "id", the name of the second param should be "name", and each should have one field with the same name as the object.
+ The description should be a description of the path param.  It should not go into any wrapping object. 
+
+If there is also a body, that should be included in the request model params as well.
+
+An example would be something like POST /update/{id}/name/{name} with a body of the update. 
+ The request model should have three objects, one for id, one for name, and one for the body.  
+ The name of the first param should be "id", the name of the second param should be "name", and the name of the third param should be "body".
+ The Field.type should be the type of the path param for the first two, Field.name should match the object.name. 
+ For the third, the body, there should be a well named Object, that contains resonable fields for the body. Each of which can be complex if needed.
+ 
 
 Ensure all response params are included in the response model params.
+
 
 ```json
 {
   "think": "general thoughts about the task",
-  "db_models_needed": ["a", "list", "of", "db", "models", "used", "only", "from", "the", "prisma", "file", "use", "empty", "list", "if", "none"],
-  "new_api_models": [
-    {
-      "name": "NameOfTheModel",
-      "description": "A Description Of the Model",
-      "params": [
-        {
-          "name": "a parameter name",
-          "param_type": "the type of the param following python conventions such as list[str].",
-          "description": "a description of the parameter"
-        },
-        ... repeat for all parameters needed, empty list doesn't make sense here so make sure to include at least one parameter
-      ]
-    },
-    ... repeat for all new models needed, using empty list if none
-  ],
+  "db_models_needed": ["a", "list", "of", "db", "models", "used", "only", "from", "the", "available", "models", "use", "empty", "list", "if", "none"],
   "api_endpoint": {
-    "request_model": {
-      "name": "Request model name. This must always be provided, even if theres no params.",
-      "description": "the description of the request model, including any additional context that's important/relevant/weird/cool/useful.  This must always be provided, even if theres no params.",
-      "params": [
-        {
-          "name": "a parameter name",
-          "param_type": "the type of the param following python conventions such as list[str].",
-          "description": "a description of the parameter"
-        },
-        ... repeat for all parameters needed, using empty list if none
-      ]
-    },
-    "response_model": {
-      "name": "response model name.  This must always be provided, even if theres no params.",
-      "description": "the description of the response model, including any additional context that's important/relevant/weird/cool/useful.  This must always be provided, even if theres no params.",
-      "params": [
-        {
-          "name": "a parameter name",
-          "param_type": "the type of the param following python conventions such as list[str].",
-          "description": "a description of the parameter"
-        },
-        ... repeat for all parameters needed, using empty list if none
-      ]
-    }
+    "request_model": [
+      {
+        "name": "RequestModelName. will be used to name the Pydantic model",
+        "description": "the description of the request model, including any additional context that's important/relevant/weird/cool/useful. This will be used as the doc string for the named pydantic model",
+        "Fields": [
+          {
+            "name": "simpleField",
+            "description": "The description of the simple field. This will be the doc string for the field",
+            "type": "str"
+          },
+          {
+            "name": "complexField",
+            "description": "An example of a complex field with sub-types.",
+            "type": {
+              "name": "ComplexType",
+              "description": "This is a complex type with its own fields.",
+              "Fields": [
+                {
+                  "name": "subField1",
+                  "description": "A sub-field of the complex type, primitive.",
+                  "type": "int"
+                },
+                {
+                  "name": "subField2",
+                  "description": "Another sub-field, this time a list of strings.",
+                  "type": "List[str]"
+                }
+                ... repeat for all sub-fields needed, using empty list if none. You can also nest complex types within complex types
+              ]
+            }
+          }
+          ... repeat for all fields needed, using empty list if none
+        ]
+      },
+      ... repeat for all request models needed, using empty list if none
+    ],
+    "response_model": [
+      {
+        "name": "ResponseModelName, will be used to name the Pydantic model",
+        "description": "A description used to describe the response model, including any additional context that's important/relevant/weird/cool/useful. This will be the doc string for the named pydantic model",
+        "Fields": [
+          {
+            "name": "responseField",
+            "description": "A description for the response field",
+            "type": "str"
+          }
+          ... repeat for all fields needed, using empty list if none
+        ]
+      },
+      ... repeat for all response models needed, using empty list if none
+    ]
   },
   "end_thoughts": "closing thoughts on the matter"
 }
@@ -67,37 +90,40 @@ Ensure all response params are included in the response model params.
 
 
 
-Example for `GET /user_id_by_discord_id/{id}`:
+Example for `GET /user_id_by_discord_id/{id}`, with models `User`, `Availability`, `Messages`:
 ```json
 {
-  "think": "I'll need to leverage the context provided to ensure the UserDTO object makes sense. I'll also provide any models needed for my return types if they aren't based on the db model from prisma",
+  "think": "I'll need to leverage the context provided to ensure the UserDTO object makes sense. I'll also provide any models needed for my return types if they aren't based on the db model from prisma.",
   "db_models_needed": ["User"],
-  "new_api_models": [],
   "api_endpoint": {
-    "request_model": {
-      "name": "UserByDiscordIdInput",
-      "description": "This request only requires the user's id from the User object as defined in the Users table. If there's anything else, its an error",
-      "params": [
-        {
-          "name": "id",
-          "param_type": "str",
-          "description": "the discord user id to look the user up by"
-        }
-      ]
-    },
-    "response_model": {
-      "name": "UserByDiscordIdOutput",
-      "description": "will output the full user object",
-      "params": [
-        {
-          "name": "user",
-          "param_type": "User",
-          "description": "the user object that matches the discord id provided"
-        }
-      ]
-    }
+    "request_model": [
+      {
+        "name": "id",
+        "description": "This request only requires the user's id from the User object as defined in the Users table. If there's anything else, it's an error.",
+        "Fields": [
+          {
+            "name": "id",
+            "description": "The discord user id to look the user up by.",
+            "type": "str"
+          }
+        ]
+      }
+    ],
+    "response_model": [
+      {
+        "name": "UserByDiscordIdOutput",
+        "description": "Will output the full user object.",
+        "Fields": [
+          {
+            "name": "user",
+            "description": "The user object that matches the discord id provided.",
+            "type": "User"
+          }
+        ]
+      }
+    ]
   },
-  "end_thoughts": "wow that was fun"
+  "end_thoughts": "Wow, that was fun."
 }
 ```
 

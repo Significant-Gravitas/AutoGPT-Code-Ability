@@ -62,10 +62,8 @@ from codex.requirements.model import (
     ModuleRefinement,
     ModuleResponse,
     QandA,
-    RequestModel,
     RequirementsGenResponse,
     RequirementsRefined,
-    ResponseModel,
     StateObj,
 )
 from codex.requirements.unwrap_schemas import convert_db_schema, convert_endpoint
@@ -372,21 +370,10 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
                         method=route.type,
                         path=route.path,
                         description=route.description,
-                        request_model=route.request_model
-                        or RequestModel(
-                            name="None Provided",
-                            description="None Provided",
-                            params=[],
-                        ),
-                        response_model=route.response_model
-                        or ResponseModel(
-                            name="None Provided",
-                            description="None Provided",
-                            params=[],
-                        ),
+                        request_model=route.request_model or [],
+                        response_model=route.response_model or [],
                         database_schema=route.database_schema,
                         access_level=AccessLevel.PUBLIC,
-                        data_models=route.data_models,
                     )
                 )
 

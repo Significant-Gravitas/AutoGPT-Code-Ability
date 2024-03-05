@@ -5,7 +5,7 @@ from enum import Enum
 from typing import List, Literal, Optional
 
 from prisma.enums import AccessLevel
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 import codex.common.test_const as test_consts
 
@@ -188,10 +188,6 @@ class FeaturesSuperObject(BaseModel):
     features: list[FeatureWrapper]
 
 
-# class WrappedRequirementsQA(BaseModel):
-#     wrapper: RequirementsQA
-
-
 class RequirementsResponse(BaseModel):
     think: str
     answer: list[RequirementsQA]
@@ -214,24 +210,6 @@ class Parameter(BaseModel):
         return f"- **Name**: {self.name}\n  - **Type**: {self.param_type}\n  - **Description**: {self.description}\n"
 
 
-class RequestModel(BaseModel):
-    name: str
-    description: str
-    params: List[Parameter]
-
-    def __str__(self):
-        params_str = "\n".join(param.__str__() for param in self.params)
-        return f"###### {self.name}\n**Description**: {self.description}\n\n**Parameters**:\n{params_str}\n"
-
-
-class ResponseModel(BaseModel):
-    name: str
-    description: str
-    params: List[Parameter]
-
-    def __str__(self):
-        params_str = "\n".join(param.__str__() for param in self.params)
-        return f"###### {self.name}\n**Description**: {self.description}\n\n**Parameters**:\n{params_str}\n"
 
 
 class DatabaseTable(BaseModel):
@@ -253,27 +231,35 @@ class DatabaseSchema(BaseModel):
         return f"## {self.name}\n**Description**: {self.description}\n**Tables**:\n{tables_str}\n"
 
 
-class EndpointDataModel(BaseModel):
+class ObjectFieldE(BaseModel):
     name: str
-    description: Optional[str]
-    params: List[Parameter]
+    description: Optional[str] = Field(
+        description="The description of the field", default=None
+    )
+    type: "ObjectTypeE | str" = Field(
+        description="The type of the field. Can be a string like List[str] or an ObjectTypeE"
+    )
 
 
-class NewAPIModel(BaseModel):
+class ObjectTypeE(BaseModel):
     name: str
-    description: Optional[str]
-    params: List[Parameter]
+    description: Optional[str] = Field(
+        description="The description of the object", default=None
+    )
+    Fields: Optional[List["ObjectFieldE"]] = Field(
+        description="The fields of the object", default=None
+    )
 
 
 class APIEndpointWrapper(BaseModel):
-    request_model: NewAPIModel
-    response_model: NewAPIModel
+    request_model: List[ObjectTypeE]
+    response_model: List[ObjectTypeE]
 
 
 class EndpointSchemaRefinementResponse(BaseModel):
     think: str
     db_models_needed: list[str]
-    new_api_models: list[NewAPIModel]
+    # new_api_models: list[ObjectTypeE]
     api_endpoint: APIEndpointWrapper
     end_thoughts: Optional[str]
 
@@ -295,9 +281,10 @@ class Endpoint(BaseModel):
     ]
     description: str
     path: str
-    request_model: Optional[RequestModel]
-    response_model: Optional[ResponseModel]
-    data_models: Optional[List[EndpointDataModel]]
+    request_model: Optional[List[ObjectTypeE]]
+    response_model: Optional[List[ObjectTypeE]]
+    # TODO(ntindle): reintroduce this when supported by the system?
+    # data_models: Optional[List[ObjectFieldE]]
     database_schema: Optional[DatabaseSchema]
 
     def __str__(self):
@@ -308,10 +295,7 @@ class Endpoint(BaseModel):
             request_response_text += f"##### Request: `{self.request_model.__str__() or 'Not defined yet'}`\n"
         if self.response_model:
             request_response_text += f"##### Response:`{self.request_model.__str__() or 'Not defined yet'}`\n"
-        if self.data_models:
-            data_model_text += "\n\n".join(
-                [data_model.__str__() for data_model in self.data_models]
-            )
+
         if self.database_schema:
             database_text += (
                 f"##### Database Schema\n\n{self.database_schema.__str__()}"
@@ -499,14 +483,14 @@ class APIRouteRequirement(BaseModel):
     access_level: AccessLevel
 
     # This is the model for the request and response
-    request_model: RequestModel | None
-    response_model: ResponseModel | None
+    request_model: List[ObjectTypeE] | None
+    response_model: List[ObjectTypeE] | None
 
     # This is the database schema this api route will use
     # I'm thinking it will be a prisma table schema or maybe a list of table schemas
     # See the schema.prisma file in the codex directory more info
     database_schema: DatabaseSchema | None = None
-    data_models: Optional[List[EndpointDataModel]] = None
+    # data_models: Optional[List[ObjectFieldE]] = None
 
     def __str__(self):
         db_schema_str = (
