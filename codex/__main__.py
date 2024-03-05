@@ -62,6 +62,7 @@ async def fetch_deliverable(session, user_id, app_id):
         try:
             creation_time = datetime.now()
             click.echo(f"Development took {creation_time - start_time}")
+            assert response.status == 200
             data = await response.json()
             deliverable_id = data["id"]
             click.echo(f"Created application: {data}")

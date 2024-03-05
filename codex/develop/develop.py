@@ -17,7 +17,7 @@ from codex.common.ai_block import (
     ValidationError,
 )
 from codex.develop.database import create_object_type
-from codex.develop.function import construct_function
+from codex.develop.function import construct_function, is_type_equal
 from codex.develop.model import (
     FunctionDef,
     GeneratedFunctionResponse,
@@ -242,11 +242,17 @@ class DevelopAIBlock(AIBlock):
             # Validate the requested_func.args and requested_func.returns to the invoke_params
             expected_args = invoke_params["function_args"]
             expected_rets = invoke_params["function_rets"]
-            if expected_args != requested_func.arg_types:
+
+            if any(
+                [
+                    x[0] != y[0] or not is_type_equal(x[1], y[1])
+                    for x, y in zip(expected_args, requested_func.arg_types)
+                ]
+            ):
                 raise ValidationError(
                     f"Function {func_name} has different arguments than expected, expected {expected_args} but got {requested_func.arg_types}"
                 )
-            if expected_rets != requested_func.return_type:
+            if not is_type_equal(expected_rets, requested_func.return_type):
                 raise ValidationError(
                     f"Function {func_name} has different return type than expected, expected {expected_rets} but got {requested_func.return_type}"
                 )

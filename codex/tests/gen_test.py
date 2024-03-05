@@ -1,8 +1,6 @@
 import pytest
 from dotenv import load_dotenv
 
-load_dotenv()
-
 from codex.app import db_client
 from codex.common import ai_block
 from codex.common.ai_block import LLMFailure
@@ -12,6 +10,7 @@ from codex.common.test_const import Identifiers, app_id_11, user_id_1
 from codex.develop import agent
 from codex.requirements.database import get_latest_specification
 
+load_dotenv()
 
 if not OpenAIChatClient._configured:
     OpenAIChatClient.configure({})

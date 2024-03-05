@@ -1,6 +1,5 @@
 from typing import Dict, List
 
-from prisma.models import APIRouteSpec
 from prisma.models import Function as FunctionDBModel
 from prisma.models import ObjectType
 from pydantic import BaseModel

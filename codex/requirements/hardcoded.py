@@ -27,7 +27,7 @@ def availability_checker_requirements() -> ApplicationRequirements:
             ),
             ObjectFieldE(
                 name="schedule_data",
-                type="List[Tuple[datetime, datetime]]",
+                type="list[tuple[datetime, datetime]]",
                 description="A list of tuples representing the schedule of the professional, where each tuple contains start and end times of appointments or busy periods.",
             ),
         ],
@@ -68,12 +68,12 @@ def availability_checker_requirements() -> ApplicationRequirements:
 def invoice_generator_requirements() -> ApplicationRequirements:
     # Define request and response models here
     invoice_model = ObjectTypeE(
-        name="invoicemodel",
+        name="InvoiceRequest",
         description="An object used to generte an invoice",
         Fields=[
             ObjectFieldE(
                 name="services_rendered",
-                type="List[Tuple[float, string, List[Tuple[str, str, float, float]]]]",
+                type="list[tuple[float, str, list[tuple[str, str, float, float]]]]",
                 description="a list of the services being rendered broken down by hours, service_description, and items used for the service. Items used is further broken down by name, description, unit_cost, and units used",
             ),
             ObjectFieldE(
@@ -85,7 +85,7 @@ def invoice_generator_requirements() -> ApplicationRequirements:
     )
 
     invoice_response = ObjectTypeE(
-        name="inoviceresponse",
+        name="InvoiceResponse",
         description="A pdf of an invoice",
         Fields=[
             ObjectFieldE(
@@ -122,7 +122,7 @@ def appointment_optimization_requirements() -> ApplicationRequirements:
         description="An object used to make good times for an appointment",
         Fields=[
             ObjectFieldE(
-                name="availablility_calendar",
+                name="availability_calendar",
                 type="list[datetime]",
                 description="A data structure (like a list or array) containing the professional's available time slots for a given period (e.g., a week). Each time slot should include the start and end times.",
             ),
@@ -188,12 +188,12 @@ def distance_calculator_requirements() -> ApplicationRequirements:
         Fields=[
             ObjectFieldE(
                 name="start_location",
-                type="Tuple[float, float]",
-                description="AThe current location of the professional, provided as latitude and longitude coordinates.",
+                type="tuple[float, float]",
+                description="The current location of the professional, provided as latitude and longitude coordinates.",
             ),
             ObjectFieldE(
                 name="end_location",
-                type="Tuple[str,str]",
+                type="tuple[float,float]",
                 description="The location where the client wishes to have the appointment, provided as latitude and longitude coordinates.",
             ),
         ],
@@ -205,7 +205,7 @@ def distance_calculator_requirements() -> ApplicationRequirements:
         Fields=[
             ObjectFieldE(
                 name="distance",
-                type="Tuple[float, float]",
+                type="tuple[float, float]",
                 description="The calculated distance between the two locations, preferably in both kilometers and miles.",
             ),
             ObjectFieldE(
@@ -476,12 +476,12 @@ def calendar_booking_system() -> ApplicationRequirements:
                     Fields=[
                         ObjectFieldE(
                             name="email",
-                            type="string",
+                            type="str",
                             description="Unique email address of the user. Acts as a login identifier.",
                         ),
                         ObjectFieldE(
                             name="password",
-                            type="string",
+                            type="str",
                             description="Password for the user account. Must comply with defined security standards.",
                         ),
                         ObjectFieldE(
@@ -497,12 +497,12 @@ def calendar_booking_system() -> ApplicationRequirements:
                     Fields=[
                         ObjectFieldE(
                             name="user_id",
-                            type="string",
+                            type="str",
                             description="The unique identifier of the newly created user.",
                         ),
                         ObjectFieldE(
                             name="message",
-                            type="string",
+                            type="str",
                             description="A success message confirming user creation.",
                         ),
                     ],
@@ -632,7 +632,7 @@ def calendar_booking_system() -> ApplicationRequirements:
                     Fields=[
                         ObjectFieldE(
                             name="message",
-                            type="string",
+                            type="str",
                             description="A confirmation message indicating successful logout.",
                         )
                     ],
@@ -676,7 +676,7 @@ def calendar_booking_system() -> ApplicationRequirements:
                     Fields=[
                         ObjectFieldE(
                             name="userId",
-                            type="string",
+                            type="str",
                             description="The unique identifier of the user whose notification settings need to be updated.",
                         ),
                         # ObjectFieldE(
@@ -686,12 +686,12 @@ def calendar_booking_system() -> ApplicationRequirements:
                         # ),
                         ObjectFieldE(
                             name="emailFrequency",
-                            type="string",
+                            type="str",
                             description="The desired frequency of email notifications ('daily', 'weekly', 'never').",
                         ),
                         ObjectFieldE(
                             name="smsEnabled",
-                            type="boolean",
+                            type="bool",
                             description="Indicates whether SMS notifications are enabled (true/false).",
                         ),
                     ],
@@ -702,12 +702,12 @@ def calendar_booking_system() -> ApplicationRequirements:
                     Fields=[
                         ObjectFieldE(
                             name="success",
-                            type="boolean",
+                            type="bool",
                             description="Indicates if the update operation was successful.",
                         ),
                         ObjectFieldE(
                             name="message",
-                            type="string",
+                            type="str",
                             description="A message detailing the outcome of the operation.",
                         ),
                     ],
@@ -886,22 +886,22 @@ def calendar_booking_system() -> ApplicationRequirements:
                     Fields=[
                         ObjectFieldE(
                             name="userId",
-                            type="string",
+                            type="str",
                             description="The unique identifier of the user updating their preferences",
                         ),
                         ObjectFieldE(
                             name="emailEnabled",
-                            type="boolean",
+                            type="bool",
                             description="Indicates whether email notifications are enabled",
                         ),
                         ObjectFieldE(
                             name="emailFrequency",
-                            type="string",
+                            type="str",
                             description="Defines how often email notifications are sent ('immediately', 'daily', 'weekly')",
                         ),
                         ObjectFieldE(
                             name="smsEnabled",
-                            type="boolean",
+                            type="bool",
                             description="Indicates whether SMS notifications are enabled",
                         ),
                     ],
@@ -912,12 +912,12 @@ def calendar_booking_system() -> ApplicationRequirements:
                     Fields=[
                         ObjectFieldE(
                             name="success",
-                            type="boolean",
+                            type="bool",
                             description="Indicates whether the update operation was successful",
                         ),
                         ObjectFieldE(
                             name="message",
-                            type="string",
+                            type="str",
                             description="Provides information about the operation's outcome or failure reason",
                         ),
                     ],
@@ -936,7 +936,7 @@ def calendar_booking_system() -> ApplicationRequirements:
                     Fields=[
                         ObjectFieldE(
                             name="criteria",
-                            type="string",
+                            type="str",
                             description="Criteria for notification dispatch, such as 'allPendingWithin24h' to indicate all notifications for appointments occurring in the next 24 hours.",
                         )
                     ],
@@ -947,7 +947,7 @@ def calendar_booking_system() -> ApplicationRequirements:
                     Fields=[
                         ObjectFieldE(
                             name="success",
-                            type="boolean",
+                            type="bool",
                             description="If the dispatch was successful overall.",
                         ),
                         ObjectFieldE(
@@ -962,7 +962,7 @@ def calendar_booking_system() -> ApplicationRequirements:
                         ),
                         ObjectFieldE(
                             name="errors",
-                            type="[string]",
+                            type="[str]",
                             description="List of errors for individual failures, if applicable.",
                         ),
                     ],
@@ -1052,7 +1052,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                                     ),
                                     ObjectFieldE(
                                         name="name",
-                                        type="string",
+                                        type="str",
                                         description="Allows filtering inventory items by a name or partial name match.",
                                     ),
                                 ],
@@ -1307,7 +1307,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                                     ),
                                     ObjectFieldE(
                                         name="inventoryItems",
-                                        type="List[int]",
+                                        type="list[int]",
                                         description="Optional. A list of inventory item IDs to include in the report. If not provided, the report covers all items.",
                                     ),
                                 ],
@@ -1364,7 +1364,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     Fields=[
                         ObjectFieldE(
                             name="reports",
-                            # type="List[ReportSummary]",
+                            # type="list[ReportSummary]",
                             type=ObjectTypeE(
                                 name="ReportSummary",
                                 description="Summarizes essential details of a report for listing purposes.",
@@ -1424,12 +1424,12 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     Fields=[
                         ObjectFieldE(
                             name="systemType",
-                            type="string",
+                            type="str",
                             description="The type of system to integrate.",
                         ),
                         ObjectFieldE(
                             name="details",
-                            type="string",
+                            type="str",
                             description="Configuration details for the integration.",
                         ),
                     ],
@@ -1450,7 +1450,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                         ),
                         ObjectFieldE(
                             name="message",
-                            type="string",
+                            type="str",
                             description="Outcome message.",
                         ),
                     ],
@@ -1474,7 +1474,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     Fields=[
                         ObjectFieldE(
                             name="integrations",
-                            # type="List[IntegrationSummary]",
+                            # type="list[IntegrationSummary]",
                             type=ObjectTypeE(
                                 name="IntegrationSummary",
                                 description="Summarizes essential details of an external system integration for listing purposes.",
@@ -1519,7 +1519,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                         ),
                         ObjectFieldE(
                             name="criteria",
-                            type="string",
+                            type="str",
                             description="Condition or event that triggers the alert.",
                         ),
                         ObjectFieldE(
@@ -1545,7 +1545,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                         ),
                         ObjectFieldE(
                             name="message",
-                            type="string",
+                            type="str",
                             description="Descriptive message of the alert creation outcome.",
                         ),
                     ],
@@ -1567,7 +1567,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                     Fields=[
                         ObjectFieldE(
                             name="alerts",
-                            type="List[AlertDetail]",
+                            type="list[AlertDetail]",
                             description="List containing detailed configurations of all alerts.",
                         )
                     ],
@@ -1639,7 +1639,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                         ),
                         ObjectFieldE(
                             name="message",
-                            type="string",
+                            type="str",
                             description="Message providing more details on the outcome. It can indicate success or describe why the logout failed.",
                         ),
                     ],
@@ -1770,7 +1770,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         ),
                         ObjectFieldE(
                             name="items",
-                            # type="List[InvoiceItemInput]",
+                            # type="list[InvoiceItemInput]",
                             type=ObjectTypeE(
                                 name="InvoiceItemInput",
                                 description="Details for each item included in the invoice.",
@@ -1932,7 +1932,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     Fields=[
                         ObjectFieldE(
                             name="id",
-                            type="string",
+                            type="str",
                             description="The unique ID of the invoice to retrieve.",
                         )
                     ],
@@ -1943,17 +1943,17 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     Fields=[
                         ObjectFieldE(
                             name="id",
-                            type="string",
+                            type="str",
                             description="The unique ID of the invoice.",
                         ),
                         ObjectFieldE(
                             name="number",
-                            type="string",
+                            type="str",
                             description="The unique invoice number.",
                         ),
                         ObjectFieldE(
                             name="status",
-                            type="string",
+                            type="str",
                             description="Current status of the invoice (e.g., draft, finalized).",
                         ),
                         ObjectFieldE(
@@ -2003,7 +2003,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     Fields=[
                         ObjectFieldE(
                             name="invoices",
-                            # type="List[InvoiceSummary]",
+                            # type="list[InvoiceSummary]",
                             type=ObjectTypeE(
                                 name="InvoiceSummary",
                                 description="A concise model representing the key information of an invoice for listing purposes.",
@@ -2228,7 +2228,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         ),
                         ObjectFieldE(
                             name="filters",
-                            type="List[str]",
+                            type="list[str]",
                             description="Optional filters to refine the report data.",
                         ),
                     ],
@@ -2319,7 +2319,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         ),
                         ObjectFieldE(
                             name="metrics",
-                            type="List[str]",
+                            type="list[str]",
                             description="Optional. A list of specific financial metrics to retrieve insights for.",
                         ),
                     ],
@@ -2330,7 +2330,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     Fields=[
                         ObjectFieldE(
                             name="insights",
-                            # type="List[FinancialInsight]",
+                            # type="list[FinancialInsight]",
                             type=ObjectTypeE(
                                 name="FinancialInsight",
                                 description="Represents a high-level financial insight derived from aggregating financial data.",
@@ -2375,7 +2375,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                     Fields=[
                         ObjectFieldE(
                             name="updates",
-                            # type="List[SecuritySettingUpdate]",
+                            # type="list[SecuritySettingUpdate]",
                             type=ObjectTypeE(
                                 name="SecuritySettingUpdate",
                                 description="Represents a security setting that needs to be updated.",
@@ -2407,7 +2407,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         ),
                         ObjectFieldE(
                             name="updatedSettings",
-                            # type="List[SecuritySettingUpdate]",
+                            # type="list[SecuritySettingUpdate]",
                             type=ObjectTypeE(
                                 name="SecuritySettingUpdate",
                                 description="Represents a security setting that needs to be updated.",
@@ -2428,7 +2428,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         ),
                         ObjectFieldE(
                             name="failedSettings",
-                            # type="List[SecuritySettingUpdate]",
+                            # type="list[SecuritySettingUpdate]",
                             type=ObjectTypeE(
                                 name="SecuritySettingUpdate",
                                 description="Represents a security setting that needs to be updated.",

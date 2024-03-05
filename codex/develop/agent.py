@@ -9,7 +9,7 @@ from prisma.models import (
     Function,
     Specification,
 )
-from prisma.types import CompiledRouteCreateInput, CompletedAppCreateInput
+from prisma.types import CompiledRouteCreateInput
 
 from codex.api_model import Identifiers
 from codex.develop.compile import compile_route, create_app
@@ -94,7 +94,7 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
                 function=compiled_route.RootFunction,
             )
             logger.info(f"Route function id: {route_root_func.id}")
-            await compile_route(compiled_route.id, route_root_func, api_route)
+            await compile_route(compiled_route.id, route_root_func)
 
     return app
 
@@ -112,7 +112,7 @@ async def develop_route(
 
     Args:
         ids (Identifiers): The identifiers for the function.
-        compiled_route_id (int): The id for which CompiledRoute the function is being developed.
+        compiled_route_id (str): The id of the compiled route.
         goal_description (str): The high-level goal of the function to create.
         function (Function): The function to develop.
         depth (int): The depth of the recursion.
@@ -130,7 +130,12 @@ async def develop_route(
     compiled_route = await CompiledRoute.prisma().find_unique_or_raise(
         where={"id": compiled_route_id},
         include={
-            "Functions": {"include": {"FunctionArgs": True, "FunctionReturn": True}}
+            "Functions": {
+                "include": {
+                    "FunctionArgs": {"include": {"Type": True}},
+                    "FunctionReturn": {"include": {"Type": True}},
+                }
+            }
         },
     )
     generated_func = {}
@@ -139,9 +144,10 @@ async def develop_route(
         if func.functionName != function.functionName:
             generated_func[func.functionName] = func
         for arg in func.FunctionArgs:
-            generated_objs[arg.typeName] = arg
-        if func.FunctionReturn:
-            generated_objs[func.FunctionReturn.typeName] = func.FunctionReturn
+            if arg.Type:
+                generated_objs[arg.typeName] = arg.Type
+        if func.FunctionReturn and func.FunctionReturn.Type:
+            generated_objs[func.FunctionReturn.typeName] = func.FunctionReturn.Type
 
     route_function = await DevelopAIBlock().invoke(
         ids=ids,
@@ -174,9 +180,9 @@ async def develop_route(
         tasks = [
             develop_route(
                 ids=ids,
+                compiled_route_id=compiled_route_id,
                 goal_description=goal_description,
                 function=child,
-                api_route=api_route,
                 depth=depth + 1,
             )
             for child in route_function.ChildFunctions
@@ -193,7 +199,6 @@ if __name__ == "__main__":
     import asyncio
 
     import prisma
-    from prisma.models import APIRouteSpec
 
     import codex.common.test_const as test_consts
     from codex.common.ai_model import OpenAIChatClient
