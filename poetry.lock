@@ -2633,6 +2633,17 @@ pytest = ">=4.6"
 testing = ["fields", "hunter", "process-tests", "pytest-xdist", "six", "virtualenv"]
 
 [[package]]
+name = "pytest-integration"
+version = "0.2.3"
+description = "Organizing pytests by integration or not"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "pytest_integration-0.2.3-py3-none-any.whl", hash = "sha256:7f59ed1fa1cc8cb240f9495b68bc02c0421cce48589f78e49b7b842231604b12"},
+    {file = "pytest_integration-0.2.3.tar.gz", hash = "sha256:b00988a5de8a6826af82d4c7a3485b43fbf32c11235e9f4a8b7225eef5fbcf65"},
+]
+
+[[package]]
 name = "python-dateutil"
 version = "2.9.0.post0"
 description = "Extensions to the standard Python datetime module"
@@ -3447,4 +3458,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<3.13"
-content-hash = "538547a4fa710002e77ed7644cb37bdc86fddb39a8fdf4a468288c2c3098cde1"
+content-hash = "fcb48b1b83f4d38210cdc206c865a5d0c65585d0822d27ff6a9b45f67c5ccb06"

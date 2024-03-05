@@ -1,16 +1,10 @@
 import asyncio
-import io
 import logging
 import os
-import shutil
-import zipfile
-from datetime import datetime
 
-import aiohttp
 import click
 from dotenv import load_dotenv
 
-import codex.common.test_const as test_const
 from codex.common.logging_config import setup_logging
 
 logger = logging.getLogger(__name__)
@@ -48,105 +42,17 @@ def populate_db(database):
     asyncio.run(popdb())
 
 
-async def fetch_deliverable(session, user_id, app_id):
-    from codex.requirements.database import get_latest_specification
-
-    start_time = datetime.now()
-    spec = await get_latest_specification(user_id, app_id)
-    spec_id = spec.id
-    click.echo(f"Developing the application for {spec.name}")
-    url = f"http://127.0.0.1:8000/api/v1/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/"
-    async with session.post(url, timeout=1200) as response:
-        try:
-            creation_time = datetime.now()
-            click.echo(f"Development took {creation_time - start_time}")
-            assert response.status == 200
-            data = await response.json()
-            deliverable_id = data["id"]
-            click.echo(f"Created application: {data}")
-            deploy_url = f"http://127.0.0.1:8000/api/v1/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/"
-            async with session.post(deploy_url) as dresponse:
-                deploy_data = await dresponse.json()
-                deployment_id = deploy_data["id"]
-                deployment_file_name = deploy_data["file_name"]
-
-                # Download the zip file
-                download_url = (
-                    f"http://127.0.0.1:8000/api/v1/deployments/{deployment_id}/download"
-                )
-                async with session.get(download_url) as download_response:
-                    content = await download_response.read()
-                    content = io.BytesIO(content)
-
-                # Unzip the file
-                extracted_folder = f"workspace/{deployment_file_name.split('.')[0]}"
-                if os.path.exists(extracted_folder):
-                    shutil.rmtree(extracted_folder)
-
-                # Create a new directory
-                if not os.path.exists(extracted_folder):
-                    os.makedirs(extracted_folder)
-                with zipfile.ZipFile(content, "r") as zip_ref:
-                    zip_ref.extractall(extracted_folder)
-                end_time = datetime.now()
-                click.echo(
-                    f"Downloaded and extracted: "
-                    f"{extracted_folder} in {end_time - start_time}"
-                )
-
-                return deploy_data
-        except Exception as e:
-            click.echo(f"Error fetching deliverable: {e}")
-            print("Problematic URL: ", url)
-            logger.exception(e)
-            return
-
-
-async def run_benchmark():
-    from prisma import Prisma
-
-    client = Prisma(auto_register=True)
-    await client.connect()
-    async with aiohttp.ClientSession() as session:
-        tasks = [
-            fetch_deliverable(session, test_const.user_id_1, test_const.app_id_1),
-            fetch_deliverable(session, test_const.user_id_1, test_const.app_id_2),
-            fetch_deliverable(session, test_const.user_id_1, test_const.app_id_3),
-            fetch_deliverable(session, test_const.user_id_1, test_const.app_id_4),
-            fetch_deliverable(session, test_const.user_id_1, test_const.app_id_5),
-            fetch_deliverable(session, test_const.user_id_1, test_const.app_id_6),
-            fetch_deliverable(session, test_const.user_id_1, test_const.app_id_7),
-            fetch_deliverable(session, test_const.user_id_1, test_const.app_id_8),
-        ]
-        await asyncio.gather(*tasks)
-    await client.disconnect()
-
-
-async def run_specific_benchmark(task):
-    from prisma import Prisma
-
-    from codex.requirements.model import ExampleTask
-
-    client = Prisma(auto_register=True)
-    await client.connect()
-    async with aiohttp.ClientSession() as session:
-        tasks = [
-            fetch_deliverable(
-                session, test_const.user_id_1, ExampleTask.get_app_id(task)
-            ),
-        ]
-        await asyncio.gather(*tasks)
-    await client.disconnect()
-
-
 @cli.command()
 def benchmark():
     """Run the benchmark tests"""
+    from codex.benchmark import run_benchmark
+
     asyncio.run(run_benchmark())
 
 
 @cli.command()
 def example():
+    from codex.benchmark import run_specific_benchmark
     from codex.requirements.model import ExampleTask
 
     i = 1

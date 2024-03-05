@@ -24,9 +24,9 @@ class ExampleTask(Enum):
     APPOINTMENT_OPTIMIZATION_TOOL = "Appointment Optimization Tool"
     DISTANCE_CALCULATOR = "Distance Calculator"
     PROFILE_MANAGEMENT_SYSTEM = "Profile Management System"
-    CALENDAR_BOOKING_SYSTEM = "Calendar Booking System"
-    INVENTORY_MANAGEMENT_SYSTEM = "Inventory Management System"
-    INVOICING_AND_PAYMENT_TRACKING_SYSTEM = "Invoiceing and Payment Tracking System"
+    # CALENDAR_BOOKING_SYSTEM = "Calendar Booking System"
+    # INVENTORY_MANAGEMENT_SYSTEM = "Inventory Management System"
+    # INVOICING_AND_PAYMENT_TRACKING_SYSTEM = "Invoiceing and Payment Tracking System"
     TICTACTOE_GAME = "TicTacToe Game"
 
     @staticmethod
@@ -42,12 +42,12 @@ class ExampleTask(Enum):
                 return test_consts.app_id_4
             case ExampleTask.PROFILE_MANAGEMENT_SYSTEM:
                 return test_consts.app_id_5
-            case ExampleTask.CALENDAR_BOOKING_SYSTEM:
-                return test_consts.app_id_6
-            case ExampleTask.INVENTORY_MANAGEMENT_SYSTEM:
-                return test_consts.app_id_7
-            case ExampleTask.INVOICING_AND_PAYMENT_TRACKING_SYSTEM:
-                return test_consts.app_id_8
+            # case ExampleTask.CALENDAR_BOOKING_SYSTEM:
+            #     return test_consts.app_id_6
+            # case ExampleTask.INVENTORY_MANAGEMENT_SYSTEM:
+            #     return test_consts.app_id_7
+            # case ExampleTask.INVOICING_AND_PAYMENT_TRACKING_SYSTEM:
+            #     return test_consts.app_id_8
             case ExampleTask.TICTACTOE_GAME:
                 return test_consts.app_id_11
             case _:

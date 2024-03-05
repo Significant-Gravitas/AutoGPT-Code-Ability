@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from dotenv import load_dotenv
 
@@ -11,7 +13,8 @@ from codex.develop import agent
 from codex.requirements.database import get_latest_specification
 
 load_dotenv()
-OpenAIChatClient.configure({})
+openai_api_key = os.environ.get("OPENAI_API_KEY", "")
+OpenAIChatClient.configure({"api_key": openai_api_key})
 setup_logging(local=True)
 
 is_connected = False
@@ -36,6 +39,7 @@ async def generate_function():
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration_test
 async def test_simple_function():
     ai_block.MOCK_RESPONSE = SIMPLE_RESPONSE
     func = await generate_function()
@@ -43,6 +47,7 @@ async def test_simple_function():
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration_test
 async def test_global_variable():
     ai_block.MOCK_RESPONSE = WITH_GLOBAL_RESPONSE
     result = await generate_function()
@@ -50,6 +55,7 @@ async def test_global_variable():
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration_test
 async def test_unimplemented_function():
     ai_block.MOCK_RESPONSE = WITH_UNIMPLEMENTED_FUNCTION_RESPONSE
     with pytest.raises(LLMFailure) as e:
@@ -58,6 +64,7 @@ async def test_unimplemented_function():
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration_test
 async def test_mismatching_arguments():
     ai_block.MOCK_RESPONSE = WITH_MISMATCHING_ARGUMENTS_RESPONSE
     with pytest.raises(LLMFailure) as e:
@@ -66,6 +73,7 @@ async def test_mismatching_arguments():
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration_test
 async def test_mismatching_return_type():
     ai_block.MOCK_RESPONSE = WITH_MISMATCHING_RETURN_TYPE_RESPONSE
     with pytest.raises(LLMFailure) as e:
@@ -74,6 +82,7 @@ async def test_mismatching_return_type():
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration_test
 async def test_nested_function():
     ai_block.MOCK_RESPONSE = WITH_NESTED_FUNCTION_RESPONSE
     with pytest.raises(LLMFailure) as e:
@@ -82,6 +91,7 @@ async def test_nested_function():
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration_test
 async def test_with_llm_function_generation():
     ai_block.MOCK_RESPONSE = COMPLEX_RESPONSE
     func = await generate_function()
