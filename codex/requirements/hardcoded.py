@@ -7,10 +7,8 @@ from codex.requirements.model import (
     ApplicationRequirements,
     DatabaseSchema,
     DatabaseTable,
-    EndpointDataModel,
-    Parameter,
-    RequestModel,
-    ResponseModel,
+    ObjectFieldE,
+    ObjectTypeE,
 )
 
 logger = logging.getLogger(__name__)
@@ -18,31 +16,31 @@ logger = logging.getLogger(__name__)
 
 def availability_checker_requirements() -> ApplicationRequirements:
     # Define request and response models here
-    check_availability_request = RequestModel(
+    check_availability_request = ObjectTypeE(
         name="CheckAvailabilityRequest",
         description="A request to check the availability status of a professional based on the current time and their schedule.",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="current_time",
-                param_type="datetime",
+                type="datetime",
                 description="The timestamp at which the availability status is being requested.",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="schedule_data",
-                param_type="List[Tuple[datetime, datetime]]",
+                type="List[Tuple[datetime, datetime]]",
                 description="A list of tuples representing the schedule of the professional, where each tuple contains start and end times of appointments or busy periods.",
             ),
         ],
     )
 
     # Response Model for availability status
-    availability_status_response = ResponseModel(
+    availability_status_response = ObjectTypeE(
         name="AvailabilityStatusResponse",
         description="A response indicating the current availability status of the professional.",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="availability_status",
-                param_type="str",
+                type="str",
                 description="The current availability status of the professional. Possible values are 'Available' and 'Busy'.",
             )
         ],
@@ -69,30 +67,30 @@ def availability_checker_requirements() -> ApplicationRequirements:
 # Function to define requirements for the Invoice Generator
 def invoice_generator_requirements() -> ApplicationRequirements:
     # Define request and response models here
-    invoice_model = RequestModel(
+    invoice_model = ObjectTypeE(
         name="invoicemodel",
         description="An object used to generte an invoice",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="services_rendered",
-                param_type="List[Tuple[float, string, List[Tuple[str, str, float, float]]]]",
+                type="List[Tuple[float, string, List[Tuple[str, str, float, float]]]]",
                 description="a list of the services being rendered broken down by hours, service_description, and items used for the service. Items used is further broken down by name, description, unit_cost, and units used",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="tax_rate",
-                param_type="float",
+                type="float",
                 description="local tax rate used for calculations",
             ),
         ],
     )
 
-    invoice_response = ResponseModel(
+    invoice_response = ObjectTypeE(
         name="inoviceresponse",
         description="A pdf of an invoice",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="availability_status",
-                param_type="file",
+                type="file",
                 description="A PDF file for the invoice",
             )
         ],
@@ -119,45 +117,45 @@ def invoice_generator_requirements() -> ApplicationRequirements:
 # Function to define requirements for the Appointment Optimization Tool
 def appointment_optimization_requirements() -> ApplicationRequirements:
     # Define request and response models here
-    appointment_model = RequestModel(
+    appointment_model = ObjectTypeE(
         name="AppointmentModel",
         description="An object used to make good times for an appointment",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="availablility_calendar",
-                param_type="list[datetime]",
+                type="list[datetime]",
                 description="A data structure (like a list or array) containing the professional's available time slots for a given period (e.g., a week). Each time slot should include the start and end times.",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="prefered_hours",
-                param_type="str",
+                type="str",
                 description="The professional's preferred working hours (e.g., 9 AM to 5 PM), which could be a default setting or specified for each day.",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="travel_time_buffer",
-                param_type="time",
+                type="time",
                 description="Information regarding the time needed to travel between appointments. This could be a fixed duration or vary based on the time of day or location.",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="time_frame",
-                param_type="str",
+                type="str",
                 description="The time frame during which the client wishes to schedule the appointment (e.g., a specific date or range of dates).",
             ),
         ],
     )
 
-    appointment_response = ResponseModel(
+    appointment_response = ObjectTypeE(
         name="AppointmentResponse",
         description="A few good times for appointments",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="slots",
-                param_type="list[datetime]",
+                type="list[datetime]",
                 description="A list of optimal appointment slots, each with a start and end time. This list should be sorted by preference or efficiency.",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="alternatives",
-                param_type="datetime[]",
+                type="datetime[]",
                 description="If no optimal slots are available, provide a list of alternative slots, clearly indicating that they are outside the preferred criteria.",
             ),
         ],
@@ -184,35 +182,35 @@ def appointment_optimization_requirements() -> ApplicationRequirements:
 # Function to define requirements for the Distance Calculator
 def distance_calculator_requirements() -> ApplicationRequirements:
     # Define request and response models here
-    distance_model = RequestModel(
+    distance_model = ObjectTypeE(
         name="DistanceInput",
         description="An object used to find the start and end locations",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="start_location",
-                param_type="Tuple[float, float]",
+                type="Tuple[float, float]",
                 description="AThe current location of the professional, provided as latitude and longitude coordinates.",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="end_location",
-                param_type="Tuple[str,str]",
+                type="Tuple[str,str]",
                 description="The location where the client wishes to have the appointment, provided as latitude and longitude coordinates.",
             ),
         ],
     )
 
-    distance_response = ResponseModel(
+    distance_response = ObjectTypeE(
         name="DistanceOutput",
         description="Output of calcuating the distance",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="distance",
-                param_type="Tuple[float, float]",
+                type="Tuple[float, float]",
                 description="The calculated distance between the two locations, preferably in both kilometers and miles.",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="travel_time",
-                param_type="time",
+                type="time",
                 description="An estimation of the time it would take for the professional to travel from their location to the client's location, considering average travel conditions.",
             ),
         ],
@@ -238,123 +236,123 @@ def distance_calculator_requirements() -> ApplicationRequirements:
 
 def profile_management() -> ApplicationRequirements:
     # Define request and response models for each API route
-    create_profile_request = RequestModel(
+    create_profile_request = ObjectTypeE(
         name="CreateProfileRequest",
         description="Input required for creating a new profile",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="user_type",
-                param_type="str",
+                type="str",
                 description="Type of the user: client or professional",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="personal_details",
-                param_type="dict",
+                type="dict",
                 description="Name and contact information",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="preferences",
-                param_type="dict",
+                type="dict",
                 description="Optional settings specific to the user type",
             ),
         ],
     )
 
-    create_profile_response = ResponseModel(
+    create_profile_response = ObjectTypeE(
         name="CreateProfileResponse",
         description="Output after creating a profile",
-        params=[
-            Parameter(
-                name="message", param_type="str", description="Success or error message"
+        Fields=[
+            ObjectFieldE(
+                name="message", type="str", description="Success or error message"
             ),
-            Parameter(
+            ObjectFieldE(
                 name="profile_details",
-                param_type="dict",
+                type="dict",
                 description="Details of the created profile",
             ),
         ],
     )
 
-    update_profile_request = RequestModel(
+    update_profile_request = ObjectTypeE(
         name="UpdateProfileRequest",
         description="Input required for updating an existing profile",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="profile_id",
-                param_type="str",
+                type="str",
                 description="Profile ID or unique identifier",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="fields_to_update",
-                param_type="dict",
+                type="dict",
                 description="Fields to be updated with their new values",
             ),
         ],
     )
 
-    update_profile_response = ResponseModel(
+    update_profile_response = ObjectTypeE(
         name="UpdateProfileResponse",
         description="Output after updating a profile",
-        params=[
-            Parameter(
-                name="message", param_type="str", description="Success or error message"
+        Fields=[
+            ObjectFieldE(
+                name="message", type="str", description="Success or error message"
             ),
-            Parameter(
+            ObjectFieldE(
                 name="updated_profile_details",
-                param_type="dict",
+                type="dict",
                 description="Details of the updated profile",
             ),
         ],
     )
 
-    retrieve_profile_request = RequestModel(
+    retrieve_profile_request = ObjectTypeE(
         name="RetrieveProfileRequest",
         description="Input required for retrieving a profile",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="profile_id",
-                param_type="str",
+                type="str",
                 description="Profile ID or unique identifier",
             ),
         ],
     )
 
-    retrieve_profile_response = ResponseModel(
+    retrieve_profile_response = ObjectTypeE(
         name="RetrieveProfileResponse",
         description="Output after retrieving a profile",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="profile_details",
-                param_type="dict",
+                type="dict",
                 description="Details of the retrieved profile",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="message",
-                param_type="str",
+                type="str",
                 description="Error message if the profile is not found",
             ),
         ],
     )
 
-    delete_profile_request = RequestModel(
+    delete_profile_request = ObjectTypeE(
         name="DeleteProfileRequest",
         description="Input required for deleting a profile",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="profile_id",
-                param_type="str",
+                type="str",
                 description="Profile ID or unique identifier",
             ),
         ],
     )
 
-    delete_profile_response = ResponseModel(
+    delete_profile_response = ObjectTypeE(
         name="DeleteProfileResponse",
         description="Output after deleting a profile",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="message",
-                param_type="str",
+                type="str",
                 description="Success message confirming profile deletion or error message if the profile is not found or deletion fails",
             ),
         ],
@@ -472,45 +470,44 @@ def calendar_booking_system() -> ApplicationRequirements:
                 function_name="create_user",
                 description="Registers a new user by providing basic user information.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="CreateUserInput",
                     description="CreateUserInput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="email",
-                            param_type="string",
+                            type="string",
                             description="Unique email address of the user. Acts as a login identifier.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="password",
-                            param_type="string",
+                            type="string",
                             description="Password for the user account. Must comply with defined security standards.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="role",
-                            param_type="UserRole",
-                            description="The role of the user which dictates access control. Optional parameter; defaults to 'Client' if not specified.",
+                            type="UserRole",
+                            description="The role of the user which dictates access control. Optional ObjectFieldE; defaults to 'Client' if not specified.",
                         ),
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="CreateUserInput",
                     description="CreateUserInput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="user_id",
-                            param_type="string",
+                            type="string",
                             description="The unique identifier of the newly created user.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="message",
-                            param_type="string",
+                            type="string",
                             description="A success message confirming user creation.",
                         ),
                     ],
                 ),
                 database_schema=database_schema,
-                data_models=[],
             ),
             APIRouteRequirement(
                 method="PUT",
@@ -518,55 +515,54 @@ def calendar_booking_system() -> ApplicationRequirements:
                 function_name="update_user_profile",
                 description="Updates an existing user's profile information.",
                 access_level=AccessLevel.USER,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="UpdateUserProfileInput",
                     description="UpdateUserProfileInput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="email",
-                            param_type="str",
+                            type="str",
                             description="The new email address of the user.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="password",
-                            param_type="str",
+                            type="str",
                             description="The new password of the user. Should be hashed in the database, not stored in plain text.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="role",
-                            param_type="UserRole",
+                            type="UserRole",
                             description="The new role assigned to the user. Can be one of ['Admin', 'ServiceProvider', 'Client'].",
                         ),
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="UpdateUserProfileInput",
                     description="UpdateUserProfileInput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="id",
-                            param_type="str",
+                            type="str",
                             description="The unique identifier of the user.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="email",
-                            param_type="str",
+                            type="str",
                             description="The updated email address of the user.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="role",
-                            param_type="UserRole",
+                            type="UserRole",
                             description="The updated role assigned to the user.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="updatedAt",
-                            param_type="datetime",
+                            type="datetime",
                             description="The timestamp reflecting when the update was made.",
                         ),
                     ],
                 ),
                 database_schema=database_schema,
-                data_models=[],
             ),
             APIRouteRequirement(
                 method="POST",
@@ -574,45 +570,44 @@ def calendar_booking_system() -> ApplicationRequirements:
                 function_name="user_login",
                 description="Authenticates a user and returns a session token.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="UserLoginInput",
                     description="UserLoginInput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="email",
-                            param_type="str",
+                            type="str",
                             description="The email address associated with the user's account.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="password",
-                            param_type="str",
+                            type="str",
                             description="The password associated with the user's account.",
                         ),
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="UserLoginInput",
                     description="UserLoginInput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="success",
-                            param_type="bool",
+                            type="bool",
                             description="Indicates if the login was successful.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="token",
-                            param_type="str",
+                            type="str",
                             description="A session token to be used for authenticated requests.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="message",
-                            param_type="str",
+                            type="str",
                             description="A message providing more details about the login attempt, useful for debugging or informing the user about the login status.",
                         ),
                     ],
                 ),
                 database_schema=database_schema,
-                data_models=[],
             ),
             APIRouteRequirement(
                 method="POST",
@@ -620,24 +615,24 @@ def calendar_booking_system() -> ApplicationRequirements:
                 function_name="user_logout",
                 description="Logs out a user, invalidating the session token.",
                 access_level=AccessLevel.USER,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="UserLogoutInput",
                     description="UserLogoutInput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="Authorization",
-                            param_type="Header",
+                            type="Header",
                             description="The session token provided as a part of the HTTP header for authentication.",
                         )
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="UserLogoutOutput",
                     description="UserLogoutOutput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="message",
-                            param_type="string",
+                            type="string",
                             description="A confirmation message indicating successful logout.",
                         )
                     ],
@@ -668,7 +663,6 @@ def calendar_booking_system() -> ApplicationRequirements:
                         ),
                     ],
                 ),
-                data_models=[],
             ),
             APIRouteRequirement(
                 method="PUT",
@@ -676,67 +670,49 @@ def calendar_booking_system() -> ApplicationRequirements:
                 function_name="update_notification_settings",
                 description="Updates a user's notification preferences.",
                 access_level=AccessLevel.USER,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="UpdateNotificationSettingsRequest",
                     description="UpdateNotificationSettingsRequest",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="userId",
-                            param_type="string",
+                            type="string",
                             description="The unique identifier of the user whose notification settings need to be updated.",
                         ),
-                        # Parameter(
+                        # ObjectFieldE(
                         #     name="settings",
-                        #     param_type="NotificationSettingsUpdate",
+                        #     type="NotificationSettingsUpdate",
                         #     description="The new notification settings to be applied to the user's profile.",
                         # ),
-                        Parameter(
+                        ObjectFieldE(
                             name="emailFrequency",
-                            param_type="string",
+                            type="string",
                             description="The desired frequency of email notifications ('daily', 'weekly', 'never').",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="smsEnabled",
-                            param_type="boolean",
+                            type="boolean",
                             description="Indicates whether SMS notifications are enabled (true/false).",
                         ),
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="UpdateNotificationSettingsResponse",
                     description="UpdateNotificationSettingsResponse",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="success",
-                            param_type="boolean",
+                            type="boolean",
                             description="Indicates if the update operation was successful.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="message",
-                            param_type="string",
+                            type="string",
                             description="A message detailing the outcome of the operation.",
                         ),
                     ],
                 ),
                 database_schema=database_schema,
-                data_models=[
-                    # EndpointDataModel(
-                    #     name="NotificationSettingsUpdate",
-                    #     description="Defines the fields available for updating a user's notification preferences, like frequency and method.",
-                    #     params=[
-                    #         Parameter(
-                    #             name="emailFrequency",
-                    #             param_type="string",
-                    #             description="The desired frequency of email notifications ('daily', 'weekly', 'never').",
-                    #         ),
-                    #         Parameter(
-                    #             name="smsEnabled",
-                    #             param_type="boolean",
-                    #             description="Indicates whether SMS notifications are enabled (true/false).",
-                    #         ),
-                    #     ],
-                    # )
-                ],
             ),
             APIRouteRequirement(
                 method="POST",
@@ -744,65 +720,64 @@ def calendar_booking_system() -> ApplicationRequirements:
                 function_name="create_appointment",
                 description="Creates a new appointment.",
                 access_level=AccessLevel.USER,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="CreateAppointmentInput",
                     description="CreateAppointmentInput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="userId",
-                            param_type="str",
+                            type="str",
                             description="The ID of the user creating the appointment.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="startTime",
-                            param_type="datetime",
+                            type="datetime",
                             description="The start time for the appointment.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="endTime",
-                            param_type="datetime",
+                            type="datetime",
                             description="The end time for the appointment.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="type",
-                            param_type="str",
+                            type="str",
                             description="Type of the appointment.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="participants",
-                            param_type="[str]",
+                            type="[str]",
                             description="List of participating user IDs.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="timeZone",
-                            param_type="str",
+                            type="str",
                             description="Timezone for the scheduled appointment.",
                         ),
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="CreateAppointmentOutput",
                     description="CreateAppointmentOutput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="success",
-                            param_type="bool",
+                            type="bool",
                             description="Indicates success or failure of the operation.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="appointmentId",
-                            param_type="str",
+                            type="str",
                             description="Unique identifier for the newly created appointment.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="message",
-                            param_type="str",
+                            type="str",
                             description="Additional information or error message.",
                         ),
                     ],
                 ),
                 database_schema=database_schema,
-                data_models=[],
             ),
             APIRouteRequirement(
                 method="PUT",
@@ -810,60 +785,59 @@ def calendar_booking_system() -> ApplicationRequirements:
                 function_name="update_appointment",
                 description="Updates details of an existing appointment.",
                 access_level=AccessLevel.USER,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="AppointmentUpdateInput",
                     description="AppointmentUpdateInput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="startTime",
-                            param_type="datetime",
+                            type="datetime",
                             description="The new start time for the appointment, accounting for any time zone considerations.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="endTime",
-                            param_type="datetime",
+                            type="datetime",
                             description="The new end time for the appointment, ensuring it follows logically after the start time.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="type",
-                            param_type="str",
+                            type="str",
                             description="Optionally update the type/category of the appointment.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="status",
-                            param_type="AppointmentStatus",
+                            type="AppointmentStatus",
                             description="The updated status to reflect any changes such as rescheduling or cancellations.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="timeZone",
-                            param_type="str",
+                            type="str",
                             description="If the time zone needs adjusting to reflect the appropriate scheduling context.",
                         ),
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="AppointmentUpdateOutput",
                     description="AppointmentUpdateOutput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="id",
-                            param_type="str",
+                            type="str",
                             description="The ID of the appointment that was updated.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="success",
-                            param_type="bool",
+                            type="bool",
                             description="Indicates true if the appointment was successfully updated, false otherwise.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="message",
-                            param_type="str",
+                            type="str",
                             description="Provides more information about the outcome of the update, such as 'Appointment updated successfully' or 'Update failed due to [reason]'.",
                         ),
                     ],
                 ),
                 database_schema=database_schema,
-                data_models=[],
             ),
             APIRouteRequirement(
                 method="DELETE",
@@ -871,35 +845,34 @@ def calendar_booking_system() -> ApplicationRequirements:
                 function_name="cancel_appointment",
                 description="Cancels an existing appointment.",
                 access_level=AccessLevel.USER,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="CancelAppointmentInput",
                     description="CancelAppointmentInput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="id",
-                            param_type="str",
+                            type="str",
                             description="Unique identifier of the appointment to be canceled.",
                         )
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="CancelAppointmentOutput",
                     description="CancelAppointmentOutput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="success",
-                            param_type="bool",
+                            type="bool",
                             description="Indicates whether the appointment cancellation was successful.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="message",
-                            param_type="str",
+                            type="str",
                             description="A message detailing the outcome of the cancellation request.",
                         ),
                     ],
                 ),
                 database_schema=database_schema,
-                data_models=[],
             ),
             APIRouteRequirement(
                 method="PUT",
@@ -907,72 +880,49 @@ def calendar_booking_system() -> ApplicationRequirements:
                 function_name="configure_notifications",
                 description="Configures a user's notification preferences.",
                 access_level=AccessLevel.USER,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="ConfigureNotificationsRequest",
                     description="ConfigureNotificationsRequest",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="userId",
-                            param_type="string",
+                            type="string",
                             description="The unique identifier of the user updating their preferences",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="emailEnabled",
-                            param_type="boolean",
+                            type="boolean",
                             description="Indicates whether email notifications are enabled",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="emailFrequency",
-                            param_type="string",
+                            type="string",
                             description="Defines how often email notifications are sent ('immediately', 'daily', 'weekly')",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="smsEnabled",
-                            param_type="boolean",
+                            type="boolean",
                             description="Indicates whether SMS notifications are enabled",
                         ),
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="ConfigureNotificationsResponse",
                     description="ConfigureNotificationsResponse",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="success",
-                            param_type="boolean",
+                            type="boolean",
                             description="Indicates whether the update operation was successful",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="message",
-                            param_type="string",
+                            type="string",
                             description="Provides information about the operation's outcome or failure reason",
                         ),
                     ],
                 ),
                 database_schema=database_schema,
-                data_models=[
-                    # EndpointDataModel(
-                    #     name="NotificationSettings",
-                    #     description="Defines the notification preferences for a user, including channels and frequency",
-                    #     params=[
-                    #         Parameter(
-                    #             name="emailEnabled",
-                    #             param_type="boolean",
-                    #             description="Indicates whether email notifications are enabled",
-                    #         ),
-                    #         Parameter(
-                    #             name="emailFrequency",
-                    #             param_type="string",
-                    #             description="Defines how often email notifications are sent ('immediately', 'daily', 'weekly')",
-                    #         ),
-                    #         Parameter(
-                    #             name="smsEnabled",
-                    #             param_type="boolean",
-                    #             description="Indicates whether SMS notifications are enabled",
-                    #         ),
-                    #     ],
-                    # )
-                ],
             ),
             APIRouteRequirement(
                 method="POST",
@@ -980,45 +930,44 @@ def calendar_booking_system() -> ApplicationRequirements:
                 function_name="dispatch_notifications",
                 description="Sends out notifications based on predefined criteria and user settings.",
                 access_level=AccessLevel.ADMIN,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="DispatchNotificationInput",
                     description="DispatchNotificationInput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="criteria",
-                            param_type="string",
+                            type="string",
                             description="Criteria for notification dispatch, such as 'allPendingWithin24h' to indicate all notifications for appointments occurring in the next 24 hours.",
                         )
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="DispatchNotificationOutput",
                     description="DispatchNotificationOutput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="success",
-                            param_type="boolean",
+                            type="boolean",
                             description="If the dispatch was successful overall.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="dispatchedCount",
-                            param_type="int",
+                            type="int",
                             description="Total number of notifications dispatched.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="failedCount",
-                            param_type="int",
+                            type="int",
                             description="Number of notifications that failed to dispatch.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="errors",
-                            param_type="[string]",
+                            type="[string]",
                             description="List of errors for individual failures, if applicable.",
                         ),
                     ],
                 ),
                 database_schema=database_schema,
-                data_models=[],
             ),
         ],
     )
@@ -1081,88 +1030,84 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                 function_name="list_inventory",
                 description="Fetch a list of inventory items.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="ListInventoryRequest",
                     description="ListInventoryRequest",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="filters",
-                            param_type="InventoryFilter",
+                            type=ObjectTypeE(
+                                name="InventoryFilter",
+                                description="Optional filters for listing inventory items, including filter by location, batch, and name.",
+                                Fields=[
+                                    ObjectFieldE(
+                                        name="locationId",
+                                        type="int",
+                                        description="Allows filtering inventory items by their stored location ID.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="batchId",
+                                        type="int",
+                                        description="Allows filtering inventory items by their associated batch ID.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="name",
+                                        type="string",
+                                        description="Allows filtering inventory items by a name or partial name match.",
+                                    ),
+                                ],
+                            ),
                             description="Optional filters to apply when listing inventory items.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="pagination",
-                            param_type="PaginationParams",
+                            type=ObjectTypeE(
+                                name="PaginationParams",
+                                description="Parameters for controlling the pagination of the list_inventory response.",
+                                Fields=[
+                                    ObjectFieldE(
+                                        name="page",
+                                        type="int",
+                                        description="Specifies the page number of inventory items to retrieve.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="pageSize",
+                                        type="int",
+                                        description="Specifies the number of inventory items per page.",
+                                    ),
+                                ],
+                            ),
                             description="Optional pagination control parameters.",
                         ),
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="ListInventoryResponse",
                     description="ListInventoryResponse",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="items",
-                            param_type="array[InventoryItem]",
+                            type="array[InventoryItem]",
                             description="A list of inventory items that match the request criteria.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="totalItems",
-                            param_type="int",
+                            type="int",
                             description="The total number of inventory items that match the request filters, ignoring pagination.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="currentPage",
-                            param_type="int",
+                            type="int",
                             description="The current page number of the inventory items list.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="totalPages",
-                            param_type="int",
+                            type="int",
                             description="The total number of pages available based on the current filter and pagination settings.",
                         ),
                     ],
                 ),
                 database_schema=database_schema,
-                data_models=[
-                    EndpointDataModel(
-                        name="InventoryFilter",
-                        description="Optional filters for listing inventory items, including filter by location, batch, and name.",
-                        params=[
-                            Parameter(
-                                name="locationId",
-                                param_type="int",
-                                description="Allows filtering inventory items by their stored location ID.",
-                            ),
-                            Parameter(
-                                name="batchId",
-                                param_type="int",
-                                description="Allows filtering inventory items by their associated batch ID.",
-                            ),
-                            Parameter(
-                                name="name",
-                                param_type="string",
-                                description="Allows filtering inventory items by a name or partial name match.",
-                            ),
-                        ],
-                    ),
-                    EndpointDataModel(
-                        name="PaginationParams",
-                        description="Parameters for controlling the pagination of the list_inventory response.",
-                        params=[
-                            Parameter(
-                                name="page",
-                                param_type="int",
-                                description="Specifies the page number of inventory items to retrieve.",
-                            ),
-                            Parameter(
-                                name="pageSize",
-                                param_type="int",
-                                description="Specifies the number of inventory items per page.",
-                            ),
-                        ],
-                    ),
-                ],
             ),
             APIRouteRequirement(
                 method="PUT",
@@ -1170,65 +1115,64 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                 function_name="update_inventory_item",
                 description="Update an inventory item's details.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="UpdateInventoryItemInput",
                     description="UpdateInventoryItemInput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="id",
-                            param_type="int",
+                            type="int",
                             description="the unique identifier of the inventory item to update",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="name",
-                            param_type="str",
+                            type="str",
                             description="optional: the new name of the inventory item",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="description",
-                            param_type="str",
+                            type="str",
                             description="optional: the new description of the inventory item",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="quantity",
-                            param_type="int",
+                            type="int",
                             description="optional: the new quantity of the inventory item",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="locationId",
-                            param_type="int",
+                            type="int",
                             description="optional: the new location identifier where the inventory item is stored",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="batchId",
-                            param_type="int",
+                            type="int",
                             description="optional: the new batch identifier associated with the inventory item",
                         ),
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="UpdateInventoryItemOutput",
                     description="UpdateInventoryItemOutput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="success",
-                            param_type="bool",
+                            type="bool",
                             description="indicates if the update operation was successful",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="message",
-                            param_type="str",
+                            type="str",
                             description="provides details on the outcome of the operation, including error messages",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="updatedItem",
-                            param_type="InventoryItem",
+                            type="InventoryItem",
                             description="optional: the updated inventory item details, provided if the update was successful",
                         ),
                     ],
                 ),
                 database_schema=database_schema,
-                data_models=[],
             ),
             APIRouteRequirement(
                 method="POST",
@@ -1236,72 +1180,69 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                 function_name="create_inventory_item",
                 description="Add a new inventory item.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="CreateInventoryItemRequest",
                     description="CreateInventoryItemRequest",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="inventoryItem",
-                            param_type="InventoryItemCreateInput",
+                            type=ObjectTypeE(
+                                name="InventoryItemCreateInput",
+                                description="Defines the necessary parameters for creating a new inventory item, including name, quantity, and optionally description, locationId, and batchId for perishables.",
+                                Fields=[
+                                    ObjectFieldE(
+                                        name="name",
+                                        type="str",
+                                        description="The name of the inventory item.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="description",
+                                        type="str",
+                                        description="A brief description of the inventory item. Optional.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="quantity",
+                                        type="int",
+                                        description="The initial stock quantity of the inventory item.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="locationId",
+                                        type="int",
+                                        description="The ID of the location where the inventory item is stored. Optional.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="batchId",
+                                        type="int",
+                                        description="Related batch ID for perishable goods. Optional.",
+                                    ),
+                                ],
+                            ),
                             description="Object containing details necessary for adding a new inventory item.",
                         )
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="CreateInventoryItemResponse",
                     description="CreateInventoryItemResponse",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="success",
-                            param_type="bool",
+                            type="bool",
                             description="Indicates if the item was successfully created.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="itemId",
-                            param_type="int",
+                            type="int",
                             description="The ID of the newly created inventory item.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="message",
-                            param_type="str",
+                            type="str",
                             description="A descriptive message about the result of the operation.",
                         ),
                     ],
                 ),
                 database_schema=database_schema,
-                data_models=[
-                    EndpointDataModel(
-                        name="InventoryItemCreateInput",
-                        description="Defines the necessary parameters for creating a new inventory item, including name, quantity, and optionally description, locationId, and batchId for perishables.",
-                        params=[
-                            Parameter(
-                                name="name",
-                                param_type="str",
-                                description="The name of the inventory item.",
-                            ),
-                            Parameter(
-                                name="description",
-                                param_type="str",
-                                description="A brief description of the inventory item. Optional.",
-                            ),
-                            Parameter(
-                                name="quantity",
-                                param_type="int",
-                                description="The initial stock quantity of the inventory item.",
-                            ),
-                            Parameter(
-                                name="locationId",
-                                param_type="int",
-                                description="The ID of the location where the inventory item is stored. Optional.",
-                            ),
-                            Parameter(
-                                name="batchId",
-                                param_type="int",
-                                description="Related batch ID for perishable goods. Optional.",
-                            ),
-                        ],
-                    )
-                ],
             ),
             APIRouteRequirement(
                 method="DELETE",
@@ -1309,35 +1250,34 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                 function_name="delete_inventory_item",
                 description="Remove an inventory item.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="DeleteInventoryItemInput",
                     description="DeleteInventoryItemInput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="id",
-                            param_type="int",
+                            type="int",
                             description="The unique identifier of the inventory item to be deleted.",
                         )
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="DeleteInventoryItemOutput",
                     description="DeleteInventoryItemOutput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="success",
-                            param_type="bool",
+                            type="bool",
                             description="Indicates whether the deletion was successful.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="error_message",
-                            param_type="str",
+                            type="str",
                             description="Provides an error message if the deletion was not successful. This field is optional and may not be present if 'success' is true.",
                         ),
                     ],
                 ),
                 database_schema=database_schema,
-                data_models=[],
             ),
             APIRouteRequirement(
                 method="POST",
@@ -1345,73 +1285,69 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                 function_name="create_report",
                 description="Generate a new report based on provided parameters.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="CreateReportRequest",
                     description="CreateReportRequest",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="reportParams",
-                            param_type="CreateReportParams",
+                            type=ObjectTypeE(
+                                name="CreateReportParams",
+                                description="Defines the parameters required for creating a new inventory report.",
+                                Fields=[
+                                    ObjectFieldE(
+                                        name="dateRange",
+                                        type="DateRange",
+                                        description="The date range for which the report should cover.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="reportType",
+                                        type="str",
+                                        description="Specifies the type of report to generate, such as 'inventoryLevel', 'reordering', or 'expiryTracking'.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="inventoryItems",
+                                        type="List[int]",
+                                        description="Optional. A list of inventory item IDs to include in the report. If not provided, the report covers all items.",
+                                    ),
+                                ],
+                            ),
                             description="Object containing all necessary parameters to create a report.",
                         )
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="CreateReportResponse",
                     description="CreateReportResponse",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="result",
-                            param_type="CreateReportResponse",
+                            type=ObjectTypeE(
+                                name="CreateReportResponse",
+                                description="The response returned after attempting to create a report. Contains the report's ID if successful.",
+                                Fields=[
+                                    ObjectFieldE(
+                                        name="success",
+                                        type="bool",
+                                        description="Indicates if the report was successfully created.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="reportId",
+                                        type="int",
+                                        description="The unique identifier of the newly created report. Null if 'success' is false.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="message",
+                                        type="str",
+                                        description="A message detailing the outcome of the request.",
+                                    ),
+                                ],
+                            ),
                             description="Object containing the result of the report creation attempt.",
                         )
                     ],
                 ),
                 database_schema=database_schema,
-                data_models=[
-                    EndpointDataModel(
-                        name="CreateReportParams",
-                        description="Defines the parameters required for creating a new inventory report.",
-                        params=[
-                            Parameter(
-                                name="dateRange",
-                                param_type="DateRange",
-                                description="The date range for which the report should cover.",
-                            ),
-                            Parameter(
-                                name="reportType",
-                                param_type="str",
-                                description="Specifies the type of report to generate, such as 'inventoryLevel', 'reordering', or 'expiryTracking'.",
-                            ),
-                            Parameter(
-                                name="inventoryItems",
-                                param_type="List[int]",
-                                description="Optional. A list of inventory item IDs to include in the report. If not provided, the report covers all items.",
-                            ),
-                        ],
-                    ),
-                    EndpointDataModel(
-                        name="CreateReportResponse",
-                        description="The response returned after attempting to create a report. Contains the report's ID if successful.",
-                        params=[
-                            Parameter(
-                                name="success",
-                                param_type="bool",
-                                description="Indicates if the report was successfully created.",
-                            ),
-                            Parameter(
-                                name="reportId",
-                                param_type="int",
-                                description="The unique identifier of the newly created report. Null if 'success' is false.",
-                            ),
-                            Parameter(
-                                name="message",
-                                param_type="str",
-                                description="A message detailing the outcome of the request.",
-                            ),
-                        ],
-                    ),
-                ],
             ),
             APIRouteRequirement(
                 method="GET",
@@ -1419,64 +1355,62 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                 function_name="get_reports",
                 description="List all available reports.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
-                    name="GetReportsRequest", description="GetReportsRequest", params=[]
+                request_model=ObjectTypeE(
+                    name="GetReportsRequest", description="GetReportsRequest", Fields=[]
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="GetReportsResponse",
                     description="GetReportsResponse",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="reports",
-                            param_type="List[ReportSummary]",
+                            # type="List[ReportSummary]",
+                            type=ObjectTypeE(
+                                name="ReportSummary",
+                                description="Summarizes essential details of a report for listing purposes.",
+                                Fields=[
+                                    ObjectFieldE(
+                                        name="id",
+                                        type="int",
+                                        description="Unique identifier of the report",
+                                    ),
+                                    ObjectFieldE(
+                                        name="title",
+                                        type="str",
+                                        description="Title of the report",
+                                    ),
+                                    ObjectFieldE(
+                                        name="creationDate",
+                                        type="datetime",
+                                        description="The date and time when the report was created",
+                                    ),
+                                    ObjectFieldE(
+                                        name="description",
+                                        type="str",
+                                        description="A brief description of the report",
+                                    ),
+                                ],
+                            ),
                             description="A list of report summaries",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="totalCount",
-                            param_type="int",
+                            type="int",
                             description="The total number of reports available",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="page",
-                            param_type="int",
+                            type="int",
                             description="The current page number",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="pageSize",
-                            param_type="int",
+                            type="int",
                             description="The number of items per page",
                         ),
                     ],
                 ),
                 database_schema=database_schema,
-                data_models=[
-                    EndpointDataModel(
-                        name="ReportSummary",
-                        description="Summarizes essential details of a report for listing purposes.",
-                        params=[
-                            Parameter(
-                                name="id",
-                                param_type="int",
-                                description="Unique identifier of the report",
-                            ),
-                            Parameter(
-                                name="title",
-                                param_type="str",
-                                description="Title of the report",
-                            ),
-                            Parameter(
-                                name="creationDate",
-                                param_type="datetime",
-                                description="The date and time when the report was created",
-                            ),
-                            Parameter(
-                                name="description",
-                                param_type="str",
-                                description="A brief description of the report",
-                            ),
-                        ],
-                    )
-                ],
             ),
             APIRouteRequirement(
                 method="POST",
@@ -1484,83 +1418,44 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                 function_name="create_integration",
                 description="Register a new integration with an external system.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="CreateIntegrationInput",
                     description="CreateIntegrationInput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="systemType",
-                            param_type="string",
+                            type="string",
                             description="The type of system to integrate.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="details",
-                            param_type="string",
+                            type="string",
                             description="Configuration details for the integration.",
                         ),
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="CreateIntegrationOutput",
                     description="CreateIntegrationOutput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="success",
-                            param_type="bool",
+                            type="bool",
                             description="Indicates if the operation was successful.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="integrationId",
-                            param_type="int",
+                            type="int",
                             description="ID of the created integration, if successful.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="message",
-                            param_type="string",
+                            type="string",
                             description="Outcome message.",
                         ),
                     ],
                 ),
                 database_schema=database_schema,
-                data_models=[
-                    EndpointDataModel(
-                        name="CreateIntegrationInput",
-                        description="Parameters required to register a new external system integration.",
-                        params=[
-                            Parameter(
-                                name="systemType",
-                                param_type="string",
-                                description="The type of system being integrated; defines the integration protocol or standard.",
-                            ),
-                            Parameter(
-                                name="details",
-                                param_type="string",
-                                description="Configuration details necessary for establishing the connection with the external system.",
-                            ),
-                        ],
-                    ),
-                    EndpointDataModel(
-                        name="CreateIntegrationResponse",
-                        description="The output after successfully registering a new integration.",
-                        params=[
-                            Parameter(
-                                name="success",
-                                param_type="bool",
-                                description="Indicates if the integration was successfully created.",
-                            ),
-                            Parameter(
-                                name="integrationId",
-                                param_type="int",
-                                description="The unique identifier of the newly created integration. Provided only if success is true.",
-                            ),
-                            Parameter(
-                                name="message",
-                                param_type="string",
-                                description="A message describing the outcome of the operation.",
-                            ),
-                        ],
-                    ),
-                ],
             ),
             APIRouteRequirement(
                 method="GET",
@@ -1568,46 +1463,44 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                 function_name="list_integrations",
                 description="List all external system integrations.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="ListIntegrationsRequest",
                     description="ListIntegrationsRequest",
-                    params=[],
+                    Fields=[],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="ListIntegrationsResponse",
                     description="ListIntegrationsResponse",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="integrations",
-                            param_type="List[IntegrationSummary]",
+                            # type="List[IntegrationSummary]",
+                            type=ObjectTypeE(
+                                name="IntegrationSummary",
+                                description="Summarizes essential details of an external system integration for listing purposes.",
+                                Fields=[
+                                    ObjectFieldE(
+                                        name="id",
+                                        type="int",
+                                        description="Unique identifier of the integration.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="systemType",
+                                        type="str",
+                                        description="Type of the external system (e.g., Sales, Procurement).",
+                                    ),
+                                    ObjectFieldE(
+                                        name="details",
+                                        type="str",
+                                        description="Additional details or description of the integration.",
+                                    ),
+                                ],
+                            ),
                             description="A list of integration summaries detailing the available external system integrations.",
                         )
                     ],
                 ),
                 database_schema=database_schema,
-                data_models=[
-                    EndpointDataModel(
-                        name="IntegrationSummary",
-                        description="Summarizes essential details of an external system integration for listing purposes.",
-                        params=[
-                            Parameter(
-                                name="id",
-                                param_type="int",
-                                description="Unique identifier of the integration.",
-                            ),
-                            Parameter(
-                                name="systemType",
-                                param_type="str",
-                                description="Type of the external system (e.g., Sales, Procurement).",
-                            ),
-                            Parameter(
-                                name="details",
-                                param_type="str",
-                                description="Additional details or description of the integration.",
-                            ),
-                        ],
-                    )
-                ],
             ),
             APIRouteRequirement(
                 method="POST",
@@ -1615,93 +1508,49 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                 function_name="create_alert",
                 description="Set a new alert based on inventory criteria.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="CreateAlertInput",
                     description="CreateAlertInput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="userId",
-                            param_type="int",
+                            type="int",
                             description="The ID of the user setting the alert.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="criteria",
-                            param_type="string",
+                            type="string",
                             description="Condition or event that triggers the alert.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="threshold",
-                            param_type="int",
+                            type="int",
                             description="Numeric value that triggers the alert when reached or exceeded.",
                         ),
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="CreateAlertOutput",
                     description="CreateAlertOutput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="success",
-                            param_type="bool",
+                            type="bool",
                             description="Indicates if the alert creation was successful.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="alertId",
-                            param_type="int",
+                            type="int",
                             description="The ID of the newly created alert if successful.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="message",
-                            param_type="string",
+                            type="string",
                             description="Descriptive message of the alert creation outcome.",
                         ),
                     ],
                 ),
                 database_schema=database_schema,
-                data_models=[
-                    EndpointDataModel(
-                        name="CreateAlertInput",
-                        description="Describes the input required to create a new alert.",
-                        params=[
-                            Parameter(
-                                name="userId",
-                                param_type="int",
-                                description="The ID of the user setting the alert.",
-                            ),
-                            Parameter(
-                                name="criteria",
-                                param_type="string",
-                                description="The condition that triggers the alert.",
-                            ),
-                            Parameter(
-                                name="threshold",
-                                param_type="int",
-                                description="The numeric value that, when reached or exceeded, triggers the alert.",
-                            ),
-                        ],
-                    ),
-                    EndpointDataModel(
-                        name="CreateAlertOutput",
-                        description="Contains confirmation of the alert creation, including the newly created alert's ID.",
-                        params=[
-                            Parameter(
-                                name="success",
-                                param_type="bool",
-                                description="Indicates whether the alert was successfully created.",
-                            ),
-                            Parameter(
-                                name="alertId",
-                                param_type="int",
-                                description="The unique identifier of the newly created alert, provided when 'success' is true.",
-                            ),
-                            Parameter(
-                                name="message",
-                                param_type="string",
-                                description="A message describing the outcome of the alert creation attempt.",
-                            ),
-                        ],
-                    ),
-                ],
             ),
             APIRouteRequirement(
                 method="GET",
@@ -1709,22 +1558,21 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                 function_name="list_alerts",
                 description="List all configured alerts.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
-                    name="ListAlertsRequest", description="ListAlertsRequest", params=[]
+                request_model=ObjectTypeE(
+                    name="ListAlertsRequest", description="ListAlertsRequest", Fields=[]
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="ListAlertsResponse",
                     description="ListAlertsResponse",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="alerts",
-                            param_type="List[AlertDetail]",
+                            type="List[AlertDetail]",
                             description="List containing detailed configurations of all alerts.",
                         )
                     ],
                 ),
                 database_schema=database_schema,
-                data_models=[],
             ),
             APIRouteRequirement(
                 method="POST",
@@ -1732,83 +1580,44 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                 function_name="user_login",
                 description="Authenticate a user and provide token.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="UserLoginInput",
                     description="UserLoginInput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="email",
-                            param_type="str",
+                            type="str",
                             description="The user's email address.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="password",
-                            param_type="str",
+                            type="str",
                             description="The user's account password.",
                         ),
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="UserLoginOutput",
                     description="UserLoginOutput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="success",
-                            param_type="bool",
+                            type="bool",
                             description="True if the login was successful, false otherwise.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="token",
-                            param_type="str",
+                            type="str",
                             description="JWT token generated for the session if login is successful.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="message",
-                            param_type="str",
+                            type="str",
                             description="Descriptive message about the login attempt.",
                         ),
                     ],
                 ),
                 database_schema=database_schema,
-                data_models=[
-                    EndpointDataModel(
-                        name="UserLoginInput",
-                        description="Captures user login credentials.",
-                        params=[
-                            Parameter(
-                                name="email",
-                                param_type="str",
-                                description="The email address associated with the user's account.",
-                            ),
-                            Parameter(
-                                name="password",
-                                param_type="str",
-                                description="The password for the user's account.",
-                            ),
-                        ],
-                    ),
-                    EndpointDataModel(
-                        name="UserLoginOutput",
-                        description="Contains the result of the login attempt, including a token if successful.",
-                        params=[
-                            Parameter(
-                                name="success",
-                                param_type="bool",
-                                description="Indicates if the login was successful.",
-                            ),
-                            Parameter(
-                                name="token",
-                                param_type="str",
-                                description="The authentication token provided upon successful login. Null if login failed.",
-                            ),
-                            Parameter(
-                                name="message",
-                                param_type="str",
-                                description="A message describing the outcome of the login attempt.",
-                            ),
-                        ],
-                    ),
-                ],
             ),
             APIRouteRequirement(
                 method="POST",
@@ -1816,27 +1625,26 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                 function_name="user_logout",
                 description="Logs out a user, invalidating the session token.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
-                    name="LogoutInput", description="LogoutInput", params=[]
+                request_model=ObjectTypeE(
+                    name="LogoutInput", description="LogoutInput", Fields=[]
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="LogoutOutput",
                     description="LogoutOutput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="success",
-                            param_type="bool",
+                            type="bool",
                             description="Indicates whether the logout was successful.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="message",
-                            param_type="string",
+                            type="string",
                             description="Message providing more details on the outcome. It can indicate success or describe why the logout failed.",
                         ),
                     ],
                 ),
                 database_schema=database_schema,
-                data_models=[],
             ),
             APIRouteRequirement(
                 method="GET",
@@ -1844,57 +1652,55 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                 function_name="check_permissions",
                 description="Verify if a user has permissions for a specific action.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="CheckPermissionsInput",
                     description="CheckPermissionsInput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="userid",
-                            param_type="int",
+                            type="int",
                             description="The unique identifier of the user.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="action",
-                            param_type="str",
+                            type="str",
                             description="Specific action or permission to check for. Optional; could be structured to check against multiple actions.",
                         ),
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="CheckPermissionsOutput",
                     description="CheckPermissionsOutput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="userId",
-                            param_type="int",
+                            type="int",
                             description="The ID of the user whose permissions were checked.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="permissions",
-                            param_type="list[PermissionCheckResult]",
+                            # type="list[PermissionCheckResult]",
+                            type=ObjectTypeE(
+                                name="PermissionCheckResult",
+                                description="Represents the result of checking a user's permissions.",
+                                Fields=[
+                                    ObjectFieldE(
+                                        name="hasPermission",
+                                        type="bool",
+                                        description="Indicates whether the user has the requested permission.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="message",
+                                        type="str",
+                                        description="Provides additional information about the permission check, e.g., granted, denied, or reason for denial.",
+                                    ),
+                                ],
+                            ),
                             description="A list of results for each action's permission check.",
                         ),
                     ],
                 ),
                 database_schema=database_schema,
-                data_models=[
-                    EndpointDataModel(
-                        name="PermissionCheckResult",
-                        description="Represents the result of checking a user's permissions.",
-                        params=[
-                            Parameter(
-                                name="hasPermission",
-                                param_type="bool",
-                                description="Indicates whether the user has the requested permission.",
-                            ),
-                            Parameter(
-                                name="message",
-                                param_type="str",
-                                description="Provides additional information about the permission check, e.g., granted, denied, or reason for denial.",
-                            ),
-                        ],
-                    )
-                ],
             ),
         ],
     )
@@ -1953,103 +1759,75 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                 function_name="create_invoice",
                 description="Creates a new invoice in the system.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="InvoiceCreationRequest",
                     description="InvoiceCreationRequest",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="userId",
-                            param_type="str",
+                            type="str",
                             description="Identifier for the user who is creating the invoice.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="items",
-                            param_type="List[InvoiceItemInput]",
+                            # type="List[InvoiceItemInput]",
+                            type=ObjectTypeE(
+                                name="InvoiceItemInput",
+                                description="Details for each item included in the invoice.",
+                                Fields=[
+                                    ObjectFieldE(
+                                        name="description",
+                                        type="str",
+                                        description="Description of the line item.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="quantity",
+                                        type="int",
+                                        description="Quantity of the line item.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="price",
+                                        type="float",
+                                        description="Price per unit of the line item.",
+                                    ),
+                                ],
+                            ),
                             description="Array of line items to be included in the invoice.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="currency",
-                            param_type="str",
+                            type="str",
                             description="Currency in which the invoice is being issued.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="taxRate",
-                            param_type="float",
+                            type="float",
                             description="Tax rate applicable to the invoice, represented as a percentage.",
                         ),
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="InvoiceCreationResponse",
                     description="InvoiceCreationResponse",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="invoiceId",
-                            param_type="str",
+                            type="str",
                             description="Unique identifier for the newly created invoice.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="status",
-                            param_type="str",
+                            type="str",
                             description="Status of the invoice after creation. Expected values are 'Draft' or 'Finalized'.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="creationDate",
-                            param_type="datetime",
+                            type="datetime",
                             description="Timestamp reflecting when the invoice was created.",
                         ),
                     ],
                 ),
                 database_schema=schema,
-                data_models=[
-                    EndpointDataModel(
-                        name="InvoiceCreationInput",
-                        description="Model for input required to create a new invoice. This includes information about the invoice itself, the line items, and more.",
-                        params=[
-                            Parameter(
-                                name="userId",
-                                param_type="str",
-                                description="The ID of the user creating the invoice.",
-                            ),
-                            Parameter(
-                                name="items",
-                                param_type="List[InvoiceItemInput]",
-                                description="A collection of line items including description, quantity, and price.",
-                            ),
-                            Parameter(
-                                name="currency",
-                                param_type="str",
-                                description="Currency code (e.g., USD, EUR) for the invoice.",
-                            ),
-                            Parameter(
-                                name="taxRate",
-                                param_type="float",
-                                description="Applicable tax rate for the invoice, if any.",
-                            ),
-                        ],
-                    ),
-                    EndpointDataModel(
-                        name="InvoiceItemInput",
-                        description="Details for each item included in the invoice.",
-                        params=[
-                            Parameter(
-                                name="description",
-                                param_type="str",
-                                description="Description of the line item.",
-                            ),
-                            Parameter(
-                                name="quantity",
-                                param_type="int",
-                                description="Quantity of the line item.",
-                            ),
-                            Parameter(
-                                name="price",
-                                param_type="float",
-                                description="Price per unit of the line item.",
-                            ),
-                        ],
-                    ),
-                ],
             ),
             APIRouteRequirement(
                 method="PATCH",
@@ -2057,93 +1835,90 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                 function_name="edit_invoice",
                 description="Edits an existing invoice by ID.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="EditInvoiceInput",
                     description="EditInvoiceInput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="id",
-                            param_type="str",
+                            type="str",
                             description="The unique identifier of the invoice to be edited.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="invoiceDetails",
-                            param_type="InvoiceEditModel",
+                            type=ObjectTypeE(
+                                name="InvoiceEditModel",
+                                description="Model for editing invoice details, allowing updates to various invoice fields while ensuring that changes to critical fields like currency or finalized status are handled with caution.",
+                                Fields=[
+                                    ObjectFieldE(
+                                        name="status",
+                                        type="Optional[str]",
+                                        description="Allows modifying the status of the invoice, i.e., from draft to finalized, but with strict checks to prevent arbitrary status changes.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="items",
+                                        # type="Optional[Array[ItemEditModel]]",
+                                        type=ObjectTypeE(
+                                            name="ItemEditModel",
+                                            description="Model for adding or editing line items within an invoice.",
+                                            Fields=[
+                                                ObjectFieldE(
+                                                    name="description",
+                                                    type="str",
+                                                    description="Description of the invoice item.",
+                                                ),
+                                                ObjectFieldE(
+                                                    name="quantity",
+                                                    type="int",
+                                                    description="Quantity of the item.",
+                                                ),
+                                                ObjectFieldE(
+                                                    name="price",
+                                                    type="float",
+                                                    description="Price per unit of the item.",
+                                                ),
+                                                ObjectFieldE(
+                                                    name="id",
+                                                    type="String (Optional)",
+                                                    description="Unique ID of the item if it exists. If provided, the item will be updated; otherwise, a new item will be added.",
+                                                ),
+                                            ],
+                                        ),
+                                        description="List of line items to be added or updated in the invoice. Each item modification is described in a separate model.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="currency",
+                                        type="Optional[str]",
+                                        description="Currency in which the invoice is denoted. Modifications should ensure no discrepancies in already entered amounts.",
+                                    ),
+                                ],
+                            ),
                             description="The details of the invoice to be edited, encapsulated within the InvoiceEditModel.",
                         ),
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="EditInvoiceOutput",
                     description="EditInvoiceOutput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="success",
-                            param_type="bool",
+                            type="bool",
                             description="Indicates whether the edit operation was successful.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="message",
-                            param_type="str",
+                            type="str",
                             description="A message describing the result of the operation, particularly useful in case of failure.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="updatedInvoice",
-                            param_type="Invoice",
+                            type="Invoice",
                             description="The updated invoice object reflecting the changes made. Null if operation failed.",
                         ),
                     ],
                 ),
                 database_schema=schema,
-                data_models=[
-                    EndpointDataModel(
-                        name="InvoiceEditModel",
-                        description="Model for editing invoice details, allowing updates to various invoice fields while ensuring that changes to critical fields like currency or finalized status are handled with caution.",
-                        params=[
-                            Parameter(
-                                name="status",
-                                param_type="String (Optional)",
-                                description="Allows modifying the status of the invoice, i.e., from draft to finalized, but with strict checks to prevent arbitrary status changes.",
-                            ),
-                            Parameter(
-                                name="items",
-                                param_type="Array[ItemEditModel] (Optional)",
-                                description="List of line items to be added or updated in the invoice. Each item modification is described in a separate model.",
-                            ),
-                            Parameter(
-                                name="currency",
-                                param_type="String (Optional)",
-                                description="Currency in which the invoice is denoted. Modifications should ensure no discrepancies in already entered amounts.",
-                            ),
-                        ],
-                    ),
-                    EndpointDataModel(
-                        name="ItemEditModel",
-                        description="Model for adding or editing line items within an invoice.",
-                        params=[
-                            Parameter(
-                                name="description",
-                                param_type="str",
-                                description="Description of the invoice item.",
-                            ),
-                            Parameter(
-                                name="quantity",
-                                param_type="int",
-                                description="Quantity of the item.",
-                            ),
-                            Parameter(
-                                name="price",
-                                param_type="float",
-                                description="Price per unit of the item.",
-                            ),
-                            Parameter(
-                                name="id",
-                                param_type="String (Optional)",
-                                description="Unique ID of the item if it exists. If provided, the item will be updated; otherwise, a new item will be added.",
-                            ),
-                        ],
-                    ),
-                ],
             ),
             APIRouteRequirement(
                 method="GET",
@@ -2151,50 +1926,49 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                 function_name="get_invoice",
                 description="Retrieves invoice details by ID.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="GetInvoiceInput",
                     description="GetInvoiceInput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="id",
-                            param_type="string",
+                            type="string",
                             description="The unique ID of the invoice to retrieve.",
                         )
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="GetInvoiceOutput",
                     description="GetInvoiceOutput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="id",
-                            param_type="string",
+                            type="string",
                             description="The unique ID of the invoice.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="number",
-                            param_type="string",
+                            type="string",
                             description="The unique invoice number.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="status",
-                            param_type="string",
+                            type="string",
                             description="Current status of the invoice (e.g., draft, finalized).",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="items",
-                            param_type="array of InvoiceItem",
+                            type="array of InvoiceItem",
                             description="A collection of line items associated with the invoice. Each item contains details such as description, quantity, and price.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="payment",
-                            param_type="Payment or null",
+                            type="Payment or null",
                             description="Payment details associated with this invoice. Null if no payment has been made yet.",
                         ),
                     ],
                 ),
                 database_schema=schema,
-                data_models=[],
             ),
             APIRouteRequirement(
                 method="GET",
@@ -2202,92 +1976,90 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                 function_name="list_invoices",
                 description="Lists all invoices related to a user.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="ListInvoicesRequest",
                     description="ListInvoicesRequest",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="userId",
-                            param_type="str",
+                            type="str",
                             description="The unique identifier of the user whose invoices are to be listed.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="page",
-                            param_type="int",
-                            description="Pagination parameter, denotes the page number of the invoice list to be retrieved.",
+                            type="int",
+                            description="Pagination ObjectFieldE, denotes the page number of the invoice list to be retrieved.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="pageSize",
-                            param_type="int",
-                            description="Pagination parameter, denotes the number of invoices to be listed per page.",
+                            type="int",
+                            description="Pagination ObjectFieldE, denotes the number of invoices to be listed per page.",
                         ),
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="ListInvoicesResponse",
                     description="ListInvoicesResponse",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="invoices",
-                            param_type="List[InvoiceSummary]",
+                            # type="List[InvoiceSummary]",
+                            type=ObjectTypeE(
+                                name="InvoiceSummary",
+                                description="A concise model representing the key information of an invoice for listing purposes.",
+                                Fields=[
+                                    ObjectFieldE(
+                                        name="invoiceId",
+                                        type="str",
+                                        description="Unique identifier for the invoice.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="invoiceNumber",
+                                        type="str",
+                                        description="The unique number associated with the invoice.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="status",
+                                        type="str",
+                                        description="Current status of the invoice (e.g., draft, finalized).",
+                                    ),
+                                    ObjectFieldE(
+                                        name="totalAmount",
+                                        type="float",
+                                        description="Total amount of the invoice, taking into account item prices and quantities.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="currency",
+                                        type="str",
+                                        description="The currency in which the invoice was issued.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="createdAt",
+                                        type="datetime",
+                                        description="The date and time when the invoice was created.",
+                                    ),
+                                ],
+                            ),
                             description="An array of invoice summary objects.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="total",
-                            param_type="int",
+                            type="int",
                             description="Total number of invoices available for the user.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="currentPage",
-                            param_type="int",
+                            type="int",
                             description="The current page number being returned in the response.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="pageSize",
-                            param_type="int",
+                            type="int",
                             description="The number of invoices returned per page.",
                         ),
                     ],
                 ),
                 database_schema=schema,
-                data_models=[
-                    EndpointDataModel(
-                        name="InvoiceSummary",
-                        description="A concise model representing the key information of an invoice for listing purposes.",
-                        params=[
-                            Parameter(
-                                name="invoiceId",
-                                param_type="str",
-                                description="Unique identifier for the invoice.",
-                            ),
-                            Parameter(
-                                name="invoiceNumber",
-                                param_type="str",
-                                description="The unique number associated with the invoice.",
-                            ),
-                            Parameter(
-                                name="status",
-                                param_type="str",
-                                description="Current status of the invoice (e.g., draft, finalized).",
-                            ),
-                            Parameter(
-                                name="totalAmount",
-                                param_type="float",
-                                description="Total amount of the invoice, taking into account item prices and quantities.",
-                            ),
-                            Parameter(
-                                name="currency",
-                                param_type="str",
-                                description="The currency in which the invoice was issued.",
-                            ),
-                            Parameter(
-                                name="createdAt",
-                                param_type="datetime",
-                                description="The date and time when the invoice was created.",
-                            ),
-                        ],
-                    )
-                ],
             ),
             APIRouteRequirement(
                 method="POST",
@@ -2295,73 +2067,39 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                 function_name="initiate_payment",
                 description="Initiates a payment for an invoice.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="PaymentInitiationRequest",
                     description="PaymentInitiationRequest",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="invoiceId",
-                            param_type="str",
+                            type="str",
                             description="Unique ID of the invoice for which the payment is being initiated.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="gatewayId",
-                            param_type="str",
+                            type="str",
                             description="Identifier of the payment gateway through which the payment will be processed.",
                         ),
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="PaymentInitiationResponse",
                     description="PaymentInitiationResponse",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="paymentId",
-                            param_type="str",
+                            type="str",
                             description="Unique identifier for the payment transaction, provided by the system.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="status",
-                            param_type="str",
+                            type="str",
                             description="Status of the payment initiation, which could be 'Pending', 'Failed', or other relevant terms.",
                         ),
                     ],
                 ),
                 database_schema=schema,
-                data_models=[
-                    EndpointDataModel(
-                        name="PaymentInitiationRequest",
-                        description="Model for initiating a payment, requires the invoice ID and payment gateway details.",
-                        params=[
-                            Parameter(
-                                name="invoiceId",
-                                param_type="str",
-                                description="The unique identifier for the invoice being paid.",
-                            ),
-                            Parameter(
-                                name="gatewayId",
-                                param_type="str",
-                                description="The identifier for the chosen payment gateway.",
-                            ),
-                        ],
-                    ),
-                    EndpointDataModel(
-                        name="PaymentInitiationResponse",
-                        description="Provides the outcome of the payment initiation request, including a transaction status and unique payment identifier.",
-                        params=[
-                            Parameter(
-                                name="paymentId",
-                                param_type="str",
-                                description="A unique identifier generated for the initiated payment.",
-                            ),
-                            Parameter(
-                                name="status",
-                                param_type="str",
-                                description="The status of the payment initiation, e.g., 'Pending', 'Failed'.",
-                            ),
-                        ],
-                    ),
-                ],
             ),
             APIRouteRequirement(
                 method="PATCH",
@@ -2369,83 +2107,44 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                 function_name="confirm_payment",
                 description="Confirms a payment has been completed.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="PaymentConfirmationRequest",
                     description="PaymentConfirmationRequest",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="paymentId",
-                            param_type="str",
+                            type="str",
                             description="The unique identifier of the payment to be confirmed.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="confirmationStatus",
-                            param_type="str",
+                            type="str",
                             description="Indicates the status of the payment confirmation attempt.",
                         ),
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="PaymentConfirmationResponse",
                     description="PaymentConfirmationResponse",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="success",
-                            param_type="bool",
+                            type="bool",
                             description="Boolean flag indicating if the payment confirmation was successful.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="message",
-                            param_type="str",
+                            type="str",
                             description="A message providing more details on the confirmation status.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="updatedPaymentDetails",
-                            param_type="Payment",
+                            type="Payment",
                             description="The updated payment details post-confirmation attempt, reflecting the new status and any additional updates.",
                         ),
                     ],
                 ),
                 database_schema=schema,
-                data_models=[
-                    EndpointDataModel(
-                        name="PaymentConfirmationInput",
-                        description="Input model for confirming payments, capturing necessary details for processing the payment confirmation.",
-                        params=[
-                            Parameter(
-                                name="paymentId",
-                                param_type="str",
-                                description="Unique identifier for the payment to be confirmed.",
-                            ),
-                            Parameter(
-                                name="confirmationStatus",
-                                param_type="str",
-                                description="The status of the payment confirmation, e.g., 'Confirmed', 'Failed'.",
-                            ),
-                        ],
-                    ),
-                    EndpointDataModel(
-                        name="PaymentConfirmationResponse",
-                        description="Response model for the payment confirmation process, indicating the success or failure of the operation.",
-                        params=[
-                            Parameter(
-                                name="success",
-                                param_type="bool",
-                                description="Indicates if the payment confirmation was successful.",
-                            ),
-                            Parameter(
-                                name="message",
-                                param_type="str",
-                                description="A descriptive message about the outcome of the payment confirmation.",
-                            ),
-                            Parameter(
-                                name="updatedPaymentDetails",
-                                param_type="Payment",
-                                description="The updated payment details post-confirmation.",
-                            ),
-                        ],
-                    ),
-                ],
             ),
             APIRouteRequirement(
                 method="POST",
@@ -2453,93 +2152,49 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                 function_name="send_reminder",
                 description="Sends a reminder for an unpaid invoice.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="ReminderNotificationInput",
                     description="ReminderNotificationInput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="invoiceId",
-                            param_type="str",
+                            type="str",
                             description="Unique identifier for the invoice the reminder pertains to.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="userId",
-                            param_type="str",
+                            type="str",
                             description="Unique identifier for the user associated with the invoice to send the notification to.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="medium",
-                            param_type="str",
+                            type="str",
                             description="Preferred medium of notification (e.g., Email, SMS).",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="sendTime",
-                            param_type="datetime",
+                            type="datetime",
                             description="Scheduled time for sending the reminder.",
                         ),
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="ReminderNotificationOutput",
                     description="ReminderNotificationOutput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="success",
-                            param_type="bool",
+                            type="bool",
                             description="Indicates if the reminder was successfully sent.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="message",
-                            param_type="str",
+                            type="str",
                             description="A descriptive message about the outcome of the attempt.",
                         ),
                     ],
                 ),
                 database_schema=schema,
-                data_models=[
-                    EndpointDataModel(
-                        name="ReminderNotificationInput",
-                        description="Model for input required to send a reminder notification about an unpaid invoice, including invoice and user details.",
-                        params=[
-                            Parameter(
-                                name="invoiceId",
-                                param_type="str",
-                                description="Unique identifier for the invoice the reminder pertains to.",
-                            ),
-                            Parameter(
-                                name="userId",
-                                param_type="str",
-                                description="Unique identifier for the user associated with the invoice to send the notification to.",
-                            ),
-                            Parameter(
-                                name="medium",
-                                param_type="str",
-                                description="Preferred medium of notification (e.g., Email, SMS).",
-                            ),
-                            Parameter(
-                                name="sendTime",
-                                param_type="datetime",
-                                description="Scheduled time for sending the reminder.",
-                            ),
-                        ],
-                    ),
-                    EndpointDataModel(
-                        name="ReminderNotificationOutput",
-                        description="Model for output after attempting to send a reminder notification about an unpaid invoice.",
-                        params=[
-                            Parameter(
-                                name="success",
-                                param_type="bool",
-                                description="Indicates if the reminder was successfully sent.",
-                            ),
-                            Parameter(
-                                name="message",
-                                param_type="str",
-                                description="A descriptive message about the outcome of the attempt.",
-                            ),
-                        ],
-                    ),
-                ],
             ),
             APIRouteRequirement(
                 method="POST",
@@ -2547,134 +2202,100 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                 function_name="generate_report",
                 description="Generates a financial report based on specified parameters.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="GenerateReportInput",
                     description="GenerateReportInput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="userId",
-                            param_type="str",
+                            type="str",
                             description="The user's ID for whom the report is being generated.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="reportType",
-                            param_type="str",
+                            type="str",
                             description="Specifies the type of financial report required.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="startDate",
-                            param_type="datetime",
+                            type="datetime",
                             description="The start date for the reporting period.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="endDate",
-                            param_type="datetime",
+                            type="datetime",
                             description="The end date for the reporting period.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="filters",
-                            param_type="List[str]",
+                            type="List[str]",
                             description="Optional filters to refine the report data.",
                         ),
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="GenerateReportOutput",
                     description="GenerateReportOutput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="report",
-                            param_type="FinancialReport",
+                            type=ObjectTypeE(
+                                name="FinancialReport",
+                                description="Represents the structured output of a financial report, including various metrics and insights.",
+                                Fields=[
+                                    ObjectFieldE(
+                                        name="reportType",
+                                        type="str",
+                                        description="Type of the generated report.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="generatedAt",
+                                        type="datetime",
+                                        description="Timestamp of when the report was generated.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="metrics",
+                                        # type="List[ReportMetric]",
+                                        type=ObjectTypeE(
+                                            name="ReportMetric",
+                                            description="Details of a single metric within the financial report.",
+                                            Fields=[
+                                                ObjectFieldE(
+                                                    name="metricName",
+                                                    type="str",
+                                                    description="Name of the metric.",
+                                                ),
+                                                ObjectFieldE(
+                                                    name="value",
+                                                    type="float",
+                                                    description="Quantitative value of the metric.",
+                                                ),
+                                                ObjectFieldE(
+                                                    name="unit",
+                                                    type="str",
+                                                    description="Unit of measurement for the metric.",
+                                                ),
+                                                ObjectFieldE(
+                                                    name="description",
+                                                    type="str",
+                                                    description="A brief description or insight related to the metric.",
+                                                ),
+                                            ],
+                                        ),
+                                        description="A collection of metrics included in the report.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="insights",
+                                        type="List[str]",
+                                        description="List of insights derived from the report data.",
+                                    ),
+                                ],
+                            ),
                             description="The detailed financial report generated based on the input parameters.",
                         )
                     ],
                 ),
                 database_schema=schema,
-                data_models=[
-                    EndpointDataModel(
-                        name="ReportRequestParameters",
-                        description="Contains all the parameters needed to generate a customizable financial report.",
-                        params=[
-                            Parameter(
-                                name="userId",
-                                param_type="str",
-                                description="Unique identifier of the user requesting the report.",
-                            ),
-                            Parameter(
-                                name="reportType",
-                                param_type="str",
-                                description="Type of the report required (e.g., revenue_growth, expense_tracking).",
-                            ),
-                            Parameter(
-                                name="startDate",
-                                param_type="datetime",
-                                description="Start date for the time frame of the report.",
-                            ),
-                            Parameter(
-                                name="endDate",
-                                param_type="datetime",
-                                description="End date for the time frame of the report.",
-                            ),
-                            Parameter(
-                                name="filters",
-                                param_type="List[str]",
-                                description="List of additional filters to apply to the report data (optional).",
-                            ),
-                        ],
-                    ),
-                    EndpointDataModel(
-                        name="FinancialReport",
-                        description="Represents the structured output of a financial report, including various metrics and insights.",
-                        params=[
-                            Parameter(
-                                name="reportType",
-                                param_type="str",
-                                description="Type of the generated report.",
-                            ),
-                            Parameter(
-                                name="generatedAt",
-                                param_type="datetime",
-                                description="Timestamp of when the report was generated.",
-                            ),
-                            Parameter(
-                                name="metrics",
-                                param_type="List[ReportMetric]",
-                                description="A collection of metrics included in the report.",
-                            ),
-                            Parameter(
-                                name="insights",
-                                param_type="List[str]",
-                                description="List of insights derived from the report data.",
-                            ),
-                        ],
-                    ),
-                    EndpointDataModel(
-                        name="ReportMetric",
-                        description="Details of a single metric within the financial report.",
-                        params=[
-                            Parameter(
-                                name="metricName",
-                                param_type="str",
-                                description="Name of the metric.",
-                            ),
-                            Parameter(
-                                name="value",
-                                param_type="float",
-                                description="Quantitative value of the metric.",
-                            ),
-                            Parameter(
-                                name="unit",
-                                param_type="str",
-                                description="Unit of measurement for the metric.",
-                            ),
-                            Parameter(
-                                name="description",
-                                param_type="str",
-                                description="A brief description or insight related to the metric.",
-                            ),
-                        ],
-                    ),
-                ],
             ),
             APIRouteRequirement(
                 method="GET",
@@ -2682,67 +2303,65 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                 function_name="fetch_insights",
                 description="Provides strategic financial insights.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="FinancialInsightsRequest",
                     description="FinancialInsightsRequest",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="startDate",
-                            param_type="datetime",
+                            type="datetime",
                             description="The start date for the range of financial data to consider.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="endDate",
-                            param_type="datetime",
+                            type="datetime",
                             description="The end date for the range of financial data to consider.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="metrics",
-                            param_type="List[str]",
+                            type="List[str]",
                             description="Optional. A list of specific financial metrics to retrieve insights for.",
                         ),
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="FinancialInsightsResponse",
                     description="FinancialInsightsResponse",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="insights",
-                            param_type="List[FinancialInsight]",
+                            # type="List[FinancialInsight]",
+                            type=ObjectTypeE(
+                                name="FinancialInsight",
+                                description="Represents a high-level financial insight derived from aggregating financial data.",
+                                Fields=[
+                                    ObjectFieldE(
+                                        name="label",
+                                        type="str",
+                                        description="The name of the financial insight or metric.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="value",
+                                        type="float",
+                                        description="The numerical value of the insight.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="trend",
+                                        type="str",
+                                        description="Indicates the trend of this metric (e.g., 'increasing', 'decreasing', 'stable').",
+                                    ),
+                                    ObjectFieldE(
+                                        name="interpretation",
+                                        type="str",
+                                        description="A brief expert analysis or interpretation of what this insight suggests about the business's financial health.",
+                                    ),
+                                ],
+                            ),
                             description="A collection of financial insights.",
                         )
                     ],
                 ),
                 database_schema=schema,
-                data_models=[
-                    EndpointDataModel(
-                        name="FinancialInsight",
-                        description="Represents a high-level financial insight derived from aggregating financial data.",
-                        params=[
-                            Parameter(
-                                name="label",
-                                param_type="str",
-                                description="The name of the financial insight or metric.",
-                            ),
-                            Parameter(
-                                name="value",
-                                param_type="float",
-                                description="The numerical value of the insight.",
-                            ),
-                            Parameter(
-                                name="trend",
-                                param_type="str",
-                                description="Indicates the trend of this metric (e.g., 'increasing', 'decreasing', 'stable').",
-                            ),
-                            Parameter(
-                                name="interpretation",
-                                param_type="str",
-                                description="A brief expert analysis or interpretation of what this insight suggests about the business's financial health.",
-                            ),
-                        ],
-                    )
-                ],
             ),
             APIRouteRequirement(
                 method="PATCH",
@@ -2750,78 +2369,87 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                 function_name="update_security_settings",
                 description="Updates security settings and protocols.",
                 access_level=AccessLevel.ADMIN,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="UpdateSecuritySettingsRequest",
                     description="UpdateSecuritySettingsRequest",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="updates",
-                            param_type="List[SecuritySettingUpdate]",
+                            # type="List[SecuritySettingUpdate]",
+                            type=ObjectTypeE(
+                                name="SecuritySettingUpdate",
+                                description="Represents a security setting that needs to be updated.",
+                                Fields=[
+                                    ObjectFieldE(
+                                        name="settingName",
+                                        type="str",
+                                        description="The name of the security setting to update.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="newValue",
+                                        type="str",
+                                        description="The new value for the security setting.",
+                                    ),
+                                ],
+                            ),
                             description="A list of security settings to update, each indicating the setting name and its new value.",
                         )
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="UpdateSecuritySettingsResponse",
                     description="UpdateSecuritySettingsResponse",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="success",
-                            param_type="bool",
+                            type="bool",
                             description="Indicates if the update operation was successful.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="updatedSettings",
-                            param_type="List[SecuritySettingUpdate]",
+                            # type="List[SecuritySettingUpdate]",
+                            type=ObjectTypeE(
+                                name="SecuritySettingUpdate",
+                                description="Represents a security setting that needs to be updated.",
+                                Fields=[
+                                    ObjectFieldE(
+                                        name="settingName",
+                                        type="str",
+                                        description="The name of the security setting to update.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="newValue",
+                                        type="str",
+                                        description="The new value for the security setting.",
+                                    ),
+                                ],
+                            ),
                             description="A list of all settings that were successfully updated.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="failedSettings",
-                            param_type="List[SecuritySettingUpdate]",
+                            # type="List[SecuritySettingUpdate]",
+                            type=ObjectTypeE(
+                                name="SecuritySettingUpdate",
+                                description="Represents a security setting that needs to be updated.",
+                                Fields=[
+                                    ObjectFieldE(
+                                        name="settingName",
+                                        type="str",
+                                        description="The name of the security setting to update.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="newValue",
+                                        type="str",
+                                        description="The new value for the security setting.",
+                                    ),
+                                ],
+                            ),
                             description="A list of settings that failed to update, with descriptions of the failure reasons.",
                         ),
                     ],
                 ),
                 database_schema=schema,
-                data_models=[
-                    EndpointDataModel(
-                        name="SecuritySettingUpdate",
-                        description="Represents a security setting that needs to be updated.",
-                        params=[
-                            Parameter(
-                                name="settingName",
-                                param_type="str",
-                                description="The name of the security setting to update.",
-                            ),
-                            Parameter(
-                                name="newValue",
-                                param_type="str",
-                                description="The new value for the security setting.",
-                            ),
-                        ],
-                    ),
-                    EndpointDataModel(
-                        name="UpdateSecuritySettingsResponse",
-                        description="Response model for update security settings operation, indicating success or failure.",
-                        params=[
-                            Parameter(
-                                name="success",
-                                param_type="bool",
-                                description="Indicates if the update operation was successful.",
-                            ),
-                            Parameter(
-                                name="updatedSettings",
-                                param_type="List[SecuritySettingUpdate]",
-                                description="A list of all settings that were successfully updated.",
-                            ),
-                            Parameter(
-                                name="failedSettings",
-                                param_type="List[SecuritySettingUpdate]",
-                                description="A list of settings that failed to update, with descriptions of the failure reasons.",
-                            ),
-                        ],
-                    ),
-                ],
             ),
             APIRouteRequirement(
                 method="POST",
@@ -2829,62 +2457,59 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                 function_name="log_compliance_action",
                 description="Records a compliance-related action for auditing.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="LogComplianceActionInput",
                     description="LogComplianceActionInput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="complianceAction",
-                            param_type="ComplianceAction",
+                            type=ObjectTypeE(
+                                name="ComplianceAction",
+                                description="Represents a compliance-related action that needs to be logged for auditing.",
+                                Fields=[
+                                    ObjectFieldE(
+                                        name="actionType",
+                                        type="str",
+                                        description="The type of action performed, e.g., 'Data Update', 'View Sensitive Information', etc.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="description",
+                                        type="str",
+                                        description="A detailed description of the action performed.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="performedBy",
+                                        type="str",
+                                        description="Identifier for the user or system component that performed the action.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="timestamp",
+                                        type="datetime",
+                                        description="Timestamp when the action was performed.",
+                                    ),
+                                ],
+                            ),
                             description="The compliance action that needs to be logged.",
                         )
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="LogComplianceActionOutput",
                     description="LogComplianceActionOutput",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="success",
-                            param_type="bool",
+                            type="bool",
                             description="Indicates whether the logging was successful.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="message",
-                            param_type="str",
+                            type="str",
                             description="A descriptive message regarding the outcome of the log attempt.",
                         ),
                     ],
                 ),
                 database_schema=schema,
-                data_models=[
-                    EndpointDataModel(
-                        name="ComplianceAction",
-                        description="Represents a compliance-related action that needs to be logged for auditing.",
-                        params=[
-                            Parameter(
-                                name="actionType",
-                                param_type="str",
-                                description="The type of action performed, e.g., 'Data Update', 'View Sensitive Information', etc.",
-                            ),
-                            Parameter(
-                                name="description",
-                                param_type="str",
-                                description="A detailed description of the action performed.",
-                            ),
-                            Parameter(
-                                name="performedBy",
-                                param_type="str",
-                                description="Identifier for the user or system component that performed the action.",
-                            ),
-                            Parameter(
-                                name="timestamp",
-                                param_type="datetime",
-                                description="Timestamp when the action was performed.",
-                            ),
-                        ],
-                    )
-                ],
             ),
             APIRouteRequirement(
                 method="POST",
@@ -2892,107 +2517,104 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                 function_name="connect_payment_gateway",
                 description="Sets up connection with a specified payment gateway.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=RequestModel(
+                request_model=ObjectTypeE(
                     name="PaymentGatewayConnectionRequest",
                     description="PaymentGatewayConnectionRequest",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="connectionDetails",
-                            param_type="PaymentGatewayConnectionInput",
+                            type=ObjectTypeE(
+                                name="PaymentGatewayConnectionInput",
+                                description="Data required to initiate a connection with a payment gateway.",
+                                Fields=[
+                                    ObjectFieldE(
+                                        name="gatewayName",
+                                        type="str",
+                                        description="The name of the payment gateway to connect.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="apiKey",
+                                        type="str",
+                                        description="The API key provided by the payment gateway for authentication.",
+                                    ),
+                                    ObjectFieldE(
+                                        name="apiSecret",
+                                        type="str",
+                                        description="The API secret or other credentials required for secure access.",
+                                    ),
+                                ],
+                            ),
                             description="An object holding the necessary connection details.",
                         )
                     ],
                 ),
-                response_model=ResponseModel(
+                response_model=ObjectTypeE(
                     name="PaymentGatewayConnectionResponse",
                     description="PaymentGatewayConnectionResponse",
-                    params=[
-                        Parameter(
+                    Fields=[
+                        ObjectFieldE(
                             name="success",
-                            param_type="bool",
+                            type="bool",
                             description="Indicates if the connection attempt was successful.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="message",
-                            param_type="str",
+                            type="str",
                             description="Provides more detail on the connection status, including errors if any.",
                         ),
-                        Parameter(
+                        ObjectFieldE(
                             name="gatewayId",
-                            param_type="Optional[str]",
+                            type="Optional[str]",
                             description="The unique identifier for the gateway in the system, provided upon a successful connection.",
                         ),
                     ],
                 ),
                 database_schema=schema,
-                data_models=[
-                    EndpointDataModel(
-                        name="PaymentGatewayConnectionInput",
-                        description="Data required to initiate a connection with a payment gateway.",
-                        params=[
-                            Parameter(
-                                name="gatewayName",
-                                param_type="str",
-                                description="The name of the payment gateway to connect.",
-                            ),
-                            Parameter(
-                                name="apiKey",
-                                param_type="str",
-                                description="The API key provided by the payment gateway for authentication.",
-                            ),
-                            Parameter(
-                                name="apiSecret",
-                                param_type="str",
-                                description="The API secret or other credentials required for secure access.",
-                            ),
-                        ],
-                    )
-                ],
             ),
         ],
     )
 
 
 def tictactoe_game_requirements() -> ApplicationRequirements:
-    request = RequestModel(
+    request = ObjectTypeE(
         name="TurnRequest",
         description="A request to make a move in the tictactoe game.",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="row",
-                param_type="int",
+                type="int",
                 description="The row in which the move is made, the value should be between 1 and 3.",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="col",
-                param_type="int",
+                type="int",
                 description="The column in which the move is made, the value should be between 1 and 3.",
             ),
         ],
     )
 
-    response = ResponseModel(
+    response = ObjectTypeE(
         name="GameStateResponse",
         description="A response containing the current state of the game.",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="gameId",
-                param_type="str",
+                type="str",
                 description="The unique identifier of the game.",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="turn",
-                param_type="str",
+                type="str",
                 description="The current turn of the game. Possible values are 'X' or 'O'.",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="state",
-                param_type="str",
+                type="str",
                 description="The current state of the game. Possible values are 'In Progress', 'Draw', 'Win' or 'Loss'.",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="board",
-                param_type="str",
+                type="str",
                 description="Printed representation of the current game board.",
             ),
         ],
