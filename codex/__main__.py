@@ -131,12 +131,14 @@ async def run_benchmark():
             key=lambda x: x["status"] == "success" if x else False,
             reverse=True,
         )
+        max_app_name_length = max(len(res["app_name"]) for res in results if res)
+
         for res in results:
             if res:
                 if res["status"] == "success":
                     click.echo(
                         click.style(
-                            f"\u2713 Created: {res['app_name']} in {res['dev_time']} and compile time: {res['compile_time']}",
+                            f"\u2713 Created: {res['app_name']:<{max_app_name_length}} in {str(res['dev_time']).split('.')[0]} and compile time: {str(res['compile_time']).split('.')[0]}",
                             fg="green",
                         )
                     )
