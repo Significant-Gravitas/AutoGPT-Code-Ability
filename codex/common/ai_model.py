@@ -3,6 +3,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class OpenAIChatClient:
     _instance: "OpenAIChatClient" = None
     _configured = False
