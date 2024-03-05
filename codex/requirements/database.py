@@ -7,11 +7,16 @@ from codex.api_model import (
     SpecificationResponse,
     SpecificationsListResponse,
 )
-from codex.requirements.model import ApplicationRequirements
+from codex.requirements.model import ApplicationRequirements, ObjectTypeE
 
 
 async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specification:
     routes = []
+
+    if ids.user_id is None:
+        raise ValueError("User ID is required")
+    if ids.app_id is None:
+        raise ValueError("App ID is required")
 
     if not spec.api_routes:
         raise ValueError("No routes found in the specification")
@@ -20,6 +25,16 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
     #   For loop can be converted into a batch query or at least an async tasks.
 
     # Persist all ObjectTypes from the spec
+    all_models: list[ObjectTypeE]= [
+        route.request_model
+        for route in spec.api_routes
+       
+        if route
+    ] + [
+        route.response_model
+        for route in spec.api_routes
+        if route
+    ]
     type_create_inputs = [
         ObjectTypeCreateInput(
             name=model.name,
@@ -29,14 +44,15 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
                     {
                         "name": param.name,
                         "description": param.description,
-                        "typeName": param.param_type,
+                        "typeName": param.type
+                        if not isinstance(param.type, ObjectTypeE)
+                        else param.type.name,
                     }
-                    for param in model.params
+                    for param in model.Fields or []
                 ]
             },
         )
-        for route in spec.api_routes
-        for model in [route.request_model, route.response_model]
+        for model in all_models
         if model
     ]
     type_map = {
@@ -48,10 +64,14 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
     [
         await ObjectField.prisma().update(
             where={"id": field.id},
-            data={"typeId": type_map[field.typeName].id},
+            data={
+                "Type": {
+                    "connect": {"id": type_map[field.typeName].id},
+                }
+            },
         )
         for type in type_map.values()
-        for field in type.Fields
+        for field in type.Fields or []
         if field.typeName in type_map
     ]
 

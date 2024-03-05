@@ -210,8 +210,6 @@ class Parameter(BaseModel):
         return f"- **Name**: {self.name}\n  - **Type**: {self.param_type}\n  - **Description**: {self.description}\n"
 
 
-
-
 class DatabaseTable(BaseModel):
     name: str | None = None
     description: str
@@ -252,8 +250,8 @@ class ObjectTypeE(BaseModel):
 
 
 class APIEndpointWrapper(BaseModel):
-    request_model: List[ObjectTypeE]
-    response_model: List[ObjectTypeE]
+    request_model: ObjectTypeE
+    response_model: ObjectTypeE
 
 
 class EndpointSchemaRefinementResponse(BaseModel):
@@ -281,8 +279,8 @@ class Endpoint(BaseModel):
     ]
     description: str
     path: str
-    request_model: Optional[List[ObjectTypeE]]
-    response_model: Optional[List[ObjectTypeE]]
+    request_model: Optional[ObjectTypeE]
+    response_model: Optional[ObjectTypeE]
     # TODO(ntindle): reintroduce this when supported by the system?
     # data_models: Optional[List[ObjectFieldE]]
     database_schema: Optional[DatabaseSchema]
@@ -483,8 +481,8 @@ class APIRouteRequirement(BaseModel):
     access_level: AccessLevel
 
     # This is the model for the request and response
-    request_model: List[ObjectTypeE] | None
-    response_model: List[ObjectTypeE] | None
+    request_model: ObjectTypeE
+    response_model: ObjectTypeE
 
     # This is the database schema this api route will use
     # I'm thinking it will be a prisma table schema or maybe a list of table schemas

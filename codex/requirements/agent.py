@@ -3,13 +3,14 @@ import json
 import logging
 from asyncio import run
 
-import openai
 import prisma
 from prisma.enums import AccessLevel
 from prisma.models import Specification
 from pydantic.json import pydantic_encoder
 
 from codex.api_model import Identifiers
+from codex.common.ai_model import OpenAIChatClient
+from codex.common.logging_config import setup_logging
 from codex.common.test_const import identifier_1
 from codex.interview.database import get_interview
 from codex.prompts.claude.requirements.NestJSDocs import (
@@ -37,6 +38,7 @@ from codex.requirements.blocks.ai_requirements import (
     FuncNonFuncRequirementsBlock,
 )
 from codex.requirements.database import create_spec
+
 from codex.requirements.hardcoded import (
     appointment_optimization_requirements,
     availability_checker_requirements,
@@ -61,6 +63,7 @@ from codex.requirements.model import (
     FeaturesSuperObject,
     ModuleRefinement,
     ModuleResponse,
+    ObjectTypeE,
     QandA,
     RequirementsGenResponse,
     RequirementsRefined,
@@ -84,12 +87,14 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
     Returns:
         ApplicationRequirements: The system requirements for the application
     """
+    if not ids.user_id or not ids.app_id:
+        raise ValueError("User and App Ids are required")
 
     running_state_obj = StateObj(task=description)
 
     logger.info("State Object Created")
-    # User Interview
 
+    # User Interview
     interview = await get_interview(
         user_id=ids.user_id, app_id=ids.app_id, interview_id=ids.interview_id or ""
     )
@@ -370,8 +375,10 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
                         method=route.type,
                         path=route.path,
                         description=route.description,
-                        request_model=route.request_model or [],
-                        response_model=route.response_model or [],
+                        request_model=route.request_model
+                        or ObjectTypeE(name="None", Fields=[]),
+                        response_model=route.response_model
+                        or ObjectTypeE(name="None", Fields=[]),
                         database_schema=route.database_schema,
                         access_level=AccessLevel.PUBLIC,
                     )
@@ -444,13 +451,12 @@ async def populate_database_specs():
 
 
 if __name__ == "__main__":
-    from codex.common.test_const import identifier_1
+    from codex.common.test_const import identifier_1, interview_id_1
 
     ids = identifier_1
     db_client = prisma.Prisma(auto_register=True)
 
-    oai = openai.AsyncOpenAI()
-
+    OpenAIChatClient.configure({})
     task = """The Tutor App is an app designed for tutors to manage their clients,
  schedules, and invoices.
 
@@ -469,6 +475,8 @@ Additionally, it will have proper management of financials, including invoice ma
 
     async def run_gen():
         await db_client.connect()
+        ids.interview_id = interview_id_1
+        setup_logging(local=True)
         logger.info("Starting Requirements Generation")
         output = await generate_requirements(ids=ids, description=task)
         logger.info("Requirements Generation Done")

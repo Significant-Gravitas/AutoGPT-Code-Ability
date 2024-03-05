@@ -11,17 +11,17 @@ Ensure all path, query, and body params are included in the request model as sep
 For path params, the object name should be the name of the path param, the Field Type should be the type of the path param, and the description should be a description of the path param. It should not go into any wrapping object.
 
 For example, if an endpoint is /r/{id}/s/{name},
- the request model should have two objects, one for id and one for name.  
- The name of the first param should be "id", the name of the second param should be "name", and each should have one field with the same name as the object.
- The description should be a description of the path param.  It should not go into any wrapping object. 
+ the request model should have two Fields, one for id and one for name.  
+ The name of the first Field should be "id", the name of the second Field should be "name", and each should have the type str for their Field.type parameter.
+ The description should be a description of the path param.
 
 If there is also a body, that should be included in the request model params as well.
 
 An example would be something like POST /update/{id}/name/{name} with a body of the update. 
- The request model should have three objects, one for id, one for name, and one for the body.  
- The name of the first param should be "id", the name of the second param should be "name", and the name of the third param should be "body".
- The Field.type should be the type of the path param for the first two, Field.name should match the object.name. 
- For the third, the body, there should be a well named Object, that contains resonable fields for the body. Each of which can be complex if needed.
+ The request model should have three Fields, one for id, one for name, and one for the body.  
+ The name of the first Field should be "id", the name of the second Field should be "name", and the name of the third Field should be "body".
+ The Field.type should be the type of the path param for the first two (str). 
+ For the third Field, the body, there should be a well named Object, that contains resonable fields for the body. Each of which can be complex if needed.
  
 
 Ensure all response params are included in the response model params.
@@ -32,7 +32,7 @@ Ensure all response params are included in the response model params.
   "think": "general thoughts about the task",
   "db_models_needed": ["a", "list", "of", "db", "models", "used", "only", "from", "the", "available", "models", "use", "empty", "list", "if", "none"],
   "api_endpoint": {
-    "request_model": [
+    "request_model": 
       {
         "name": "RequestModelName. will be used to name the Pydantic model",
         "description": "the description of the request model, including any additional context that's important/relevant/weird/cool/useful. This will be used as the doc string for the named pydantic model",
@@ -66,9 +66,8 @@ Ensure all response params are included in the response model params.
           ... repeat for all fields needed, using empty list if none
         ]
       },
-      ... repeat for all request models needed, using empty list if none
-    ],
-    "response_model": [
+    ,
+    "response_model": 
       {
         "name": "ResponseModelName, will be used to name the Pydantic model",
         "description": "A description used to describe the response model, including any additional context that's important/relevant/weird/cool/useful. This will be the doc string for the named pydantic model",
@@ -81,8 +80,6 @@ Ensure all response params are included in the response model params.
           ... repeat for all fields needed, using empty list if none
         ]
       },
-      ... repeat for all response models needed, using empty list if none
-    ]
   },
   "end_thoughts": "closing thoughts on the matter"
 }
@@ -90,7 +87,7 @@ Ensure all response params are included in the response model params.
 
 
 
-Example for `GET /user_id_by_discord_id/{id}`, with models `User`, `Availability`, `Messages`:
+Example for `POST /user/{id}`, with models `User`, `Availability`, `Messages`:
 ```json
 {
   "think": "I'll need to leverage the context provided to ensure the UserDTO object makes sense. I'll also provide any models needed for my return types if they aren't based on the db model from prisma.",
@@ -107,11 +104,47 @@ Example for `GET /user_id_by_discord_id/{id}`, with models `User`, `Availability
             "type": "str"
           }
         ]
+      },
+      {
+        "name": "user",
+        "description": "This request only requires the user's new details to update the user object as defined in the Users table. If there's anything else, it's an error.",
+        "Fields": [
+          {
+            "name": "username",
+            "description": "The new username for the user.",
+            "type": "str"
+          },
+          {
+            "name": "avatar",
+            "description": "The new avatar for the user.",
+            "type": {
+              "name": "Avatar",
+              "description": "The avatar object for the user.",
+              "Fields": [
+                {
+                  "name": "url",
+                  "description": "The url for the avatar.",
+                  "type": "str"
+                },
+                {
+                  "name": "type",
+                  "description": "The type of the avatar.",
+                  "type": "str"
+                }
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "description": "The new status for the user.",
+            "type": "str"
+          }
+         ]
       }
     ],
     "response_model": [
       {
-        "name": "UserByDiscordIdOutput",
+        "name": "UserOutputObject",
         "description": "Will output the full user object.",
         "Fields": [
           {
