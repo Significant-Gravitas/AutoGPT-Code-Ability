@@ -32,10 +32,12 @@ jobs:
           curl -sSL https://install.python-poetry.org | python3 -
           poetry install
 
-
       - name: Install Dependencies
         run: poetry install
         if: steps.cache.outputs.cache-hit != 'true'
+
+      - name: Generate Prisma Client
+        run: poetry run prisma generate
 
       - name: Test with pytest
         run: poetry run pytest --cov .
