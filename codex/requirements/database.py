@@ -25,16 +25,9 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
     #   For loop can be converted into a batch query or at least an async tasks.
 
     # Persist all ObjectTypes from the spec
-    all_models: list[ObjectTypeE]= [
-        route.request_model
-        for route in spec.api_routes
-       
-        if route
-    ] + [
-        route.response_model
-        for route in spec.api_routes
-        if route
-    ]
+    all_models: list[ObjectTypeE] = [
+        route.request_model for route in spec.api_routes if route
+    ] + [route.response_model for route in spec.api_routes if route]
     type_create_inputs = [
         ObjectTypeCreateInput(
             name=model.name,

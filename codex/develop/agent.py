@@ -65,17 +65,17 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
             )
             available_types = {
                 obj.name: obj
-                for obj in [api_route.RequestObject, api_route.ResponseObject] if obj
+                for obj in [api_route.RequestObject, api_route.ResponseObject]
+                if obj
             }
             compiled_route = await CompiledRoute.prisma().create(
                 data=CompiledRouteCreateInput(
                     description=api_route.description,
                     fileName=api_route.functionName + "_service.py",
                     mainFunctionName=api_route.functionName,
-                    compiledCode="", # This will be updated by compile_route
+                    compiledCode="",  # This will be updated by compile_route
                     RootFunction={
                         "create": construct_function(function_def, available_types)
-
                     },
                     CompletedApp={"connect": {"id": app.id}},
                     ApiRouteSpec={"connect": {"id": api_route.id}},

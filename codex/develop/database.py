@@ -58,8 +58,8 @@ async def list_deliverables(
 
 
 async def create_object_type(
-        object: ObjectDef,
-        available_objects: dict[str, ObjectType],
+    object: ObjectDef,
+    available_objects: dict[str, ObjectType],
 ) -> dict[str, ObjectType]:
     """
     Creates and store object types in the database.
@@ -80,12 +80,16 @@ async def create_object_type(
         data={
             "name": object.name,
             "Fields": {
-                "create": [{
-                    "name": field_name,
-                    "typeName": field_type,
-                    "typeId": available_objects[field_type].id
-                    if field_type in available_objects else None,
-                } for field_name, field_type in object.fields.items()]
+                "create": [
+                    {
+                        "name": field_name,
+                        "typeName": field_type,
+                        "typeId": available_objects[field_type].id
+                        if field_type in available_objects
+                        else None,
+                    }
+                    for field_name, field_type in object.fields.items()
+                ]
             },
         },
         include={"Fields": True},

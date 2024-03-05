@@ -168,8 +168,10 @@ class FunctionVisitor(ast.NodeVisitor):
         )
 
         if not is_implemented:
-            raise ValidationError(f"Class {node.name} is not implemented. "
-                                  f"Please complete the implementation of this class!")
+            raise ValidationError(
+                f"Class {node.name} is not implemented. "
+                f"Please complete the implementation of this class!"
+            )
 
         self.generic_visit(node)
 
@@ -297,9 +299,9 @@ class DevelopAIBlock(AIBlock):
         if generated_response.functions:
             for key, value in generated_response.functions.items():
                 model = construct_function(value, generated_response.available_objects)
-                model["CompiledRoute"] = {"connect": {
-                    "id": generated_response.compiled_route_id
-                }}
+                model["CompiledRoute"] = {
+                    "connect": {"id": generated_response.compiled_route_id}
+                }
                 function_defs.append(model)
 
         update_obj = FunctionUpdateInput(
@@ -336,7 +338,7 @@ class DevelopAIBlock(AIBlock):
                         "FunctionReturn": True,
                     }
                 },
-            }
+            },
         )
         if not func:
             raise AssertionError(

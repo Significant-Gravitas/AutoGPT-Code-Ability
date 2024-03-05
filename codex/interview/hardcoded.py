@@ -221,6 +221,7 @@ def invoice_payment_tracking() -> Interview:
     )
     return interview
 
+
 def ticktacktoe_game() -> Interview:
     interview = Interview(
         app_name="TicTacToe",

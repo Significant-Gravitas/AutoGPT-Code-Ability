@@ -171,8 +171,6 @@ async def next_step(
             questions_to_ask=running_message.uses,
             finished=False,
         )
-    
-
 
 
 def hardcoded_interview(task: ExampleTask) -> Interview:
