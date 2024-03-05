@@ -19,6 +19,7 @@ from codex.prompts.claude.requirements.NestJSDocs import (
     NEST_JS_MODULES,
     NEST_JS_SQL,
 )
+from codex.common.model import ObjectFieldModel, ObjectTypeModel as ObjectTypeE
 from codex.requirements import flatten_endpoints
 from codex.requirements.blocks.ai_clarify import (
     FrontendClarificationBlock,
@@ -63,7 +64,6 @@ from codex.requirements.model import (
     FeaturesSuperObject,
     ModuleRefinement,
     ModuleResponse,
-    ObjectTypeE,
     QandA,
     RequirementsGenResponse,
     RequirementsRefined,
@@ -378,7 +378,21 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
                         request_model=route.request_model
                         or ObjectTypeE(name="None", Fields=[]),
                         response_model=route.response_model
-                        or ObjectTypeE(name="None", Fields=[]),
+                        or ObjectTypeE(
+                            name="Output",
+                            Fields=[
+                                ObjectFieldModel(
+                                    name="message",
+                                    type="str",
+                                    description="The message returned by the route",
+                                ),
+                                ObjectFieldModel(
+                                    name="status_code",
+                                    type="int",
+                                    description="The status returned by the route",
+                                )
+                            ],
+                        ),
                         database_schema=route.database_schema,
                         access_level=AccessLevel.PUBLIC,
                     )

@@ -16,12 +16,16 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
-from codex.develop.database import create_object_type
-from codex.develop.function import construct_function, is_type_equal
+from codex.common.model import (
+    ObjectTypeModel,
+    ObjectFieldModel,
+    create_object_type,
+    is_type_equal,
+)
+from codex.develop.function import construct_function
 from codex.develop.model import (
     FunctionDef,
     GeneratedFunctionResponse,
-    ObjectDef,
     Package,
 )
 
@@ -155,14 +159,18 @@ class FunctionVisitor(ast.NodeVisitor):
             for base in node.bases
         )
         is_implemented = not any(isinstance(v, ast.Pass) for v in node.body)
+        doc_string = ""
+        if node.body and isinstance(node.body[0], ast.Expr):
+            doc_string = ast.unparse(node.body[0])
 
-        self.objects[node.name] = ObjectDef(
+        self.objects[node.name] = ObjectTypeModel(
             name=node.name,
-            fields={
-                ast.unparse(v.target): ast.unparse(v.annotation)
-                for v in node.body
-                if isinstance(v, ast.AnnAssign)
-            },
+            description=doc_string,
+            Fields=[ObjectFieldModel(
+                name=ast.unparse(v.target),
+                description=ast.unparse(v.annotation),
+                type=ast.unparse(v.annotation),
+            ) for v in node.body if isinstance(v, ast.AnnAssign)],
             is_pydantic=is_pydantic,
             is_implemented=is_implemented,
         )

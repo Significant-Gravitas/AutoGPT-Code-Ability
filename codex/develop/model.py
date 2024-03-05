@@ -4,6 +4,8 @@ from prisma.models import Function as FunctionDBModel
 from prisma.models import ObjectType
 from pydantic import BaseModel
 
+from codex.common.model import ObjectTypeModel as ObjectDef
+
 
 class Package(BaseModel):
     package_name: str
@@ -51,13 +53,6 @@ class FunctionDef(BaseModel):
         self.function_template = (
             function_template or self.__generate_function_template()
         )
-
-
-class ObjectDef(BaseModel):
-    name: str
-    fields: Dict[str, str]
-    is_pydantic: bool = True
-    is_implemented: bool = True
 
 
 class GeneratedFunctionResponse(BaseModel):

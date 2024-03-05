@@ -2,13 +2,15 @@ import logging
 
 from prisma.enums import AccessLevel
 
+from codex.common.model import (
+    ObjectTypeModel as ObjectTypeE,
+    ObjectFieldModel as ObjectFieldE,
+)
 from codex.requirements.model import (
     APIRouteRequirement,
     ApplicationRequirements,
     DatabaseSchema,
     DatabaseTable,
-    ObjectFieldE,
-    ObjectTypeE,
 )
 
 logger = logging.getLogger(__name__)

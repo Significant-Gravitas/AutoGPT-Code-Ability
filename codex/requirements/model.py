@@ -7,6 +7,8 @@ from typing import List, Literal, Optional
 from prisma.enums import AccessLevel
 from pydantic import BaseModel, ConfigDict, Field
 
+from codex.common.model import ObjectTypeModel as ObjectTypeE
+
 import codex.common.test_const as test_consts
 
 logger = logging.getLogger(__name__)
@@ -229,26 +231,6 @@ class DatabaseSchema(BaseModel):
     def __str__(self):
         tables_str = "\n".join(str(table) for table in self.tables)
         return f"## {self.name}\n**Description**: {self.description}\n**Tables**:\n{tables_str}\n"
-
-
-class ObjectFieldE(BaseModel):
-    name: str
-    description: Optional[str] = Field(
-        description="The description of the field", default=None
-    )
-    type: "ObjectTypeE | str" = Field(
-        description="The type of the field. Can be a string like List[str] or an ObjectTypeE"
-    )
-
-
-class ObjectTypeE(BaseModel):
-    name: str
-    description: Optional[str] = Field(
-        description="The description of the object", default=None
-    )
-    Fields: Optional[List["ObjectFieldE"]] = Field(
-        description="The fields of the object", default=None
-    )
 
 
 class APIEndpointWrapper(BaseModel):

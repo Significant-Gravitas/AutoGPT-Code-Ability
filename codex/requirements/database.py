@@ -7,7 +7,8 @@ from codex.api_model import (
     SpecificationResponse,
     SpecificationsListResponse,
 )
-from codex.requirements.model import ApplicationRequirements, ObjectTypeE
+from codex.common.model import ObjectTypeModel as ObjectTypeE, create_object_type
+from codex.requirements.model import ApplicationRequirements
 
 
 async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specification:
@@ -28,45 +29,10 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
     all_models: list[ObjectTypeE] = [
         route.request_model for route in spec.api_routes if route
     ] + [route.response_model for route in spec.api_routes if route]
-    type_create_inputs = [
-        ObjectTypeCreateInput(
-            name=model.name,
-            description=model.description,
-            Fields={
-                "create": [
-                    {
-                        "name": param.name,
-                        "description": param.description,
-                        "typeName": param.type
-                        if not isinstance(param.type, ObjectTypeE)
-                        else param.type.name,
-                    }
-                    for param in model.Fields or []
-                ]
-            },
-        )
-        for model in all_models
-        if model
-    ]
-    type_map = {
-        ci["name"]: await ObjectType.prisma().create(data=ci, include={"Fields": True})
-        for ci in type_create_inputs
-    }
 
-    # Link the typeId of ObjectType's Fields if it is defined in the spec.
-    [
-        await ObjectField.prisma().update(
-            where={"id": field.id},
-            data={
-                "Type": {
-                    "connect": {"id": type_map[field.typeName].id},
-                }
-            },
-        )
-        for type in type_map.values()
-        for field in type.Fields or []
-        if field.typeName in type_map
-    ]
+    created_objects = {}
+    for model in all_models:
+        created_objects = await create_object_type(model, created_objects)
 
     # Persist all routes from the spec
     for route in spec.api_routes:
@@ -93,11 +59,11 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
         }
         if route.request_model:
             create_route["RequestObject"] = {
-                "connect": {"id": type_map[route.request_model.name].id}
+                "connect": {"id": created_objects[route.request_model.name].id}
             }
         if route.response_model:
             create_route["ResponseObject"] = {
-                "connect": {"id": type_map[route.response_model.name].id}
+                "connect": {"id": created_objects[route.response_model.name].id}
             }
         if create_db:
             create_route["DatabaseSchema"] = {"create": create_db}

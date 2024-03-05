@@ -183,13 +183,13 @@ class SpecificationResponse(BaseModel):
                         id=route.RequestObject.id,
                         createdAt=route.RequestObject.createdAt,
                         name=route.RequestObject.name,
-                        description=route.RequestObject.description,
+                        description=route.RequestObject.description or "",
                         params=[
                             ParamModel(
                                 id=param.id,
                                 createdAt=param.createdAt,
                                 name=param.name,
-                                description=param.description,
+                                description=param.description or "",
                                 param_type=param.typeName,
                             )
                             for param in route.RequestObject.Fields or []
@@ -199,13 +199,13 @@ class SpecificationResponse(BaseModel):
                         id=route.ResponseObject.id,
                         createdAt=route.ResponseObject.createdAt,
                         name=route.ResponseObject.name,
-                        description=route.ResponseObject.description,
+                        description=route.ResponseObject.description or "",
                         params=[
                             ParamModel(
                                 id=param.id,
                                 createdAt=param.createdAt,
                                 name=param.name,
-                                description=param.description,
+                                description=param.description or "",
                                 param_type=param.typeName,
                             )
                             for param in route.ResponseObject.Fields or []
