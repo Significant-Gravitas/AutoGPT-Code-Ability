@@ -60,7 +60,6 @@ async def fetch_deliverable(session, user_id, app_id):
         try:
             creation_time = datetime.now()
             if response.status != 200:
-                click.echo(f"\033[91mFailed creation for {spec.name}\033[0m")
                 return {"app_name": spec.name, "status": "failed"}
             data = await response.json()
             deliverable_id = data["id"]
