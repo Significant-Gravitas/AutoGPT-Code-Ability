@@ -3,7 +3,7 @@ import logging
 from prisma.enums import AccessLevel
 
 from codex.common.model import (
-    ObjectTypeModel as ObjectTypeE,
+    ObjectTypeModel as ObjectTypeModel,
     ObjectFieldModel as ObjectFieldE,
 )
 from codex.requirements.model import (
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 def availability_checker_requirements() -> ApplicationRequirements:
     # Define request and response models here
-    check_availability_request = ObjectTypeE(
+    check_availability_request = ObjectTypeModel(
         name="CheckAvailabilityRequest",
         description="A request to check the availability status of a professional based on the current time and their schedule.",
         Fields=[
@@ -36,7 +36,7 @@ def availability_checker_requirements() -> ApplicationRequirements:
     )
 
     # Response Model for availability status
-    availability_status_response = ObjectTypeE(
+    availability_status_response = ObjectTypeModel(
         name="AvailabilityStatusResponse",
         description="A response indicating the current availability status of the professional.",
         Fields=[
@@ -69,7 +69,7 @@ def availability_checker_requirements() -> ApplicationRequirements:
 # Function to define requirements for the Invoice Generator
 def invoice_generator_requirements() -> ApplicationRequirements:
     # Define request and response models here
-    invoice_model = ObjectTypeE(
+    invoice_model = ObjectTypeModel(
         name="InvoiceRequest",
         description="An object used to generte an invoice",
         Fields=[
@@ -86,13 +86,13 @@ def invoice_generator_requirements() -> ApplicationRequirements:
         ],
     )
 
-    invoice_response = ObjectTypeE(
+    invoice_response = ObjectTypeModel(
         name="InvoiceResponse",
         description="A pdf of an invoice",
         Fields=[
             ObjectFieldE(
                 name="availability_status",
-                type="file",
+                type="bytes",
                 description="A PDF file for the invoice",
             )
         ],
@@ -119,14 +119,14 @@ def invoice_generator_requirements() -> ApplicationRequirements:
 # Function to define requirements for the Appointment Optimization Tool
 def appointment_optimization_requirements() -> ApplicationRequirements:
     # Define request and response models here
-    appointment_model = ObjectTypeE(
+    appointment_model = ObjectTypeModel(
         name="AppointmentModel",
         description="An object used to make good times for an appointment",
         Fields=[
             ObjectFieldE(
                 name="availability_calendar",
                 type="list[datetime]",
-                description="A data structure (like a list or array) containing the professional's available time slots for a given period (e.g., a week). Each time slot should include the start and end times.",
+                description="A data structure (like a list) containing the professional's available time slots for a given period (e.g., a week). Each time slot should include the start and end times.",
             ),
             ObjectFieldE(
                 name="prefered_hours",
@@ -146,7 +146,7 @@ def appointment_optimization_requirements() -> ApplicationRequirements:
         ],
     )
 
-    appointment_response = ObjectTypeE(
+    appointment_response = ObjectTypeModel(
         name="AppointmentResponse",
         description="A few good times for appointments",
         Fields=[
@@ -157,7 +157,7 @@ def appointment_optimization_requirements() -> ApplicationRequirements:
             ),
             ObjectFieldE(
                 name="alternatives",
-                type="datetime[]",
+                type="list[datetime]",
                 description="If no optimal slots are available, provide a list of alternative slots, clearly indicating that they are outside the preferred criteria.",
             ),
         ],
@@ -184,7 +184,7 @@ def appointment_optimization_requirements() -> ApplicationRequirements:
 # Function to define requirements for the Distance Calculator
 def distance_calculator_requirements() -> ApplicationRequirements:
     # Define request and response models here
-    distance_model = ObjectTypeE(
+    distance_model = ObjectTypeModel(
         name="DistanceInput",
         description="An object used to find the start and end locations",
         Fields=[
@@ -201,7 +201,7 @@ def distance_calculator_requirements() -> ApplicationRequirements:
         ],
     )
 
-    distance_response = ObjectTypeE(
+    distance_response = ObjectTypeModel(
         name="DistanceOutput",
         description="Output of calcuating the distance",
         Fields=[
@@ -212,7 +212,7 @@ def distance_calculator_requirements() -> ApplicationRequirements:
             ),
             ObjectFieldE(
                 name="travel_time",
-                type="time",
+                type="float",
                 description="An estimation of the time it would take for the professional to travel from their location to the client's location, considering average travel conditions.",
             ),
         ],
@@ -238,7 +238,7 @@ def distance_calculator_requirements() -> ApplicationRequirements:
 
 def profile_management() -> ApplicationRequirements:
     # Define request and response models for each API route
-    create_profile_request = ObjectTypeE(
+    create_profile_request = ObjectTypeModel(
         name="CreateProfileRequest",
         description="Input required for creating a new profile",
         Fields=[
@@ -249,18 +249,18 @@ def profile_management() -> ApplicationRequirements:
             ),
             ObjectFieldE(
                 name="personal_details",
-                type="dict",
+                type="dict[str, str]",
                 description="Name and contact information",
             ),
             ObjectFieldE(
                 name="preferences",
-                type="dict",
+                type="dict[str, str]",
                 description="Optional settings specific to the user type",
             ),
         ],
     )
 
-    create_profile_response = ObjectTypeE(
+    create_profile_response = ObjectTypeModel(
         name="CreateProfileResponse",
         description="Output after creating a profile",
         Fields=[
@@ -269,13 +269,13 @@ def profile_management() -> ApplicationRequirements:
             ),
             ObjectFieldE(
                 name="profile_details",
-                type="dict",
+                type="dict[str, str]",
                 description="Details of the created profile",
             ),
         ],
     )
 
-    update_profile_request = ObjectTypeE(
+    update_profile_request = ObjectTypeModel(
         name="UpdateProfileRequest",
         description="Input required for updating an existing profile",
         Fields=[
@@ -286,13 +286,13 @@ def profile_management() -> ApplicationRequirements:
             ),
             ObjectFieldE(
                 name="fields_to_update",
-                type="dict",
+                type="dict[str, str]",
                 description="Fields to be updated with their new values",
             ),
         ],
     )
 
-    update_profile_response = ObjectTypeE(
+    update_profile_response = ObjectTypeModel(
         name="UpdateProfileResponse",
         description="Output after updating a profile",
         Fields=[
@@ -301,13 +301,13 @@ def profile_management() -> ApplicationRequirements:
             ),
             ObjectFieldE(
                 name="updated_profile_details",
-                type="dict",
+                type="dict[str, str]",
                 description="Details of the updated profile",
             ),
         ],
     )
 
-    retrieve_profile_request = ObjectTypeE(
+    retrieve_profile_request = ObjectTypeModel(
         name="RetrieveProfileRequest",
         description="Input required for retrieving a profile",
         Fields=[
@@ -319,13 +319,13 @@ def profile_management() -> ApplicationRequirements:
         ],
     )
 
-    retrieve_profile_response = ObjectTypeE(
+    retrieve_profile_response = ObjectTypeModel(
         name="RetrieveProfileResponse",
         description="Output after retrieving a profile",
         Fields=[
             ObjectFieldE(
                 name="profile_details",
-                type="dict",
+                type="dict[str,str]",
                 description="Details of the retrieved profile",
             ),
             ObjectFieldE(
@@ -336,7 +336,7 @@ def profile_management() -> ApplicationRequirements:
         ],
     )
 
-    delete_profile_request = ObjectTypeE(
+    delete_profile_request = ObjectTypeModel(
         name="DeleteProfileRequest",
         description="Input required for deleting a profile",
         Fields=[
@@ -348,7 +348,7 @@ def profile_management() -> ApplicationRequirements:
         ],
     )
 
-    delete_profile_response = ObjectTypeE(
+    delete_profile_response = ObjectTypeModel(
         name="DeleteProfileResponse",
         description="Output after deleting a profile",
         Fields=[
@@ -472,7 +472,7 @@ def calendar_booking_system() -> ApplicationRequirements:
                 function_name="create_user",
                 description="Registers a new user by providing basic user information.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="CreateUserInput",
                     description="CreateUserInput",
                     Fields=[
@@ -489,11 +489,11 @@ def calendar_booking_system() -> ApplicationRequirements:
                         ObjectFieldE(
                             name="role",
                             type="UserRole",
-                            description="The role of the user which dictates access control. Optional ObjectFieldE; defaults to 'Client' if not specified.",
+                            description="The role of the user which dictates access control. Optional parameter; defaults to 'Client' if not specified.",
                         ),
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="CreateUserInput",
                     description="CreateUserInput",
                     Fields=[
@@ -517,7 +517,7 @@ def calendar_booking_system() -> ApplicationRequirements:
                 function_name="update_user_profile",
                 description="Updates an existing user's profile information.",
                 access_level=AccessLevel.USER,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="UpdateUserProfileInput",
                     description="UpdateUserProfileInput",
                     Fields=[
@@ -538,7 +538,7 @@ def calendar_booking_system() -> ApplicationRequirements:
                         ),
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="UpdateUserProfileInput",
                     description="UpdateUserProfileInput",
                     Fields=[
@@ -558,7 +558,7 @@ def calendar_booking_system() -> ApplicationRequirements:
                             description="The updated role assigned to the user.",
                         ),
                         ObjectFieldE(
-                            name="updatedAt",
+                            name="updated_at",
                             type="datetime",
                             description="The timestamp reflecting when the update was made.",
                         ),
@@ -572,7 +572,7 @@ def calendar_booking_system() -> ApplicationRequirements:
                 function_name="user_login",
                 description="Authenticates a user and returns a session token.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="UserLoginInput",
                     description="UserLoginInput",
                     Fields=[
@@ -588,7 +588,7 @@ def calendar_booking_system() -> ApplicationRequirements:
                         ),
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="UserLoginInput",
                     description="UserLoginInput",
                     Fields=[
@@ -617,7 +617,7 @@ def calendar_booking_system() -> ApplicationRequirements:
                 function_name="user_logout",
                 description="Logs out a user, invalidating the session token.",
                 access_level=AccessLevel.USER,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="UserLogoutInput",
                     description="UserLogoutInput",
                     Fields=[
@@ -628,7 +628,7 @@ def calendar_booking_system() -> ApplicationRequirements:
                         )
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="UserLogoutOutput",
                     description="UserLogoutOutput",
                     Fields=[
@@ -639,32 +639,7 @@ def calendar_booking_system() -> ApplicationRequirements:
                         )
                     ],
                 ),
-                database_schema=DatabaseSchema(
-                    name="TimeSyncSchema",
-                    description="A schema for the TimeSync app, supporting appointment scheduling, notifications, and calendar integrations.",
-                    tables=[
-                        DatabaseTable(
-                            name="User",
-                            description="Stores user information, including role and authentication details.",
-                            definition="model User {\\n  id        String        @id @default(uuid())\\n  email     String        @unique\\n  role      UserRole      @default(Client)\\n  password  String\\n  createdAt DateTime      @default(now())\\n  updatedAt DateTime      @updatedAt\\n  Appointments  Appointment[]\\n  Notifications Notification[]\\n  Integrations  Integration[]\\n}",
-                        ),
-                        DatabaseTable(
-                            name="Appointment",
-                            description="Represents appointments with status, type, and time zone information.",
-                            definition="model Appointment {\\n  id          String          @id @default(uuid())\\n  userId      String\\n  status      AppointmentStatus @default(Scheduled)\\n  type        String\\n  startTime   DateTime\\n  endTime     DateTime\\n  timeZone    String\\n  createdAt   DateTime        @default(now())\\n  updatedAt   DateTime        @updatedAt\\n  User        User            @relation(fields: [userId], references: [id])\\n  Notifications Notification[]\\n}",
-                        ),
-                        DatabaseTable(
-                            name="Notification",
-                            description="Manages notifications linked to users and appointments, with type defining the channels.",
-                            definition="model Notification {\\n  id            String        @id @default(uuid())\\n  userId        String\\n  appointmentId String\\n  type          NotificationType\\n  sentAt        DateTime?\\n  User          User          @relation(fields: [userId], references: [id])\\n  Appointment   Appointment   @relation(fields: [appointmentId], references: [id])\\n}",
-                        ),
-                        DatabaseTable(
-                            name="Integration",
-                            description="Handles external calendar integrations for users, storing details in a JSON format.",
-                            definition="model Integration {\\n  id        String        @id @default(uuid())\\n  userId    String\\n  type      IntegrationType\\n  details   Json\\n  User      User          @relation(fields: [userId], references: [id])\\n}",
-                        ),
-                    ],
-                ),
+                database_schema=database_schema,
             ),
             APIRouteRequirement(
                 method="PUT",
@@ -672,33 +647,38 @@ def calendar_booking_system() -> ApplicationRequirements:
                 function_name="update_notification_settings",
                 description="Updates a user's notification preferences.",
                 access_level=AccessLevel.USER,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="UpdateNotificationSettingsRequest",
                     description="UpdateNotificationSettingsRequest",
                     Fields=[
                         ObjectFieldE(
-                            name="userId",
+                            name="user_id",
                             type="str",
                             description="The unique identifier of the user whose notification settings need to be updated.",
                         ),
-                        # ObjectFieldE(
-                        #     name="settings",
-                        #     type="NotificationSettingsUpdate",
-                        #     description="The new notification settings to be applied to the user's profile.",
-                        # ),
                         ObjectFieldE(
-                            name="emailFrequency",
-                            type="str",
-                            description="The desired frequency of email notifications ('daily', 'weekly', 'never').",
-                        ),
-                        ObjectFieldE(
-                            name="smsEnabled",
-                            type="bool",
-                            description="Indicates whether SMS notifications are enabled (true/false).",
+                            name="settings",
+                            type=ObjectTypeModel(
+                                name="NotificationSettingsUpdate",
+                                description="Defines the fields available for updating a user's notification preferences, like frequency and method.",
+                                Fields=[
+                                    ObjectFieldE(
+                                        name="email_frequency",
+                                        type="str",
+                                        description="The desired frequency of email notifications ('daily', 'weekly', 'never').",
+                                    ),
+                                    ObjectFieldE(
+                                        name="sms_enabled",
+                                        type="bool",
+                                        description="Indicates whether SMS notifications are enabled (true/false).",
+                                    ),
+                                ],
+                            ),
+                            description="The new notification settings to be applied to the user's profile.",
                         ),
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="UpdateNotificationSettingsResponse",
                     description="UpdateNotificationSettingsResponse",
                     Fields=[
@@ -722,22 +702,22 @@ def calendar_booking_system() -> ApplicationRequirements:
                 function_name="create_appointment",
                 description="Creates a new appointment.",
                 access_level=AccessLevel.USER,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="CreateAppointmentInput",
                     description="CreateAppointmentInput",
                     Fields=[
                         ObjectFieldE(
-                            name="userId",
+                            name="user_id",
                             type="str",
                             description="The ID of the user creating the appointment.",
                         ),
                         ObjectFieldE(
-                            name="startTime",
+                            name="start_time",
                             type="datetime",
                             description="The start time for the appointment.",
                         ),
                         ObjectFieldE(
-                            name="endTime",
+                            name="end_time",
                             type="datetime",
                             description="The end time for the appointment.",
                         ),
@@ -748,17 +728,17 @@ def calendar_booking_system() -> ApplicationRequirements:
                         ),
                         ObjectFieldE(
                             name="participants",
-                            type="[str]",
+                            type="list[str]",
                             description="List of participating user IDs.",
                         ),
                         ObjectFieldE(
-                            name="timeZone",
+                            name="time_zone",
                             type="str",
                             description="Timezone for the scheduled appointment.",
                         ),
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="CreateAppointmentOutput",
                     description="CreateAppointmentOutput",
                     Fields=[
@@ -768,7 +748,7 @@ def calendar_booking_system() -> ApplicationRequirements:
                             description="Indicates success or failure of the operation.",
                         ),
                         ObjectFieldE(
-                            name="appointmentId",
+                            name="appointment_id",
                             type="str",
                             description="Unique identifier for the newly created appointment.",
                         ),
@@ -787,17 +767,22 @@ def calendar_booking_system() -> ApplicationRequirements:
                 function_name="update_appointment",
                 description="Updates details of an existing appointment.",
                 access_level=AccessLevel.USER,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="AppointmentUpdateInput",
                     description="AppointmentUpdateInput",
                     Fields=[
                         ObjectFieldE(
-                            name="startTime",
+                            name="id",
+                            type="str",
+                            description="The unique identifier of the appointment to be updated.",
+                        ),
+                        ObjectFieldE(
+                            name="start_time",
                             type="datetime",
                             description="The new start time for the appointment, accounting for any time zone considerations.",
                         ),
                         ObjectFieldE(
-                            name="endTime",
+                            name="end_time",
                             type="datetime",
                             description="The new end time for the appointment, ensuring it follows logically after the start time.",
                         ),
@@ -812,13 +797,13 @@ def calendar_booking_system() -> ApplicationRequirements:
                             description="The updated status to reflect any changes such as rescheduling or cancellations.",
                         ),
                         ObjectFieldE(
-                            name="timeZone",
+                            name="time_zone",
                             type="str",
                             description="If the time zone needs adjusting to reflect the appropriate scheduling context.",
                         ),
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="AppointmentUpdateOutput",
                     description="AppointmentUpdateOutput",
                     Fields=[
@@ -847,7 +832,7 @@ def calendar_booking_system() -> ApplicationRequirements:
                 function_name="cancel_appointment",
                 description="Cancels an existing appointment.",
                 access_level=AccessLevel.USER,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="CancelAppointmentInput",
                     description="CancelAppointmentInput",
                     Fields=[
@@ -858,7 +843,7 @@ def calendar_booking_system() -> ApplicationRequirements:
                         )
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="CancelAppointmentOutput",
                     description="CancelAppointmentOutput",
                     Fields=[
@@ -882,33 +867,33 @@ def calendar_booking_system() -> ApplicationRequirements:
                 function_name="configure_notifications",
                 description="Configures a user's notification preferences.",
                 access_level=AccessLevel.USER,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="ConfigureNotificationsRequest",
                     description="ConfigureNotificationsRequest",
                     Fields=[
                         ObjectFieldE(
-                            name="userId",
+                            name="user_id",
                             type="str",
                             description="The unique identifier of the user updating their preferences",
                         ),
                         ObjectFieldE(
-                            name="emailEnabled",
+                            name="email_enabled",
                             type="bool",
                             description="Indicates whether email notifications are enabled",
                         ),
                         ObjectFieldE(
-                            name="emailFrequency",
+                            name="email_frequency",
                             type="str",
                             description="Defines how often email notifications are sent ('immediately', 'daily', 'weekly')",
                         ),
                         ObjectFieldE(
-                            name="smsEnabled",
+                            name="sms_enabled",
                             type="bool",
                             description="Indicates whether SMS notifications are enabled",
                         ),
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="ConfigureNotificationsResponse",
                     description="ConfigureNotificationsResponse",
                     Fields=[
@@ -932,7 +917,7 @@ def calendar_booking_system() -> ApplicationRequirements:
                 function_name="dispatch_notifications",
                 description="Sends out notifications based on predefined criteria and user settings.",
                 access_level=AccessLevel.ADMIN,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="DispatchNotificationInput",
                     description="DispatchNotificationInput",
                     Fields=[
@@ -943,7 +928,7 @@ def calendar_booking_system() -> ApplicationRequirements:
                         )
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="DispatchNotificationOutput",
                     description="DispatchNotificationOutput",
                     Fields=[
@@ -953,18 +938,18 @@ def calendar_booking_system() -> ApplicationRequirements:
                             description="If the dispatch was successful overall.",
                         ),
                         ObjectFieldE(
-                            name="dispatchedCount",
+                            name="dispatched_count",
                             type="int",
                             description="Total number of notifications dispatched.",
                         ),
                         ObjectFieldE(
-                            name="failedCount",
+                            name="failed_count",
                             type="int",
                             description="Number of notifications that failed to dispatch.",
                         ),
                         ObjectFieldE(
                             name="errors",
-                            type="[str]",
+                            type="list[str]",
                             description="List of errors for individual failures, if applicable.",
                         ),
                     ],
@@ -1032,23 +1017,23 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                 function_name="list_inventory",
                 description="Fetch a list of inventory items.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="ListInventoryRequest",
                     description="ListInventoryRequest",
                     Fields=[
                         ObjectFieldE(
                             name="filters",
-                            type=ObjectTypeE(
+                            type=ObjectTypeModel(
                                 name="InventoryFilter",
                                 description="Optional filters for listing inventory items, including filter by location, batch, and name.",
                                 Fields=[
                                     ObjectFieldE(
-                                        name="locationId",
+                                        name="location_id",
                                         type="int",
                                         description="Allows filtering inventory items by their stored location ID.",
                                     ),
                                     ObjectFieldE(
-                                        name="batchId",
+                                        name="batch_id",
                                         type="int",
                                         description="Allows filtering inventory items by their associated batch ID.",
                                     ),
@@ -1063,7 +1048,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                         ),
                         ObjectFieldE(
                             name="pagination",
-                            type=ObjectTypeE(
+                            type=ObjectTypeModel(
                                 name="PaginationParams",
                                 description="Parameters for controlling the pagination of the list_inventory response.",
                                 Fields=[
@@ -1073,7 +1058,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                                         description="Specifies the page number of inventory items to retrieve.",
                                     ),
                                     ObjectFieldE(
-                                        name="pageSize",
+                                        name="page_size",
                                         type="int",
                                         description="Specifies the number of inventory items per page.",
                                     ),
@@ -1083,27 +1068,27 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                         ),
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="ListInventoryResponse",
                     description="ListInventoryResponse",
                     Fields=[
                         ObjectFieldE(
                             name="items",
-                            type="array[InventoryItem]",
+                            type="list[InventoryItem]",
                             description="A list of inventory items that match the request criteria.",
                         ),
                         ObjectFieldE(
-                            name="totalItems",
+                            name="total_items",
                             type="int",
                             description="The total number of inventory items that match the request filters, ignoring pagination.",
                         ),
                         ObjectFieldE(
-                            name="currentPage",
+                            name="current_page",
                             type="int",
                             description="The current page number of the inventory items list.",
                         ),
                         ObjectFieldE(
-                            name="totalPages",
+                            name="total_pages",
                             type="int",
                             description="The total number of pages available based on the current filter and pagination settings.",
                         ),
@@ -1117,7 +1102,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                 function_name="update_inventory_item",
                 description="Update an inventory item's details.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="UpdateInventoryItemInput",
                     description="UpdateInventoryItemInput",
                     Fields=[
@@ -1142,18 +1127,18 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                             description="optional: the new quantity of the inventory item",
                         ),
                         ObjectFieldE(
-                            name="locationId",
+                            name="location_id",
                             type="int",
                             description="optional: the new location identifier where the inventory item is stored",
                         ),
                         ObjectFieldE(
-                            name="batchId",
+                            name="batch_id",
                             type="int",
                             description="optional: the new batch identifier associated with the inventory item",
                         ),
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="UpdateInventoryItemOutput",
                     description="UpdateInventoryItemOutput",
                     Fields=[
@@ -1168,8 +1153,8 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                             description="provides details on the outcome of the operation, including error messages",
                         ),
                         ObjectFieldE(
-                            name="updatedItem",
-                            type="InventoryItem",
+                            name="updated_item",
+                            type="Optional[InventoryItem]",
                             description="optional: the updated inventory item details, provided if the update was successful",
                         ),
                     ],
@@ -1182,13 +1167,13 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                 function_name="create_inventory_item",
                 description="Add a new inventory item.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="CreateInventoryItemRequest",
                     description="CreateInventoryItemRequest",
                     Fields=[
                         ObjectFieldE(
                             name="inventoryItem",
-                            type=ObjectTypeE(
+                            type=ObjectTypeModel(
                                 name="InventoryItemCreateInput",
                                 description="Defines the necessary parameters for creating a new inventory item, including name, quantity, and optionally description, locationId, and batchId for perishables.",
                                 Fields=[
@@ -1208,12 +1193,12 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                                         description="The initial stock quantity of the inventory item.",
                                     ),
                                     ObjectFieldE(
-                                        name="locationId",
+                                        name="location_id",
                                         type="int",
                                         description="The ID of the location where the inventory item is stored. Optional.",
                                     ),
                                     ObjectFieldE(
-                                        name="batchId",
+                                        name="batch_id",
                                         type="int",
                                         description="Related batch ID for perishable goods. Optional.",
                                     ),
@@ -1223,7 +1208,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                         )
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="CreateInventoryItemResponse",
                     description="CreateInventoryItemResponse",
                     Fields=[
@@ -1233,7 +1218,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                             description="Indicates if the item was successfully created.",
                         ),
                         ObjectFieldE(
-                            name="itemId",
+                            name="item_id",
                             type="int",
                             description="The ID of the newly created inventory item.",
                         ),
@@ -1252,7 +1237,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                 function_name="delete_inventory_item",
                 description="Remove an inventory item.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="DeleteInventoryItemInput",
                     description="DeleteInventoryItemInput",
                     Fields=[
@@ -1263,7 +1248,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                         )
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="DeleteInventoryItemOutput",
                     description="DeleteInventoryItemOutput",
                     Fields=[
@@ -1287,28 +1272,29 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                 function_name="create_report",
                 description="Generate a new report based on provided parameters.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="CreateReportRequest",
                     description="CreateReportRequest",
                     Fields=[
                         ObjectFieldE(
                             name="reportParams",
-                            type=ObjectTypeE(
+                            type=ObjectTypeModel(
                                 name="CreateReportParams",
                                 description="Defines the parameters required for creating a new inventory report.",
                                 Fields=[
                                     ObjectFieldE(
-                                        name="dateRange",
+                                        name="date_range",
+                                        # is this a python type?
                                         type="DateRange",
                                         description="The date range for which the report should cover.",
                                     ),
                                     ObjectFieldE(
-                                        name="reportType",
+                                        name="report_type",
                                         type="str",
                                         description="Specifies the type of report to generate, such as 'inventoryLevel', 'reordering', or 'expiryTracking'.",
                                     ),
                                     ObjectFieldE(
-                                        name="inventoryItems",
+                                        name="inventory_items",
                                         type="list[int]",
                                         description="Optional. A list of inventory item IDs to include in the report. If not provided, the report covers all items.",
                                     ),
@@ -1318,13 +1304,13 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                         )
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="CreateReportResponse",
                     description="CreateReportResponse",
                     Fields=[
                         ObjectFieldE(
                             name="result",
-                            type=ObjectTypeE(
+                            type=ObjectTypeModel(
                                 name="CreateReportResponse",
                                 description="The response returned after attempting to create a report. Contains the report's ID if successful.",
                                 Fields=[
@@ -1334,7 +1320,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                                         description="Indicates if the report was successfully created.",
                                     ),
                                     ObjectFieldE(
-                                        name="reportId",
+                                        name="report_id",
                                         type="int",
                                         description="The unique identifier of the newly created report. Null if 'success' is false.",
                                     ),
@@ -1357,17 +1343,18 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                 function_name="get_reports",
                 description="List all available reports.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="GetReportsRequest", description="GetReportsRequest", Fields=[]
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="GetReportsResponse",
                     description="GetReportsResponse",
                     Fields=[
                         ObjectFieldE(
                             name="reports",
+                            # TODO(ntindle): Support list of object
                             # type="list[ReportSummary]",
-                            type=ObjectTypeE(
+                            type=ObjectTypeModel(
                                 name="ReportSummary",
                                 description="Summarizes essential details of a report for listing purposes.",
                                 Fields=[
@@ -1382,7 +1369,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                                         description="Title of the report",
                                     ),
                                     ObjectFieldE(
-                                        name="creationDate",
+                                        name="creation_date",
                                         type="datetime",
                                         description="The date and time when the report was created",
                                     ),
@@ -1396,7 +1383,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                             description="A list of report summaries",
                         ),
                         ObjectFieldE(
-                            name="totalCount",
+                            name="total_count",
                             type="int",
                             description="The total number of reports available",
                         ),
@@ -1406,7 +1393,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                             description="The current page number",
                         ),
                         ObjectFieldE(
-                            name="pageSize",
+                            name="page_size",
                             type="int",
                             description="The number of items per page",
                         ),
@@ -1420,12 +1407,12 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                 function_name="create_integration",
                 description="Register a new integration with an external system.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="CreateIntegrationInput",
                     description="CreateIntegrationInput",
                     Fields=[
                         ObjectFieldE(
-                            name="systemType",
+                            name="system_type",
                             type="str",
                             description="The type of system to integrate.",
                         ),
@@ -1436,7 +1423,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                         ),
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="CreateIntegrationOutput",
                     description="CreateIntegrationOutput",
                     Fields=[
@@ -1446,7 +1433,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                             description="Indicates if the operation was successful.",
                         ),
                         ObjectFieldE(
-                            name="integrationId",
+                            name="integration_id",
                             type="int",
                             description="ID of the created integration, if successful.",
                         ),
@@ -1465,19 +1452,20 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                 function_name="list_integrations",
                 description="List all external system integrations.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="ListIntegrationsRequest",
                     description="ListIntegrationsRequest",
                     Fields=[],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="ListIntegrationsResponse",
                     description="ListIntegrationsResponse",
                     Fields=[
                         ObjectFieldE(
                             name="integrations",
+                            # TODO(ntindle): support list of object
                             # type="list[IntegrationSummary]",
-                            type=ObjectTypeE(
+                            type=ObjectTypeModel(
                                 name="IntegrationSummary",
                                 description="Summarizes essential details of an external system integration for listing purposes.",
                                 Fields=[
@@ -1487,7 +1475,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                                         description="Unique identifier of the integration.",
                                     ),
                                     ObjectFieldE(
-                                        name="systemType",
+                                        name="system_type",
                                         type="str",
                                         description="Type of the external system (e.g., Sales, Procurement).",
                                     ),
@@ -1510,12 +1498,12 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                 function_name="create_alert",
                 description="Set a new alert based on inventory criteria.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="CreateAlertInput",
                     description="CreateAlertInput",
                     Fields=[
                         ObjectFieldE(
-                            name="userId",
+                            name="user_id",
                             type="int",
                             description="The ID of the user setting the alert.",
                         ),
@@ -1531,7 +1519,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                         ),
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="CreateAlertOutput",
                     description="CreateAlertOutput",
                     Fields=[
@@ -1541,7 +1529,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                             description="Indicates if the alert creation was successful.",
                         ),
                         ObjectFieldE(
-                            name="alertId",
+                            name="alert_id",
                             type="int",
                             description="The ID of the newly created alert if successful.",
                         ),
@@ -1560,10 +1548,10 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                 function_name="list_alerts",
                 description="List all configured alerts.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="ListAlertsRequest", description="ListAlertsRequest", Fields=[]
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="ListAlertsResponse",
                     description="ListAlertsResponse",
                     Fields=[
@@ -1582,7 +1570,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                 function_name="user_login",
                 description="Authenticate a user and provide token.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="UserLoginInput",
                     description="UserLoginInput",
                     Fields=[
@@ -1598,7 +1586,7 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                         ),
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="UserLoginOutput",
                     description="UserLoginOutput",
                     Fields=[
@@ -1627,10 +1615,10 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                 function_name="user_logout",
                 description="Logs out a user, invalidating the session token.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="LogoutInput", description="LogoutInput", Fields=[]
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="LogoutOutput",
                     description="LogoutOutput",
                     Fields=[
@@ -1650,16 +1638,16 @@ def inventory_mgmt_system() -> ApplicationRequirements:
             ),
             APIRouteRequirement(
                 method="GET",
-                path="/auth/permissions/{userid}",
+                path="/auth/permissions/{user_id}",
                 function_name="check_permissions",
                 description="Verify if a user has permissions for a specific action.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="CheckPermissionsInput",
                     description="CheckPermissionsInput",
                     Fields=[
                         ObjectFieldE(
-                            name="userid",
+                            name="user_id",
                             type="int",
                             description="The unique identifier of the user.",
                         ),
@@ -1670,24 +1658,25 @@ def inventory_mgmt_system() -> ApplicationRequirements:
                         ),
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="CheckPermissionsOutput",
                     description="CheckPermissionsOutput",
                     Fields=[
                         ObjectFieldE(
-                            name="userId",
+                            name="user_id",
                             type="int",
                             description="The ID of the user whose permissions were checked.",
                         ),
                         ObjectFieldE(
                             name="permissions",
+                            # TODO(ntindle): support list of object
                             # type="list[PermissionCheckResult]",
-                            type=ObjectTypeE(
+                            type=ObjectTypeModel(
                                 name="PermissionCheckResult",
                                 description="Represents the result of checking a user's permissions.",
                                 Fields=[
                                     ObjectFieldE(
-                                        name="hasPermission",
+                                        name="has_permission",
                                         type="bool",
                                         description="Indicates whether the user has the requested permission.",
                                     ),
@@ -1761,19 +1750,20 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                 function_name="create_invoice",
                 description="Creates a new invoice in the system.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="InvoiceCreationRequest",
                     description="InvoiceCreationRequest",
                     Fields=[
                         ObjectFieldE(
-                            name="userId",
+                            name="user_id",
                             type="str",
                             description="Identifier for the user who is creating the invoice.",
                         ),
                         ObjectFieldE(
                             name="items",
+                            # TODO(ntindle): support list of object
                             # type="list[InvoiceItemInput]",
-                            type=ObjectTypeE(
+                            type=ObjectTypeModel(
                                 name="InvoiceItemInput",
                                 description="Details for each item included in the invoice.",
                                 Fields=[
@@ -1802,18 +1792,18 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                             description="Currency in which the invoice is being issued.",
                         ),
                         ObjectFieldE(
-                            name="taxRate",
+                            name="tax_rate",
                             type="float",
                             description="Tax rate applicable to the invoice, represented as a percentage.",
                         ),
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="InvoiceCreationResponse",
                     description="InvoiceCreationResponse",
                     Fields=[
                         ObjectFieldE(
-                            name="invoiceId",
+                            name="invoice_id",
                             type="str",
                             description="Unique identifier for the newly created invoice.",
                         ),
@@ -1823,7 +1813,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                             description="Status of the invoice after creation. Expected values are 'Draft' or 'Finalized'.",
                         ),
                         ObjectFieldE(
-                            name="creationDate",
+                            name="creation_date",
                             type="datetime",
                             description="Timestamp reflecting when the invoice was created.",
                         ),
@@ -1837,7 +1827,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                 function_name="edit_invoice",
                 description="Edits an existing invoice by ID.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="EditInvoiceInput",
                     description="EditInvoiceInput",
                     Fields=[
@@ -1847,8 +1837,8 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                             description="The unique identifier of the invoice to be edited.",
                         ),
                         ObjectFieldE(
-                            name="invoiceDetails",
-                            type=ObjectTypeE(
+                            name="invoice_details",
+                            type=ObjectTypeModel(
                                 name="InvoiceEditModel",
                                 description="Model for editing invoice details, allowing updates to various invoice fields while ensuring that changes to critical fields like currency or finalized status are handled with caution.",
                                 Fields=[
@@ -1859,8 +1849,9 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                                     ),
                                     ObjectFieldE(
                                         name="items",
-                                        # type="Optional[Array[ItemEditModel]]",
-                                        type=ObjectTypeE(
+                                        # TODO(ntindle): support list of object
+                                        # type="Optional[list[ItemEditModel]]",
+                                        type=ObjectTypeModel(
                                             name="ItemEditModel",
                                             description="Model for adding or editing line items within an invoice.",
                                             Fields=[
@@ -1881,7 +1872,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                                                 ),
                                                 ObjectFieldE(
                                                     name="id",
-                                                    type="String (Optional)",
+                                                    type="Optional[str]",
                                                     description="Unique ID of the item if it exists. If provided, the item will be updated; otherwise, a new item will be added.",
                                                 ),
                                             ],
@@ -1899,7 +1890,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         ),
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="EditInvoiceOutput",
                     description="EditInvoiceOutput",
                     Fields=[
@@ -1914,7 +1905,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                             description="A message describing the result of the operation, particularly useful in case of failure.",
                         ),
                         ObjectFieldE(
-                            name="updatedInvoice",
+                            name="updated_invoice",
                             type="Invoice",
                             description="The updated invoice object reflecting the changes made. Null if operation failed.",
                         ),
@@ -1928,7 +1919,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                 function_name="get_invoice",
                 description="Retrieves invoice details by ID.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="GetInvoiceInput",
                     description="GetInvoiceInput",
                     Fields=[
@@ -1939,7 +1930,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         )
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="GetInvoiceOutput",
                     description="GetInvoiceOutput",
                     Fields=[
@@ -1960,12 +1951,12 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         ),
                         ObjectFieldE(
                             name="items",
-                            type="array of InvoiceItem",
+                            type="list[InvoiceItem]",
                             description="A collection of line items associated with the invoice. Each item contains details such as description, quantity, and price.",
                         ),
                         ObjectFieldE(
                             name="payment",
-                            type="Payment or null",
+                            type="Optional[Payment]",
                             description="Payment details associated with this invoice. Null if no payment has been made yet.",
                         ),
                     ],
@@ -1978,45 +1969,46 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                 function_name="list_invoices",
                 description="Lists all invoices related to a user.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="ListInvoicesRequest",
                     description="ListInvoicesRequest",
                     Fields=[
                         ObjectFieldE(
-                            name="userId",
+                            name="user_id",
                             type="str",
                             description="The unique identifier of the user whose invoices are to be listed.",
                         ),
                         ObjectFieldE(
                             name="page",
                             type="int",
-                            description="Pagination ObjectFieldE, denotes the page number of the invoice list to be retrieved.",
+                            description="Pagination parameter, denotes the page number of the invoice list to be retrieved.",
                         ),
                         ObjectFieldE(
-                            name="pageSize",
+                            name="page_size",
                             type="int",
-                            description="Pagination ObjectFieldE, denotes the number of invoices to be listed per page.",
+                            description="Pagination parameter, denotes the number of invoices to be listed per page.",
                         ),
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="ListInvoicesResponse",
                     description="ListInvoicesResponse",
                     Fields=[
                         ObjectFieldE(
                             name="invoices",
+                            # TODO(ntindle): support list of object
                             # type="list[InvoiceSummary]",
-                            type=ObjectTypeE(
+                            type=ObjectTypeModel(
                                 name="InvoiceSummary",
                                 description="A concise model representing the key information of an invoice for listing purposes.",
                                 Fields=[
                                     ObjectFieldE(
-                                        name="invoiceId",
+                                        name="invoice_id",
                                         type="str",
                                         description="Unique identifier for the invoice.",
                                     ),
                                     ObjectFieldE(
-                                        name="invoiceNumber",
+                                        name="invoice_number",
                                         type="str",
                                         description="The unique number associated with the invoice.",
                                     ),
@@ -2026,7 +2018,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                                         description="Current status of the invoice (e.g., draft, finalized).",
                                     ),
                                     ObjectFieldE(
-                                        name="totalAmount",
+                                        name="total_amount",
                                         type="float",
                                         description="Total amount of the invoice, taking into account item prices and quantities.",
                                     ),
@@ -2036,13 +2028,13 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                                         description="The currency in which the invoice was issued.",
                                     ),
                                     ObjectFieldE(
-                                        name="createdAt",
+                                        name="created_at",
                                         type="datetime",
                                         description="The date and time when the invoice was created.",
                                     ),
                                 ],
                             ),
-                            description="An array of invoice summary objects.",
+                            description="An list of invoice summary objects.",
                         ),
                         ObjectFieldE(
                             name="total",
@@ -2050,12 +2042,12 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                             description="Total number of invoices available for the user.",
                         ),
                         ObjectFieldE(
-                            name="currentPage",
+                            name="current_page",
                             type="int",
                             description="The current page number being returned in the response.",
                         ),
                         ObjectFieldE(
-                            name="pageSize",
+                            name="page_size",
                             type="int",
                             description="The number of invoices returned per page.",
                         ),
@@ -2065,32 +2057,32 @@ def invoice_payment_tracking() -> ApplicationRequirements:
             ),
             APIRouteRequirement(
                 method="POST",
-                path="/payments/initiate/{invoiceId}",
+                path="/payments/initiate/{invoice_id}",
                 function_name="initiate_payment",
                 description="Initiates a payment for an invoice.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="PaymentInitiationRequest",
                     description="PaymentInitiationRequest",
                     Fields=[
                         ObjectFieldE(
-                            name="invoiceId",
+                            name="invoice_id",
                             type="str",
                             description="Unique ID of the invoice for which the payment is being initiated.",
                         ),
                         ObjectFieldE(
-                            name="gatewayId",
+                            name="gateway_id",
                             type="str",
                             description="Identifier of the payment gateway through which the payment will be processed.",
                         ),
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="PaymentInitiationResponse",
                     description="PaymentInitiationResponse",
                     Fields=[
                         ObjectFieldE(
-                            name="paymentId",
+                            name="payment_id",
                             type="str",
                             description="Unique identifier for the payment transaction, provided by the system.",
                         ),
@@ -2105,27 +2097,27 @@ def invoice_payment_tracking() -> ApplicationRequirements:
             ),
             APIRouteRequirement(
                 method="PATCH",
-                path="/payments/confirm/{paymentId}",
+                path="/payments/confirm/{payment_id}",
                 function_name="confirm_payment",
                 description="Confirms a payment has been completed.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="PaymentConfirmationRequest",
                     description="PaymentConfirmationRequest",
                     Fields=[
                         ObjectFieldE(
-                            name="paymentId",
+                            name="payment_id",
                             type="str",
                             description="The unique identifier of the payment to be confirmed.",
                         ),
                         ObjectFieldE(
-                            name="confirmationStatus",
+                            name="confirmation_status",
                             type="str",
                             description="Indicates the status of the payment confirmation attempt.",
                         ),
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="PaymentConfirmationResponse",
                     description="PaymentConfirmationResponse",
                     Fields=[
@@ -2140,7 +2132,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                             description="A message providing more details on the confirmation status.",
                         ),
                         ObjectFieldE(
-                            name="updatedPaymentDetails",
+                            name="updated_payment_details",
                             type="Payment",
                             description="The updated payment details post-confirmation attempt, reflecting the new status and any additional updates.",
                         ),
@@ -2154,17 +2146,17 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                 function_name="send_reminder",
                 description="Sends a reminder for an unpaid invoice.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="ReminderNotificationInput",
                     description="ReminderNotificationInput",
                     Fields=[
                         ObjectFieldE(
-                            name="invoiceId",
+                            name="invoice_id",
                             type="str",
                             description="Unique identifier for the invoice the reminder pertains to.",
                         ),
                         ObjectFieldE(
-                            name="userId",
+                            name="user_id",
                             type="str",
                             description="Unique identifier for the user associated with the invoice to send the notification to.",
                         ),
@@ -2174,13 +2166,13 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                             description="Preferred medium of notification (e.g., Email, SMS).",
                         ),
                         ObjectFieldE(
-                            name="sendTime",
+                            name="send_time",
                             type="datetime",
                             description="Scheduled time for sending the reminder.",
                         ),
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="ReminderNotificationOutput",
                     description="ReminderNotificationOutput",
                     Fields=[
@@ -2204,27 +2196,27 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                 function_name="generate_report",
                 description="Generates a financial report based on specified parameters.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="GenerateReportInput",
                     description="GenerateReportInput",
                     Fields=[
                         ObjectFieldE(
-                            name="userId",
+                            name="user_id",
                             type="str",
                             description="The user's ID for whom the report is being generated.",
                         ),
                         ObjectFieldE(
-                            name="reportType",
+                            name="report_type",
                             type="str",
                             description="Specifies the type of financial report required.",
                         ),
                         ObjectFieldE(
-                            name="startDate",
+                            name="start_date",
                             type="datetime",
                             description="The start date for the reporting period.",
                         ),
                         ObjectFieldE(
-                            name="endDate",
+                            name="end_date",
                             type="datetime",
                             description="The end date for the reporting period.",
                         ),
@@ -2235,35 +2227,36 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         ),
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="GenerateReportOutput",
                     description="GenerateReportOutput",
                     Fields=[
                         ObjectFieldE(
                             name="report",
-                            type=ObjectTypeE(
+                            type=ObjectTypeModel(
                                 name="FinancialReport",
                                 description="Represents the structured output of a financial report, including various metrics and insights.",
                                 Fields=[
                                     ObjectFieldE(
-                                        name="reportType",
+                                        name="report_type",
                                         type="str",
                                         description="Type of the generated report.",
                                     ),
                                     ObjectFieldE(
-                                        name="generatedAt",
+                                        name="generated_at",
                                         type="datetime",
                                         description="Timestamp of when the report was generated.",
                                     ),
                                     ObjectFieldE(
                                         name="metrics",
-                                        # type="List[ReportMetric]",
-                                        type=ObjectTypeE(
+                                        # TODO(ntindle): support list of object
+                                        # type="list[ReportMetric]",
+                                        type=ObjectTypeModel(
                                             name="ReportMetric",
                                             description="Details of a single metric within the financial report.",
                                             Fields=[
                                                 ObjectFieldE(
-                                                    name="metricName",
+                                                    name="metric_name",
                                                     type="str",
                                                     description="Name of the metric.",
                                                 ),
@@ -2288,7 +2281,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                                     ),
                                     ObjectFieldE(
                                         name="insights",
-                                        type="List[str]",
+                                        type="list[str]",
                                         description="List of insights derived from the report data.",
                                     ),
                                 ],
@@ -2305,35 +2298,36 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                 function_name="fetch_insights",
                 description="Provides strategic financial insights.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="FinancialInsightsRequest",
                     description="FinancialInsightsRequest",
                     Fields=[
                         ObjectFieldE(
-                            name="startDate",
+                            name="start_date",
                             type="datetime",
                             description="The start date for the range of financial data to consider.",
                         ),
                         ObjectFieldE(
-                            name="endDate",
+                            name="end_date",
                             type="datetime",
                             description="The end date for the range of financial data to consider.",
                         ),
                         ObjectFieldE(
                             name="metrics",
-                            type="list[str]",
+                            type="Optional[list[str]]",
                             description="Optional. A list of specific financial metrics to retrieve insights for.",
                         ),
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="FinancialInsightsResponse",
                     description="FinancialInsightsResponse",
                     Fields=[
                         ObjectFieldE(
                             name="insights",
+                            # TDDO(ntindle): support list of object
                             # type="list[FinancialInsight]",
-                            type=ObjectTypeE(
+                            type=ObjectTypeModel(
                                 name="FinancialInsight",
                                 description="Represents a high-level financial insight derived from aggregating financial data.",
                                 Fields=[
@@ -2371,24 +2365,25 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                 function_name="update_security_settings",
                 description="Updates security settings and protocols.",
                 access_level=AccessLevel.ADMIN,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="UpdateSecuritySettingsRequest",
                     description="UpdateSecuritySettingsRequest",
                     Fields=[
                         ObjectFieldE(
                             name="updates",
+                            # TDDO(ntindle): support list of object
                             # type="list[SecuritySettingUpdate]",
-                            type=ObjectTypeE(
+                            type=ObjectTypeModel(
                                 name="SecuritySettingUpdate",
                                 description="Represents a security setting that needs to be updated.",
                                 Fields=[
                                     ObjectFieldE(
-                                        name="settingName",
+                                        name="setting_name",
                                         type="str",
                                         description="The name of the security setting to update.",
                                     ),
                                     ObjectFieldE(
-                                        name="newValue",
+                                        name="new_value",
                                         type="str",
                                         description="The new value for the security setting.",
                                     ),
@@ -2398,7 +2393,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         )
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="UpdateSecuritySettingsResponse",
                     description="UpdateSecuritySettingsResponse",
                     Fields=[
@@ -2408,19 +2403,20 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                             description="Indicates if the update operation was successful.",
                         ),
                         ObjectFieldE(
-                            name="updatedSettings",
+                            name="updated_settings",
+                            # TODO(ntindle): support list of object
                             # type="list[SecuritySettingUpdate]",
-                            type=ObjectTypeE(
+                            type=ObjectTypeModel(
                                 name="SecuritySettingUpdate",
                                 description="Represents a security setting that needs to be updated.",
                                 Fields=[
                                     ObjectFieldE(
-                                        name="settingName",
+                                        name="setting_name",
                                         type="str",
                                         description="The name of the security setting to update.",
                                     ),
                                     ObjectFieldE(
-                                        name="newValue",
+                                        name="new_value",
                                         type="str",
                                         description="The new value for the security setting.",
                                     ),
@@ -2429,19 +2425,20 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                             description="A list of all settings that were successfully updated.",
                         ),
                         ObjectFieldE(
-                            name="failedSettings",
+                            name="failed_settings",
+                            # TDDO(ntindle): support list of object
                             # type="list[SecuritySettingUpdate]",
-                            type=ObjectTypeE(
+                            type=ObjectTypeModel(
                                 name="SecuritySettingUpdate",
                                 description="Represents a security setting that needs to be updated.",
                                 Fields=[
                                     ObjectFieldE(
-                                        name="settingName",
+                                        name="setting_name",
                                         type="str",
                                         description="The name of the security setting to update.",
                                     ),
                                     ObjectFieldE(
-                                        name="newValue",
+                                        name="new_value",
                                         type="str",
                                         description="The new value for the security setting.",
                                     ),
@@ -2459,18 +2456,18 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                 function_name="log_compliance_action",
                 description="Records a compliance-related action for auditing.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="LogComplianceActionInput",
                     description="LogComplianceActionInput",
                     Fields=[
                         ObjectFieldE(
-                            name="complianceAction",
-                            type=ObjectTypeE(
+                            name="compliance_action",
+                            type=ObjectTypeModel(
                                 name="ComplianceAction",
                                 description="Represents a compliance-related action that needs to be logged for auditing.",
                                 Fields=[
                                     ObjectFieldE(
-                                        name="actionType",
+                                        name="action_type",
                                         type="str",
                                         description="The type of action performed, e.g., 'Data Update', 'View Sensitive Information', etc.",
                                     ),
@@ -2480,7 +2477,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                                         description="A detailed description of the action performed.",
                                     ),
                                     ObjectFieldE(
-                                        name="performedBy",
+                                        name="performed_by",
                                         type="str",
                                         description="Identifier for the user or system component that performed the action.",
                                     ),
@@ -2495,7 +2492,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         )
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="LogComplianceActionOutput",
                     description="LogComplianceActionOutput",
                     Fields=[
@@ -2519,28 +2516,28 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                 function_name="connect_payment_gateway",
                 description="Sets up connection with a specified payment gateway.",
                 access_level=AccessLevel.PUBLIC,
-                request_model=ObjectTypeE(
+                request_model=ObjectTypeModel(
                     name="PaymentGatewayConnectionRequest",
                     description="PaymentGatewayConnectionRequest",
                     Fields=[
                         ObjectFieldE(
-                            name="connectionDetails",
-                            type=ObjectTypeE(
+                            name="connection_details",
+                            type=ObjectTypeModel(
                                 name="PaymentGatewayConnectionInput",
                                 description="Data required to initiate a connection with a payment gateway.",
                                 Fields=[
                                     ObjectFieldE(
-                                        name="gatewayName",
+                                        name="gateway_name",
                                         type="str",
                                         description="The name of the payment gateway to connect.",
                                     ),
                                     ObjectFieldE(
-                                        name="apiKey",
+                                        name="api_key",
                                         type="str",
                                         description="The API key provided by the payment gateway for authentication.",
                                     ),
                                     ObjectFieldE(
-                                        name="apiSecret",
+                                        name="api_secret",
                                         type="str",
                                         description="The API secret or other credentials required for secure access.",
                                     ),
@@ -2550,7 +2547,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                         )
                     ],
                 ),
-                response_model=ObjectTypeE(
+                response_model=ObjectTypeModel(
                     name="PaymentGatewayConnectionResponse",
                     description="PaymentGatewayConnectionResponse",
                     Fields=[
@@ -2565,7 +2562,7 @@ def invoice_payment_tracking() -> ApplicationRequirements:
                             description="Provides more detail on the connection status, including errors if any.",
                         ),
                         ObjectFieldE(
-                            name="gatewayId",
+                            name="gateway_id",
                             type="Optional[str]",
                             description="The unique identifier for the gateway in the system, provided upon a successful connection.",
                         ),
@@ -2578,10 +2575,15 @@ def invoice_payment_tracking() -> ApplicationRequirements:
 
 
 def tictactoe_game_requirements() -> ApplicationRequirements:
-    request = ObjectTypeE(
+    request = ObjectTypeModel(
         name="TurnRequest",
         description="A request to make a move in the tictactoe game.",
         Fields=[
+            ObjectFieldE(
+                name="game_id",
+                type="str",
+                description="The unique identifier of the game.",
+            ),
             ObjectFieldE(
                 name="row",
                 type="int",
@@ -2595,12 +2597,12 @@ def tictactoe_game_requirements() -> ApplicationRequirements:
         ],
     )
 
-    response = ObjectTypeE(
+    response = ObjectTypeModel(
         name="GameStateResponse",
         description="A response containing the current state of the game.",
         Fields=[
             ObjectFieldE(
-                name="gameId",
+                name="game_id",
                 type="str",
                 description="The unique identifier of the game.",
             ),
@@ -2650,6 +2652,3 @@ if __name__ == "__main__":
     logger.info(appointment_optimization_requirements())
     logger.info(distance_calculator_requirements())
     logger.info(profile_management())
-    logger.info(calendar_booking_system())
-    logger.info(inventory_mgmt_system())
-    logger.info(invoice_payment_tracking())
