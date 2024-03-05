@@ -61,6 +61,7 @@ async def fetch_deliverable(session, user_id, app_id):
             creation_time = datetime.now()
             if response.status != 200:
                 return {"app_name": spec.name, "status": "failed"}
+
             data = await response.json()
             deliverable_id = data["id"]
             deploy_url = f"http://127.0.0.1:8000/api/v1/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/"
