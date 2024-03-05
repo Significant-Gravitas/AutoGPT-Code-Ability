@@ -10,7 +10,7 @@ from codex.api_model import Pagination
 
 
 async def get_deliverable(
-        user_id: str, app_id: str, spec_id: str, deliverable_id: str
+    user_id: str, app_id: str, spec_id: str, deliverable_id: str
 ) -> CompletedApp:
     completed_app = await CompletedApp.prisma().find_unique_or_raise(
         where={"id": deliverable_id, "deleted": False},
@@ -21,7 +21,7 @@ async def get_deliverable(
 
 
 async def delete_deliverable(
-        user_id: str, app_id: str, spec_id: str, deliverable_id: str
+    user_id: str, app_id: str, spec_id: str, deliverable_id: str
 ) -> None:
     await CompletedApp.prisma().update(
         where={"id": deliverable_id},
@@ -30,11 +30,11 @@ async def delete_deliverable(
 
 
 async def list_deliverables(
-        user_id: str,
-        app_id: str,
-        spec_id: str,
-        page: int = 1,
-        page_size: int = 10,
+    user_id: str,
+    app_id: str,
+    spec_id: str,
+    page: int = 1,
+    page_size: int = 10,
 ) -> Tuple[List[CompletedApp], Pagination]:
     skip = (page - 1) * page_size
     total_items = await CompletedApp.prisma().count(
@@ -60,11 +60,9 @@ async def list_deliverables(
     return completed_apps_data, pagination
 
 
-
-
 async def create_object_type(
-        object: ObjectDef,
-        available_objects: dict[str, ObjectType],
+    object: ObjectDef,
+    available_objects: dict[str, ObjectType],
 ) -> dict[str, ObjectType]:
     """
     Creates and store object types in the database.
@@ -117,10 +115,12 @@ async def create_object_type(
                 continue
             field.typeId = available_objects[object.name].id
 
-            updates.append(ObjectField.prisma().update(
-                where={"id": field.id},
-                data={"typeId": field.typeId},
-            ))
+            updates.append(
+                ObjectField.prisma().update(
+                    where={"id": field.id},
+                    data={"typeId": field.typeId},
+                )
+            )
     asyncio.gather(*updates)
 
     return available_objects

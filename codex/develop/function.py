@@ -69,6 +69,7 @@ def is_type_equal(type1: str, type2: str) -> bool:
 
     return True
 
+
 def construct_function(
     function: FunctionDef, available_types: dict[str, ObjectType]
 ) -> FunctionCreateInput:

@@ -35,7 +35,9 @@ class ComplicationFailure(Exception):
     pass
 
 
-async def compile_route(compiled_route_id: str, route_root_func: Function) -> CompiledRoute:
+async def compile_route(
+    compiled_route_id: str, route_root_func: Function
+) -> CompiledRoute:
     """
     Compiles a route by generating a CompiledRoute object.
 
@@ -65,8 +67,7 @@ async def compile_route(compiled_route_id: str, route_root_func: Function) -> Co
         compiledCode=formatted_code,
     )
     compiled_route = await CompiledRoute.prisma().update(
-        where={"id": compiled_route_id},
-        data=data
+        where={"id": compiled_route_id}, data=data
     )
     return compiled_route
 

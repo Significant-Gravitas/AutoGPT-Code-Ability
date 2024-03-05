@@ -65,14 +65,15 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
             )
             available_types = {
                 obj.name: obj
-                for obj in [api_route.RequestObject, api_route.ResponseObject] if obj
+                for obj in [api_route.RequestObject, api_route.ResponseObject]
+                if obj
             }
             compiled_route = await CompiledRoute.prisma().create(
                 data=CompiledRouteCreateInput(
                     description=api_route.description,
                     fileName=api_route.functionName + "_service.py",
                     mainFunctionName=api_route.functionName,
-                    compiledCode="", # This will be updated by compile_route
+                    compiledCode="",  # This will be updated by compile_route
                     RootFunction={
                         "create": construct_function(function_def, available_types)
                     },
@@ -129,10 +130,12 @@ async def develop_route(
     compiled_route = await CompiledRoute.prisma().find_unique_or_raise(
         where={"id": compiled_route_id},
         include={
-            "Functions": {"include": {
-                "FunctionArgs": {"include": {"Type": True}},
-                "FunctionReturn": {"include": {"Type": True}},
-            }}
+            "Functions": {
+                "include": {
+                    "FunctionArgs": {"include": {"Type": True}},
+                    "FunctionReturn": {"include": {"Type": True}},
+                }
+            }
         },
     )
     generated_func = {}
