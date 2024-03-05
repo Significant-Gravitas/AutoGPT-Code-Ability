@@ -7,7 +7,6 @@ from typing import List, Set
 import black
 import isort
 from prisma.models import (
-    APIRouteSpec,
     CompiledRoute,
     CompletedApp,
     Function,
@@ -16,7 +15,6 @@ from prisma.models import (
     Package,
     Specification,
 )
-from codex.common.ai_block import ValidationError
 from prisma.types import CompiledRouteUpdateInput, CompletedAppCreateInput
 from pydantic import BaseModel
 
@@ -37,20 +35,15 @@ class ComplicationFailure(Exception):
     pass
 
 
-async def compile_route(
-    id: str, route_root_func: Function, api_route: APIRouteSpec
-) -> CompiledRoute:
+async def compile_route(compiled_route_id: str, route_root_func: Function) -> CompiledRoute:
     """
     Compiles a route by generating a CompiledRoute object.
 
     Args:
-        ids (Identifiers): The identifiers used in the route.
+        compiled_route_id (str): The ID of the compiled route.
         route_root_func (Function): The root function of the route.
-        api_route (APIRouteSpec): The specification of the API route.
-
     Returns:
         CompiledRoute: The compiled route object.
-
     """
     compiled_function = await recursive_compile_route(route_root_func)
 
@@ -71,7 +64,10 @@ async def compile_route(
         Packages={"connect": [{"id": package_id} for package_id in unique_packages]},
         compiledCode=formatted_code,
     )
-    compiled_route = await CompiledRoute.prisma().update(where={"id": id}, data=data)
+    compiled_route = await CompiledRoute.prisma().update(
+        where={"id": compiled_route_id},
+        data=data
+    )
     return compiled_route
 
 

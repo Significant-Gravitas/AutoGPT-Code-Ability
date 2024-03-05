@@ -9,7 +9,7 @@ from prisma.models import (
     Function,
     Specification,
 )
-from prisma.types import CompiledRouteCreateInput, CompletedAppCreateInput
+from prisma.types import CompiledRouteCreateInput
 
 from codex.api_model import Identifiers
 from codex.develop.compile import compile_route, create_app
@@ -94,14 +94,14 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
                 function=compiled_route.RootFunction,
             )
             logger.info(f"Route function id: {route_root_func.id}")
-            await compile_route(compiled_route.id, route_root_func, api_route)
+            await compile_route(compiled_route.id, route_root_func)
 
     return app
 
 
 async def develop_route(
     ids: Identifiers,
-    compiled_route_id: int,
+    compiled_route_id: str,
     goal_description: str,
     function: Function,
     depth: int = 0,
@@ -112,7 +112,7 @@ async def develop_route(
 
     Args:
         ids (Identifiers): The identifiers for the function.
-        compiled_route_id (int): The id for which CompiledRoute the function is being developed.
+        compiled_route_id (str): The id of the compiled route.
         goal_description (str): The high-level goal of the function to create.
         function (Function): The function to develop.
         depth (int): The depth of the recursion.
@@ -176,7 +176,6 @@ async def develop_route(
                 ids=ids,
                 goal_description=goal_description,
                 function=child,
-                api_route=api_route,
                 depth=depth + 1,
             )
             for child in route_function.ChildFunctions
@@ -193,7 +192,6 @@ if __name__ == "__main__":
     import asyncio
 
     import prisma
-    from prisma.models import APIRouteSpec
 
     import codex.common.test_const as test_consts
     from codex.common.ai_model import OpenAIChatClient
