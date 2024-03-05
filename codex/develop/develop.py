@@ -240,11 +240,17 @@ class DevelopAIBlock(AIBlock):
             # Validate the requested_func.args and requested_func.returns to the invoke_params
             expected_args = invoke_params["function_args"]
             expected_rets = invoke_params["function_rets"]
-            if expected_args != requested_func.arg_types:
+
+            # TODO(majdyz): Add more sophisticated validation for function signature.
+            compare_field = lambda x,y: (
+                x.lower().replace(" ", "") == y.lower().replace(" ", ""))
+
+            if any([x[0] != y[0] or not compare_field(x[1], y[1])
+                    for x, y in zip(expected_args, requested_func.arg_types)]):
                 raise ValidationError(
                     f"Function {func_name} has different arguments than expected, expected {expected_args} but got {requested_func.arg_types}"
                 )
-            if expected_rets != requested_func.return_type:
+            if not compare_field(expected_rets, requested_func.return_type):
                 raise ValidationError(
                     f"Function {func_name} has different return type than expected, expected {expected_rets} but got {requested_func.return_type}"
                 )

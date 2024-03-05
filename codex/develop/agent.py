@@ -174,6 +174,7 @@ async def develop_route(
         tasks = [
             develop_route(
                 ids=ids,
+                compiled_route_id=compiled_route_id,
                 goal_description=goal_description,
                 function=child,
                 depth=depth + 1,
