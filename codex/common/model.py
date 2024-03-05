@@ -137,7 +137,11 @@ async def create_object_type(
         field_inputs.append(field_input)
 
     available_objects[object.name] = await ObjectType.prisma().create(
-        data={"name": object.name, "Fields": {"create": field_inputs}},
+        data={
+            "name": object.name,
+            "description": object.description,
+            "Fields": {"create": field_inputs},
+        },
         include={"Fields": True},
     )
 
