@@ -38,24 +38,24 @@ Ensure all response params are included in the response model params.
         "description": "the description of the request model, including any additional context that's important/relevant/weird/cool/useful. This will be used as the doc string for the named pydantic model",
         "Fields": [
           {
-            "name": "simpleField",
+            "name": "simple_field",
             "description": "The description of the simple field. This will be the doc string for the field",
             "type": "str"
           },
           {
-            "name": "complexField",
+            "name": "complex_field",
             "description": "An example of a complex field with sub-types.",
             "type": {
               "name": "ComplexType",
               "description": "This is a complex type with its own fields.",
               "Fields": [
                 {
-                  "name": "subField1",
+                  "name": "sub_field_1",
                   "description": "A sub-field of the complex type, primitive.",
                   "type": "int"
                 },
                 {
-                  "name": "subField2",
+                  "name": "sub_field_2",
                   "description": "Another sub-field, this time a list of strings.",
                   "type": "List[str]"
                 }
@@ -73,7 +73,7 @@ Ensure all response params are included in the response model params.
         "description": "A description used to describe the response model, including any additional context that's important/relevant/weird/cool/useful. This will be the doc string for the named pydantic model",
         "Fields": [
           {
-            "name": "responseField",
+            "name": "response_field",
             "description": "A description for the response field",
             "type": "str"
           }
@@ -91,70 +91,62 @@ Example for `POST /user/{id}`, with models `User`, `Availability`, `Messages`:
 ```json
 {
   "think": "I'll need to leverage the context provided to ensure the UserDTO object makes sense. I'll also provide any models needed for my return types if they aren't based on the db model from prisma.",
-  "db_models_needed": ["User"],
+  "db_models_needed": [
+    "User"
+  ],
   "api_endpoint": {
-    "request_model": [
-      {
-        "name": "id",
-        "description": "This request only requires the user's id from the User object as defined in the Users table. If there's anything else, it's an error.",
-        "Fields": [
-          {
-            "name": "id",
-            "description": "The discord user id to look the user up by.",
-            "type": "str"
+    "request_model": {
+      "name": "PostUserInputObject",
+      "description": "This request only requires the user's new details to update the user object as defined in the Users table. If there's anything else, it's an error.",
+      "Fields": [
+        {
+          "name": "id",
+          "description": "The discord user id to look the user up by.",
+          "type": "str"
+        },
+        {
+          "name": "username",
+          "description": "The new username for the user.",
+          "type": "str"
+        },
+        {
+          "name": "avatar",
+          "description": "The new avatar for the user.",
+          "type": {
+            "name": "Avatar",
+            "description": "The avatar object for the user.",
+            "Fields": [
+              {
+                "name": "url",
+                "description": "The url for the avatar.",
+                "type": "str"
+              },
+              {
+                "name": "type",
+                "description": "The type of the avatar.",
+                "type": "str"
+              }
+            ]
           }
-        ]
-      },
-      {
-        "name": "user",
-        "description": "This request only requires the user's new details to update the user object as defined in the Users table. If there's anything else, it's an error.",
-        "Fields": [
-          {
-            "name": "username",
-            "description": "The new username for the user.",
-            "type": "str"
-          },
-          {
-            "name": "avatar",
-            "description": "The new avatar for the user.",
-            "type": {
-              "name": "Avatar",
-              "description": "The avatar object for the user.",
-              "Fields": [
-                {
-                  "name": "url",
-                  "description": "The url for the avatar.",
-                  "type": "str"
-                },
-                {
-                  "name": "type",
-                  "description": "The type of the avatar.",
-                  "type": "str"
-                }
-              ]
-            }
-          },
-          {
-            "name": "status",
-            "description": "The new status for the user.",
-            "type": "str"
-          }
-         ]
-      }
-    ],
-    "response_model": [
-      {
-        "name": "UserOutputObject",
-        "description": "Will output the full user object.",
-        "Fields": [
-          {
-            "name": "user",
-            "description": "The user object that matches the discord id provided.",
-            "type": "User"
-          }
-        ]
-      }
-    ]
+        },
+        {
+          "name": "status",
+          "description": "The new status for the user.",
+          "type": "str"
+        }
+      ]
+    },
+    "response_model": {
+      "name": "UserOutputObject",
+      "description": "Will output the full user object.",
+      "Fields": [
+        {
+          "name": "user",
+          "description": "The user object that matches the discord id provided.",
+          "type": "User"
+        }
+      ]
+    }
   },
   "end_thoughts": "Wow, that was fun."
 }
