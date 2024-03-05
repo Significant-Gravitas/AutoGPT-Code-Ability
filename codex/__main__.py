@@ -1,4 +1,5 @@
 import asyncio
+from calendar import c
 import io
 import logging
 import os
@@ -60,10 +61,11 @@ async def fetch_deliverable(session, user_id, app_id):
         try:
             creation_time = datetime.now()
             click.echo(f"Development took {creation_time - start_time}")
-            assert response.status == 200
+            if response.status != 200:
+                click.echo(f"\033[91mFailed creation for {spec.name}\033[0m")
+                return {"app_name": spec.name, "status": "failed"}
             data = await response.json()
             deliverable_id = data["id"]
-            click.echo(f"Created application: {data}")
             deploy_url = f"http://127.0.0.1:8000/api/v1/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/"
             async with session.post(deploy_url) as dresponse:
                 deploy_data = await dresponse.json()
@@ -93,7 +95,9 @@ async def fetch_deliverable(session, user_id, app_id):
                     f"Downloaded and extracted: "
                     f"{extracted_folder} in {end_time - start_time}"
                 )
-
+                click.echo(f"\033[92mCompleted application: {spec.name}\033[0m")
+                deploy_data["app_name"] = spec.name
+                deploy_data["status"] = "success"
                 return deploy_data
         except Exception as e:
             click.echo(f"Error fetching deliverable: {e}")
@@ -113,12 +117,21 @@ async def run_benchmark():
             fetch_deliverable(session, test_const.user_id_1, test_const.app_id_2),
             fetch_deliverable(session, test_const.user_id_1, test_const.app_id_3),
             fetch_deliverable(session, test_const.user_id_1, test_const.app_id_4),
-            fetch_deliverable(session, test_const.user_id_1, test_const.app_id_5),
-            fetch_deliverable(session, test_const.user_id_1, test_const.app_id_6),
-            fetch_deliverable(session, test_const.user_id_1, test_const.app_id_7),
-            fetch_deliverable(session, test_const.user_id_1, test_const.app_id_8),
+            # fetch_deliverable(session, test_const.user_id_1, test_const.app_id_5),
+            # fetch_deliverable(session, test_const.user_id_1, test_const.app_id_6),
+            # fetch_deliverable(session, test_const.user_id_1, test_const.app_id_7),
+            # fetch_deliverable(session, test_const.user_id_1, test_const.app_id_8),
+            fetch_deliverable(session, test_const.user_id_1, test_const.app_id_11),
         ]
-        await asyncio.gather(*tasks)
+        results = await asyncio.gather(*tasks)
+        click.echo(click.style(f"Successfully created {len(results)}/{len(tasks)} applications.", fg='green'))
+        results = sorted(results, key=lambda x: x['status'] == "success")
+        for res in results:
+            if res['status'] == "success":       
+                click.echo(click.style(f"\u2713 Created: {res['app_name']}", fg='green'))
+            else:
+                click.echo(click.style(f"\u2717 Failed: {res['app_name']}", fg='red'))
+            
     await client.disconnect()
 
 
