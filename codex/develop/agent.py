@@ -130,7 +130,10 @@ async def develop_route(
     compiled_route = await CompiledRoute.prisma().find_unique_or_raise(
         where={"id": compiled_route_id},
         include={
-            "Functions": {"include": {"FunctionArgs": True, "FunctionReturn": True}}
+            "Functions": {"include": {
+                "FunctionArgs": {"include": {"Type": True}},
+                "FunctionReturn": {"include": {"Type": True}},
+            }}
         },
     )
     generated_func = {}
@@ -139,9 +142,10 @@ async def develop_route(
         if func.functionName != function.functionName:
             generated_func[func.functionName] = func
         for arg in func.FunctionArgs:
-            generated_objs[arg.typeName] = arg
-        if func.FunctionReturn:
-            generated_objs[func.FunctionReturn.typeName] = func.FunctionReturn
+            if arg.Type:
+                generated_objs[arg.typeName] = arg.Type
+        if func.FunctionReturn and func.FunctionReturn.Type:
+            generated_objs[func.FunctionReturn.typeName] = func.FunctionReturn.Type
 
     route_function = await DevelopAIBlock().invoke(
         ids=ids,

@@ -4,6 +4,7 @@ from typing import List, Tuple
 
 from prisma.models import CompletedApp, ObjectType, ObjectField
 
+from codex.develop.function import get_type_children
 from codex.develop.model import ObjectDef
 from codex.api_model import Pagination
 
@@ -59,32 +60,6 @@ async def list_deliverables(
     return completed_apps_data, pagination
 
 
-def get_type_from_field(type: str) -> str:
-    """
-    Parse the related objects from the type string.
-    e.g:
-        User -> User
-        list[User] -> "User"
-        dict[str, App] -> "App"
-        dict[App, str] -> Non-primitive key is not supported
-        (User, App) -> Tuple is not supported.
-
-    This function also try to guarantee that field only has one related object.
-    TODO(majdyz): add a schema design update to allow multiple related objects.
-
-    Args:
-        type (str): The type string to parse.
-    Returns:
-        str: The related object name.
-    """
-    if "list[" == type[:5].lower():
-        return type[5:-1].strip()
-    elif "dict[" == type[:5].lower():
-        return type[5:-1].split(",")[1].strip()  # Return the value type
-    elif "tuple[" == type[:6].lower() or "(" == type[0] and ")" == type[-1]:
-        return type[1:-1].split(",")[0].strip()  # Return the first value type
-
-    return type.strip()
 
 
 async def create_object_type(
@@ -106,13 +81,19 @@ async def create_object_type(
     if object.name in available_objects:
         return available_objects
 
+    def extract_field_type(field_type: str) -> str:
+        parent_type, children = get_type_children(field_type)
+        if len(children) == 0:
+            return parent_type
+        return extract_field_type(children[-1])
+
     fields = []
     for field_name, field_type in object.fields.items():
         field = {
             "name": field_name,
             "typeName": field_type,
         }
-        related_field = get_type_from_field(field_type)
+        related_field = extract_field_type(field_type)
         if related_field in available_objects:
             field["typeId"] = available_objects[related_field].id
         fields.append(field)
@@ -130,7 +111,7 @@ async def create_object_type(
         for field in obj.Fields:
             if field.typeId is not None:
                 continue
-            if object.name != get_type_from_field(field.typeName):
+            if object.name != extract_field_type(field.typeName):
                 continue
             field.typeId = available_objects[object.name].id
 

@@ -70,7 +70,7 @@ def availability_checker_requirements() -> ApplicationRequirements:
 def invoice_generator_requirements() -> ApplicationRequirements:
     # Define request and response models here
     invoice_model = RequestModel(
-        name="invoicemodel",
+        name="InvoiceRequest",
         description="An object used to generte an invoice",
         params=[
             Parameter(
@@ -87,7 +87,7 @@ def invoice_generator_requirements() -> ApplicationRequirements:
     )
 
     invoice_response = ResponseModel(
-        name="inoviceresponse",
+        name="InvoiceResponse",
         description="A pdf of an invoice",
         params=[
             Parameter(
@@ -124,7 +124,7 @@ def appointment_optimization_requirements() -> ApplicationRequirements:
         description="An object used to make good times for an appointment",
         params=[
             Parameter(
-                name="availablility_calendar",
+                name="availability_calendar",
                 param_type="list[datetime]",
                 description="A data structure (like a list or array) containing the professional's available time slots for a given period (e.g., a week). Each time slot should include the start and end times.",
             ),
