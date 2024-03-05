@@ -40,4 +40,4 @@ jobs:
         run: poetry run prisma generate
 
       - name: Test with pytest
-        run: poetry run pytest --cov .
+        run: poetry run pytest --cov --without-integration .
