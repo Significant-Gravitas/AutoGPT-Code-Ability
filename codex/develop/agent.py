@@ -101,7 +101,7 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
 
 async def develop_route(
     ids: Identifiers,
-    compiled_route_id: int,
+    compiled_route_id: str,
     goal_description: str,
     function: Function,
     depth: int = 0,
