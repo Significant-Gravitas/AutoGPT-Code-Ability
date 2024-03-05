@@ -1,4 +1,4 @@
-name: Python Liniting
+name: Python Code Quality Liniting
 
 on:
   push:

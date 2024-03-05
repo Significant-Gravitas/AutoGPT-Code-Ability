@@ -1,4 +1,4 @@
-name: Python Code Quality
+name: Python Code Formatting
 
 on:
   push:
