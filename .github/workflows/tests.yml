@@ -1,4 +1,4 @@
-name: Python PyTests
+name: Python Unit Tests
 
 on:
   push:
