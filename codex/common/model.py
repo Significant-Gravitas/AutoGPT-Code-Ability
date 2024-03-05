@@ -26,9 +26,9 @@ class ObjectFieldModel(BaseModel):
     description: Optional[str] = Field(
         description="The description of the field", default=None
     )
-    type: "ObjectFieldModel | str" = Field(
+    type: "ObjectTypeModel | str" = Field(
         description="The type of the field. Can be a string like List[str] or an "
-                    "ObjectFieldModel"
+                    "ObjectTypeModel"
     )
 
 def unwrap_object_type(type: str) -> (str, [str]):
@@ -123,8 +123,14 @@ async def create_object_type(
         field_input = {
             "name": field.name,
             "description": field.description,
-            "typeName": field.type,
         }
+        if isinstance(field.type, ObjectTypeModel):
+            available_objects = await create_object_type(field.type, available_objects)
+            field_type = field.type.name
+        else:
+            field_type = field.type
+
+        field_input["typeName"] = field.type
         related_field = extract_field_type(field.type)
         if related_field in available_objects:
             field["typeId"] = available_objects[related_field].id
