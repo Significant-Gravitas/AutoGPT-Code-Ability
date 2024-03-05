@@ -1,11 +1,13 @@
 from datetime import datetime
 
+import pytest
 from prisma.models import ObjectField, ObjectType
 
 from codex.develop.compile import extract_path_params, process_object_type
 
 
-def test_process_object_type():
+@pytest.mark.asyncio
+async def test_process_object_type():
     obj = ObjectType(
         id="a",
         createdAt=datetime.now(),
@@ -32,7 +34,7 @@ def test_process_object_type():
         importStatements=[],
     )
 
-    pydantic_output = process_object_type(obj)
+    pydantic_output = await process_object_type(obj)
     expected_output = """
 
 class Person(BaseModel):
