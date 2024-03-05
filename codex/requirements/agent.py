@@ -19,6 +19,7 @@ from codex.prompts.claude.requirements.NestJSDocs import (
     NEST_JS_MODULES,
     NEST_JS_SQL,
 )
+from codex.common.model import ObjectTypeModel as ObjectTypeE
 from codex.requirements import flatten_endpoints
 from codex.requirements.blocks.ai_clarify import (
     FrontendClarificationBlock,
@@ -63,7 +64,6 @@ from codex.requirements.model import (
     FeaturesSuperObject,
     ModuleRefinement,
     ModuleResponse,
-    ObjectTypeE,
     QandA,
     RequirementsGenResponse,
     RequirementsRefined,
