@@ -1,10 +1,10 @@
-name: Python Code Quality
+name: Python Code Formatting
 
 on:
   push:
     branches: [ main ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, dev ]
 
 jobs:
   code-quality:
@@ -27,5 +27,5 @@ jobs:
       run: isort .
 
     - name: Run ruff formatter
-      run: ruff format .
+      run: ruff format . --check
       
