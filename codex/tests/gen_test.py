@@ -13,8 +13,8 @@ from codex.develop import agent
 from codex.requirements.database import get_latest_specification
 
 
-
-OpenAIChatClient.configure({})
+if not OpenAIChatClient._configured:
+    OpenAIChatClient.configure({})
 setup_logging(local=True)
 
 is_connected = False
