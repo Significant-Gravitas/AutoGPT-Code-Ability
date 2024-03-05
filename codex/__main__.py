@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 
 import codex.common.test_const as test_const
 from codex.common.logging_config import setup_logging
+from codex.interview.agent import populate_database_interviews
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,7 @@ def populate_db(database):
     async def popdb():
         await db.connect()
         await create_test_data()
+        await populate_database_interviews()
         await populate_database_specs()
         await db.disconnect()
 
