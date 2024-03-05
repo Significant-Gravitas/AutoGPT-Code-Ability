@@ -85,6 +85,8 @@ async def create_object_type(
         parent_type, children = get_type_children(field_type)
         if len(children) == 0:
             return parent_type
+        # TODO(majdyz): handle custom object with multiple children.
+        #   For now, we assume the rest of children are primitive types.
         return extract_field_type(children[-1])
 
     fields = []

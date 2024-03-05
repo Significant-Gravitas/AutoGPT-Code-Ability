@@ -75,7 +75,6 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
                     compiledCode="", # This will be updated by compile_route
                     RootFunction={
                         "create": construct_function(function_def, available_types)
-
                     },
                     CompletedApp={"connect": {"id": app.id}},
                     ApiRouteSpec={"connect": {"id": api_route.id}},
