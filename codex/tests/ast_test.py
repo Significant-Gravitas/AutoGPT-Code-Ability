@@ -192,7 +192,11 @@ def test_function_with_default_arguments():
     # Assert the properties of the FunctionDef object
     function_def = visitor.functions["my_function"]
     assert function_def.name == "my_function"
-    assert function_def.arg_types == [("arg1", 'object'), ("arg2", 'object'), ("arg3", 'object')], f"{function_def.arg_types}"
+    assert function_def.arg_types == [
+        ("arg1", "object"),
+        ("arg2", "object"),
+        ("arg3", "object"),
+    ], f"{function_def.arg_types}"
     assert function_def.return_type is None
     assert (
         function_def.function_template
