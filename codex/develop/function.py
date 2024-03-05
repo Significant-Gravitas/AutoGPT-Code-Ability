@@ -51,7 +51,7 @@ def is_type_equal(type1: str, type2: str) -> bool:
     """
     type1 = type1.replace(" ", "")
     type2 = type2.replace(" ", "")
-    if type1.lower() == type2.lower():
+    if type1 == type2:
         return True
 
     type1, children1 = get_type_children(type1)
