@@ -16,6 +16,7 @@ from codex.api_model import (
     SpecificationResponse,
 )
 from codex.common.codex_client import CodexClient
+from codex.interview import hardcoded
 from codex.interview.model import InterviewMessage
 from codex.requirements.database import get_latest_specification
 from codex.requirements.model import ExampleTask
@@ -138,14 +139,17 @@ async def run_benchmark(skip_requirements: bool, task: ExampleTask | None = None
     client = Prisma(auto_register=True)
     await client.connect()
 
+    examples = list(ExampleTask)
     if task:
         examples = [task]
+        assert ExampleTask.get_app_id(task) is not None, f"App ID not found for {task}"
     else:
-        examples: list[ExampleTask] = [
-            task
-            for task in list(ExampleTask)
-            if ExampleTask.get_app_id(task) is not None
-        ]
+        if hardcoded:
+            examples: list[ExampleTask] = [
+                task
+                for task in list(ExampleTask)
+                if ExampleTask.get_app_id(task) is not None
+            ]
 
     async with aiohttp.ClientSession() as session:
         tasks = [
