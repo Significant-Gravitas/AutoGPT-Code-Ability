@@ -9,11 +9,8 @@ from codex.interview.database import _create_interview_testing_only
 from codex.interview.hardcoded import (
     appointment_optimization_interview,
     availability_checker_interview,
-    calendar_booking_system,
     distance_calculator_interview,
-    inventory_mgmt_system,
     invoice_generator_interview,
-    invoice_payment_tracking,
     profile_management,
     ticktacktoe_game,
 )

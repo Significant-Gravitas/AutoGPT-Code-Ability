@@ -68,11 +68,11 @@ class ExampleTask(Enum):
                 return test_consts.interview_id_4
             case ExampleTask.PROFILE_MANAGEMENT_SYSTEM:
                 return test_consts.interview_id_5
-            # case ExampleTask.CALENDAR_BOOKING_SYSTEM:
-            #     return test_consts.interview_id_6
-            # case ExampleTask.INVENTORY_MANAGEMENT_SYSTEM:
-            #     return test_consts.interview_id_7
-            # case ExampleTask.INVOICING_AND_PAYMENT_TRACKING_SYSTEM:
+                # case ExampleTask.CALENDAR_BOOKING_SYSTEM:
+                #     return test_consts.interview_id_6
+                # case ExampleTask.INVENTORY_MANAGEMENT_SYSTEM:
+                #     return test_consts.interview_id_7
+                # case ExampleTask.INVOICING_AND_PAYMENT_TRACKING_SYSTEM:
                 return test_consts.interview_id_8
             case ExampleTask.TICTACTOE_GAME:
                 return test_consts.interview_id_11

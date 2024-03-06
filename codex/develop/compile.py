@@ -238,8 +238,7 @@ async def process_object_field(field: ObjectField, object_type_ids: Set[str]) ->
     """
     # Lookup the field object getting all its subfields
     field = await ObjectField.prisma().find_unique_or_raise(
-        where={"id": field.id},
-        include={"RelatedTypes": {"include": {"Fields": True}}}
+        where={"id": field.id}, include={"RelatedTypes": {"include": {"Fields": True}}}
     )
 
     types = [t for t in field.RelatedTypes if t.id not in object_type_ids]
@@ -256,8 +255,9 @@ async def process_object_field(field: ObjectField, object_type_ids: Set[str]) ->
     object_type_ids.update([t.id for t in types])
 
     # TODO: this can run in parallel
-    pydantic_classes = "\n".join([
-        await process_object_type(type, object_type_ids) for type in types])
+    pydantic_classes = "\n".join(
+        [await process_object_type(type, object_type_ids) for type in types]
+    )
 
     return pydantic_classes
 

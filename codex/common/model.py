@@ -2,6 +2,7 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 from prisma.models import ObjectType, ObjectField
 
+
 class ObjectTypeModel(BaseModel):
     name: str = Field(description="The name of the object")
     description: Optional[str] = Field(
@@ -25,7 +26,7 @@ class ObjectFieldModel(BaseModel):
     )
     type: "ObjectTypeModel | str" = Field(
         description="The type of the field. Can be a string like List[str] or an "
-                    "ObjectTypeModel"
+        "ObjectTypeModel"
     )
 
 
@@ -111,8 +112,7 @@ def extract_field_type(field_type: str) -> list[str]:
 
 
 def get_related_types(
-        type: str,
-        available_objects: dict[str, ObjectType]
+    type: str, available_objects: dict[str, ObjectType]
 ) -> list[ObjectType]:
     """
     Get the related types of a composite type.
@@ -133,8 +133,8 @@ def get_related_types(
 
 
 async def create_object_type(
-        object: ObjectTypeModel,
-        available_objects: dict[str, ObjectType],
+    object: ObjectTypeModel,
+    available_objects: dict[str, ObjectType],
 ) -> dict[str, ObjectType]:
     """
     Creates and store object types in the database.
@@ -159,17 +159,19 @@ async def create_object_type(
         else:
             type_name = field.type
 
-        field_inputs.append({
-            "name": field.name,
-            "description": field.description,
-            "typeName": type_name,
-            "RelatedTypes": {
-                "connect": [
-                    {"id": t.id}
-                    for t in get_related_types(type_name, available_objects)
-                ]
+        field_inputs.append(
+            {
+                "name": field.name,
+                "description": field.description,
+                "typeName": type_name,
+                "RelatedTypes": {
+                    "connect": [
+                        {"id": t.id}
+                        for t in get_related_types(type_name, available_objects)
+                    ]
+                },
             }
-        })
+        )
 
     created_object_type = await ObjectType.prisma().create(
         data={
@@ -193,10 +195,16 @@ async def create_object_type(
 
             # Link created_object_type.id to the field.RelatedTypes
             reltypes = get_related_types(field.typeName, available_objects)
-            field.RelatedTypes = await ObjectField.prisma().update(
-                where={"id": field.id},
-                data={"RelatedTypes": {"connect": [{"id": t.id} for t in reltypes]}},
-                include={"RelatedTypes": True},
-            ).RelatedTypes
+            field.RelatedTypes = (
+                await ObjectField.prisma()
+                .update(
+                    where={"id": field.id},
+                    data={
+                        "RelatedTypes": {"connect": [{"id": t.id} for t in reltypes]}
+                    },
+                    include={"RelatedTypes": True},
+                )
+                .RelatedTypes
+            )
 
     return available_objects

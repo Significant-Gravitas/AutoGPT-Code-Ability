@@ -39,17 +39,20 @@ async def construct_function(
         input["FunctionReturn"] = {"create": field}
 
     if function.arg_types:
-        fields = [ObjectFieldCreateInput(
-            name=name,
-            description=function.arg_descs.get(name, "-"),
-            typeName=type,
-            RelatedTypes={
-                "connect": [
-                    {"id": type.id}
-                    for type in get_related_types(type, available_types)
-                ]
-            },
-        ) for name, type in function.arg_types]
+        fields = [
+            ObjectFieldCreateInput(
+                name=name,
+                description=function.arg_descs.get(name, "-"),
+                typeName=type,
+                RelatedTypes={
+                    "connect": [
+                        {"id": type.id}
+                        for type in get_related_types(type, available_types)
+                    ]
+                },
+            )
+            for name, type in function.arg_types
+        ]
         input["FunctionArgs"] = {"create": fields}
 
     return input
