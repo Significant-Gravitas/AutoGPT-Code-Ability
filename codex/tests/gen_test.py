@@ -1,5 +1,3 @@
-import os
-
 import pytest
 from dotenv import load_dotenv
 
@@ -13,8 +11,8 @@ from codex.develop import agent
 from codex.requirements.database import get_latest_specification
 
 load_dotenv()
-openai_api_key = os.environ.get("OPENAI_API_KEY", "")
-OpenAIChatClient.configure({"api_key": openai_api_key})
+if not OpenAIChatClient._configured:
+    OpenAIChatClient.configure({})
 setup_logging(local=True)
 
 is_connected = False

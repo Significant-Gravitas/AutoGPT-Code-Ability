@@ -2,14 +2,15 @@ import logging
 
 from prisma.enums import AccessLevel
 
+from codex.common.model import (
+    ObjectTypeModel as ObjectTypeModel,
+    ObjectFieldModel as ObjectFieldE,
+)
 from codex.requirements.model import (
     APIRouteRequirement,
     ApplicationRequirements,
     DatabaseSchema,
     DatabaseTable,
-    Parameter,
-    RequestModel,
-    ResponseModel,
 )
 
 logger = logging.getLogger(__name__)
@@ -17,31 +18,31 @@ logger = logging.getLogger(__name__)
 
 def availability_checker_requirements() -> ApplicationRequirements:
     # Define request and response models here
-    check_availability_request = RequestModel(
+    check_availability_request = ObjectTypeModel(
         name="CheckAvailabilityRequest",
         description="A request to check the availability status of a professional based on the current time and their schedule.",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="current_time",
-                param_type="datetime",
+                type="datetime",
                 description="The timestamp at which the availability status is being requested.",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="schedule_data",
-                param_type="list[tuple[datetime, datetime]]",
+                type="list[tuple[datetime, datetime]]",
                 description="A list of tuples representing the schedule of the professional, where each tuple contains start and end times of appointments or busy periods.",
             ),
         ],
     )
 
     # Response Model for availability status
-    availability_status_response = ResponseModel(
+    availability_status_response = ObjectTypeModel(
         name="AvailabilityStatusResponse",
         description="A response indicating the current availability status of the professional.",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="availability_status",
-                param_type="str",
+                type="str",
                 description="The current availability status of the professional. Possible values are 'Available' and 'Busy'.",
             )
         ],
@@ -68,30 +69,30 @@ def availability_checker_requirements() -> ApplicationRequirements:
 # Function to define requirements for the Invoice Generator
 def invoice_generator_requirements() -> ApplicationRequirements:
     # Define request and response models here
-    invoice_model = RequestModel(
+    invoice_model = ObjectTypeModel(
         name="InvoiceRequest",
         description="An object used to generte an invoice",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="services_rendered",
-                param_type="list[tuple[float, str, list[tuple[str, str, float, float]]]]",
+                type="list[tuple[float, str, list[tuple[str, str, float, float]]]]",
                 description="a list of the services being rendered broken down by hours, service_description, and items used for the service. Items used is further broken down by name, description, unit_cost, and units used",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="tax_rate",
-                param_type="float",
+                type="float",
                 description="local tax rate used for calculations",
             ),
         ],
     )
 
-    invoice_response = ResponseModel(
+    invoice_response = ObjectTypeModel(
         name="InvoiceResponse",
         description="A pdf of an invoice",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="availability_status",
-                param_type="bytes",
+                type="bytes",
                 description="A PDF file for the invoice",
             )
         ],
@@ -118,45 +119,45 @@ def invoice_generator_requirements() -> ApplicationRequirements:
 # Function to define requirements for the Appointment Optimization Tool
 def appointment_optimization_requirements() -> ApplicationRequirements:
     # Define request and response models here
-    appointment_model = RequestModel(
+    appointment_model = ObjectTypeModel(
         name="AppointmentModel",
         description="An object used to make good times for an appointment",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="availability_calendar",
-                param_type="list[datetime]",
-                description="A data structure (like a list or array) containing the professional's available time slots for a given period (e.g., a week). Each time slot should include the start and end times.",
+                type="list[datetime]",
+                description="A data structure (like a list) containing the professional's available time slots for a given period (e.g., a week). Each time slot should include the start and end times.",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="prefered_hours",
-                param_type="str",
+                type="str",
                 description="The professional's preferred working hours (e.g., 9 AM to 5 PM), which could be a default setting or specified for each day.",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="travel_time_buffer",
-                param_type="time",
+                type="time",
                 description="Information regarding the time needed to travel between appointments. This could be a fixed duration or vary based on the time of day or location.",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="time_frame",
-                param_type="str",
+                type="str",
                 description="The time frame during which the client wishes to schedule the appointment (e.g., a specific date or range of dates).",
             ),
         ],
     )
 
-    appointment_response = ResponseModel(
+    appointment_response = ObjectTypeModel(
         name="AppointmentResponse",
         description="A few good times for appointments",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="slots",
-                param_type="list[datetime]",
+                type="list[datetime]",
                 description="A list of optimal appointment slots, each with a start and end time. This list should be sorted by preference or efficiency.",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="alternatives",
-                param_type="list[datetime]",
+                type="list[datetime]",
                 description="If no optimal slots are available, provide a list of alternative slots, clearly indicating that they are outside the preferred criteria.",
             ),
         ],
@@ -183,36 +184,36 @@ def appointment_optimization_requirements() -> ApplicationRequirements:
 # Function to define requirements for the Distance Calculator
 def distance_calculator_requirements() -> ApplicationRequirements:
     # Define request and response models here
-    distance_model = RequestModel(
+    distance_model = ObjectTypeModel(
         name="DistanceInput",
         description="An object used to find the start and end locations",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="start_location",
-                param_type="tuple[float, float]",
+                type="tuple[float, float]",
                 description="The current location of the professional, provided as latitude and longitude coordinates.",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="end_location",
-                param_type="tuple[float,float]",
+                type="tuple[float,float]",
                 description="The location where the client wishes to have the appointment, provided as latitude and longitude coordinates.",
             ),
         ],
     )
 
-    distance_response = ResponseModel(
+    distance_response = ObjectTypeModel(
         name="DistanceOutput",
         description="Output of calcuating the distance",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="distance",
-                param_type="tuple[float, float]",
+                type="tuple[float, float]",
                 description="The calculated distance between the two locations, preferably in both kilometers and miles.",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="travel_time",
-                param_type="float",
-                description="An estimation of the time it would take for the professional to travel from their location to the client's location in seconds, considering average travel conditions.",
+                type="float",
+                description="An estimation of the time it would take for the professional to travel from their location to the client's location, considering average travel conditions.",
             ),
         ],
     )
@@ -237,123 +238,123 @@ def distance_calculator_requirements() -> ApplicationRequirements:
 
 def profile_management() -> ApplicationRequirements:
     # Define request and response models for each API route
-    create_profile_request = RequestModel(
+    create_profile_request = ObjectTypeModel(
         name="CreateProfileRequest",
         description="Input required for creating a new profile",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="user_type",
-                param_type="str",
+                type="str",
                 description="Type of the user: client or professional",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="personal_details",
-                param_type="dict[str, str]",
+                type="dict[str, str]",
                 description="Name and contact information",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="preferences",
-                param_type="dict[str, str]",
+                type="dict[str, str]",
                 description="Optional settings specific to the user type",
             ),
         ],
     )
 
-    create_profile_response = ResponseModel(
+    create_profile_response = ObjectTypeModel(
         name="CreateProfileResponse",
         description="Output after creating a profile",
-        params=[
-            Parameter(
-                name="message", param_type="str", description="Success or error message"
+        Fields=[
+            ObjectFieldE(
+                name="message", type="str", description="Success or error message"
             ),
-            Parameter(
+            ObjectFieldE(
                 name="profile_details",
-                param_type="dict[str, str]",
+                type="dict[str, str]",
                 description="Details of the created profile",
             ),
         ],
     )
 
-    update_profile_request = RequestModel(
+    update_profile_request = ObjectTypeModel(
         name="UpdateProfileRequest",
         description="Input required for updating an existing profile",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="profile_id",
-                param_type="str",
+                type="str",
                 description="Profile ID or unique identifier",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="fields_to_update",
-                param_type="dict[str, str]",
+                type="dict[str, str]",
                 description="Fields to be updated with their new values",
             ),
         ],
     )
 
-    update_profile_response = ResponseModel(
+    update_profile_response = ObjectTypeModel(
         name="UpdateProfileResponse",
         description="Output after updating a profile",
-        params=[
-            Parameter(
-                name="message", param_type="str", description="Success or error message"
+        Fields=[
+            ObjectFieldE(
+                name="message", type="str", description="Success or error message"
             ),
-            Parameter(
+            ObjectFieldE(
                 name="updated_profile_details",
-                param_type="dict[str, str]",
+                type="dict[str, str]",
                 description="Details of the updated profile",
             ),
         ],
     )
 
-    retrieve_profile_request = RequestModel(
+    retrieve_profile_request = ObjectTypeModel(
         name="RetrieveProfileRequest",
         description="Input required for retrieving a profile",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="profile_id",
-                param_type="str",
+                type="str",
                 description="Profile ID or unique identifier",
             ),
         ],
     )
 
-    retrieve_profile_response = ResponseModel(
+    retrieve_profile_response = ObjectTypeModel(
         name="RetrieveProfileResponse",
         description="Output after retrieving a profile",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="profile_details",
-                param_type="dict[str, str]",
+                type="dict[str, str]",
                 description="Details of the retrieved profile",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="message",
-                param_type="str",
+                type="str",
                 description="Error message if the profile is not found",
             ),
         ],
     )
 
-    delete_profile_request = RequestModel(
+    delete_profile_request = ObjectTypeModel(
         name="DeleteProfileRequest",
         description="Input required for deleting a profile",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="profile_id",
-                param_type="str",
+                type="str",
                 description="Profile ID or unique identifier",
             ),
         ],
     )
 
-    delete_profile_response = ResponseModel(
+    delete_profile_response = ObjectTypeModel(
         name="DeleteProfileResponse",
         description="Output after deleting a profile",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
                 name="message",
-                param_type="str",
+                type="str",
                 description="Success message confirming profile deletion or error message if the profile is not found or deletion fails",
             ),
         ],
@@ -435,45 +436,50 @@ def profile_management() -> ApplicationRequirements:
 
 
 def tictactoe_game_requirements() -> ApplicationRequirements:
-    request = RequestModel(
+    request = ObjectTypeModel(
         name="TurnRequest",
         description="A request to make a move in the tictactoe game.",
-        params=[
-            Parameter(
+        Fields=[
+            ObjectFieldE(
+                name="game_id",
+                type="str",
+                description="The unique identifier of the game.",
+            ),
+            ObjectFieldE(
                 name="row",
-                param_type="int",
+                type="int",
                 description="The row in which the move is made, the value should be between 1 and 3.",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="col",
-                param_type="int",
+                type="int",
                 description="The column in which the move is made, the value should be between 1 and 3.",
             ),
         ],
     )
 
-    response = ResponseModel(
+    response = ObjectTypeModel(
         name="GameStateResponse",
         description="A response containing the current state of the game.",
-        params=[
-            Parameter(
-                name="gameId",
-                param_type="str",
+        Fields=[
+            ObjectFieldE(
+                name="game_id",
+                type="str",
                 description="The unique identifier of the game.",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="turn",
-                param_type="str",
+                type="str",
                 description="The current turn of the game. Possible values are 'X' or 'O'.",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="state",
-                param_type="str",
+                type="str",
                 description="The current state of the game. Possible values are 'In Progress', 'Draw', 'Win' or 'Loss'.",
             ),
-            Parameter(
+            ObjectFieldE(
                 name="board",
-                param_type="str",
+                type="str",
                 description="Printed representation of the current game board.",
             ),
         ],

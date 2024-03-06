@@ -7,6 +7,8 @@ from typing import List, Literal, Optional
 from prisma.enums import AccessLevel
 from pydantic import BaseModel, ConfigDict
 
+from codex.common.model import ObjectTypeModel as ObjectTypeE
+
 import codex.common.test_const as test_consts
 
 logger = logging.getLogger(__name__)
@@ -72,6 +74,8 @@ class ExampleTask(Enum):
                 return test_consts.interview_id_7
             case ExampleTask.INVOICING_AND_PAYMENT_TRACKING_SYSTEM:
                 return test_consts.interview_id_8
+            case ExampleTask.TICTACTOE_GAME:
+                return test_consts.interview_id_11
             case _:
                 raise NotImplementedError(f"Example Task {task.value} not implemented")
 
@@ -188,10 +192,6 @@ class FeaturesSuperObject(BaseModel):
     features: list[FeatureWrapper]
 
 
-# class WrappedRequirementsQA(BaseModel):
-#     wrapper: RequirementsQA
-
-
 class RequirementsResponse(BaseModel):
     think: str
     answer: list[RequirementsQA]
@@ -214,26 +214,6 @@ class Parameter(BaseModel):
         return f"- **Name**: {self.name}\n  - **Type**: {self.param_type}\n  - **Description**: {self.description}\n"
 
 
-class RequestModel(BaseModel):
-    name: str
-    description: str
-    params: List[Parameter]
-
-    def __str__(self):
-        params_str = "\n".join(param.__str__() for param in self.params)
-        return f"###### {self.name}\n**Description**: {self.description}\n\n**Parameters**:\n{params_str}\n"
-
-
-class ResponseModel(BaseModel):
-    name: str
-    description: str
-    params: List[Parameter]
-
-    def __str__(self):
-        params_str = "\n".join(param.__str__() for param in self.params)
-        return f"###### {self.name}\n**Description**: {self.description}\n\n**Parameters**:\n{params_str}\n"
-
-
 class DatabaseTable(BaseModel):
     name: str | None = None
     description: str
@@ -253,27 +233,15 @@ class DatabaseSchema(BaseModel):
         return f"## {self.name}\n**Description**: {self.description}\n**Tables**:\n{tables_str}\n"
 
 
-class EndpointDataModel(BaseModel):
-    name: str
-    description: Optional[str]
-    params: List[Parameter]
-
-
-class NewAPIModel(BaseModel):
-    name: str
-    description: Optional[str]
-    params: List[Parameter]
-
-
 class APIEndpointWrapper(BaseModel):
-    request_model: NewAPIModel
-    response_model: NewAPIModel
+    request_model: ObjectTypeE
+    response_model: ObjectTypeE
 
 
 class EndpointSchemaRefinementResponse(BaseModel):
     think: str
     db_models_needed: list[str]
-    new_api_models: list[NewAPIModel]
+    # new_api_models: list[ObjectTypeE]
     api_endpoint: APIEndpointWrapper
     end_thoughts: Optional[str]
 
@@ -295,9 +263,10 @@ class Endpoint(BaseModel):
     ]
     description: str
     path: str
-    request_model: Optional[RequestModel]
-    response_model: Optional[ResponseModel]
-    data_models: Optional[List[EndpointDataModel]]
+    request_model: Optional[ObjectTypeE]
+    response_model: Optional[ObjectTypeE]
+    # TODO(ntindle): reintroduce this when supported by the system?
+    # data_models: Optional[List[ObjectFieldE]]
     database_schema: Optional[DatabaseSchema]
 
     def __str__(self):
@@ -308,10 +277,7 @@ class Endpoint(BaseModel):
             request_response_text += f"##### Request: `{self.request_model.__str__() or 'Not defined yet'}`\n"
         if self.response_model:
             request_response_text += f"##### Response:`{self.request_model.__str__() or 'Not defined yet'}`\n"
-        if self.data_models:
-            data_model_text += "\n\n".join(
-                [data_model.__str__() for data_model in self.data_models]
-            )
+
         if self.database_schema:
             database_text += (
                 f"##### Database Schema\n\n{self.database_schema.__str__()}"
@@ -499,14 +465,14 @@ class APIRouteRequirement(BaseModel):
     access_level: AccessLevel
 
     # This is the model for the request and response
-    request_model: RequestModel | None
-    response_model: ResponseModel | None
+    request_model: ObjectTypeE
+    response_model: ObjectTypeE
 
     # This is the database schema this api route will use
     # I'm thinking it will be a prisma table schema or maybe a list of table schemas
     # See the schema.prisma file in the codex directory more info
     database_schema: DatabaseSchema | None = None
-    data_models: Optional[List[EndpointDataModel]] = None
+    # data_models: Optional[List[ObjectFieldE]] = None
 
     def __str__(self):
         db_schema_str = (

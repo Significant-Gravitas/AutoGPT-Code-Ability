@@ -15,6 +15,7 @@ from codex.interview.hardcoded import (
     invoice_generator_interview,
     invoice_payment_tracking,
     profile_management,
+    ticktacktoe_game,
 )
 from codex.interview.model import (
     Interview,
@@ -195,6 +196,8 @@ def hardcoded_interview(task: ExampleTask) -> Interview:
             return inventory_mgmt_system()
         case ExampleTask.INVOICING_AND_PAYMENT_TRACKING_SYSTEM:
             return invoice_payment_tracking()
+        case ExampleTask.TICTACTOE_GAME:
+            return ticktacktoe_game()
         case _:
             raise NotImplementedError(f"Task {task} not implemented")
 
