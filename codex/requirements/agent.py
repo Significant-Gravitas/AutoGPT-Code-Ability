@@ -52,16 +52,12 @@ from codex.requirements.matching import find_best_match
 from codex.requirements.model import (
     APIRouteRequirement,
     ApplicationRequirements,
-    Clarification,
     DBResponse,
-    Endpoint,
-    EndpointSchemaRefinementResponse,
     ExampleTask,
     Feature,
     FeaturesSuperObject,
     ModuleRefinement,
     ModuleResponse,
-    QandA,
     RequirementsGenResponse,
     RequirementsRefined,
     StateObj,
@@ -117,10 +113,17 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
     q_and_a_clarify = QuestionAndAnswerClarificationBlock()
 
     # Run all clarification invokes in parallel
-    frontend_clarification, user_persona_clarification, user_skill_clarification, q_and_a_clarification = await asyncio.gather(
+    (
+        frontend_clarification,
+        user_persona_clarification,
+        user_skill_clarification,
+        q_and_a_clarification,
+    ) = await asyncio.gather(
         frontend_clarify.invoke(
             ids=ids,
-            invoke_params={"project_description": running_state_obj.project_description},
+            invoke_params={
+                "project_description": running_state_obj.project_description
+            },
         ),
         user_persona_clarify.invoke(
             ids=ids,
@@ -314,7 +317,7 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
     db_table_names: list[str] = [
         table.name or "" for table in running_state_obj.database.tables
     ]
-    
+
     # This process just refineds the api endpoints. It can be ran in parallel
     # for all the modules and their endpoints
     async def process_module(module, running_state_obj, db_table_names):
@@ -345,9 +348,8 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
                 )
                 logger.debug(f"{converted!r}")
                 logger.info(f"Endpoint {converted.type} {converted.name} Done")
-                module.endpoints[j] = converted  
+                module.endpoints[j] = converted
             logger.info(f"Endpoints for {module.name} Done")
-
 
     # Gather all module processing tasks
     module_tasks = [
@@ -357,9 +359,8 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
 
     # Run all module tasks in parallel
     await asyncio.gather(*module_tasks)
-    
-    logger.info("Endpoints Done")
 
+    logger.info("Endpoints Done")
 
     api_routes: list[APIRouteRequirement] = []
     for module in running_state_obj.modules:
