@@ -1,5 +1,3 @@
-import asyncio
-
 from typing import List, Optional
 from pydantic import BaseModel, Field
 from prisma.models import ObjectType, ObjectField
@@ -93,6 +91,47 @@ def is_type_equal(type1: str, type2: str) -> bool:
     return True
 
 
+def extract_field_type(field_type: str) -> list[str]:
+    """
+    Extract the field type from a composite type.
+    e.g. tuple[str, dict[str, int]] -> [str, str, int]
+
+    Args:
+        field_type (str): The field type to parse.
+    Returns:
+        list[str]: The extracted field types.
+    """
+    parent_type, children = unwrap_object_type(field_type)
+    if len(children) == 0:
+        return [parent_type]
+
+    result = []
+    for child in children:
+        result.extend(extract_field_type(child))
+    return result
+
+
+def get_related_types(
+    type: str, available_objects: dict[str, ObjectType]
+) -> list[ObjectType]:
+    """
+    Get the related types of a composite type.
+    e.g. tuple[Obj1, dict[Obj2, Obj3]] with {Obj1, Obj3} -> [Obj1, Obj3]
+
+    Args:
+        type (str): The type to parse.
+        available_objects (dict[str, ObjectType]): The available objects.
+
+    Returns:
+        list[ObjectType]: The related types.
+    """
+    return [
+        available_objects[related_type]
+        for related_type in extract_field_type(type)
+        if related_type in available_objects
+    ]
+
+
 async def create_object_type(
     object: ObjectTypeModel,
     available_objects: dict[str, ObjectType],
@@ -112,59 +151,60 @@ async def create_object_type(
     if object.name in available_objects:
         return available_objects
 
-    def extract_field_type(field_type: str) -> str:
-        parent_type, children = unwrap_object_type(field_type)
-        if len(children) == 0:
-            return parent_type
-        # TODO(majdyz): handle custom object with multiple children.
-        #   For now, we assume the rest of children are primitive types.
-        return extract_field_type(children[-1])
-
     field_inputs = []
     for field in object.Fields:
-        field_input = {
-            "name": field.name,
-            "description": field.description,
-        }
         if isinstance(field.type, ObjectTypeModel):
             available_objects = await create_object_type(field.type, available_objects)
-            field_input["typeName"] = field.type.name
+            type_name = field.type.name
         else:
-            field_input["typeName"] = field.type
+            type_name = field.type
 
-        related_field = extract_field_type(field_input["typeName"])
-        if related_field in available_objects:
-            field_input["typeId"] = available_objects[related_field].id
+        field_inputs.append(
+            {
+                "name": field.name,
+                "description": field.description,
+                "typeName": type_name,
+                "RelatedTypes": {
+                    "connect": [
+                        {"id": t.id}
+                        for t in get_related_types(type_name, available_objects)
+                    ]
+                },
+            }
+        )
 
-        field_inputs.append(field_input)
-
-    available_objects[object.name] = await ObjectType.prisma().create(
+    created_object_type = await ObjectType.prisma().create(
         data={
             "name": object.name,
             "description": object.description,
             "Fields": {"create": field_inputs},
         },
-        include={"Fields": True},
+        include={"Fields": {"include": {"RelatedTypes": True}}},
     )
+    available_objects[object.name] = created_object_type
 
     # Connect the fields of available objects to the newly created object.
     # Naively check each available object if it has a related field to the new object.
     # TODO(majdyz): Optimize this step if needed.
-    updates = []
     for obj in available_objects.values():
         for field in obj.Fields:
-            if field.typeId is not None:
+            if object.name not in extract_field_type(field.typeName):
                 continue
-            if object.name != extract_field_type(field.typeName):
+            if object.name in [f.typeName for f in field.RelatedTypes]:
                 continue
-            field.typeId = available_objects[object.name].id
 
-            updates.append(
-                ObjectField.prisma().update(
+            # Link created_object_type.id to the field.RelatedTypes
+            reltypes = get_related_types(field.typeName, available_objects)
+            field.RelatedTypes = (
+                await ObjectField.prisma()
+                .update(
                     where={"id": field.id},
-                    data={"typeId": field.typeId},
+                    data={
+                        "RelatedTypes": {"connect": [{"id": t.id} for t in reltypes]}
+                    },
+                    include={"RelatedTypes": True},
                 )
+                .RelatedTypes
             )
-    await asyncio.gather(*updates)
 
     return available_objects

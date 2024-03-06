@@ -447,8 +447,10 @@ async def populate_database_specs():
       7 | 2024-02-08 11:51:15.216 | 2024-02-08 11:51:15.216 | Scurvey Tool                  | t       |      2
     """
     ids = identifier_1
-
-    for task in list(ExampleTask):
+    examples: list[ExampleTask] = [
+        task for task in list(ExampleTask) if ExampleTask.get_app_id(task) is not None
+    ]
+    for task in examples:
         app_id = ExampleTask.get_app_id(task)
         print(f"Creating Spec for {task}, with app_id {app_id}")
         spec = hardcoded_requirements(task)

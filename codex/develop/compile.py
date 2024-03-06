@@ -198,7 +198,7 @@ async def process_object_type(
     sub_types: List[str] = []
     field_strings: List[str] = []
     for field in obj.Fields:
-        if field.typeId is not None:
+        if field.RelatedTypes:
             sub_types.append(await process_object_field(field, object_type_ids))
 
         field_strings.append(
@@ -238,23 +238,26 @@ async def process_object_field(field: ObjectField, object_type_ids: Set[str]) ->
     """
     # Lookup the field object getting all its subfields
     field = await ObjectField.prisma().find_unique_or_raise(
-        where={"id": field.id}, include={"Type": {"include": {"Fields": True}}}
+        where={"id": field.id}, include={"RelatedTypes": {"include": {"Fields": True}}}
     )
 
-    if (field.typeId is None) or (field.typeId in object_type_ids):
+    types = [t for t in field.RelatedTypes if t.id not in object_type_ids]
+    if not types:
         # If the field is a primitive type or we have already processed this object,
         # we don't need to do anything
         logger.debug(
             f"Skipping field {field.name} as it's a primitive type or already processed"
         )
         return ""
+    assert types, "Field type is not defined"
 
-    assert field.Type is not None, "Field type is None"
+    logger.debug(f"Processing field {field.name} of type {field.typeName}")
+    object_type_ids.update([t.id for t in types])
 
-    logger.debug(f"Processing field {field.name} of type {field.Type.name}")
-    object_type_ids.add(field.typeId)
-
-    pydantic_classes = await process_object_type(field.Type, object_type_ids)
+    # TODO: this can run in parallel
+    pydantic_classes = "\n".join(
+        [await process_object_type(type, object_type_ids) for type in types]
+    )
 
     return pydantic_classes
 
@@ -287,15 +290,15 @@ def create_server_route_code(compiled_route: CompiledRoute) -> str:
     response_model = "JSONResponse"
     route_response_annotation = "JSONResponse"
     if (
-        return_type.Type
-        and return_type.Type.Fields
-        and return_type.Type.Fields[0].typeName == "bytes"
+        return_type.RelatedTypes[0]
+        and return_type.RelatedTypes[0].Fields
+        and return_type.RelatedTypes[0].Fields[0].typeName == "bytes"
     ):
         is_file_response = True
     else:
-        if return_type.Type is not None:
-            response_model = f"{return_type.Type.name} | JSONResponse"
-            route_response_annotation = return_type.Type.name
+        if return_type.typeName is not None:
+            response_model = f"{return_type.typeName} | JSONResponse"
+            route_response_annotation = return_type.typeName
 
     # 4. Determine path parameters
     path_params = extract_path_params(route_spec.path)

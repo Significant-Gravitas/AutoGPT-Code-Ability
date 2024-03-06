@@ -75,7 +75,9 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
                     mainFunctionName=api_route.functionName,
                     compiledCode="",  # This will be updated by compile_route
                     RootFunction={
-                        "create": construct_function(function_def, available_types)
+                        "create": await construct_function(
+                            function_def, available_types
+                        )
                     },
                     CompletedApp={"connect": {"id": app.id}},
                     ApiRouteSpec={"connect": {"id": api_route.id}},
@@ -132,8 +134,8 @@ async def develop_route(
         include={
             "Functions": {
                 "include": {
-                    "FunctionArgs": {"include": {"Type": True}},
-                    "FunctionReturn": {"include": {"Type": True}},
+                    "FunctionArgs": {"include": {"RelatedTypes": True}},
+                    "FunctionReturn": {"include": {"RelatedTypes": True}},
                 }
             }
         },
@@ -143,11 +145,16 @@ async def develop_route(
     for func in compiled_route.Functions:
         if func.functionName != function.functionName:
             generated_func[func.functionName] = func
+
+        # Populate generated request objects from the LLM
         for arg in func.FunctionArgs:
-            if arg.Type:
-                generated_objs[arg.typeName] = arg.Type
-        if func.FunctionReturn and func.FunctionReturn.Type:
-            generated_objs[func.FunctionReturn.typeName] = func.FunctionReturn.Type
+            for type in arg.RelatedTypes:
+                generated_objs[type.name] = type
+
+        # Populate generated response objects from the LLM
+        if func.FunctionReturn:
+            for type in func.FunctionReturn.RelatedTypes:
+                generated_objs[type.name] = type
 
     route_function = await DevelopAIBlock().invoke(
         ids=ids,

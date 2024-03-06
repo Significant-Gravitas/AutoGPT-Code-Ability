@@ -275,15 +275,6 @@ class ModuleRefinementRequirement(BaseModel):
         return f"#### Requirement: {self.name}\n{self.description}\n"
 
 
-class Parameter(BaseModel):
-    name: str
-    param_type: str
-    description: str
-
-    def __str__(self):
-        return f"- **Name**: {self.name}\n  - **Type**: {self.param_type}\n  - **Description**: {self.description}\n"
-
-
 class DatabaseTable(BaseModel):
     name: str | None = None
     description: str

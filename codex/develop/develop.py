@@ -316,7 +316,9 @@ class DevelopAIBlock(AIBlock):
         function_defs: list[FunctionCreateInput] = []
         if generated_response.functions:
             for key, value in generated_response.functions.items():
-                model = construct_function(value, generated_response.available_objects)
+                model = await construct_function(
+                    value, generated_response.available_objects
+                )
                 model["CompiledRoute"] = {
                     "connect": {"id": generated_response.compiled_route_id}
                 }
