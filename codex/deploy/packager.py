@@ -16,10 +16,13 @@ logger = logging.getLogger(__name__)
 def generate_requirements_txt(
     packages: List[Package], pipreq_pacakages: List[str]
 ) -> str:
-    requirements = set(pipreq_pacakages)
+    requirements = set()
 
     for package in packages:
-        requirements.add(package.packageName)
+        requirements.add(package.packageName.replace("\n", "").strip())
+
+    for package in pipreq_pacakages:
+        requirements.add(package.replace("\n", "").strip())
 
     return "\n".join(sorted(requirements))
 
@@ -97,6 +100,7 @@ def create_zip_file(application: Application) -> bytes:
 
             with open(requirements_file_path, mode="w") as requirements_file:
                 requirements_file.write(packages)
+
             logger.info("Created server code")
             # Create a zip file of the directory
             zip_file_path = os.path.join(app_dir, "server.zip")
