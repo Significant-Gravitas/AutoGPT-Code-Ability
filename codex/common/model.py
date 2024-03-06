@@ -132,7 +132,7 @@ async def create_object_type(
         else:
             field_input["typeName"] = field.type
 
-        related_field = extract_field_type(field.type)
+        related_field = extract_field_type(field_input["typeName"])
         if related_field in available_objects:
             field_input["typeId"] = available_objects[related_field].id
 
