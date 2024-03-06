@@ -3,7 +3,6 @@ import logging
 
 from codex.common.ai_block import Identifiers, Tool
 from codex.interview.model import (
-    InterviewMessage,
     InterviewMessageOptionalId,
     InterviewMessageWithResponse,
     InterviewMessageWithResponseOptionalId,
@@ -24,7 +23,7 @@ async def use_tool(
         target=input.tool, choices=[tool.name for tool in available_tools]
     )
     if match:
-        best_match, similarity = match[0], match[1]
+        best_match, _similarity = match[0], match[1]
         # convert the best match back to the tool object
         tool: Tool = next(tool for tool in available_tools if tool.name == best_match)
         match best_match:

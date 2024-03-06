@@ -56,7 +56,7 @@ async def fetch_deliverable(session, user_id, app_id):
     spec_id = spec.id
     click.echo(f"Developing the application for {spec.name}")
     url = f"http://127.0.0.1:8000/api/v1/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/"
-    async with session.post(url, timeout=600) as response:
+    async with session.post(url, timeout=1200) as response:
         try:
             creation_time = datetime.now()
             click.echo(f"Development took {creation_time - start_time}")
@@ -117,7 +117,7 @@ async def run_benchmark():
             fetch_deliverable(session, test_const.user_id_1, test_const.app_id_7),
             fetch_deliverable(session, test_const.user_id_1, test_const.app_id_8),
         ]
-        results = await asyncio.gather(*tasks)
+        await asyncio.gather(*tasks)
     await client.disconnect()
 
 
@@ -134,7 +134,7 @@ async def run_specific_benchmark(task):
                 session, test_const.user_id_1, ExampleTask.get_app_id(task)
             ),
         ]
-        results = await asyncio.gather(*tasks)
+        await asyncio.gather(*tasks)
     await client.disconnect()
 
 
@@ -168,7 +168,7 @@ def serve() -> None:
     from codex.common.ai_model import OpenAIChatClient
 
     OpenAIChatClient.configure({})
-    reload = os.environ.get("ENV", "CLOUD").lower() == "local"
+    os.environ.get("ENV", "CLOUD").lower() == "local"
 
     uvicorn.run(
         "codex.app:app",

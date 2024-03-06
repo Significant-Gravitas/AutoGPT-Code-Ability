@@ -2,9 +2,10 @@ import ast
 
 from dotenv import load_dotenv
 
+from codex.develop.develop import FunctionVisitor
+
 load_dotenv()
 
-from codex.develop.develop import FunctionVisitor
 
 SAMPLE_CODE = """
 from pydantic import BaseModel

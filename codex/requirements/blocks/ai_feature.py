@@ -6,7 +6,6 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
-from codex.common.logging_config import setup_logging
 from codex.requirements.model import FeaturesSuperObject
 
 logger = logging.getLogger(__name__)
@@ -118,7 +117,7 @@ if __name__ == "__main__":
                 logger.info(f"\t\tPriority: {f.priority}")
 
         else:
-            logger.info(f"????")
+            logger.info("????")
             breakpoint()
 
     # # If you want to test the block in an interactive environment

@@ -2,12 +2,13 @@ import pytest
 from dotenv import load_dotenv
 from fastapi.testclient import TestClient
 
-load_dotenv()
-
 from codex import app
 from codex.common.ai_model import OpenAIChatClient
-from codex.common.logging import setup_logging
-from codex.common.test_const import *
+from codex.common.logging_config import setup_logging
+from codex.common.test_const import app_id_1, user_id_1
+
+load_dotenv()
+
 
 OpenAIChatClient.configure({})
 setup_logging(local=True)

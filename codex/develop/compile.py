@@ -141,7 +141,7 @@ async def recursive_compile_route(
         code += function.functionCode
 
         try:
-            tree = ast.parse(code)
+            ast.parse(code)
         except Exception as e:
             raise ValueError(f"Syntax error in function code: {e}, {code}")
 
@@ -179,7 +179,7 @@ async def recursive_compile_route(
         check_code += code
 
         try:
-            tree = ast.parse(check_code)
+            ast.parse(check_code)
         except Exception as e:
             raise ValueError(f"Syntax error in function code: {e}, {code}")
 
@@ -217,13 +217,6 @@ async def process_object_type(
             f"{' '*4}{field.name}: {field.typeName}  # {field.description}"
         )
 
-    fields = "\n".join(
-        [
-            f"{' '*4}{field.name}: {field.typeName}  # {field.description}"
-            for field in obj.Fields
-        ]
-    )
-
     fields: str = "\n".join(field_strings)
     # Returned as a string to preserve class declaration order
     template += "\n\n".join(sub_types)
@@ -260,7 +253,7 @@ async def process_object_field(field: ObjectField, object_type_ids: Set[str]) ->
         where={"id": field.id}, include={"Type": {"include": {"Fields": True}}}
     )
 
-    if field.typeId is None or field.typeId in object_type_ids:
+    if (field.typeId is None) or (field.typeId in object_type_ids):
         # If the field is a primitive type or we have already processed this object,
         # we don't need to do anything
         logger.debug(
@@ -304,6 +297,7 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
 
     is_file_response = False
     response_model = "JSONResponse"
+    route_response_annotation = "JSONResponse"
     if (
         return_type.Type
         and return_type.Type.Fields
@@ -313,16 +307,21 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
     else:
         if return_type.Type is not None:
             response_model = f"{return_type.Type.name} | JSONResponse"
+            route_response_annotation = return_type.Type.name
 
     # 4. Determine path parameters
     path_params = extract_path_params(route_spec.path)
-    params = set(
-        [arg.ReferredObjectType.name for arg in args if arg.ReferredObjectType]
-    )
+    # params = set(
+    #     [arg.ReferredObjectType.name for arg in args if arg.ReferredObjectType]
+    # )
     func_args_names = set([arg.name for arg in args])
-    # if not set(path_params).issubset(func_args_names):
+    if not set(path_params).issubset(func_args_names):
+        logger.warning(
+            f"Path parameters {path_params} not in function arguments {func_args_names}"
+        )
     #     raise ComplicationFailure(
-    #         f"Path parameters {path_params} not in function arguments {func_args_names}"
+    #         f"Path parameters {path_params} not "
+    #         f"in function arguments {func_args_names}"
     #     )
 
     http_verb = str(route_spec.method)
@@ -330,16 +329,18 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
     if is_file_response:
         route_decorator += ", response_class=StreamingResponse"
     else:
-        route_decorator += f", response_model={response_model}"
+        route_decorator += f", response_model={route_response_annotation}"
 
     route_decorator += ")\n"
-    route_fucntion_def = f"def {main_function.functionName}("
-    route_fucntion_def += ", ".join([f"{arg.name}: {arg.typeName}" for arg in args])
-    route_fucntion_def += ")"
+
+    # TODO(SwiftyOS): consider replacing the prefix with a proper import and func call.
+    route_function_def = f"def api_{http_verb.lower()}_{main_function.functionName}("
+    route_function_def += ", ".join([f"{arg.name}: {arg.typeName}" for arg in args])
+    route_function_def += ")"
 
     return_response = ""
     if is_file_response:
-        route_fucntion_def += " -> StreamingResponse:"
+        route_function_def += " -> StreamingResponse:"
         headers = """
         headers = {
         "Content-Disposition": f"attachment; filename={res.file_name}"
@@ -353,7 +354,7 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
             headers=headers)
     """
     else:
-        route_fucntion_def += f" -> {response_model}:"
+        route_function_def += f" -> {response_model}:"
         return_response = "return res"
 
     function_body = f"""
@@ -367,10 +368,10 @@ def create_server_route_code(complied_route: CompiledRoute) -> str:
         logger.exception("Error processing request")
         res = dict()
         res["error"] =  str(e)
-        return JSONResponse(content=res)
+        return JSONResponse(content=jsonable_encoder(res))
     """
     route_code = route_decorator
-    route_code += route_fucntion_def
+    route_code += route_function_def
     route_code += function_body
     route_code += "\n\n"
 
@@ -439,6 +440,7 @@ def create_server_code(completed_app: CompletedApp) -> Application:
     server_code_imports = [
         "from fastapi import FastAPI",
         "from fastapi.responses import JSONResponse, StreamingResponse",
+        "from fastapi.encoders import jsonable_encoder",
         "import logging",
         "import io",
         "from typing import *",

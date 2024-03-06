@@ -290,7 +290,7 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
         match = find_best_match(module.module_name, existing_module_names, threshold=80)
 
         if match:
-            best_match, similarity = match[0], match[1]
+            best_match, _similarity = match[0], match[1]
             # If a good match is found, proceed to update the module details
             for index, existing in enumerate(running_state_obj.modules):
                 if existing.name == best_match:
@@ -375,13 +375,13 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
                         request_model=route.request_model
                         or RequestModel(
                             name="None Provided",
-                            description="None Proviced",
+                            description="None Provided",
                             params=[],
                         ),
                         response_model=route.response_model
                         or ResponseModel(
                             name="None Provided",
-                            description="None Proviced",
+                            description="None Provided",
                             params=[],
                         ),
                         database_schema=route.database_schema,
@@ -395,9 +395,9 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
         context=running_state_obj.project_description,
         api_routes=api_routes,
     )
-    logger.info(f"Full Spec Done")
+    logger.info("Full Spec Done")
     saved_spec: Specification = await create_spec(ids, full_spec)
-    logger.info(f"Saved Spec Done")
+    logger.info("Saved Spec Done")
     # Step 8) Return the application requirements
     return saved_spec
 
