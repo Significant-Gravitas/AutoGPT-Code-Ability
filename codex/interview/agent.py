@@ -204,7 +204,11 @@ async def populate_database_interviews():
 
     ids = identifier_1
 
-    for task in list(ExampleTask):
+    examples: list[ExampleTask] = [
+        task for task in list(ExampleTask) if ExampleTask.get_app_id(task) is not None
+    ]
+
+    for task in examples:
         app_id = ExampleTask.get_app_id(task)
         interview_id = ExampleTask.get_interview_id(task)
         print(f"Creating Interview for {task}, with app_id {app_id}")
