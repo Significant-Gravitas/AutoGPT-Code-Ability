@@ -11,11 +11,14 @@ import click
 
 import codex.common.test_const as test_const
 from codex.requirements.database import get_latest_specification
+from codex.requirements.model import ExampleTask
 
 logger = logging.getLogger(__name__)
 
 
-async def fetch_deliverable(session, user_id, app_id):
+async def develop_application(
+    session: aiohttp.ClientSession, user_id: str, app_id: str
+) -> dict[str, str]:
     start_time = datetime.now()
     spec = await get_latest_specification(user_id, app_id)
     spec_id = spec.id
@@ -62,22 +65,42 @@ async def fetch_deliverable(session, user_id, app_id):
             click.echo(f"Error fetching deliverable: {e}")
             print("Problematic URL: ", url)
             logger.exception(e)
-            return
+            return {"app_name": spec.name, "status": "failed"}
 
 
-async def run_benchmark():
+async def create_requirements(
+    session: aiohttp.ClientSession, user_id: str, app_id: str
+):
+    pass
+
+
+async def run_benchmark_example(session, user_id, app_id, skip_requirements: bool):
+    if not skip_requirements:
+        click.echo("Populating the database with test data")
+
+    results = await develop_application(session, user_id, app_id)
+    return results
+
+
+async def run_benchmark(skip_requirements: bool):
     from prisma import Prisma
 
     client = Prisma(auto_register=True)
     await client.connect()
+
+    examples: list[ExampleTask] = [
+        task for task in list(ExampleTask) if ExampleTask.get_app_id(task) is not None
+    ]
+
     async with aiohttp.ClientSession() as session:
         tasks = [
-            fetch_deliverable(session, test_const.user_id_1, test_const.app_id_1),
-            fetch_deliverable(session, test_const.user_id_1, test_const.app_id_2),
-            fetch_deliverable(session, test_const.user_id_1, test_const.app_id_3),
-            fetch_deliverable(session, test_const.user_id_1, test_const.app_id_4),
-            fetch_deliverable(session, test_const.user_id_1, test_const.app_id_5),
-            fetch_deliverable(session, test_const.user_id_1, test_const.app_id_11),
+            run_benchmark_example(
+                session,
+                test_const.user_id_1,
+                ExampleTask.get_app_id(task),
+                skip_requirements,
+            )
+            for task in examples
         ]
         results = await asyncio.gather(*tasks)
         success = len([x for x in results if x and x["status"] == "success"])
@@ -111,7 +134,7 @@ async def run_benchmark():
     await client.disconnect()
 
 
-async def run_specific_benchmark(task):
+async def run_specific_benchmark(task, skip_requirements: bool):
     from prisma import Prisma
 
     from codex.requirements.model import ExampleTask
@@ -120,8 +143,11 @@ async def run_specific_benchmark(task):
     await client.connect()
     async with aiohttp.ClientSession() as session:
         tasks = [
-            fetch_deliverable(
-                session, test_const.user_id_1, ExampleTask.get_app_id(task)
+            run_benchmark_example(
+                session,
+                test_const.user_id_1,
+                ExampleTask.get_app_id(task),
+                skip_requirements,
             ),
         ]
         await asyncio.gather(*tasks)
