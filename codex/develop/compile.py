@@ -198,7 +198,7 @@ async def process_object_type(
     sub_types: List[str] = []
     field_strings: List[str] = []
     for field in obj.Fields:
-        if not field.RelatedTypes:
+        if field.RelatedTypes:
             sub_types.append(await process_object_field(field, object_type_ids))
 
         field_strings.append(
