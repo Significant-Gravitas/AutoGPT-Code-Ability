@@ -5,7 +5,8 @@ import coloredlogs
 
 
 def setup_logging(local: bool = False):
-    local = os.environ.get("ENV", "CLOUD").lower() == "local"
+    if local is False:
+        local = os.environ.get("ENV", "CLOUD").lower() == "local"
     file_path = os.path.abspath(__file__)
     cloud_config = os.path.join(os.path.dirname(file_path), "log_config_cloud.ini")
     if local:
