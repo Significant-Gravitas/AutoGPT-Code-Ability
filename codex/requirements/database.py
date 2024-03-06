@@ -1,5 +1,5 @@
-from prisma.models import ObjectField, ObjectType, Specification
-from prisma.types import ObjectTypeCreateInput, SpecificationCreateInput
+from prisma.models import Specification
+from prisma.types import SpecificationCreateInput
 
 from codex.api_model import (
     Identifiers,

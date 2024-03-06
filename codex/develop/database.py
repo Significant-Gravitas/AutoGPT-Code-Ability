@@ -1,10 +1,8 @@
-import asyncio
 
 from typing import List, Tuple
 
-from prisma.models import CompletedApp, ObjectType, ObjectField
+from prisma.models import CompletedApp
 
-from codex.common.model import ObjectTypeModel
 from codex.api_model import Pagination
 
 

@@ -5,7 +5,7 @@ from enum import Enum
 from typing import List, Literal, Optional
 
 from prisma.enums import AccessLevel
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
 from codex.common.model import ObjectTypeModel as ObjectTypeE
 
