@@ -112,7 +112,43 @@ class ExampleTask(Enum):
                 return test_consts.interview_id_11
             case _:
                 raise NotImplementedError(f"Example Task {task.value} not implemented")
+            
+    @staticmethod
+    def get_task_description(task):
+        """
+        Returns the description of a given task.
 
+        Parameters:
+        - task: An instance of the ExampleTask enum.
+
+        Returns:
+        - A string representing the description of the task.
+
+        Raises:
+        - NotImplementedError: If the task is not implemented.
+        """
+
+        match task:
+            case ExampleTask.AVAILABILITY_CHECKER:
+                return "Function that returns the real-time availability of professionals, updating based on current activity or schedule."
+            case ExampleTask.INVOICE_GENERATOR:
+                return "Generates invoices based on services, billable hours, and parts used, with options for different rates and taxes."
+            case ExampleTask.APPOINTMENT_OPTIMIZATION_TOOL:
+                return "Suggests optimal appointment slots based on availability, working hours, and travel time considerations."
+            case ExampleTask.DISTANCE_CALCULATOR:
+                return "Calculates the distance between the professional's and client's locations for planning travel time."
+            case ExampleTask.PROFILE_MANAGEMENT_SYSTEM:
+                return "Allows creation and updating of client and professional profiles, storing contact info, preferences, and history."
+            case ExampleTask.CALENDAR_BOOKING_SYSTEM:
+                return "Enables booking, rescheduling, or canceling of appointments, and allows professionals to manage their schedules."
+            case ExampleTask.INVENTORY_MANAGEMENT_SYSTEM:
+                return "Tracks inventory levels and usage for each client service, including adding, updating, and deleting items."
+            case ExampleTask.INVOICING_AND_PAYMENT_TRACKING_SYSTEM:
+                return "Manages invoicing for services rendered, tracks payments, and handles financial reports and insights."
+            case ExampleTask.TICTACTOE_GAME:
+                return "Two Players TicTacToe Game communicate through an API."
+            case _:
+                raise NotImplementedError(f"Example Task {task.value} not implemented")
 
 class DecomposeTask(BaseModel):
     # Placeholder until so I have something to test the ai_block with
