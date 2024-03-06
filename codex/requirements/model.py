@@ -26,13 +26,27 @@ class ExampleTask(Enum):
     APPOINTMENT_OPTIMIZATION_TOOL = "Appointment Optimization Tool"
     DISTANCE_CALCULATOR = "Distance Calculator"
     PROFILE_MANAGEMENT_SYSTEM = "Profile Management System"
-    # CALENDAR_BOOKING_SYSTEM = "Calendar Booking System"
-    # INVENTORY_MANAGEMENT_SYSTEM = "Inventory Management System"
-    # INVOICING_AND_PAYMENT_TRACKING_SYSTEM = "Invoiceing and Payment Tracking System"
+    CALENDAR_BOOKING_SYSTEM = "Calendar Booking System"
+    INVENTORY_MANAGEMENT_SYSTEM = "Inventory Management System"
+    INVOICING_AND_PAYMENT_TRACKING_SYSTEM = "Invoiceing and Payment Tracking System"
     TICTACTOE_GAME = "TicTacToe Game"
 
     @staticmethod
     def get_app_id(task):
+        """
+        Get the corresponding app ID based on the given task.
+        If we do not have hardcoded requirements we return None
+
+        Args:
+            task (ExampleTask): The task for which to retrieve the app ID.
+
+        Returns:
+            str or None: The app ID corresponding to the task, or None if no app ID is available.
+
+        Raises:
+            NotImplementedError: If the given task is not implemented.
+
+        """
         match task:
             case ExampleTask.AVAILABILITY_CHECKER:
                 return test_consts.app_id_1
@@ -44,19 +58,36 @@ class ExampleTask(Enum):
                 return test_consts.app_id_4
             case ExampleTask.PROFILE_MANAGEMENT_SYSTEM:
                 return test_consts.app_id_5
-            # case ExampleTask.CALENDAR_BOOKING_SYSTEM:
-            #     return test_consts.app_id_6
-            # case ExampleTask.INVENTORY_MANAGEMENT_SYSTEM:
-            #     return test_consts.app_id_7
-            # case ExampleTask.INVOICING_AND_PAYMENT_TRACKING_SYSTEM:
-            #     return test_consts.app_id_8
+            case ExampleTask.CALENDAR_BOOKING_SYSTEM:
+                # return test_consts.app_id_6
+                return None
+            case ExampleTask.INVENTORY_MANAGEMENT_SYSTEM:
+                # return test_consts.app_id_7
+                return None
+            case ExampleTask.INVOICING_AND_PAYMENT_TRACKING_SYSTEM:
+                # return test_consts.app_id_8
+                return None
             case ExampleTask.TICTACTOE_GAME:
                 return test_consts.app_id_11
             case _:
                 raise NotImplementedError(f"Example Task {task.value} not implemented")
-
+            
     @staticmethod
     def get_interview_id(task):
+        """
+        Get the interview ID based on the given task.
+        If we do not have hardcoded requirements we return None
+
+        Args:
+            task (ExampleTask): The task for which to retrieve the interview ID.
+
+        Returns:
+            int or None: The interview ID corresponding to the task, or None if no interview ID is available.
+
+        Raises:
+            NotImplementedError: If the task is not implemented.
+
+        """
         match task:
             case ExampleTask.AVAILABILITY_CHECKER:
                 return test_consts.interview_id_1
@@ -69,11 +100,14 @@ class ExampleTask(Enum):
             case ExampleTask.PROFILE_MANAGEMENT_SYSTEM:
                 return test_consts.interview_id_5
             case ExampleTask.CALENDAR_BOOKING_SYSTEM:
-                return test_consts.interview_id_6
+                # return test_consts.interview_id_6
+                return None
             case ExampleTask.INVENTORY_MANAGEMENT_SYSTEM:
-                return test_consts.interview_id_7
+                # return test_consts.interview_id_7
+                return None
             case ExampleTask.INVOICING_AND_PAYMENT_TRACKING_SYSTEM:
-                return test_consts.interview_id_8
+                # return test_consts.interview_id_8
+                return None
             case ExampleTask.TICTACTOE_GAME:
                 return test_consts.interview_id_11
             case _:
