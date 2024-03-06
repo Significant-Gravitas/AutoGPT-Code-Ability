@@ -28,7 +28,7 @@ sentry_sdk.init(
     # We recommend adjusting this value in production.
     profiles_sample_rate=1.0,
     enable_tracing=True,
-    environment="dev",
+    environment=os.environ.get("ENV", default="dev").lower(),
     integrations=[
         StarletteIntegration(transaction_style="url"),
         FastApiIntegration(transaction_style="url"),
