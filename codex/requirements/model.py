@@ -7,9 +7,8 @@ from typing import List, Literal, Optional
 from prisma.enums import AccessLevel
 from pydantic import BaseModel, ConfigDict
 
-from codex.common.model import ObjectTypeModel as ObjectTypeE
-
 import codex.common.test_const as test_consts
+from codex.common.model import ObjectTypeModel as ObjectTypeE
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +70,7 @@ class ExampleTask(Enum):
                 return test_consts.app_id_11
             case _:
                 raise NotImplementedError(f"Example Task {task.value} not implemented")
-            
+
     @staticmethod
     def get_interview_id(task):
         """
@@ -112,7 +111,7 @@ class ExampleTask(Enum):
                 return test_consts.interview_id_11
             case _:
                 raise NotImplementedError(f"Example Task {task.value} not implemented")
-            
+
     @staticmethod
     def get_task_description(task):
         """
@@ -149,6 +148,7 @@ class ExampleTask(Enum):
                 return "Two Players TicTacToe Game communicate through an API."
             case _:
                 raise NotImplementedError(f"Example Task {task.value} not implemented")
+
 
 class DecomposeTask(BaseModel):
     # Placeholder until so I have something to test the ai_block with
