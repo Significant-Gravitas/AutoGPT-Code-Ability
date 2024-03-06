@@ -1,9 +1,10 @@
 from typing import Dict, List
 
-from prisma.models import APIRouteSpec
 from prisma.models import Function as FunctionDBModel
 from prisma.models import ObjectType
 from pydantic import BaseModel
+
+from codex.common.model import ObjectTypeModel as ObjectDef
 
 
 class Package(BaseModel):
@@ -54,19 +55,12 @@ class FunctionDef(BaseModel):
         )
 
 
-class ObjectDef(BaseModel):
-    name: str
-    fields: Dict[str, str]
-    is_pydantic: bool = True
-    is_implemented: bool = True
-
-
 class GeneratedFunctionResponse(BaseModel):
     function_id: str | None = None
 
     function_name: str
-    api_route_spec: APIRouteSpec
-    available_objects: List[ObjectType]
+    compiled_route_id: str
+    available_objects: dict[str, ObjectType]
     template: str
 
     rawCode: str

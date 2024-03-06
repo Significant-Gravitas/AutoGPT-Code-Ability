@@ -1,4 +1,7 @@
 from openai import AsyncOpenAI
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class OpenAIChatClient:
@@ -12,7 +15,7 @@ class OpenAIChatClient:
             cls._instance = cls(openai_config)
             cls._configured = True
         else:
-            raise Exception("Singleton instance has already been configured")
+            logger.warning("OpenAIChatClient instance has already been configured")
 
     @classmethod
     def get_instance(cls) -> "OpenAIChatClient":

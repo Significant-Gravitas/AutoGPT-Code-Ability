@@ -9,12 +9,10 @@ from codex.interview.database import _create_interview_testing_only
 from codex.interview.hardcoded import (
     appointment_optimization_interview,
     availability_checker_interview,
-    calendar_booking_system,
     distance_calculator_interview,
-    inventory_mgmt_system,
     invoice_generator_interview,
-    invoice_payment_tracking,
     profile_management,
+    ticktacktoe_game,
 )
 from codex.interview.model import (
     Interview,
@@ -189,12 +187,14 @@ def hardcoded_interview(task: ExampleTask) -> Interview:
             return distance_calculator_interview()
         case ExampleTask.PROFILE_MANAGEMENT_SYSTEM:
             return profile_management()
-        case ExampleTask.CALENDAR_BOOKING_SYSTEM:
-            return calendar_booking_system()
-        case ExampleTask.INVENTORY_MANAGEMENT_SYSTEM:
-            return inventory_mgmt_system()
-        case ExampleTask.INVOICING_AND_PAYMENT_TRACKING_SYSTEM:
-            return invoice_payment_tracking()
+        # case ExampleTask.CALENDAR_BOOKING_SYSTEM:
+        #     return calendar_booking_system()
+        # case ExampleTask.INVENTORY_MANAGEMENT_SYSTEM:
+        #     return inventory_mgmt_system()
+        # case ExampleTask.INVOICING_AND_PAYMENT_TRACKING_SYSTEM:
+        #     return invoice_payment_tracking()
+        case ExampleTask.TICTACTOE_GAME:
+            return ticktacktoe_game()
         case _:
             raise NotImplementedError(f"Task {task} not implemented")
 
@@ -204,7 +204,11 @@ async def populate_database_interviews():
 
     ids = identifier_1
 
-    for task in list(ExampleTask):
+    examples: list[ExampleTask] = [
+        task for task in list(ExampleTask) if ExampleTask.get_app_id(task) is not None
+    ]
+
+    for task in examples:
         app_id = ExampleTask.get_app_id(task)
         interview_id = ExampleTask.get_interview_id(task)
         print(f"Creating Interview for {task}, with app_id {app_id}")

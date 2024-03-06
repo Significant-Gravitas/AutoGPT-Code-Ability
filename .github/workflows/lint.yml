@@ -1,10 +1,10 @@
-name: Python Liniting
+name: Python Code Quality Liniting
 
 on:
   push:
     branches: [ main ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, dev ]
 
 jobs:
   code-quality:

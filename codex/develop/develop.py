@@ -19,11 +19,16 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
+from codex.common.model import (
+    ObjectTypeModel,
+    ObjectFieldModel,
+    create_object_type,
+    is_type_equal,
+)
 from codex.develop.function import construct_function
 from codex.develop.model import (
     FunctionDef,
     GeneratedFunctionResponse,
-    ObjectDef,
     Package,
 )
 
@@ -156,17 +161,32 @@ class FunctionVisitor(ast.NodeVisitor):
             ]
             for base in node.bases
         )
+        is_implemented = not any(isinstance(v, ast.Pass) for v in node.body)
+        doc_string = ""
+        if node.body and isinstance(node.body[0], ast.Expr):
+            doc_string = ast.unparse(node.body[0])
 
-        self.objects[node.name] = ObjectDef(
+        self.objects[node.name] = ObjectTypeModel(
             name=node.name,
-            fields={
-                ast.unparse(v.target): ast.unparse(v.annotation)
+            description=doc_string,
+            Fields=[
+                ObjectFieldModel(
+                    name=ast.unparse(v.target),
+                    description=ast.unparse(v.annotation),
+                    type=ast.unparse(v.annotation),
+                )
                 for v in node.body
                 if isinstance(v, ast.AnnAssign)
-            },
+            ],
             is_pydantic=is_pydantic,
-            is_implemented=not any(isinstance(v, ast.Pass) for v in node.body),
+            is_implemented=is_implemented,
         )
+
+        if not is_implemented:
+            raise ValidationError(
+                f"Class {node.name} is not implemented. "
+                f"Please complete the implementation of this class!"
+            )
 
         self.generic_visit(node)
 
@@ -251,15 +271,12 @@ class DevelopAIBlock(AIBlock):
                 # Important: ValidationErrors are used in the retry prompt
                 raise ValidationError(f"Function {func_name} not found in code")
 
-            requested_func: FunctionDef = visitor.functions[
-                invoke_params["function_name"]
-            ]
+            requested_func = visitor.functions.get(invoke_params["function_name"])
 
-            if not requested_func.is_implemented:
-                # Important: ValidationErrors are used in the retry prompt
+            if not requested_func or not requested_func.is_implemented:
                 raise ValidationError(
-                    "Main Function body is empty, it should contain"
-                    + " the implementation of this function!"
+                    f"Main Function body {func_name} is not implemented."
+                    f" Please complete the implementation of this function!"
                 )
             function_code = (
                 "\n".join(visitor.globals) + "\n\n" + requested_func.function_code
@@ -268,11 +285,17 @@ class DevelopAIBlock(AIBlock):
             # Validate the requested_func.args and requested_func.returns to the invoke_params
             expected_args = invoke_params["function_args"]
             expected_rets = invoke_params["function_rets"]
-            if expected_args != requested_func.arg_types:
+
+            if any(
+                [
+                    x[0] != y[0] or not is_type_equal(x[1], y[1])
+                    for x, y in zip(expected_args, requested_func.arg_types)
+                ]
+            ):
                 raise ValidationError(
                     f"Function {func_name} has different arguments than expected, expected {expected_args} but got {requested_func.arg_types}"
                 )
-            if expected_rets != requested_func.return_type:
+            if not is_type_equal(expected_rets, requested_func.return_type):
                 raise ValidationError(
                     f"Function {func_name} has different return type than expected, expected {expected_rets} but got {requested_func.return_type}"
                 )
@@ -285,7 +308,7 @@ class DevelopAIBlock(AIBlock):
                 if "function_id" in invoke_params
                 else None,
                 function_name=invoke_params["function_name"],
-                api_route_spec=invoke_params["api_route"],
+                compiled_route_id=invoke_params["compiled_route_id"],
                 available_objects=invoke_params["available_objects"],
                 rawCode=code,
                 packages=packages,
@@ -316,15 +339,23 @@ class DevelopAIBlock(AIBlock):
             func: The updated item
         """
         generated_response: GeneratedFunctionResponse = validated_response.response
+
+        available_objects = generated_response.available_objects
+        for obj in generated_response.objects.values():
+            available_objects = await create_object_type(obj, available_objects)
+
         function_defs: list[FunctionCreateInput] = []
         if generated_response.functions:
             for key, value in generated_response.functions.items():
-                model = construct_function(value, generated_response.available_objects)
+                model = await construct_function(
+                    value, generated_response.available_objects
+                )
+                model["CompiledRoute"] = {
+                    "connect": {"id": generated_response.compiled_route_id}
+                }
                 function_defs.append(model)
 
         update_obj = FunctionUpdateInput(
-            functionName=generated_response.function_name,
-            template=generated_response.template,
             state=FunctionState.WRITTEN,
             Packages={
                 "create": [
@@ -339,50 +370,31 @@ class DevelopAIBlock(AIBlock):
             rawCode=generated_response.rawCode,
             importStatements=generated_response.imports,
             functionCode=generated_response.functionCode,
-            ChildFunction={"create": function_defs},
-            ApiRouteSpec={"connect": {"id": generated_response.api_route_spec.id}},
+            ChildFunctions={"create": function_defs},
         )
 
         if not generated_response.function_id:
             raise AssertionError("Function ID is required to update")
 
         func: Function | None = await Function.prisma().update(
-            where={"id": generated_response.function_id}, data=update_obj
-        )
-        if not func:
-            raise AssertionError(
-                f"Function with id {generated_response.function_id} not found"
-            )
-
-        # Child Functions Must be created without relations
-        # Here we add the relations after the function is created
-        if func.ChildFunction:
-            for function_def in func.ChildFunction:
-                await Function.prisma().update(
-                    where={"id": function_def.id},
-                    data={
-                        "ApiRouteSpec": {
-                            "connect": {"id": generated_response.api_route_spec.id}
-                        }
-                    },
-                )
-        # We need to reload from the database the child functions so they
-        # have the api route spec attached
-        func = await Function.prisma().find_unique_or_raise(
-            where={"id": func.id},
+            where={"id": generated_response.function_id},
+            data=update_obj,
             include={
                 "ParentFunction": True,
                 "FunctionArgs": True,
                 "FunctionReturn": True,
-                "ChildFunction": {
+                "ChildFunctions": {
                     "include": {
-                        "ApiRouteSpec": True,
                         "FunctionArgs": True,
                         "FunctionReturn": True,
                     }
                 },
             },
         )
+        if not func:
+            raise AssertionError(
+                f"Function with id {generated_response.function_id} not found"
+            )
 
         logger.info(f"✅ Updated Function: {func.functionName} - {func.id}")
 

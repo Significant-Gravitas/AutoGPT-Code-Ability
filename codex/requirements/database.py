@@ -1,5 +1,5 @@
-from prisma.models import ObjectField, ObjectType, Specification
-from prisma.types import ObjectTypeCreateInput, SpecificationCreateInput
+from prisma.models import Specification
+from prisma.types import SpecificationCreateInput
 
 from codex.api_model import (
     Identifiers,
@@ -7,11 +7,17 @@ from codex.api_model import (
     SpecificationResponse,
     SpecificationsListResponse,
 )
+from codex.common.model import ObjectTypeModel as ObjectTypeE, create_object_type
 from codex.requirements.model import ApplicationRequirements
 
 
 async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specification:
     routes = []
+
+    if ids.user_id is None:
+        raise ValueError("User ID is required")
+    if ids.app_id is None:
+        raise ValueError("App ID is required")
 
     if not spec.api_routes:
         raise ValueError("No routes found in the specification")
@@ -20,40 +26,13 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
     #   For loop can be converted into a batch query or at least an async tasks.
 
     # Persist all ObjectTypes from the spec
-    type_create_inputs = [
-        ObjectTypeCreateInput(
-            name=model.name,
-            description=model.description,
-            Fields={
-                "create": [
-                    {
-                        "name": param.name,
-                        "description": param.description,
-                        "typeName": param.param_type,
-                    }
-                    for param in model.params
-                ]
-            },
-        )
-        for route in spec.api_routes
-        for model in [route.request_model, route.response_model]
-        if model
-    ]
-    type_map = {
-        ci["name"]: await ObjectType.prisma().create(data=ci, include={"Fields": True})
-        for ci in type_create_inputs
-    }
+    all_models: list[ObjectTypeE] = [
+        route.request_model for route in spec.api_routes if route
+    ] + [route.response_model for route in spec.api_routes if route]
 
-    # Link the typeId of ObjectType's Fields if it is defined in the spec.
-    [
-        await ObjectField.prisma().update(
-            where={"id": field.id},
-            data={"typeId": type_map[field.typeName].id},
-        )
-        for type in type_map.values()
-        for field in type.Fields
-        if field.typeName in type_map
-    ]
+    created_objects = {}
+    for model in all_models:
+        created_objects = await create_object_type(model, created_objects)
 
     # Persist all routes from the spec
     for route in spec.api_routes:
@@ -80,11 +59,11 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
         }
         if route.request_model:
             create_route["RequestObject"] = {
-                "connect": {"id": type_map[route.request_model.name].id}
+                "connect": {"id": created_objects[route.request_model.name].id}
             }
         if route.response_model:
             create_route["ResponseObject"] = {
-                "connect": {"id": type_map[route.response_model.name].id}
+                "connect": {"id": created_objects[route.response_model.name].id}
             }
         if create_db:
             create_route["DatabaseSchema"] = {"create": create_db}
