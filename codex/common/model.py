@@ -174,6 +174,7 @@ async def create_object_type(
         )
 
     created_object_type = await ObjectType.prisma().create(
+
         data={
             "name": object.name,
             "description": object.description,

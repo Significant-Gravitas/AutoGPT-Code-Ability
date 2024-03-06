@@ -55,7 +55,7 @@ async def create_spec(
         new_spec = await generate_requirements(ids, interview.task)
         return SpecificationResponse.from_specification(new_spec)
     except Exception as e:
-        logger.error(f"Error creating a new specification: {e}")
+        logger.exception(f"Error creating a new specification: {e}")
         return Response(
             content=json.dumps(
                 {"error": f"Error creating a new specification: {str(e)}"}
@@ -87,7 +87,7 @@ async def get_spec(user_id: str, app_id: str, spec_id: str):
                 media_type="application/json",
             )
     except Exception as e:
-        logger.error(f"Error retrieving specification: {e}")
+        logger.exception(f"Error retrieving specification: {e}")
         return Response(
             content=json.dumps({"error": "Error retrieving specification"}),
             status_code=500,
@@ -132,7 +132,7 @@ async def delete_spec(user_id: str, app_id: str, spec_id: str):
             media_type="application/json",
         )
     except Exception as e:
-        logger.error(f"Error deleting specification: {e}")
+        logger.exception(f"Error deleting specification: {e}")
         return Response(
             content=json.dumps({"error": "Error deleting specification"}),
             status_code=500,
@@ -160,7 +160,7 @@ async def list_specs(
         )
         return specs
     except Exception as e:
-        logger.error(f"Error listing specifications: {e}")
+        logger.exception(f"Error listing specifications: {e}")
         return Response(
             content=json.dumps({"error": "Error listing specifications"}),
             status_code=500,
