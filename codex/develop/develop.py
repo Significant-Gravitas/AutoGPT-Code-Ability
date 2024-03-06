@@ -166,11 +166,15 @@ class FunctionVisitor(ast.NodeVisitor):
         self.objects[node.name] = ObjectTypeModel(
             name=node.name,
             description=doc_string,
-            Fields=[ObjectFieldModel(
-                name=ast.unparse(v.target),
-                description=ast.unparse(v.annotation),
-                type=ast.unparse(v.annotation),
-            ) for v in node.body if isinstance(v, ast.AnnAssign)],
+            Fields=[
+                ObjectFieldModel(
+                    name=ast.unparse(v.target),
+                    description=ast.unparse(v.annotation),
+                    type=ast.unparse(v.annotation),
+                )
+                for v in node.body
+                if isinstance(v, ast.AnnAssign)
+            ],
             is_pydantic=is_pydantic,
             is_implemented=is_implemented,
         )

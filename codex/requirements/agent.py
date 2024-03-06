@@ -387,7 +387,7 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
                                     name="status_code",
                                     type="int",
                                     description="The status returned by the route",
-                                )
+                                ),
                             ],
                         ),
                         database_schema=route.database_schema,

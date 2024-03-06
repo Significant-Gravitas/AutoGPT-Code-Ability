@@ -1,4 +1,3 @@
-
 from typing import List, Tuple
 
 from prisma.models import CompletedApp

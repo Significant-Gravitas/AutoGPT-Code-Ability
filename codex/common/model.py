@@ -28,8 +28,9 @@ class ObjectFieldModel(BaseModel):
     )
     type: "ObjectTypeModel | str" = Field(
         description="The type of the field. Can be a string like List[str] or an "
-                    "ObjectTypeModel"
+        "ObjectTypeModel"
     )
+
 
 def unwrap_object_type(type: str) -> (str, [str]):
     """
@@ -91,9 +92,10 @@ def is_type_equal(type1: str, type2: str) -> bool:
 
     return True
 
+
 async def create_object_type(
-        object: ObjectTypeModel,
-        available_objects: dict[str, ObjectType],
+    object: ObjectTypeModel,
+    available_objects: dict[str, ObjectType],
 ) -> dict[str, ObjectType]:
     """
     Creates and store object types in the database.
