@@ -104,7 +104,7 @@ def invoice_generator_requirements() -> ApplicationRequirements:
                 name="mime_type",
                 type="str",
                 description="The mime type for the response",
-            )
+            ),
         ],
     )
 
