@@ -91,10 +91,20 @@ def invoice_generator_requirements() -> ApplicationRequirements:
         description="A pdf of an invoice",
         Fields=[
             ObjectFieldE(
-                name="availability_status",
+                name="file_data",
                 type="bytes",
                 description="A PDF file for the invoice",
-            )
+            ),
+            ObjectFieldE(
+                name="file_name",
+                type="str",
+                description="The name of the PDF file",
+            ),
+            ObjectFieldE(
+                name="mime_type",
+                type="str",
+                description="The mime type for the response",
+            ),
         ],
     )
 

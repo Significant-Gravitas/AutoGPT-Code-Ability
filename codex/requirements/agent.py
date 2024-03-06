@@ -109,56 +109,55 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
 
     logger.info("User Interview Done")
 
+    # Create instances of clarification blocks
+    # These requests are independent of each other and can be ran in parallel
     frontend_clarify = FrontendClarificationBlock()
-    frontend_clarification: Clarification = await frontend_clarify.invoke(
-        ids=ids,
-        invoke_params={"project_description": running_state_obj.project_description},
+    user_persona_clarify = UserPersonaClarificationBlock()
+    user_skill_clarify = UserSkillClarificationBlock()
+    q_and_a_clarify = QuestionAndAnswerClarificationBlock()
+
+    # Run all clarification invokes in parallel
+    frontend_clarification, user_persona_clarification, user_skill_clarification, q_and_a_clarification = await asyncio.gather(
+        frontend_clarify.invoke(
+            ids=ids,
+            invoke_params={"project_description": running_state_obj.project_description},
+        ),
+        user_persona_clarify.invoke(
+            ids=ids,
+            invoke_params={
+                "clarifying_questions_so_far": running_state_obj.clarifying_questions_as_string(),
+                "project_description": running_state_obj.project_description,
+            },
+        ),
+        user_skill_clarify.invoke(
+            ids=ids,
+            invoke_params={
+                "clarifying_questions_so_far": running_state_obj.clarifying_questions_as_string(),
+                "project_description": running_state_obj.project_description,
+            },
+        ),
+        q_and_a_clarify.invoke(
+            ids=ids,
+            invoke_params={
+                "clarifying_questions_so_far": running_state_obj.clarifying_questions_as_string(),
+                "project_description": running_state_obj.project_description,
+                "task": running_state_obj.task,
+            },
+        ),
     )
 
+    # Process the results
     running_state_obj.add_clarifying_question(frontend_clarification)
-
     logger.info("Frontend Clarification Done")
 
-    user_persona_clarify = UserPersonaClarificationBlock()
-    user_persona_clarification: Clarification = await user_persona_clarify.invoke(
-        ids=ids,
-        invoke_params={
-            "clarifiying_questions_so_far": running_state_obj.clarifying_questions_as_string(),
-            "project_description": running_state_obj.project_description,
-        },
-    )
-
     running_state_obj.add_clarifying_question(user_persona_clarification)
-
     logger.info("User Persona Clarification Done")
 
-    # User Skill
-
-    user_skill_clarify = UserSkillClarificationBlock()
-    user_skill_clarification: Clarification = await user_skill_clarify.invoke(
-        ids=ids,
-        invoke_params={
-            "clarifiying_questions_so_far": running_state_obj.clarifying_questions_as_string(),
-            "project_description": running_state_obj.project_description,
-        },
-    )
     running_state_obj.add_clarifying_question(user_skill_clarification)
-
     logger.info("User Skill Clarification Done")
 
-    # Clarification Rounds
-
-    q_and_a_clarify = QuestionAndAnswerClarificationBlock()
-    q_and_a_clarification: list[QandA] = await q_and_a_clarify.invoke(
-        ids=ids,
-        invoke_params={
-            "clarifiying_questions_so_far": running_state_obj.clarifying_questions_as_string(),
-            "project_description": running_state_obj.project_description,
-            "task": running_state_obj.task,
-        },
-    )
-
     running_state_obj.q_and_a = q_and_a_clarification
+    logger.info("Q&A Clarification Done")
 
     logger.info("Question and Answer Based Clarification Done")
 
@@ -315,15 +314,15 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
     db_table_names: list[str] = [
         table.name or "" for table in running_state_obj.database.tables
     ]
-
-    for i, module in enumerate(running_state_obj.modules):
+    
+    # This process just refineds the api endpoints. It can be ran in parallel
+    # for all the modules and their endpoints
+    async def process_module(module, running_state_obj, db_table_names):
         if module.endpoints:
             logger.info(f"Endpoints for {module.name} Started")
 
             endpoint_block = EndpointSchemaRefinementBlock()
-            new_endpoints: list[
-                EndpointSchemaRefinementResponse
-            ] = await asyncio.gather(
+            new_endpoints = await asyncio.gather(
                 *[
                     endpoint_block.invoke(
                         ids=ids,
@@ -337,28 +336,30 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
                     for endpoint in module.endpoints
                 ]
             )
+
             for j, new_endpoint in enumerate(new_endpoints):
-                converted: Endpoint = convert_endpoint(
+                converted = convert_endpoint(
                     input=new_endpoint,
                     existing=module.endpoints[j],
                     database=running_state_obj.database,
                 )
                 logger.debug(f"{converted!r}")
                 logger.info(f"Endpoint {converted.type} {converted.name} Done")
-                running_state_obj.modules[i].endpoints[j] = converted  # type: ignore
-        logger.info(f"Endpoints for {module.name} Done")
+                module.endpoints[j] = converted  
+            logger.info(f"Endpoints for {module.name} Done")
 
+
+    # Gather all module processing tasks
+    module_tasks = [
+        process_module(module, running_state_obj, db_table_names)
+        for module in running_state_obj.modules
+    ]
+
+    # Run all module tasks in parallel
+    await asyncio.gather(*module_tasks)
+    
     logger.info("Endpoints Done")
 
-    # Add support and tracking for models by module and add them to the prompt
-
-    # Step 5) Define the request and response models
-
-    # We maybe able to avoid needing llm calls for that
-
-    # Step 6) Generate the complete api route requirements
-
-    # Step 7) Compile the application requirements
 
     api_routes: list[APIRouteRequirement] = []
     for module in running_state_obj.modules:

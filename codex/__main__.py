@@ -45,29 +45,46 @@ def populate_db(database):
 
 
 @cli.command()
-def benchmark():
+@click.option(
+    "-h",
+    "--hardcoded",
+    is_flag=True,
+    help="Flag indicating whether to use hardcoded values",
+)
+def benchmark(hardcoded: bool):
     """Run the benchmark tests"""
     from codex.benchmark import run_benchmark
 
-    asyncio.run(run_benchmark())
+    asyncio.run(run_benchmark(skip_requirements=hardcoded))
 
 
 @cli.command()
-def example():
-    from codex.benchmark import run_specific_benchmark
+@click.option(
+    "-h",
+    "--hardcoded",
+    is_flag=True,
+    help="Flag indicating whether to use hardcoded values",
+)
+def example(hardcoded: bool):
+    from codex.benchmark import run_benchmark
     from codex.requirements.model import ExampleTask
 
     i = 1
     click.echo("Select a test case:")
+    examples = list(ExampleTask)
+    if hardcoded:
+        examples: list[ExampleTask] = [
+            task for task in examples if ExampleTask.get_app_id(task) is not None
+        ]
 
-    for task in list(ExampleTask):
+    for task in examples:
         click.echo(f"[{i}] {task.value}")
         i += 1
     print("------")
     case = int(input("Enter number of the case to run: "))
 
     task = list(ExampleTask)[case - 1]
-    asyncio.run(run_specific_benchmark(task))
+    asyncio.run(run_benchmark(hardcoded, task))
 
 
 @cli.command()
