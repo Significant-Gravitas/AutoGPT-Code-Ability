@@ -77,9 +77,9 @@ async def run_benchmark():
             fetch_deliverable(session, test_const.user_id_1, test_const.app_id_3),
             fetch_deliverable(session, test_const.user_id_1, test_const.app_id_4),
             fetch_deliverable(session, test_const.user_id_1, test_const.app_id_5),
-            fetch_deliverable(session, test_const.user_id_1, test_const.app_id_6),
-            fetch_deliverable(session, test_const.user_id_1, test_const.app_id_7),
-            fetch_deliverable(session, test_const.user_id_1, test_const.app_id_8),
+            # fetch_deliverable(session, test_const.user_id_1, test_const.app_id_6),
+            # fetch_deliverable(session, test_const.user_id_1, test_const.app_id_7),
+            # fetch_deliverable(session, test_const.user_id_1, test_const.app_id_8),
             fetch_deliverable(session, test_const.user_id_1, test_const.app_id_11),
         ]
         results = await asyncio.gather(*tasks)

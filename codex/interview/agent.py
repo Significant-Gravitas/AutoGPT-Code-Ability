@@ -190,12 +190,12 @@ def hardcoded_interview(task: ExampleTask) -> Interview:
             return distance_calculator_interview()
         case ExampleTask.PROFILE_MANAGEMENT_SYSTEM:
             return profile_management()
-        case ExampleTask.CALENDAR_BOOKING_SYSTEM:
-            return calendar_booking_system()
-        case ExampleTask.INVENTORY_MANAGEMENT_SYSTEM:
-            return inventory_mgmt_system()
-        case ExampleTask.INVOICING_AND_PAYMENT_TRACKING_SYSTEM:
-            return invoice_payment_tracking()
+        # case ExampleTask.CALENDAR_BOOKING_SYSTEM:
+        #     return calendar_booking_system()
+        # case ExampleTask.INVENTORY_MANAGEMENT_SYSTEM:
+        #     return inventory_mgmt_system()
+        # case ExampleTask.INVOICING_AND_PAYMENT_TRACKING_SYSTEM:
+        #     return invoice_payment_tracking()
         case ExampleTask.TICTACTOE_GAME:
             return ticktacktoe_game()
         case _:

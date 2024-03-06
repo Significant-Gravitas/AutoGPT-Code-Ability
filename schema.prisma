@@ -168,7 +168,7 @@ model ObjectType {
   // Reverse relations
   ReferredRequestAPIRoutes  APIRouteSpec[] @relation("RequestObjectForAPI")
   ReferredResponseAPIRoutes APIRouteSpec[] @relation("ResponseObjectForAPI")
-  ReferredObjectFields      ObjectField[]  @relation("ObjectFieldType")
+  ReferredObjectFields      ObjectField[]  @relation("ObjectFieldTypes")
 }
 
 model ObjectField {
@@ -177,9 +177,8 @@ model ObjectField {
   name        String
   description String?
 
-  Type     ObjectType? @relation("ObjectFieldType", fields: [typeId], references: [id], onDelete: Cascade)
-  typeId   String? // null for primitive types, Type.id for composite types.
-  typeName String // list,dict,etc for primitive types, Type.name for composite types.
+  RelatedTypes ObjectType[] @relation("ObjectFieldTypes")
+  typeName     String // list,dict,etc for primitive types, Type.name for composite types.
 
   // Reverse relations
   ReferredFunctionReturns Function[]  @relation("FunctionReturns")

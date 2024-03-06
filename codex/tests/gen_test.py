@@ -168,11 +168,12 @@ def check_win_or_draw(board: Board) -> str:
 
     return 'In Progress'
 
-def make_turn(row: int, col: int) -> GameStateResponse:
+def make_turn(game_id: str, row: int, col: int) -> GameStateResponse:
     \"\"\"
     Processes a player's move in the Tic-Tac-Toe game and returns the current state of the game.
 
     Args:
+        game_id (int): The unique identifier of the game.
         row (int): The row in which the move is made, value should be between 1 and 3 inclusively.
         col (int): The column in which the move is made, value should be between 1 and 3 inclusively.
 
@@ -206,7 +207,7 @@ def make_turn(row: int, col: int) -> GameStateResponse:
 
 WITH_NESTED_FUNCTION_RESPONSE = """
 ```python
-def make_turn(row: int, col: int) -> GameStateResponse:
+def make_turn(game_id: str, row: int, col: int) -> GameStateResponse:
     def nested_function():
         pass
     return GameStateResponse()
@@ -221,14 +222,14 @@ global_here = 1
 def dependency_function():
     return
 
-def make_turn(row: int, col: int) -> GameStateResponse:
+def make_turn(game_id: str, row: int, col: int) -> GameStateResponse:
     return GameStateResponse()
 ```
 """
 
 WITH_UNIMPLEMENTED_FUNCTION_RESPONSE = """
 ```python
-def make_turn(row: int, col: int) -> GameStateResponse:
+def make_turn(game_id: str, row: int, col: int) -> GameStateResponse:
     pass
 ```
 """
@@ -242,14 +243,14 @@ def make_turn(turn: int, row: int, col: int) -> GameStateResponse:
 
 WITH_MISMATCHING_RETURN_TYPE_RESPONSE = """
 ```python
-def make_turn(row: int, col: int) -> int:
+def make_turn(game_id: str, row: int, col: int) -> int:
     return 1
 ```
 """
 
 SIMPLE_RESPONSE = """
 ```python
-def make_turn(row: int, col: int) -> GameStateResponse:
+def make_turn(game_id: str, row: int, col: int) -> GameStateResponse:
     return GameStateResponse()
 ```
 """

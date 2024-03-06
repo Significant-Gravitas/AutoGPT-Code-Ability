@@ -4,12 +4,13 @@ Function Helper Functions
 
 from prisma.enums import FunctionState
 from prisma.models import ObjectType
-from prisma.types import FunctionCreateInput
+from prisma.types import FunctionCreateInput, ObjectFieldCreateInput
 
+from codex.common.model import get_related_types
 from codex.develop.model import FunctionDef
 
 
-def construct_function(
+async def construct_function(
     function: FunctionDef, available_types: dict[str, ObjectType]
 ) -> FunctionCreateInput:
     input = FunctionCreateInput(
@@ -24,31 +25,32 @@ def construct_function(
     )
 
     if function.return_type:
-        input["FunctionReturn"] = {
-            "create": {
-                "name": "return",
-                "description": function.return_desc,
-                "typeName": function.return_type,
-                "typeId": available_types[function.return_type].id
-                if function.return_type in available_types
-                else None,
-            }
-        }
+        field = ObjectFieldCreateInput(
+            name="return",
+            description=function.return_desc,
+            typeName=function.return_type,
+            RelatedTypes={
+                "connect": [
+                    {"id": type.id}
+                    for type in get_related_types(function.return_type, available_types)
+                ]
+            },
+        )
+        input["FunctionReturn"] = {"create": field}
 
     if function.arg_types:
-        input["FunctionArgs"] = {
-            "create": [
-                {
-                    "name": name,
-                    "description": function.arg_descs.get(name, "-"),
-                    "typeName": type,
-                    "typeId": available_types[type].id
-                    if type in available_types
-                    else None,
-                }
-                for name, type in function.arg_types
-            ]
-        }
+        fields = [ObjectFieldCreateInput(
+            name=name,
+            description=function.arg_descs.get(name, "-"),
+            typeName=type,
+            RelatedTypes={
+                "connect": [
+                    {"id": type.id}
+                    for type in get_related_types(type, available_types)
+                ]
+            },
+        ) for name, type in function.arg_types]
+        input["FunctionArgs"] = {"create": fields}
 
     return input
 

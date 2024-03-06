@@ -56,8 +56,8 @@ async def create_deployment(
                     ),
                     RootFunction={  # type: ignore
                         "include": {
-                            "FunctionArgs": {"include": {"Type": True}},
-                            "FunctionReturn": {"include": {"Type": True}},
+                            "FunctionArgs": {"include": {"RelatedTypes": True}},
+                            "FunctionReturn": {"include": {"RelatedTypes": True}},
                         }
                     },
                 )
