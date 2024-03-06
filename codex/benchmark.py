@@ -117,20 +117,26 @@ async def create_requirements(codex_client: CodexClient, task: ExampleTask):
 async def run_benchmark_example(
     session, client, task, user_id, skip_requirements: bool
 ):
-    codex_client = CodexClient(client=client, base_url="http://127.0.0.1:8000/api/v1")
-    await codex_client.init(codex_user_id=user_id)
-    app_id = ExampleTask.get_app_id(task=task)
+    try:
+        codex_client = CodexClient(
+            client=client, base_url="http://127.0.0.1:8000/api/v1"
+        )
+        await codex_client.init(codex_user_id=user_id)
+        app_id = ExampleTask.get_app_id(task=task)
 
-    if not skip_requirements:
-        logger.info(f"[{task.value}] Creating requirements")
-        app = await codex_client.create_app(app_name=task.value)
-        app_id = app.id
-        await create_requirements(codex_client, task)
+        if not skip_requirements:
+            logger.info(f"[{task.value}] Creating requirements")
+            app = await codex_client.create_app(app_name=task.value)
+            app_id = app.id
+            await create_requirements(codex_client, task)
 
-    assert app_id, f"[{task.value}] App ID not found for task: {task.value}"
+        assert app_id, f"[{task.value}] App ID not found for task: {task.value}"
 
-    results = await develop_application(session, task, user_id, app_id)
-    return results
+        results = await develop_application(session, task, user_id, app_id)
+        return results
+    except Exception as e:
+        logger.exception(f"[{task.value}] Error running benchmark: {e}")
+        return {"app_name": task.value, "status": "failed"}
 
 
 async def run_benchmark(skip_requirements: bool, task: ExampleTask | None = None):
