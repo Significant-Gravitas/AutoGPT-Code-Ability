@@ -33,7 +33,7 @@ class ObjectFieldModel(BaseModel):
     )
 
 
-def unwrap_object_type(type: str) -> Tuple[str, list[str]]:
+def unwrap_object_type(type: str) -> Tuple[str, List[str]]:
     """
     Get the type and children of a composite type.
     Args:
