@@ -97,6 +97,9 @@ class FunctionVisitor(ast.NodeVisitor):
             self.imports.append(import_line)
         self.generic_visit(node)
 
+    def visit_AsyncFunctionDef(self, node):
+        self.visit_FunctionDef(node)
+
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         if node.name == "__init__":
             self.generic_visit(node)
