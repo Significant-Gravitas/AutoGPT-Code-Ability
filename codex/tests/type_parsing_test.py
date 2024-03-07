@@ -27,6 +27,7 @@ def test_extract_field_type():
 def test_is_type_equal():
     assert is_type_equal("str", "str") is True
     assert is_type_equal("str", "int") is False
+    assert is_type_equal("Optional[dict]",  "Optional[Dict]") is True
     assert (
         is_type_equal(
             "tuple[str, dict[str, Union[int, str]]]", "Tuple[str, Dict[str, int | str]]"
