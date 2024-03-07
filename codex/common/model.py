@@ -1,6 +1,7 @@
-from typing import List, Optional
+from typing import List, Optional, Tuple
+
+from prisma.models import ObjectField, ObjectType
 from pydantic import BaseModel, Field
-from prisma.models import ObjectType, ObjectField
 
 
 class ObjectTypeModel(BaseModel):
@@ -24,13 +25,15 @@ class ObjectFieldModel(BaseModel):
     description: Optional[str] = Field(
         description="The description of the field", default=None
     )
-    type: "ObjectTypeModel | str" = Field(
-        description="The type of the field. Can be a string like List[str] or an "
-        "ObjectTypeModel"
+    type: "str" = Field(
+        description="The type of the field. Can be a string like List[str] or an use any of they related types like list[User]",
+    )
+    related_types: Optional[List[ObjectTypeModel]] = Field(
+        description="The related types of the field", default=[]
     )
 
 
-def unwrap_object_type(type: str) -> (str, [str]):
+def unwrap_object_type(type: str) -> Tuple[str, List[str]]:
     """
     Get the type and children of a composite type.
     Args:
