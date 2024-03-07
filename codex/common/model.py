@@ -141,7 +141,7 @@ def get_typing_imports(object_types: list[str]) -> list[str]:
 def extract_field_type(field_type: str) -> set[str]:
     """
     Extract the field type from a composite type.
-    e.g. tuple[str, dict[str, int]] -> {str, int}
+    e.g. tuple[str, dict[str, int]] -> {tuple, dict, str, int}
 
     Args:
         field_type (str): The field type to parse.
@@ -236,7 +236,7 @@ async def create_object_type(
             "name": object.name,
             "description": object.description,
             "Fields": {"create": field_inputs},
-            "importStatements": typing_imports,
+            "importStatements": ["from pydantic import BaseModel"] + typing_imports,
         },
         include={"Fields": {"include": {"RelatedTypes": True}}},
     )
