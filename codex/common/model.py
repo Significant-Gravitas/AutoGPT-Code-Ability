@@ -2,7 +2,6 @@ from typing import List, Optional, Tuple
 
 from prisma.models import ObjectField, ObjectType
 from pydantic import BaseModel, Field
-from pydantic import BaseModel, Field
 
 
 class ObjectTypeModel(BaseModel):
@@ -26,11 +25,11 @@ class ObjectFieldModel(BaseModel):
     description: Optional[str] = Field(
         description="The description of the field", default=None
     )
-    type_name: "str" = Field(
+    type: "str" = Field(
         description="The type of the field. Can be a string like List[str] or an use any of they related types like list[User]",
     )
     related_types: Optional[List[ObjectType]] = Field(
-        description="The related types of the field", default=None
+        description="The related types of the field", default=[]
     )
 
 

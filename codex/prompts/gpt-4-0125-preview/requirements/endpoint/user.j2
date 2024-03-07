@@ -21,8 +21,8 @@ An example would be something like POST /update/{id}/name/{name} with a body of 
  The request model should have three Fields, one for id, one for name, and one for the body.  
  The name of the first Field should be "id", the name of the second Field should be "name", and the name of the third Field should be "body".
  The Field.type should be the type of the path param for the first two (str). 
- For the third Field, the body, there should be a well named Object, that contains resonable fields for the body. Each of which can be complex if needed.
- 
+ For the third Field, the body, there should be a well named model for the body and Field.related_types should have one item that defines the ObjectType
+ If there's a list of that object, the type should be list[<ObjectTypeName>]
 
 Ensure all response params are included in the response model params.
 
@@ -45,23 +45,26 @@ Ensure all response params are included in the response model params.
           {
             "name": "complex_field",
             "description": "An example of a complex field with sub-types.",
-            "type": {
-              "name": "ComplexType",
-              "description": "This is a complex type with its own fields.",
-              "Fields": [
-                {
-                  "name": "sub_field_1",
-                  "description": "A sub-field of the complex type, primitive.",
-                  "type": "int"
-                },
-                {
-                  "name": "sub_field_2",
-                  "description": "Another sub-field, this time a list of strings.",
-                  "type": "List[str]"
-                }
-                ... repeat for all sub-fields needed, using empty list if none. You can also nest complex types within complex types
-              ]
-            }
+            "type": "ComplexType",
+            "related_types": [
+              {
+                "name": "ComplexType",
+                "description": "This is a complex type with its own fields.",
+                "Fields": [
+                  {
+                    "name": "sub_field_1",
+                    "description": "A sub-field of the complex type, primitive.",
+                    "type": "int"
+                  },
+                  {
+                    "name": "sub_field_2",
+                    "description": "Another sub-field, this time a list of strings.",
+                    "type": "list[str]"
+                  }
+                  ... repeat for all sub-fields needed, using empty list if none. You can also nest complex types within complex types
+                ]
+              }
+            ]
           }
           ... repeat for all fields needed, using empty list if none
         ]
@@ -112,22 +115,25 @@ Example for `POST /user/{id}`, with models `User`, `Availability`, `Messages`:
         {
           "name": "avatar",
           "description": "The new avatar for the user.",
-          "type": {
-            "name": "Avatar",
-            "description": "The avatar object for the user.",
-            "Fields": [
-              {
-                "name": "url",
-                "description": "The url for the avatar.",
-                "type": "str"
-              },
-              {
-                "name": "type",
-                "description": "The type of the avatar.",
-                "type": "str"
-              }
-            ]
-          }
+          "type": "Avatar",
+          "related_types": [
+            {
+              "name": "Avatar",
+              "description": "The avatar object for the user.",
+              "Fields": [
+                {
+                  "name": "url",
+                  "description": "The url for the avatar.",
+                  "type": "str"
+                },
+                {
+                  "name": "type",
+                  "description": "The type of the avatar.",
+                  "type": "str"
+                }
+              ]
+            }
+          ]
         },
         {
           "name": "status",
