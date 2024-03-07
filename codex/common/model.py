@@ -33,7 +33,6 @@ class ObjectFieldModel(BaseModel):
     )
 
 
-AVAILABLE_TYPES = set(__all__)
 OPEN_BRACES = {"{": "Dict", "[": "List", "(": "Tuple"}
 CLOSE_BRACES = {"}": "Dict", "]": "List", ")": "Tuple"}
 
