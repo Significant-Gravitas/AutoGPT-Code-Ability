@@ -156,21 +156,15 @@ async def create_object_type(
 
     field_inputs = []
     for field in object.Fields:
-        if isinstance(field.type, ObjectTypeModel):
-            available_objects = await create_object_type(field.type, available_objects)
-            type_name = field.type.name
-        else:
-            type_name = field.type
-
         field_inputs.append(
             {
                 "name": field.name,
                 "description": field.description,
-                "typeName": type_name,
+                "typeName": field.type,
                 "RelatedTypes": {
                     "connect": [
                         {"id": t.id}
-                        for t in get_related_types(type_name, available_objects)
+                        for t in get_related_types(field.type, available_objects)
                     ]
                 },
             }
