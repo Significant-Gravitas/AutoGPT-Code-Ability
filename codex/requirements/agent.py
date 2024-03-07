@@ -248,20 +248,25 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
 
     logger.info("Modules 1st Step Done")
 
-    # Database Design
-    database_block = DatabaseGenerationBlock()
-    db_response: DBResponse = await database_block.invoke(
-        ids=ids,
-        invoke_params={
-            "product_spec": running_state_obj.__str__(),
-            "needed_auth_roles": running_state_obj.refined_requirement_q_a.authorization_roles,
-            "modules": ", ".join(module.name for module in running_state_obj.modules),
-        },
-    )
+    # Database Generation
+    if running_state_obj.refined_requirement_q_a.need_db:
+        logger.info("DB Started")
+        # Database Design
+        database_block = DatabaseGenerationBlock()
+        db_response: DBResponse = await database_block.invoke(
+            ids=ids,
+            invoke_params={
+                "product_spec": running_state_obj.__str__(),
+                "needed_auth_roles": running_state_obj.refined_requirement_q_a.authorization_roles,
+                "modules": ", ".join(
+                    module.name for module in running_state_obj.modules
+                ),
+            },
+        )
 
-    running_state_obj.database = convert_db_schema(db_response.database_schema)
+        running_state_obj.database = convert_db_schema(db_response.database_schema)
 
-    logger.info("DB Done")
+        logger.info("DB Done")
 
     # Module Refinement
     # Build the requirements from the Q&A
@@ -310,9 +315,11 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
     logger.info("Refined Modules Done")
 
     # DB Schemas
-    db_table_names: list[str] = [
-        table.name or "" for table in running_state_obj.database.tables
-    ]
+    db_table_names: list[str] = []
+    if running_state_obj.database:
+        db_table_names = [
+            table.name or "" for table in running_state_obj.database.tables
+        ]
 
     # This process just refineds the api endpoints. It can be ran in parallel
     # for all the modules and their endpoints

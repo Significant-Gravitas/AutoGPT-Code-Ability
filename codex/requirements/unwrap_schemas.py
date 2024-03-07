@@ -15,7 +15,7 @@ def convert_db_schema(input: DBSchemaResponseWrapper) -> DatabaseSchema:
 def convert_endpoint(
     input: EndpointSchemaRefinementResponse | list[EndpointSchemaRefinementResponse],
     existing: Endpoint,
-    database: DatabaseSchema,
+    database: DatabaseSchema | None = None,
 ) -> Endpoint:
     if isinstance(input, list):
         # This thing is somehow a list?
