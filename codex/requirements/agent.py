@@ -11,6 +11,8 @@ from pydantic.json import pydantic_encoder
 from codex.api_model import Identifiers
 from codex.common.ai_model import OpenAIChatClient
 from codex.common.logging_config import setup_logging
+from codex.common.model import ObjectFieldModel
+from codex.common.model import ObjectTypeModel as ObjectTypeE
 from codex.common.test_const import identifier_1
 from codex.interview.database import get_interview
 from codex.prompts.claude.requirements.NestJSDocs import (
@@ -19,7 +21,6 @@ from codex.prompts.claude.requirements.NestJSDocs import (
     NEST_JS_MODULES,
     NEST_JS_SQL,
 )
-from codex.common.model import ObjectFieldModel, ObjectTypeModel as ObjectTypeE
 from codex.requirements import flatten_endpoints
 from codex.requirements.blocks.ai_clarify import (
     FrontendClarificationBlock,
@@ -39,7 +40,6 @@ from codex.requirements.blocks.ai_requirements import (
     FuncNonFuncRequirementsBlock,
 )
 from codex.requirements.database import create_spec
-
 from codex.requirements.hardcoded import (
     appointment_optimization_requirements,
     availability_checker_requirements,
@@ -52,12 +52,15 @@ from codex.requirements.matching import find_best_match
 from codex.requirements.model import (
     APIRouteRequirement,
     ApplicationRequirements,
+    Clarification,
     DBResponse,
     ExampleTask,
     Feature,
     FeaturesSuperObject,
+    Module,
     ModuleRefinement,
     ModuleResponse,
+    QandA,
     RequirementsGenResponse,
     RequirementsRefined,
     StateObj,
@@ -74,7 +77,6 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
 
     Args:
         ids (Identifiers): Relevant ids for database operations
-        app_name (str): name of the application
         description (str): description of the application
 
     Returns:
@@ -105,62 +107,56 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
 
     logger.info("User Interview Done")
 
-    # Create instances of clarification blocks
-    # These requests are independent of each other and can be ran in parallel
     frontend_clarify = FrontendClarificationBlock()
-    user_persona_clarify = UserPersonaClarificationBlock()
-    user_skill_clarify = UserSkillClarificationBlock()
-    q_and_a_clarify = QuestionAndAnswerClarificationBlock()
-
-    # Run all clarification invokes in parallel
-    (
-        frontend_clarification,
-        user_persona_clarification,
-        user_skill_clarification,
-        q_and_a_clarification,
-    ) = await asyncio.gather(
-        frontend_clarify.invoke(
-            ids=ids,
-            invoke_params={
-                "project_description": running_state_obj.project_description
-            },
-        ),
-        user_persona_clarify.invoke(
-            ids=ids,
-            invoke_params={
-                "clarifying_questions_so_far": running_state_obj.clarifying_questions_as_string(),
-                "project_description": running_state_obj.project_description,
-            },
-        ),
-        user_skill_clarify.invoke(
-            ids=ids,
-            invoke_params={
-                "clarifying_questions_so_far": running_state_obj.clarifying_questions_as_string(),
-                "project_description": running_state_obj.project_description,
-            },
-        ),
-        q_and_a_clarify.invoke(
-            ids=ids,
-            invoke_params={
-                "clarifying_questions_so_far": running_state_obj.clarifying_questions_as_string(),
-                "project_description": running_state_obj.project_description,
-                "task": running_state_obj.task,
-            },
-        ),
+    frontend_clarification: Clarification = await frontend_clarify.invoke(
+        ids=ids,
+        invoke_params={"project_description": running_state_obj.project_description},
     )
 
-    # Process the results
     running_state_obj.add_clarifying_question(frontend_clarification)
+
     logger.info("Frontend Clarification Done")
 
+    user_persona_clarify = UserPersonaClarificationBlock()
+    user_persona_clarification: Clarification = await user_persona_clarify.invoke(
+        ids=ids,
+        invoke_params={
+            "clarifiying_questions_so_far": running_state_obj.clarifying_questions_as_string(),
+            "project_description": running_state_obj.project_description,
+        },
+    )
+
     running_state_obj.add_clarifying_question(user_persona_clarification)
+
     logger.info("User Persona Clarification Done")
 
+    # User Skill
+
+    user_skill_clarify = UserSkillClarificationBlock()
+    user_skill_clarification: Clarification = await user_skill_clarify.invoke(
+        ids=ids,
+        invoke_params={
+            "clarifiying_questions_so_far": running_state_obj.clarifying_questions_as_string(),
+            "project_description": running_state_obj.project_description,
+        },
+    )
     running_state_obj.add_clarifying_question(user_skill_clarification)
+
     logger.info("User Skill Clarification Done")
 
+    # Clarification Rounds
+
+    q_and_a_clarify = QuestionAndAnswerClarificationBlock()
+    q_and_a_clarification: list[QandA] = await q_and_a_clarify.invoke(
+        ids=ids,
+        invoke_params={
+            "clarifiying_questions_so_far": running_state_obj.clarifying_questions_as_string(),
+            "project_description": running_state_obj.project_description,
+            "task": running_state_obj.task,
+        },
+    )
+
     running_state_obj.q_and_a = q_and_a_clarification
-    logger.info("Q&A Clarification Done")
 
     logger.info("Question and Answer Based Clarification Done")
 
@@ -176,7 +172,7 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
     )
 
     # Parsing
-    running_state_obj.product_name = feature_so.project_name
+    running_state_obj.product_name = interview.name
     running_state_obj.product_description = feature_so.description
     features: list[Feature] = []
 
@@ -320,7 +316,9 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
 
     # This process just refineds the api endpoints. It can be ran in parallel
     # for all the modules and their endpoints
-    async def process_module(module, running_state_obj, db_table_names):
+    async def process_module(
+        module: Module, running_state_obj: StateObj, db_table_names: list[str]
+    ):
         if module.endpoints:
             logger.info(f"Endpoints for {module.name} Started")
 
