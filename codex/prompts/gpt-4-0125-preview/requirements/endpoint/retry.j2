@@ -23,6 +23,8 @@ An example would be something like POST /update/{id}/name/{name} with a body of 
  The Field.type should be the type of the path param for the first two (str). 
  For the third Field, the body, there should be a well named model for the body and Field.related_types should have one item that defines the ObjectType
  If there's a list of that object, the type should be list[<ObjectTypeName>]
+ If there's a db_model that's being used, don't put it in the related fields
+
 
 Ensure all response params are included in the response model params.
 
@@ -34,32 +36,52 @@ Ensure all response params are included in the response model params.
   "api_endpoint": {
     "request_model": 
       {
-        "name": "RequestModelName. will be used to name the Pydantic model",
+        // The name of the model, will be used to name the Pydantic model
+        "name": "RequestModelName",
+        // A description that will be the doc string for the named pydantic model
         "description": "the description of the request model, including any additional context that's important/relevant/weird/cool/useful. This will be used as the doc string for the named pydantic model",
         "Fields": [
           {
+            // A python variable name for the field
             "name": "simple_field",
+            // A solid description of the field
             "description": "The description of the simple field. This will be the doc string for the field",
+            // The type of the field, as would be used in a python type hint
             "type": "str"
           },
           {
+            // A python variable name for the field
             "name": "complex_field",
+            // A solid description of the field
             "description": "An example of a complex field with sub-types.",
+            // The type of the field, as would be used in a python type hint
             "type": "ComplexType",
+            // A list of related types, if any, that are used in the `type` field above. This doesn't include db models used.
             "related_types": [
               {
+                // The name of the related type, will be used to name the Pydantic model
                 "name": "ComplexType",
                 "description": "This is a complex type with its own fields.",
                 "Fields": [
                   {
+                    // A python variable name for the sub-field
                     "name": "sub_field_1",
                     "description": "A sub-field of the complex type, primitive.",
                     "type": "int"
                   },
                   {
+                    // A python variable name for the sub-field
                     "name": "sub_field_2",
                     "description": "Another sub-field, this time a list of strings.",
+                    // The type of the field, as would be used in a python type hint
                     "type": "list[str]"
+                  },
+                  {
+                    // A python variable name for the sub-field
+                    "name": "sub_field_3",
+                    "description": "Another sub-field, this time a an optional response.",
+                    // The type of the field, as would be used in a python type hint
+                    "type": "Optional[str]"
                   }
                   ... repeat for all sub-fields needed, using empty list if none. You can also nest complex types within complex types
                 ]
@@ -93,7 +115,7 @@ Ensure all response params are included in the response model params.
 Example for `POST /user/{id}`, with models `User`, `Availability`, `Messages`:
 ```json
 {
-  "think": "I'll need to leverage the context provided to ensure the UserDTO object makes sense. I'll also provide any models needed for my return types if they aren't based on the db model from prisma.",
+  "think": "I'll need to leverage the context provided to ensure the input object makes sense. I'll also provide any models needed for my return types if they aren't based on the db model from prisma.",
   "db_models_needed": [
     "User"
   ],
@@ -111,6 +133,49 @@ Example for `POST /user/{id}`, with models `User`, `Availability`, `Messages`:
           "name": "username",
           "description": "The new username for the user.",
           "type": "str"
+        },
+        {
+          "name": "address",
+          "description": "The new phone number for the user.",
+          "type": "Address"
+          "related_types": [
+            {
+              "name": "Address",
+              "description": "The address object for the user.",
+              "Fields": [
+                {
+                  "name": "street_line_1",
+                  "description": "The street address for the user.",
+                  "type": "str"
+                },
+                {
+                  "name": "street_line_2",
+                  "description": "The street address for the user.",
+                  "type": "str"
+                },
+                {
+                  "name": "city",
+                  "description": "The city for the user.",
+                  "type": "str"
+                },
+                {
+                  "name": "state",
+                  "description": "The state for the user.",
+                  "type": "str"
+                },
+                {
+                  "name": "country",
+                  "description": "The country for the user.",
+                  "type": "Optional[str]"
+                },
+                {
+                  "name": "zip",
+                  "description": "The zip code for the user.",
+                  "type": "str"
+                }
+              ]
+            }
+          ]
         },
         {
           "name": "avatar",
