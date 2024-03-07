@@ -82,7 +82,14 @@ Ensure all response params are included in the response model params.
                     "description": "Another sub-field, this time a an optional response.",
                     // The type of the field, as would be used in a python type hint
                     "type": "Optional[str]"
-                  }
+                  },
+                  {
+                    // A python variable name for the sub-field
+                    "name": "sub_field_4",
+                    "description": "Another sub-field, this time a list of strings.",
+                    // The type of the field, as would be used in a python type hint. Especially for more vague types like dict, we should define the types of the keys and values
+                    "type": "dict[str, str]"
+                  },
                   ... repeat for all sub-fields needed, using empty list if none. You can also nest complex types within complex types
                 ]
               }
