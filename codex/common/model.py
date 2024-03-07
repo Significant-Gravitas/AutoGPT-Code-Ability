@@ -28,7 +28,7 @@ class ObjectFieldModel(BaseModel):
     type: "str" = Field(
         description="The type of the field. Can be a string like List[str] or an use any of they related types like list[User]",
     )
-    related_types: Optional[List[ObjectType]] = Field(
+    related_types: Optional[List[ObjectTypeModel]] = Field(
         description="The related types of the field", default=[]
     )
 
