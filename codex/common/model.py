@@ -33,7 +33,20 @@ class ObjectFieldModel(BaseModel):
     )
 
 
-def unwrap_object_type(type: str) -> Tuple[str, List[str]]:
+OPEN_BRACES = {"{": "Dict", "[": "List", "(": "Tuple"}
+CLOSE_BRACES = {"}": "Dict", "]": "List", ")": "Tuple"}
+
+RENAMED_TYPES = {
+    "dict": "Dict",
+    "list": "List",
+    "tuple": "Tuple",
+    "set": "Set",
+    "frozenset": "FrozenSet",
+    "type": "Type",
+}
+
+
+def unwrap_object_type(type: str) -> Tuple[str | None, List[str]]:
     """
     Get the type and children of a composite type.
     Args:
@@ -44,27 +57,48 @@ def unwrap_object_type(type: str) -> Tuple[str, List[str]]:
     """
     if type is None:
         return None, []
-    if "list[" in type.lower():
-        return "list", [type[5:-1]]
-    if "[" == type[0] and "]" == type[-1]:
-        return "list", [type[1:-1]]
-    if "dict[" in type.lower():
-        return "dict", type[5:-1].split(",")
-    if "tuple[" in type.lower():
-        return "tuple", type[6:-1].split(",")
-    if "(" == type[0] and ")" == type[-1]:
-        return "tuple", type[1:-1].split(",")
-    if "str" == type or "String" == type:
-        return "str", []
-    if "int" == type or "Int" == type:
-        return "int", []
-    if "float" == type or "Float" == type:
-        return "float", []
-    if "bool" == type or "Boolean" == type:
-        return "bool", []
-    if "any" == type or "Any" == type:
-        return "any", []
-    return type, []
+
+    type = type.replace(" ", "")
+
+    def split_outer_level(type: str, separator: str) -> List[str]:
+        brace_count = 0
+        last_index = 0
+        splits = []
+
+        for i, c in enumerate(type):
+            if c in OPEN_BRACES:
+                brace_count += 1
+            elif c in CLOSE_BRACES:
+                brace_count -= 1
+            elif c == separator and brace_count == 0:
+                splits.append(type[last_index:i])
+                last_index = i + 1
+
+        splits.append(type[last_index:])
+        return splits
+
+    # Unwrap primitive union types
+    union_split = split_outer_level(type, "|")
+    if len(union_split) > 1:
+        return "Union", union_split
+
+    # Unwrap primitive dict/list/tuple types
+    if type[0] in OPEN_BRACES and type[-1] in CLOSE_BRACES:
+        type_name = OPEN_BRACES[type[0]]
+        type_children = split_outer_level(type[1:-1], ",")
+        return type_name, type_children
+
+    brace_pos = type.find("[")
+    if brace_pos != -1 and type[-1] == "]":
+        # Unwrap normal composite types
+        type_name = type[:brace_pos]
+        type_children = split_outer_level(type[brace_pos + 1 : -1], ",")
+    else:
+        # Non-composite types, no need to unwrap
+        type_name = type
+        type_children = []
+
+    return RENAMED_TYPES.get(type_name, type_name), type_children
 
 
 def is_type_equal(type1: str, type2: str) -> bool:
@@ -73,10 +107,6 @@ def is_type_equal(type1: str, type2: str) -> bool:
     This function handle composite types like list, dict, and tuple.
     group similar types like list[str], List[str], and [str] as equal.
     """
-    type1 = type1.replace(" ", "")
-    type2 = type2.replace(" ", "")
-    if type1 == type2:
-        return True
 
     type1, children1 = unwrap_object_type(type1)
     type2, children2 = unwrap_object_type(type2)
@@ -87,6 +117,9 @@ def is_type_equal(type1: str, type2: str) -> bool:
     if len(children1) != len(children2):
         return False
 
+    if len(children1) == len(children2) == 0:
+        return True
+
     for c1, c2 in zip(children1, children2):
         if not is_type_equal(c1, c2):
             return False
@@ -94,10 +127,10 @@ def is_type_equal(type1: str, type2: str) -> bool:
     return True
 
 
-def extract_field_type(field_type: str) -> list[str]:
+def extract_field_type(field_type: str) -> set[str]:
     """
     Extract the field type from a composite type.
-    e.g. tuple[str, dict[str, int]] -> [str, str, int]
+    e.g. tuple[str, dict[str, int]] -> {str, int}
 
     Args:
         field_type (str): The field type to parse.
@@ -106,11 +139,11 @@ def extract_field_type(field_type: str) -> list[str]:
     """
     parent_type, children = unwrap_object_type(field_type)
     if len(children) == 0:
-        return [parent_type]
+        return {parent_type}
 
-    result = []
+    result = set()
     for child in children:
-        result.extend(extract_field_type(child))
+        result |= extract_field_type(child)
     return result
 
 
