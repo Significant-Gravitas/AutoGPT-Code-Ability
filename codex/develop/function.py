@@ -6,7 +6,7 @@ from prisma.enums import FunctionState
 from prisma.models import ObjectType
 from prisma.types import FunctionCreateInput, ObjectFieldCreateInput
 
-from codex.common.model import get_related_types
+from codex.common.model import get_related_types, normalize_type
 from codex.develop.model import FunctionDef
 
 
@@ -28,7 +28,7 @@ async def construct_function(
         field = ObjectFieldCreateInput(
             name="return",
             description=function.return_desc,
-            typeName=function.return_type,
+            typeName=normalize_type(function.return_type),
             RelatedTypes={
                 "connect": [
                     {"id": type.id}
@@ -43,7 +43,7 @@ async def construct_function(
             ObjectFieldCreateInput(
                 name=name,
                 description=function.arg_descs.get(name, "-"),
-                typeName=type,
+                typeName=normalize_type(type),
                 RelatedTypes={
                     "connect": [
                         {"id": type.id}
@@ -61,7 +61,7 @@ async def construct_function(
 def generate_object_template(obj: ObjectType) -> str:
     fields = f"\n{' ' * 8}".join(
         [
-            f"{field.name}: {field.typeName} # {field.description}"
+            f"{field.name}: {field.typeName}  # {field.description}"
             for field in obj.Fields or []
         ]
     )

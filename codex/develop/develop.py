@@ -21,6 +21,7 @@ from codex.common.model import (
     ObjectFieldModel,
     create_object_type,
     is_type_equal,
+    get_typing_imports,
 )
 from codex.develop.function import construct_function
 from codex.develop.model import (
@@ -272,6 +273,9 @@ class DevelopAIBlock(AIBlock):
             functions = visitor.functions.copy()
             del functions[invoke_params["function_name"]]
 
+            imports = set(visitor.imports + get_typing_imports(
+                [v[1] for v in expected_args] + [expected_rets]))
+
             response.response = GeneratedFunctionResponse(
                 function_id=invoke_params["function_id"]
                 if "function_id" in invoke_params
@@ -281,7 +285,7 @@ class DevelopAIBlock(AIBlock):
                 available_objects=invoke_params["available_objects"],
                 rawCode=code,
                 packages=packages,
-                imports=visitor.imports,
+                imports=sorted(imports),
                 objects=visitor.objects,
                 template=requested_func.function_template,
                 functionCode=function_code,
