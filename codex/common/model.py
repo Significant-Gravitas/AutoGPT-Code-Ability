@@ -45,6 +45,7 @@ RENAMED_TYPES = {
     "type": "Type",
 }
 
+
 def unwrap_object_type(type: str) -> Tuple[str | None, List[str]]:
     """
     Get the type and children of a composite type.
@@ -77,21 +78,21 @@ def unwrap_object_type(type: str) -> Tuple[str | None, List[str]]:
         return splits
 
     # Unwrap primitive union types
-    union_split = split_outer_level(type, '|')
+    union_split = split_outer_level(type, "|")
     if len(union_split) > 1:
-        return 'Union', union_split
+        return "Union", union_split
 
     # Unwrap primitive dict/list/tuple types
     if type[0] in OPEN_BRACES and type[-1] in CLOSE_BRACES:
         type_name = OPEN_BRACES[type[0]]
-        type_children = split_outer_level(type[1:-1], ',')
+        type_children = split_outer_level(type[1:-1], ",")
         return type_name, type_children
 
-    brace_pos = type.find('[')
-    if brace_pos != -1 and type[-1] == ']':
+    brace_pos = type.find("[")
+    if brace_pos != -1 and type[-1] == "]":
         # Unwrap normal composite types
         type_name = type[:brace_pos]
-        type_children = split_outer_level(type[brace_pos + 1:-1], ',')
+        type_children = split_outer_level(type[brace_pos + 1 : -1], ",")
     else:
         # Non-composite types, no need to unwrap
         type_name = type
@@ -147,7 +148,7 @@ def extract_field_type(field_type: str) -> set[str]:
 
 
 def get_related_types(
-        type: str, available_objects: dict[str, ObjectType]
+    type: str, available_objects: dict[str, ObjectType]
 ) -> list[ObjectType]:
     """
     Get the related types of a composite type.
@@ -168,8 +169,8 @@ def get_related_types(
 
 
 async def create_object_type(
-        object: ObjectTypeModel,
-        available_objects: dict[str, ObjectType],
+    object: ObjectTypeModel,
+    available_objects: dict[str, ObjectType],
 ) -> dict[str, ObjectType]:
     """
     Creates and store object types in the database.
