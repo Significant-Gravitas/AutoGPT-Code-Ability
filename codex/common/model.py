@@ -152,7 +152,6 @@ def extract_field_type(field_type: str) -> set[str]:
     result = {parent_type}
     for child in children:
         result |= extract_field_type(child)
-
     return result
 
 def normalize_type(type: str) -> str:
@@ -213,21 +212,15 @@ async def create_object_type(
 
     field_inputs = []
     for field in object.Fields:
-        if isinstance(field.type, ObjectTypeModel):
-            available_objects = await create_object_type(field.type, available_objects)
-            type_name = field.type.name
-        else:
-            type_name = field.type
-
         field_inputs.append(
             {
                 "name": field.name,
                 "description": field.description,
-                "typeName": normalize_type(type_name),
+                "typeName": normalize_type(field.type),
                 "RelatedTypes": {
                     "connect": [
                         {"id": t.id}
-                        for t in get_related_types(type_name, available_objects)
+                        for t in get_related_types(field.type, available_objects)
                     ]
                 },
             }
