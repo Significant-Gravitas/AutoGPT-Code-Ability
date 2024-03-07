@@ -41,15 +41,14 @@ async def test_process_object_type():
     )
 
     pydantic_output = await process_object_type(obj)
-    expected_output = \
-        """class Person(BaseModel):
+    expected_output = """class Person(BaseModel):
     \"\"\"
     Represents a person
     \"\"\"
     name: str  # The name of the person
     age: int  # The age of the person"""
     assert (
-            pydantic_output == expected_output
+        pydantic_output == expected_output
     ), f"Expected {pydantic_output} to be {expected_output}"
 
 

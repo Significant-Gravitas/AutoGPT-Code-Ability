@@ -93,7 +93,7 @@ def unwrap_object_type(type: str) -> Tuple[str | None, List[str]]:
     if brace_pos != -1 and type[-1] == "]":
         # Unwrap normal composite types
         type_name = type[:brace_pos]
-        type_children = split_outer_level(type[brace_pos + 1: -1], ",")
+        type_children = split_outer_level(type[brace_pos + 1 : -1], ",")
     else:
         # Non-composite types, no need to unwrap
         type_name = type
@@ -127,6 +127,7 @@ def is_type_equal(type1: str, type2: str) -> bool:
 
     return True
 
+
 def get_typing_imports(object_types: list[str]) -> list[str]:
     typing_imports = {
         f"from typing import {extracted_type}"
@@ -154,6 +155,7 @@ def extract_field_type(field_type: str) -> set[str]:
         result |= extract_field_type(child)
     return result
 
+
 def normalize_type(type: str) -> str:
     """
     Normalize the type to a standard format.
@@ -170,8 +172,9 @@ def normalize_type(type: str) -> str:
 
     return f"{parent_type}[{', '.join([normalize_type(c) for c in children])}]"
 
+
 def get_related_types(
-        type: str, available_objects: dict[str, ObjectType]
+    type: str, available_objects: dict[str, ObjectType]
 ) -> list[ObjectType]:
     """
     Get the related types of a composite type.
@@ -192,8 +195,8 @@ def get_related_types(
 
 
 async def create_object_type(
-        object: ObjectTypeModel,
-        available_objects: dict[str, ObjectType],
+    object: ObjectTypeModel,
+    available_objects: dict[str, ObjectType],
 ) -> dict[str, ObjectType]:
     """
     Creates and store object types in the database.

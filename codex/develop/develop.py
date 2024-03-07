@@ -273,8 +273,10 @@ class DevelopAIBlock(AIBlock):
             functions = visitor.functions.copy()
             del functions[invoke_params["function_name"]]
 
-            imports = set(visitor.imports + get_typing_imports(
-                [v[1] for v in expected_args] + [expected_rets]))
+            imports = set(
+                visitor.imports
+                + get_typing_imports([v[1] for v in expected_args] + [expected_rets])
+            )
 
             response.response = GeneratedFunctionResponse(
                 function_id=invoke_params["function_id"]

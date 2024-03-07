@@ -2,7 +2,6 @@ import os
 
 import pytest
 from dotenv import load_dotenv
-load_dotenv()
 from fastapi.testclient import TestClient
 
 from codex import app
@@ -10,6 +9,7 @@ from codex.common.ai_model import OpenAIChatClient
 from codex.common.logging_config import setup_logging
 from codex.common.test_const import app_id_1, user_id_1
 
+load_dotenv()
 
 openai_api_key = os.environ.get("OPENAI_API_KEY", "")
 OpenAIChatClient.configure({"api_key": openai_api_key})

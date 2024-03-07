@@ -6,7 +6,12 @@ from codex.common.model import extract_field_type, is_type_equal
 @pytest.mark.unit
 def test_extract_field_type():
     assert extract_field_type("str") == {"str"}
-    assert extract_field_type("tuple[str, dict[str, int]]") == {"str", "int", "Tuple", "Dict"}
+    assert extract_field_type("tuple[str, dict[str, int]]") == {
+        "str",
+        "int",
+        "Tuple",
+        "Dict",
+    }
     assert extract_field_type("Tuple[Obj1, Dict[Obj2, Obj3 | Obj4], Obj1]") == {
         "Union",
         "Tuple",

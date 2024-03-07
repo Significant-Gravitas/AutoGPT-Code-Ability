@@ -185,7 +185,8 @@ async def recursive_compile_route(
 
 
 async def get_object_type_deps(
-        obj: ObjectType, object_type_ids: Set[str]) -> List[ObjectType]:
+    obj: ObjectType, object_type_ids: Set[str]
+) -> List[ObjectType]:
     if obj.Fields is None:
         raise ValueError(f"ObjectType {obj.name} has no fields.")
 
@@ -198,7 +199,8 @@ async def get_object_type_deps(
 
 
 async def get_object_field_deps(
-        field: ObjectField, object_type_ids: Set[str]) -> List[ObjectType]:
+    field: ObjectField, object_type_ids: Set[str]
+) -> List[ObjectType]:
     """
     Process an object field and return the Pydantic classes
     generated from the field's type.
