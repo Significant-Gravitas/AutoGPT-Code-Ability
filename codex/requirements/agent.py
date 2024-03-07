@@ -266,7 +266,7 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
 
         running_state_obj.database = convert_db_schema(db_response.database_schema)
 
-    logger.info("DB Done")
+        logger.info("DB Done")
 
     # Module Refinement
     # Build the requirements from the Q&A
