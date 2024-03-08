@@ -20,6 +20,7 @@ from pydantic import BaseModel
 
 from codex.api_model import Identifiers
 from codex.deploy.model import Application
+from codex.develop.function import generate_object_template
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,6 @@ async def compile_route(
     compiled_function = await recursive_compile_route(route_root_func)
 
     unique_packages = list(set([package.id for package in compiled_function.packages]))
-    compiled_function.imports.append("from pydantic import BaseModel")
     code = "\n".join(compiled_function.imports)
     code += "\n\n"
     code += "\n\n".join(compiled_function.pydantic_models)
@@ -111,11 +111,11 @@ async def recursive_compile_route(
     new_object_types = set()
     if function.FunctionArgs is not None:
         for arg in function.FunctionArgs:
-            pydantic_models.append(await process_object_field(arg, new_object_types))
+            pydantic_models.extend(await get_object_field_deps(arg, new_object_types))
 
     if function.FunctionReturn is not None:
-        pydantic_models.append(
-            await process_object_field(function.FunctionReturn, new_object_types)
+        pydantic_models.extend(
+            await get_object_field_deps(function.FunctionReturn, new_object_types)
         )
 
     if function.ChildFunctions is None:
@@ -133,11 +133,16 @@ async def recursive_compile_route(
         except Exception as e:
             raise ValueError(f"Syntax error in function code: {e}, {code}")
 
+        models_code = [generate_object_template(obj) for obj in pydantic_models]
+        import_statements = set(function.importStatements)
+        for obj in pydantic_models:
+            import_statements.update(obj.importStatements)
+
         return CompiledFunction(
             packages=packages,
-            imports=function.importStatements,
+            imports=sorted(import_statements),
             code=function.functionCode,
-            pydantic_models=pydantic_models,
+            pydantic_models=models_code,
         )
     else:
         packages = []
@@ -179,48 +184,23 @@ async def recursive_compile_route(
         )
 
 
-async def process_object_type(
-    obj: ObjectType, object_type_ids: Set[str] = set()
-) -> str:
-    """
-    Generate a Pydantic object based on the given ObjectType.
-
-    Args:
-        obj (ObjectType): The ObjectType to generate the Pydantic object for.
-
-    Returns:
-        str: The generated Pydantic object as a string.
-    """
+async def get_object_type_deps(
+    obj: ObjectType, object_type_ids: Set[str]
+) -> List[ObjectType]:
     if obj.Fields is None:
         raise ValueError(f"ObjectType {obj.name} has no fields.")
 
-    template: str = ""
-    sub_types: List[str] = []
-    field_strings: List[str] = []
+    objects: List[ObjectType] = []
     for field in obj.Fields:
         if field.RelatedTypes:
-            sub_types.append(await process_object_field(field, object_type_ids))
+            objects.extend(await get_object_field_deps(field, object_type_ids))
 
-        field_strings.append(
-            f"{' '*4}{field.name}: {field.typeName}  # {field.description}"
-        )
-
-    fields: str = "\n".join(field_strings)
-    # Returned as a string to preserve class declaration order
-    template += "\n\n".join(sub_types)
-    template += f"""
-
-class {obj.name}(BaseModel):
-    \"\"\"
-    {obj.description}
-    \"\"\"
-{fields}
-    """
-    logger.debug(f"Generated Pydantic class for {obj.name}:{template}")
-    return template
+    return objects
 
 
-async def process_object_field(field: ObjectField, object_type_ids: Set[str]) -> str:
+async def get_object_field_deps(
+    field: ObjectField, object_type_ids: Set[str]
+) -> List[ObjectType]:
     """
     Process an object field and return the Pydantic classes
     generated from the field's type.
@@ -231,7 +211,7 @@ async def process_object_field(field: ObjectField, object_type_ids: Set[str]) ->
                                     have already been processed.
 
     Returns:
-        str: The Pydantic classes generated from the field's type.
+        List[ObjectType]: The object types generated from the field's type.
 
     Raises:
         AssertionError: If the field type is None.
@@ -248,16 +228,16 @@ async def process_object_field(field: ObjectField, object_type_ids: Set[str]) ->
         logger.debug(
             f"Skipping field {field.name} as it's a primitive type or already processed"
         )
-        return ""
+        return []
     assert types, "Field type is not defined"
 
     logger.debug(f"Processing field {field.name} of type {field.typeName}")
     object_type_ids.update([t.id for t in types])
 
     # TODO: this can run in parallel
-    pydantic_classes = "\n".join(
-        [await process_object_type(type, object_type_ids) for type in types]
-    )
+    pydantic_classes = []
+    for type in types:
+        pydantic_classes.extend(await get_object_type_deps(type, object_type_ids))
 
     return pydantic_classes
 

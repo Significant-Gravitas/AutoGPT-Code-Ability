@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, __all__
 
 from prisma.models import ObjectField, ObjectType
 from pydantic import BaseModel, Field
@@ -33,6 +33,7 @@ class ObjectFieldModel(BaseModel):
     )
 
 
+PYTHON_TYPES = set(__all__)
 OPEN_BRACES = {"{": "Dict", "[": "List", "(": "Tuple"}
 CLOSE_BRACES = {"}": "Dict", "]": "List", ")": "Tuple"}
 
@@ -127,10 +128,20 @@ def is_type_equal(type1: str, type2: str) -> bool:
     return True
 
 
+def get_typing_imports(object_types: list[str]) -> list[str]:
+    typing_imports = {
+        f"from typing import {extracted_type}"
+        for object_type in object_types
+        for extracted_type in extract_field_type(object_type)
+        if extracted_type and extracted_type in PYTHON_TYPES
+    }
+    return sorted(typing_imports)
+
+
 def extract_field_type(field_type: str) -> set[str]:
     """
     Extract the field type from a composite type.
-    e.g. tuple[str, dict[str, int]] -> {str, int}
+    e.g. tuple[str, dict[str, int]] -> {tuple, dict, str, int}
 
     Args:
         field_type (str): The field type to parse.
@@ -138,13 +149,28 @@ def extract_field_type(field_type: str) -> set[str]:
         list[str]: The extracted field types.
     """
     parent_type, children = unwrap_object_type(field_type)
-    if len(children) == 0:
-        return {parent_type}
 
-    result = set()
+    result = {parent_type}
     for child in children:
         result |= extract_field_type(child)
     return result
+
+
+def normalize_type(type: str) -> str:
+    """
+    Normalize the type to a standard format.
+    e.g. list[str] -> List[str], dict[str, int | float] -> Dict[str, Union[int, float]]
+
+    Args:
+        type (str): The type to normalize.
+    Returns:
+        str: The normalized type.
+    """
+    parent_type, children = unwrap_object_type(type)
+    if len(children) == 0:
+        return parent_type
+
+    return f"{parent_type}[{', '.join([normalize_type(c) for c in children])}]"
 
 
 def get_related_types(
@@ -193,7 +219,7 @@ async def create_object_type(
             {
                 "name": field.name,
                 "description": field.description,
-                "typeName": field.type,
+                "typeName": normalize_type(field.type),
                 "RelatedTypes": {
                     "connect": [
                         {"id": t.id}
@@ -203,11 +229,14 @@ async def create_object_type(
             }
         )
 
+    typing_imports = get_typing_imports([f.type for f in object.Fields])
+
     created_object_type = await ObjectType.prisma().create(
         data={
             "name": object.name,
             "description": object.description,
             "Fields": {"create": field_inputs},
+            "importStatements": ["from pydantic import BaseModel"] + typing_imports,
         },
         include={"Fields": {"include": {"RelatedTypes": True}}},
     )
