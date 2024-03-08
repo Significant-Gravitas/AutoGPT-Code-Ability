@@ -8,7 +8,6 @@ from codex.common.ai_block import ValidationError
 
 load_dotenv()
 
-
 SAMPLE_CODE = """
 from pydantic import BaseModel
 from datetime import datetime, timedelta
