@@ -129,20 +129,27 @@ async def develop_route(
     if depth >= RECURSION_DEPTH_LIMIT:
         raise ValueError("Recursion depth exceeded")
 
+    function_include = {
+        "include": {
+            "FunctionArgs": {
+                "include": {"RelatedTypes": {"include": {"Fields": True}}}
+            },
+            "FunctionReturn": {
+                "include": {"RelatedTypes": {"include": {"Fields": True}}}
+            },
+        }
+    }
+
     compiled_route = await CompiledRoute.prisma().find_unique_or_raise(
         where={"id": compiled_route_id},
         include={
-            "Functions": {
-                "include": {
-                    "FunctionArgs": {"include": {"RelatedTypes": True}},
-                    "FunctionReturn": {"include": {"RelatedTypes": True}},
-                }
-            }
+            "RootFunction": function_include,
+            "Functions": function_include,
         },
     )
     generated_func = {}
     generated_objs = {}
-    for func in compiled_route.Functions:
+    for func in compiled_route.Functions + [compiled_route.RootFunction]:
         if func.functionName != function.functionName:
             generated_func[func.functionName] = func
 
