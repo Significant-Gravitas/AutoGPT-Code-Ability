@@ -8,7 +8,7 @@ from codex.develop.compile import extract_path_params, get_object_type_deps
 
 
 async def process_object_type(obj: ObjectType) -> str:
-    objects = await get_object_type_deps(obj, set()) + [obj]
+    objects = await get_object_type_deps(obj, set())
     return "\n\n".join([generate_object_template(v) for v in objects])
 
 

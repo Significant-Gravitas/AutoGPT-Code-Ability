@@ -47,10 +47,18 @@ async def create_deployment(
                     ApiRouteSpec=APIRouteSpecArgsFromCompiledRouteRecursive2(
                         include=APIRouteSpecIncludeFromAPIRouteSpecRecursive3(
                             RequestObject=ObjectTypeArgsFromAPIRouteSpecRecursive4(
-                                **{"include": {"Fields": True}}
+                                **{
+                                    "include": {
+                                        "Fields": {"include": {"RelatedTypes": True}}
+                                    }
+                                }
                             ),
                             ResponseObject=ObjectTypeArgsFromAPIRouteSpecRecursive4(
-                                **{"include": {"Fields": True}}
+                                **{
+                                    "include": {
+                                        "Fields": {"include": {"RelatedTypes": True}}
+                                    }
+                                }
                             ),
                         )
                     ),

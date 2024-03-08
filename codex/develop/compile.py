@@ -91,97 +91,79 @@ async def recursive_compile_route(
     """
     # Can't see how to do recursive lookup with prisma, so I'm checking the next
     # layer down each time. This is a bit of a hack, can be improved later.
+    include_types = {"include": {"RelatedTypes": True}}
     function = await Function.prisma().find_unique_or_raise(
         where={"id": in_function.id},
         include={
             "ParentFunction": True,
-            "FunctionArgs": True,
-            "FunctionReturn": True,
+            "FunctionArgs": include_types,
+            "FunctionReturn": include_types,
             "ChildFunctions": {
                 "include": {
-                    "FunctionArgs": True,
-                    "FunctionReturn": True,
+                    "FunctionArgs": include_types,
+                    "FunctionReturn": include_types,
                 }
             },
         },
     )
     logger.info(f"⚙️ Compiling function: {function.functionName}")
-    pydantic_models = []
 
-    new_object_types = set()
+    if function.functionCode is None:
+        raise ValueError(f"Function code is required! {function.functionName}")
+
+    packages = []
+    imports = []
+    code = []
+    model = []
+
+    new_obj_types = set()
     if function.FunctionArgs is not None:
         for arg in function.FunctionArgs:
-            pydantic_models.extend(await get_object_field_deps(arg, new_object_types))
+            obj_types = await get_object_field_deps(arg, new_obj_types)
+            model.extend([generate_object_template(obj_type) for obj_type in obj_types])
+            for obj in obj_types:
+                imports.extend(obj.importStatements)
 
     if function.FunctionReturn is not None:
-        pydantic_models.extend(
-            await get_object_field_deps(function.FunctionReturn, new_object_types)
-        )
+        obj_types = await get_object_field_deps(function.FunctionReturn, new_obj_types)
+        model.extend([generate_object_template(obj_type) for obj_type in obj_types])
+        for obj in obj_types:
+            imports.extend(obj.importStatements)
 
-    if function.ChildFunctions is None:
-        packages = []
-        if function.Packages:
-            packages = function.Packages
-        if function.functionCode is None:
-            raise ValueError(f"Leaf Function code is required! {function.id}")
-        code = "\n".join(function.importStatements)
-        code += "\n\n"
-        code += function.functionCode
+    # Child Functions
+    for child_function in function.ChildFunctions:
+        compiled_function = await recursive_compile_route(child_function, new_obj_types)
+        packages.extend(compiled_function.packages)
+        imports.extend(compiled_function.imports)
+        model.extend(compiled_function.pydantic_models)
+        code.append(compiled_function.code)
 
-        try:
-            ast.parse(code)
-        except Exception as e:
-            raise ValueError(f"Syntax error in function code: {e}, {code}")
+    # Package
+    if function.Packages:
+        packages.extend(function.Packages)
 
-        models_code = [generate_object_template(obj) for obj in pydantic_models]
-        import_statements = set(function.importStatements)
-        for obj in pydantic_models:
-            import_statements.update(obj.importStatements)
+    # Imports
+    imports.extend(function.importStatements)
+    imports = sorted(set(imports))
 
-        return CompiledFunction(
-            packages=packages,
-            imports=sorted(import_statements),
-            code=function.functionCode,
-            pydantic_models=models_code,
-        )
-    else:
-        packages = []
-        imports = []
-        code = ""
-        for child_function in function.ChildFunctions:
-            compiled_function = await recursive_compile_route(
-                child_function, new_object_types
-            )
-            packages.extend(compiled_function.packages)
-            imports.extend(compiled_function.imports)
-            pydantic_models.extend(compiled_function.pydantic_models)
-            code += "\n\n"
-            code += compiled_function.code
+    # Code
+    code.append(function.functionCode)
 
-        if function.Packages:
-            packages.extend(function.Packages)
-        imports.extend(function.importStatements)
-
-        if function.functionCode is None:
-            raise ValueError(f"Function code is required! {function.id}")
-
-        code += "\n\n"
-        code += function.functionCode
+    # Check Code
+    try:
         check_code = "\n".join(imports)
-        check_code += "\n\n"
-        check_code += code
+        check_code += "\n\n" + "\n\n".join(model)
+        check_code += "\n\n" + "\n\n".join(code)
+        ast.parse(check_code)
+    except Exception as e:
+        raise ValueError(f"Syntax error in function code: {e}, {code}")
 
-        try:
-            ast.parse(check_code)
-        except Exception as e:
-            raise ValueError(f"Syntax error in function code: {e}, {code}")
-
-        return CompiledFunction(
-            packages=packages,
-            imports=imports,
-            code=code,
-            pydantic_models=pydantic_models,
-        )
+    return CompiledFunction(
+        packages=packages,
+        imports=imports,
+        code="\n\n".join(code),
+        pydantic_models=model,
+    )
 
 
 async def get_object_type_deps(
@@ -190,7 +172,7 @@ async def get_object_type_deps(
     if obj.Fields is None:
         raise ValueError(f"ObjectType {obj.name} has no fields.")
 
-    objects: List[ObjectType] = []
+    objects: List[ObjectType] = [obj]
     for field in obj.Fields:
         if field.RelatedTypes:
             objects.extend(await get_object_field_deps(field, object_type_ids))
