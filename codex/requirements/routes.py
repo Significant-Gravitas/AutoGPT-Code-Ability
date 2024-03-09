@@ -44,7 +44,7 @@ async def create_spec(
             cloud_services_id=user.cloudServicesId if user else "",
         )
         interview = await get_interview(
-            user_id=ids.user_id, app_id=ids.app_id, interview_id=interview_id
+            user_id=user_id, app_id=app_id, interview_id=interview_id
         )
         if not interview:
             return Response(

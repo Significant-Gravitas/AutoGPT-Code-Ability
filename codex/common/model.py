@@ -109,10 +109,10 @@ def is_type_equal(type1: str, type2: str) -> bool:
     group similar types like list[str], List[str], and [str] as equal.
     """
 
-    type1, children1 = unwrap_object_type(type1)
-    type2, children2 = unwrap_object_type(type2)
+    evaled_type_1, children1 = unwrap_object_type(type1)
+    evaled_type_2, children2 = unwrap_object_type(type2)
 
-    if type1 != type2:
+    if evaled_type_1 != evaled_type_2:
         return False
 
     if len(children1) != len(children2):
@@ -195,14 +195,14 @@ def get_related_types(
 
 
 async def create_object_type(
-    object: ObjectTypeModel,
+    in_object: ObjectTypeModel,
     available_objects: dict[str, ObjectType],
 ) -> dict[str, ObjectType]:
     """
     Creates and store object types in the database.
 
     Args:
-    object (ObjectTypeModel): The object to create.
+    in_object (ObjectTypeModel): The object to create.
     available_objects (dict[str, ObjectType]):
         The set of object definitions that have already been created.
         This will be used to link the related object fields and avoid duplicates.
@@ -210,11 +210,11 @@ async def create_object_type(
     Returns:
         dict[str, ObjectType]: Updated available_objects with the newly created objects.
     """
-    if object.name in available_objects:
+    if in_object.name in available_objects:
         return available_objects
 
     field_inputs = []
-    for field in object.Fields:
+    for field in in_object.Fields:
         field_inputs.append(
             {
                 "name": field.name,
@@ -229,27 +229,33 @@ async def create_object_type(
             }
         )
 
-    typing_imports = get_typing_imports([f.type for f in object.Fields])
+    typing_imports = get_typing_imports([f.type for f in in_object.Fields])
 
     created_object_type = await ObjectType.prisma().create(
         data={
-            "name": object.name,
-            "description": object.description,
+            "name": in_object.name,
+            "description": in_object.description,
             "Fields": {"create": field_inputs},
             "importStatements": ["from pydantic import BaseModel"] + typing_imports,
         },
         include={"Fields": {"include": {"RelatedTypes": True}}},
     )
-    available_objects[object.name] = created_object_type
+    available_objects[in_object.name] = created_object_type
 
     # Connect the fields of available objects to the newly created object.
     # Naively check each available object if it has a related field to the new object.
     # TODO(majdyz): Optimize this step if needed.
     for obj in available_objects.values():
-        for field in obj.Fields:
-            if object.name not in extract_field_type(field.typeName):
+        for field in obj.Fields or []:
+            if field.RelatedTypes is None:
+                raise ValueError(
+                    f"RelatedTypes of field {field.name} in object {obj.name} is None"
+                )
+            # Skip if the field isn't used in the object
+            if in_object.name not in extract_field_type(field.typeName):
                 continue
-            if object.name in [f.typeName for f in field.RelatedTypes]:
+            # Skip if the field is already linked to the new object
+            if in_object.name in [f.typeName for f in field.RelatedTypes]:
                 continue
 
             # Link created_object_type.id to the field.RelatedTypes

@@ -76,9 +76,7 @@ if __name__ == "__main__":
         "modules": "Authentication Module, User Management Module, Scheduling Module, Invoice Management Module, Financial Reporting Module, Notification Module",
     }
 
-    database_block = DatabaseGenerationBlock(
-        oai_client=oai,
-    )
+    database_block = DatabaseGenerationBlock()
 
     async def run_ai() -> dict[str, DBResponse]:
         await db_client.connect()

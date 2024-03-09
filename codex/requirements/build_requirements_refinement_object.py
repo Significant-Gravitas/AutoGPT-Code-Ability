@@ -111,9 +111,12 @@ def convert_requirements(requirements_qa) -> RequirementsRefined:
                     requirements_refined.need_authorization = ReplyEnum(req_qa.answer)
                     requirements_refined.need_authorization_justification = req_qa.think
                 elif matched_question == "what authorization roles do we need?":
-                    requirements_refined.authorization_roles = [
-                        role.strip("[]'\" ") for role in req_qa.answer.split(",")
-                    ]
+                    if not isinstance(req_qa.answer, list):
+                        requirements_refined.authorization_roles = [
+                            role.strip("[]'\" ") for role in req_qa.answer.split(",")
+                        ]
+                    else:
+                        requirements_refined.authorization_roles = req_qa.answer
                     requirements_refined.authorization_roles_justification = (
                         req_qa.think
                     )

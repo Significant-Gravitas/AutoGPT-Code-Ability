@@ -205,12 +205,10 @@ if __name__ == "__main__":
     task: str = "Write a function to return the availability of a professional from their calendar"
     project_description: str = "Function that returns the availability of professionals, updating based on current activity or schedule."
 
-    frontend_block = FrontendClarificationBlock(
-        oai_client=oai,
-    )
-    user_persona_block = UserPersonaClarificationBlock(oai_client=oai)
-    user_skill_block = UserSkillClarificationBlock(oai_client=oai)
-    q_and_a_block = QuestionAndAnswerClarificationBlock(oai_client=oai)
+    frontend_block = FrontendClarificationBlock()
+    user_persona_block = UserPersonaClarificationBlock()
+    user_skill_block = UserSkillClarificationBlock()
+    q_and_a_block = QuestionAndAnswerClarificationBlock()
 
     async def run_ai() -> dict[str, list[QandA] | Clarification]:
         await db_client.connect()
