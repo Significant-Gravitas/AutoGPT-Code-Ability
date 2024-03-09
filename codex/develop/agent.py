@@ -126,18 +126,11 @@ async def develop_route(
     if depth >= RECURSION_DEPTH_LIMIT:
         raise ValueError("Recursion depth exceeded")
 
-    include_type = {"include": {"RelatedTypes": True}}
-    include_func = {
-        "include": {
-            "FunctionArgs": include_type,
-            "FunctionReturn": include_type,
-        }
-    }
     compiled_route = await CompiledRoute.prisma().find_unique_or_raise(
         where={"id": compiled_route_id},
         include={
-            "RootFunction": include_func,
-            "Functions": include_func,
+            "RootFunction": INCLUDE_FUNC,
+            "Functions": INCLUDE_FUNC,
         },
     )
     generated_func = {}
