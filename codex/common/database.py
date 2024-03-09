@@ -1,4 +1,8 @@
-INCLUDE_TYPE = {"include": {"RelatedTypes": True}}
+INCLUDE_TYPE = {
+    "include": {
+        "RelatedTypes": {"include": {"Fields": True}}
+    }
+}
 
 INCLUDE_FUNC = {
     "include": {
