@@ -92,7 +92,6 @@ async def recursive_compile_route(
     """
     # Can't see how to do recursive lookup with prisma, so I'm checking the next
     # layer down each time. This is a bit of a hack, can be improved later.
-    include_types = {"include": {"RelatedTypes": True}}
     function = await Function.prisma().find_unique_or_raise(
         where={"id": in_function.id},
         include={
