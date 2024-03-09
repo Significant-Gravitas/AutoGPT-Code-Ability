@@ -358,7 +358,7 @@ class DevelopAIBlock(AIBlock):
             where={"id": generated_response.function_id},
             data=update_obj,
             include={
-                **INCLUDE_FUNC,
+                **INCLUDE_FUNC["include"],
                 "ParentFunction": INCLUDE_FUNC,
                 "ChildFunctions": INCLUDE_FUNC,
             },

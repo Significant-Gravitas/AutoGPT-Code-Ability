@@ -96,7 +96,7 @@ async def recursive_compile_route(
     function = await Function.prisma().find_unique_or_raise(
         where={"id": in_function.id},
         include={
-            **INCLUDE_FUNC,
+            **INCLUDE_FUNC["include"],
             "ParentFunction": INCLUDE_FUNC,
             "ChildFunctions": INCLUDE_FUNC,
         },
