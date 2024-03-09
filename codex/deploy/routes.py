@@ -15,6 +15,7 @@ from prisma.types import (
     ObjectTypeArgsFromAPIRouteSpecRecursive4,
 )
 
+from codex.common.database import INCLUDE_FUNC
 import codex.database
 import codex.deploy.agent as deploy_agent
 import codex.deploy.database
@@ -62,12 +63,7 @@ async def create_deployment(
                             ),
                         )
                     ),
-                    RootFunction={  # type: ignore
-                        "include": {
-                            "FunctionArgs": {"include": {"RelatedTypes": True}},
-                            "FunctionReturn": {"include": {"RelatedTypes": True}},
-                        }
-                    },
+                    RootFunction=INCLUDE_FUNC,
                 )
             ),
         )

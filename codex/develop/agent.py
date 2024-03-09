@@ -12,6 +12,7 @@ from prisma.models import (
 from prisma.types import CompiledRouteCreateInput
 
 from codex.api_model import Identifiers
+from codex.common.database import INCLUDE_FUNC
 from codex.develop.compile import compile_route, create_app
 from codex.develop.develop import DevelopAIBlock
 from codex.develop.function import construct_function, generate_object_template
@@ -82,11 +83,7 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
                     CompletedApp={"connect": {"id": app.id}},
                     ApiRouteSpec={"connect": {"id": api_route.id}},
                 ),
-                include={
-                    "RootFunction": {
-                        "include": {"FunctionArgs": True, "FunctionReturn": True}
-                    }
-                },
+                include={"RootFunction": INCLUDE_FUNC},
             )
 
             route_root_func = await develop_route(
@@ -129,22 +126,18 @@ async def develop_route(
     if depth >= RECURSION_DEPTH_LIMIT:
         raise ValueError("Recursion depth exceeded")
 
-    function_include = {
+    include_type = {"include": {"RelatedTypes": True}}
+    include_func = {
         "include": {
-            "FunctionArgs": {
-                "include": {"RelatedTypes": {"include": {"Fields": True}}}
-            },
-            "FunctionReturn": {
-                "include": {"RelatedTypes": {"include": {"Fields": True}}}
-            },
+            "FunctionArgs": include_type,
+            "FunctionReturn": include_type,
         }
     }
-
     compiled_route = await CompiledRoute.prisma().find_unique_or_raise(
         where={"id": compiled_route_id},
         include={
-            "RootFunction": function_include,
-            "Functions": function_include,
+            "RootFunction": include_func,
+            "Functions": include_func,
         },
     )
     generated_func = {}
