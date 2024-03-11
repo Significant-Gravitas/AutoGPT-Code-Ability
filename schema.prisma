@@ -158,6 +158,10 @@ model ObjectType {
 
   Fields ObjectField[] @relation("ObjectTypeFields")
 
+  // One problem I have with generating the serve code is not knowing what imports are needed for the type annotations
+  // Best Idea I can think of is to include the import statement required for the type
+  importStatements String[]
+
   DatabaseTable   DatabaseTable? @relation(fields: [databaseTableId], references: [id], onDelete: Cascade)
   databaseTableId String?
 
