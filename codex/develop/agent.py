@@ -7,6 +7,7 @@ from prisma.models import (
     CompiledRoute,
     CompletedApp,
     Function,
+    ObjectType,
     Specification,
 )
 from prisma.types import CompiledRouteCreateInput
@@ -91,6 +92,8 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
                 compiled_route_id=compiled_route.id,
                 goal_description=spec.context,
                 function=compiled_route.RootFunction,
+                generated_func={},
+                generated_objs=available_types,
             )
             logger.info(f"Route function id: {route_root_func.id}")
             await compile_route(compiled_route.id, route_root_func)
@@ -103,6 +106,8 @@ async def develop_route(
     compiled_route_id: str,
     goal_description: str,
     function: Function,
+    generated_func: dict[str, Function],
+    generated_objs: dict[str, ObjectType],
     depth: int = 0,
 ) -> Function:
     """
@@ -133,9 +138,13 @@ async def develop_route(
             "Functions": INCLUDE_FUNC,
         },
     )
-    generated_func = {}
-    generated_objs = {}
-    for func in compiled_route.Functions + [compiled_route.RootFunction]:
+    functions = []
+    if compiled_route.Functions:
+        functions += compiled_route.Functions
+    if compiled_route.RootFunction:
+        functions.append(compiled_route.RootFunction)
+
+    for func in functions:
         if func.functionName != function.functionName:
             generated_func[func.functionName] = func
 
@@ -156,7 +165,9 @@ async def develop_route(
             "goal": goal_description,
             "function_signature": function.template,
             # function_args is not used by the prompt, but used for function validation
-            "function_args": [(f.name, f.typeName) for f in function.FunctionArgs],
+            "function_args": [
+                (f.name, f.typeName) for f in function.FunctionArgs or []
+            ],
             # function_rets is not used by the prompt, but used for function validation
             "function_rets": function.FunctionReturn.typeName
             if function.FunctionReturn
@@ -184,6 +195,8 @@ async def develop_route(
                 goal_description=goal_description,
                 function=child,
                 depth=depth + 1,
+                generated_func=generated_func,
+                generated_objs=generated_objs,
             )
             for child in route_function.ChildFunctions
             if child.state == FunctionState.DEFINITION

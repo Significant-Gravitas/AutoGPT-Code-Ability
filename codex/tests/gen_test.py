@@ -102,34 +102,8 @@ pydantic==1.9.0
 ```
 
 ```python
-from typing import Dict, List
+from typing import Any, Dict, List
 from pydantic import BaseModel
-
-class TurnRequest(BaseModel):
-    \"\"\"
-    A request model for making a move in a Tic-Tac-Toe game, using Pydantic for data validation.
-
-    Args:
-        row (int): The row in which the move is made, value should be between 1 and 3 inclusively.
-        col (int): The column in which the move is made, value should be between 1 and 3 inclusively.
-    \"\"\"
-    row: int
-    col: int
-
-class GameStateResponse(BaseModel):
-    \"\"\"
-    A response model containing the current state of the Tic-Tac-Toe game, using Pydantic for data validation.
-
-    Args:
-        gameId (str): The unique identifier of the game.
-        turn (str): The current turn of the game, could be 'X' or 'O'.
-        state (str): The current state of the game, could be 'In Progress', 'Draw', 'Win', or 'Loss'.
-        board (str): A string representation of the current game board.
-    \"\"\"
-    gameId: str
-    turn: str
-    state: str
-    board: str
     
 class Board(BaseModel):
     size: int
@@ -139,8 +113,14 @@ class Board(BaseModel):
         self.size = size
         self.cells = [' ' for _ in range(size ** 2)]
 
+class SomeCustomClass(BaseModel):
+    request: TurnRequest
+    response: GameStateResponse
 
-current_game: Dict[str, str] = {'gameId': '1', 'turn': 'X', 'state': 'In Progress', 'board': Board(3)}
+def some_helper_function(custom_arg: SomeCustomClass) -> SomeCustomClass:
+    return custom_arg
+
+current_game: Dict[str, Any] = {'gameId': '1', 'turn': 'X', 'state': 'In Progress', 'board': Board(3)}
 
 def check_win_or_draw(board: Board) -> str:
     \"\"\"

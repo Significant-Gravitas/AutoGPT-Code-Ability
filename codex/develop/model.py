@@ -69,8 +69,8 @@ class GeneratedFunctionResponse(BaseModel):
     imports: List[str]
     functionCode: str
 
-    functions: Dict[str, FunctionDef] | None = None
-    objects: Dict[str, ObjectDef] | None = None
+    functions: Dict[str, FunctionDef]
+    objects: Dict[str, ObjectDef]
 
 
 class ApplicationGraphs(BaseModel):

@@ -49,7 +49,7 @@ async def compile_route(
     Returns:
         CompiledRoute: The compiled route object.
     """
-    compiled_function = await recursive_compile_route(route_root_func)
+    compiled_function = await recursive_compile_route(route_root_func, set())
 
     unique_packages = list(set([package.id for package in compiled_function.packages]))
     code = "\n".join(compiled_function.imports)
@@ -70,11 +70,15 @@ async def compile_route(
     compiled_route = await CompiledRoute.prisma().update(
         where={"id": compiled_route_id}, data=data
     )
+    if compiled_route is None:
+        raise ComplicationFailure(
+            f"Failed to update compiled route {compiled_route_id}"
+        )
     return compiled_route
 
 
 async def recursive_compile_route(
-    in_function: Function, object_type_ids: Set[str] = set()
+    in_function: Function, object_type_ids: Set[str]
 ) -> CompiledFunction:
     """
     Recursively compiles a function and its child functions
@@ -110,23 +114,27 @@ async def recursive_compile_route(
     code = []
     model = []
 
-    new_obj_types = set()
     if function.FunctionArgs is not None:
         for arg in function.FunctionArgs:
-            obj_types = await get_object_field_deps(arg, new_obj_types)
+            obj_types = await get_object_field_deps(arg, object_type_ids)
             model.extend([generate_object_template(obj_type) for obj_type in obj_types])
             for obj in obj_types:
                 imports.extend(obj.importStatements)
 
     if function.FunctionReturn is not None:
-        obj_types = await get_object_field_deps(function.FunctionReturn, new_obj_types)
+        obj_types = await get_object_field_deps(
+            function.FunctionReturn, object_type_ids
+        )
         model.extend([generate_object_template(obj_type) for obj_type in obj_types])
         for obj in obj_types:
             imports.extend(obj.importStatements)
 
     # Child Functions
+    assert function.ChildFunctions is not None, "ChildFunctions should be an array"
     for child_function in function.ChildFunctions:
-        compiled_function = await recursive_compile_route(child_function, new_obj_types)
+        compiled_function = await recursive_compile_route(
+            child_function, object_type_ids
+        )
         packages.extend(compiled_function.packages)
         imports.extend(compiled_function.imports)
         model.extend(compiled_function.pydantic_models)
@@ -166,12 +174,12 @@ async def get_object_type_deps(
     if obj.Fields is None:
         raise ValueError(f"ObjectType {obj.name} has no fields.")
 
-    objects: List[ObjectType] = [obj]
+    objects: List[ObjectType] = []
     for field in obj.Fields:
         if field.RelatedTypes:
             objects.extend(await get_object_field_deps(field, object_type_ids))
 
-    return objects
+    return objects + [obj]
 
 
 async def get_object_field_deps(
@@ -194,9 +202,12 @@ async def get_object_field_deps(
     """
     # Lookup the field object getting all its subfields
     field = await ObjectField.prisma().find_unique_or_raise(
-        where={"id": field.id}, include={"RelatedTypes": {"include": {"Fields": True}}}
+        where={"id": field.id},
+        include={
+            "RelatedTypes": {"include": {"Fields": {"include": {"RelatedTypes": True}}}}
+        },
     )
-
+    assert field.RelatedTypes is not None, "Field RelatedTypes should be an array"
     types = [t for t in field.RelatedTypes if t.id not in object_type_ids]
     if not types:
         # If the field is a primitive type or we have already processed this object,
@@ -246,7 +257,8 @@ def create_server_route_code(compiled_route: CompiledRoute) -> str:
     response_model = "JSONResponse"
     route_response_annotation = "JSONResponse"
     if (
-        return_type.RelatedTypes[0]
+        return_type.RelatedTypes
+        and return_type.RelatedTypes[0]
         and return_type.RelatedTypes[0].Fields
         and return_type.RelatedTypes[0].Fields[0].typeName == "bytes"
     ):
