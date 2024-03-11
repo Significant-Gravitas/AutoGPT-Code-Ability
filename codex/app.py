@@ -1,8 +1,14 @@
 import logging
+import os
 
+import sentry_sdk
 from fastapi import FastAPI
 from prisma import Prisma
 from contextlib import asynccontextmanager
+from sentry_sdk.integrations.aiohttp import AioHttpIntegration
+from sentry_sdk.integrations.asyncio import AsyncioIntegration
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.starlette import StarletteIntegration
 
 from codex.api import core_routes
 from codex.deploy.routes import deployment_router
@@ -22,6 +28,24 @@ async def lifespan(app: FastAPI):
     await db_client.disconnect()
 
 
+sentry_sdk.init(
+    dsn="https://0dc3905d347a9e4e81280f02deac234d@o4505260022104064.ingest.sentry.io/4506844882075648",
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for performance monitoring.
+    traces_sample_rate=1.0,
+    # Set profiles_sample_rate to 1.0 to profile 100%
+    # of sampled transactions.
+    # We recommend adjusting this value in production.
+    profiles_sample_rate=1.0,
+    enable_tracing=True,
+    environment=os.environ.get("ENV", default="dev").lower(),
+    integrations=[
+        StarletteIntegration(transaction_style="url"),
+        FastApiIntegration(transaction_style="url"),
+        AsyncioIntegration(),
+        AioHttpIntegration(),
+    ],
+)
 app = FastAPI(
     title="Codex",
     description=(
