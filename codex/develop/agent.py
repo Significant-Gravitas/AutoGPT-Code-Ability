@@ -170,7 +170,6 @@ async def develop_route(
         for table in compiled_route.ApiRouteSpec.DatabaseSchema.DatabaseTables:
             db_schema += table.definition
             db_schema += "\n\n"
-        logger.info("\033[92mDatabase schema:\n" + db_schema + "\033[0m")
         dev_invoke_params["db_schema"] = db_schema
 
     route_function = await DevelopAIBlock().invoke(
