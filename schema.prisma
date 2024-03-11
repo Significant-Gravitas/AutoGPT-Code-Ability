@@ -169,6 +169,8 @@ model ObjectType {
   ReferredRequestAPIRoutes  APIRouteSpec[] @relation("RequestObjectForAPI")
   ReferredResponseAPIRoutes APIRouteSpec[] @relation("ResponseObjectForAPI")
   ReferredObjectFields      ObjectField[]  @relation("ObjectFieldTypes")
+  DatabaseEnums             DatabaseEnums? @relation(fields: [databaseEnumsId], references: [id])
+  databaseEnumsId           String?
 }
 
 model ObjectField {
@@ -196,8 +198,23 @@ model DatabaseSchema {
   embedding      Unsupported("vector(1536)")?
   description    String
   DatabaseTables DatabaseTable[]
-  Functions      Function[]
-  ApiRouteSpecs  APIRouteSpec[]
+  DatabaseEnums  DatabaseEnums[]
+
+  Functions     Function[]
+  ApiRouteSpecs APIRouteSpec[]
+}
+
+model DatabaseEnums {
+  id          String                       @id @default(dbgenerated("gen_random_uuid()"))
+  name        String?
+  createdAt   DateTime                     @default(now())
+  embedding   Unsupported("vector(1536)")?
+  description String
+  definition  String
+
+  DatabaseSchema   DatabaseSchema? @relation(fields: [databaseSchemaId], references: [id])
+  databaseSchemaId String?
+  ObjectType       ObjectType[]
 }
 
 // DatabaseTable represents a table within a database schema.
