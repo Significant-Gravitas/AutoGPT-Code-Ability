@@ -4,5 +4,6 @@ INCLUDE_FUNC = {
     "include": {
         "FunctionArgs": INCLUDE_TYPE,
         "FunctionReturn": INCLUDE_TYPE,
+        "DatabaseSchema": {"include": {"DatabaseTables": True}},
     }
 }
