@@ -125,6 +125,7 @@ async def develop_route(
         include={
             "RootFunction": INCLUDE_FUNC,
             "Functions": INCLUDE_FUNC,
+            "ApiRouteSpec":{ "include": {"DatabaseSchema": {"include": {"DatabaseTables": True}}}},
         },
     )
     generated_func = {}
@@ -164,12 +165,12 @@ async def develop_route(
         "allow_stub": depth < RECURSION_DEPTH_LIMIT,
     }
 
-    if function.DatabaseSchema and function.DatabaseSchema.DatabaseTables:
+    if compiled_route.ApiRouteSpec and compiled_route.ApiRouteSpec.DatabaseSchema and compiled_route.ApiRouteSpec.DatabaseSchema.DatabaseTables:
         db_schema = ""
-        for table in function.DatabaseSchema.DatabaseTables:
+        for table in compiled_route.ApiRouteSpec.DatabaseSchema.DatabaseTables:
             db_schema += table.definition
             db_schema += "\n\n"
-
+        logger.info("\033[92mDatabase schema:\n" + db_schema + "\033[0m")
         dev_invoke_params["db_schema"] = db_schema
 
     route_function = await DevelopAIBlock().invoke(
