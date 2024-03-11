@@ -3,8 +3,8 @@ from datetime import datetime
 import pytest
 from prisma.models import ObjectField, ObjectType
 
-from codex.develop.function import generate_object_template
 from codex.develop.compile import extract_path_params, get_object_type_deps
+from codex.develop.function import generate_object_template
 
 
 async def process_object_type(obj: ObjectType) -> str:
@@ -27,6 +27,7 @@ async def test_process_object_type():
                 id="a",
                 createdAt=datetime.now(),
                 referredObjectTypeId="a",
+                is_enum=False,
             ),
             ObjectField(
                 name="age",
@@ -35,9 +36,9 @@ async def test_process_object_type():
                 id="a",
                 createdAt=datetime.now(),
                 referredObjectTypeId="a",
+                is_enum=False,
             ),
         ],
-        importStatements=[],
     )
 
     pydantic_output = await process_object_type(obj)
