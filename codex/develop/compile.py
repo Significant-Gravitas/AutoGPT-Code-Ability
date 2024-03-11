@@ -388,13 +388,26 @@ def create_server_code(completed_app: CompletedApp) -> Application:
         "from fastapi import FastAPI",
         "from fastapi.responses import JSONResponse, StreamingResponse",
         "from fastapi.encoders import jsonable_encoder",
+        "from prisma import Prisma",
+        "from contextlib import asynccontextmanager",
         "import logging",
         "import io",
         "from typing import *",
     ]
     server_code_header = f"""logger = logging.getLogger(__name__)
 
-app = FastAPI(title="{name}", description='''{desc}''')"""
+app = FastAPI(title="{name}", description='''{desc}''')
+
+db_client = Prisma(auto_register=True)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await db_client.connect()
+    yield
+    await db_client.disconnect()
+
+"""
 
     service_routes_code = []
     if completed_app.CompiledRoutes is None:
@@ -420,6 +433,13 @@ app = FastAPI(title="{name}", description='''{desc}''')"""
             specifier="",
             version="",
             id="uvicorn",
+            createdAt=datetime.now(),
+        ),
+        Package(
+            packageName="prisma",
+            specifier="",
+            version="",
+            id="prisma",
             createdAt=datetime.now(),
         ),
     ]
