@@ -19,6 +19,7 @@ from prisma.types import CompiledRouteUpdateInput, CompletedAppCreateInput
 from pydantic import BaseModel
 
 from codex.api_model import Identifiers
+from codex.common.database import INCLUDE_FUNC
 from codex.deploy.model import Application
 from codex.develop.function import generate_object_template
 
@@ -91,19 +92,12 @@ async def recursive_compile_route(
     """
     # Can't see how to do recursive lookup with prisma, so I'm checking the next
     # layer down each time. This is a bit of a hack, can be improved later.
-    include_types = {"include": {"RelatedTypes": True}}
     function = await Function.prisma().find_unique_or_raise(
         where={"id": in_function.id},
         include={
-            "ParentFunction": True,
-            "FunctionArgs": include_types,
-            "FunctionReturn": include_types,
-            "ChildFunctions": {
-                "include": {
-                    "FunctionArgs": include_types,
-                    "FunctionReturn": include_types,
-                }
-            },
+            **INCLUDE_FUNC["include"],
+            "ParentFunction": INCLUDE_FUNC,
+            "ChildFunctions": INCLUDE_FUNC,
         },
     )
     logger.info(f"⚙️ Compiling function: {function.functionName}")

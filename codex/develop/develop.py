@@ -9,7 +9,7 @@ from prisma.types import (
     FunctionUpdateInput,
     PackageCreateWithoutRelationsInput,
 )
-
+from codex.common.database import INCLUDE_FUNC
 from codex.common.ai_block import (
     AIBlock,
     Identifiers,
@@ -358,15 +358,9 @@ class DevelopAIBlock(AIBlock):
             where={"id": generated_response.function_id},
             data=update_obj,
             include={
-                "ParentFunction": True,
-                "FunctionArgs": True,
-                "FunctionReturn": True,
-                "ChildFunctions": {
-                    "include": {
-                        "FunctionArgs": True,
-                        "FunctionReturn": True,
-                    }
-                },
+                **INCLUDE_FUNC["include"],
+                "ParentFunction": INCLUDE_FUNC,
+                "ChildFunctions": INCLUDE_FUNC,
             },
         )
         if not func:

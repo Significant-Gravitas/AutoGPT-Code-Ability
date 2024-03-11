@@ -47,7 +47,7 @@ RENAMED_TYPES = {
 }
 
 
-def unwrap_object_type(type: str) -> Tuple[str | None, List[str]]:
+def unwrap_object_type(type: str) -> Tuple[str, List[str]]:
     """
     Get the type and children of a composite type.
     Args:
@@ -56,9 +56,6 @@ def unwrap_object_type(type: str) -> Tuple[str | None, List[str]]:
         str: The type.
         [str]: The children types.
     """
-    if type is None:
-        return None, []
-
     type = type.replace(" ", "")
 
     def split_outer_level(type: str, separator: str) -> List[str]:
@@ -102,17 +99,21 @@ def unwrap_object_type(type: str) -> Tuple[str | None, List[str]]:
     return RENAMED_TYPES.get(type_name, type_name), type_children
 
 
-def is_type_equal(type1: str, type2: str) -> bool:
+def is_type_equal(type1: str | None, type2: str | None) -> bool:
     """
     Check if two types are equal.
     This function handle composite types like list, dict, and tuple.
     group similar types like list[str], List[str], and [str] as equal.
     """
+    if type1 is None and type2 is None:
+        return True
+    if type1 is None or type2 is None:
+        return False
 
-    type1, children1 = unwrap_object_type(type1)
-    type2, children2 = unwrap_object_type(type2)
+    evaluated_type1, children1 = unwrap_object_type(type1)
+    evaluated_type2, children2 = unwrap_object_type(type2)
 
-    if type1 != type2:
+    if evaluated_type1 != evaluated_type2:
         return False
 
     if len(children1) != len(children2):
@@ -138,7 +139,7 @@ def get_typing_imports(object_types: list[str]) -> list[str]:
     return sorted(typing_imports)
 
 
-def extract_field_type(field_type: str) -> set[str]:
+def extract_field_type(field_type: str | None) -> set[str]:
     """
     Extract the field type from a composite type.
     e.g. tuple[str, dict[str, int]] -> {tuple, dict, str, int}
@@ -148,6 +149,8 @@ def extract_field_type(field_type: str) -> set[str]:
     Returns:
         list[str]: The extracted field types.
     """
+    if field_type is None:
+        return set()
     parent_type, children = unwrap_object_type(field_type)
 
     result = {parent_type}
@@ -213,8 +216,10 @@ async def create_object_type(
     if object.name in available_objects:
         return available_objects
 
+    fields = object.Fields or []
+
     field_inputs = []
-    for field in object.Fields:
+    for field in fields:
         field_inputs.append(
             {
                 "name": field.name,
@@ -229,7 +234,7 @@ async def create_object_type(
             }
         )
 
-    typing_imports = get_typing_imports([f.type for f in object.Fields])
+    typing_imports = get_typing_imports([f.type for f in fields])
 
     created_object_type = await ObjectType.prisma().create(
         data={
@@ -246,24 +251,21 @@ async def create_object_type(
     # Naively check each available object if it has a related field to the new object.
     # TODO(majdyz): Optimize this step if needed.
     for obj in available_objects.values():
-        for field in obj.Fields:
+        for field in obj.Fields or []:
             if object.name not in extract_field_type(field.typeName):
                 continue
-            if object.name in [f.typeName for f in field.RelatedTypes]:
+            # TODO: field.RelatedTypes shouldn't be None, this is just a symptom stop-gap.
+            if object.name in [f.name for f in field.RelatedTypes or []]:
                 continue
 
             # Link created_object_type.id to the field.RelatedTypes
             reltypes = get_related_types(field.typeName, available_objects)
-            field.RelatedTypes = (
-                await ObjectField.prisma()
-                .update(
-                    where={"id": field.id},
-                    data={
-                        "RelatedTypes": {"connect": [{"id": t.id} for t in reltypes]}
-                    },
-                    include={"RelatedTypes": True},
-                )
-                .RelatedTypes
+            updated_object_field = await ObjectField.prisma().update(
+                where={"id": field.id},
+                data={"RelatedTypes": {"connect": [{"id": t.id} for t in reltypes]}},
+                include={"RelatedTypes": True},
             )
+            if updated_object_field:
+                field.RelatedTypes = updated_object_field.RelatedTypes
 
     return available_objects
