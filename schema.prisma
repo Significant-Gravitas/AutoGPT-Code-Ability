@@ -174,15 +174,27 @@ model ObjectField {
   createdAt   DateTime @default(now())
   name        String
   description String?
+  is_enum     Boolean  @default(false)
 
   RelatedTypes ObjectType[] @relation("ObjectFieldTypes")
   typeName     String // list,dict,etc for primitive types, Type.name for composite types.
 
   // Reverse relations
-  ReferredFunctionReturns Function[]  @relation("FunctionReturns")
-  ReferredFunctionArgs    Function[]  @relation("FunctionArgs")
-  ReferredObjectType      ObjectType? @relation("ObjectTypeFields", fields: [referredObjectTypeId], references: [id])
+  ReferredFunctionReturns Function[]   @relation("FunctionReturns")
+  ReferredFunctionArgs    Function[]   @relation("FunctionArgs")
+  ReferredObjectType      ObjectType?  @relation("ObjectTypeFields", fields: [referredObjectTypeId], references: [id])
   referredObjectTypeId    String?
+  EnumValues              EnumValues[]
+}
+
+model EnumValues {
+  id        String   @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt DateTime @default(now())
+  name      String
+  value     String
+
+  ObjectField   ObjectField? @relation(fields: [objectFieldId], references: [id], onDelete: Cascade)
+  objectFieldId String?
 }
 
 // DatabaseSchema represents the schema of a database.
