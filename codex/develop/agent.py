@@ -1,14 +1,8 @@
-import asyncio
 import logging
 import os
 
 from prisma.enums import FunctionState
-from prisma.models import (
-    CompiledRoute,
-    CompletedApp,
-    Function,
-    Specification,
-)
+from prisma.models import CompiledRoute, CompletedApp, Function, Specification
 from prisma.types import CompiledRouteCreateInput
 
 from codex.api_model import Identifiers
@@ -149,28 +143,38 @@ async def develop_route(
             for type in func.FunctionReturn.RelatedTypes:
                 generated_objs[type.name] = type
 
+    dev_invoke_params = {
+        "function_name": function.functionName,
+        "goal": goal_description,
+        "function_signature": function.template,
+        # function_args is not used by the prompt, but used for function validation
+        "function_args": [(f.name, f.typeName) for f in function.FunctionArgs],
+        # function_rets is not used by the prompt, but used for function validation
+        "function_rets": function.FunctionReturn.typeName
+        if function.FunctionReturn
+        else None,
+        "provided_functions": [func.template for func in generated_func.values()]
+        + [generate_object_template(f) for f in generated_objs.values()],
+        # compiled_route_id is not used by the prompt, but is used by the function
+        "compiled_route_id": compiled_route_id,
+        # available_objects is not used by the prompt, but is used by the function
+        "available_objects": generated_objs,
+        # function_id is used, so we can update the function with the implementation
+        "function_id": function.id,
+        "allow_stub": depth < RECURSION_DEPTH_LIMIT,
+    }
+
+    if function.DatabaseSchema and function.DatabaseSchema.DatabaseTables:
+        db_schema = ""
+        for table in function.DatabaseSchema.DatabaseTables:
+            db_schema += table.definition
+            db_schema += "\n\n"
+
+        dev_invoke_params["db_schema"] = db_schema
+
     route_function = await DevelopAIBlock().invoke(
         ids=ids,
-        invoke_params={
-            "function_name": function.functionName,
-            "goal": goal_description,
-            "function_signature": function.template,
-            # function_args is not used by the prompt, but used for function validation
-            "function_args": [(f.name, f.typeName) for f in function.FunctionArgs],
-            # function_rets is not used by the prompt, but used for function validation
-            "function_rets": function.FunctionReturn.typeName
-            if function.FunctionReturn
-            else None,
-            "provided_functions": [func.template for func in generated_func.values()]
-            + [generate_object_template(f) for f in generated_objs.values()],
-            # compiled_route_id is not used by the prompt, but is used by the function
-            "compiled_route_id": compiled_route_id,
-            # available_objects is not used by the prompt, but is used by the function
-            "available_objects": generated_objs,
-            # function_id is used, so we can update the function with the implementation
-            "function_id": function.id,
-            "allow_stub": depth < RECURSION_DEPTH_LIMIT,
-        },
+        invoke_params=dev_invoke_params,
     )
 
     if route_function.ChildFunctions:
@@ -202,7 +206,7 @@ if __name__ == "__main__":
 
     import codex.common.test_const as test_consts
     from codex.common.ai_model import OpenAIChatClient
-    from codex.common.logging import setup_logging
+    from codex.common.logging_config import setup_logging
     from codex.requirements.database import get_latest_specification
 
     OpenAIChatClient.configure({})

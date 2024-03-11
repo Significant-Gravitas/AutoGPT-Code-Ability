@@ -309,7 +309,7 @@ def create_server_route_code(compiled_route: CompiledRoute) -> str:
     {route_spec.description}
     \"\"\"
     try:
-        res = {main_function.functionName}({", ".join([arg.name for arg in args])})
+        res = await {main_function.functionName}({", ".join([arg.name for arg in args])})
         {return_response}
     except Exception as e:
         logger.exception("Error processing request")
