@@ -148,7 +148,10 @@ async def run_benchmark(skip_requirements: bool, task: ExampleTask | None = None
     examples = list(ExampleTask)
     if task:
         examples = [task]
-        assert ExampleTask.get_app_id(task) is not None, f"App ID not found for {task}"
+        if skip_requirements:
+            assert (
+                ExampleTask.get_app_id(task) is not None
+            ), f"App ID not found for {task}"
     else:
         if skip_requirements:
             examples: list[ExampleTask] = [

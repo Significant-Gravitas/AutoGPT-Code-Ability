@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 
@@ -125,7 +126,9 @@ async def develop_route(
         include={
             "RootFunction": INCLUDE_FUNC,
             "Functions": INCLUDE_FUNC,
-            "ApiRouteSpec":{ "include": {"DatabaseSchema": {"include": {"DatabaseTables": True}}}},
+            "ApiRouteSpec": {
+                "include": {"DatabaseSchema": {"include": {"DatabaseTables": True}}}
+            },
         },
     )
     generated_func = {}
@@ -165,7 +168,11 @@ async def develop_route(
         "allow_stub": depth < RECURSION_DEPTH_LIMIT,
     }
 
-    if compiled_route.ApiRouteSpec and compiled_route.ApiRouteSpec.DatabaseSchema and compiled_route.ApiRouteSpec.DatabaseSchema.DatabaseTables:
+    if (
+        compiled_route.ApiRouteSpec
+        and compiled_route.ApiRouteSpec.DatabaseSchema
+        and compiled_route.ApiRouteSpec.DatabaseSchema.DatabaseTables
+    ):
         db_schema = ""
         for table in compiled_route.ApiRouteSpec.DatabaseSchema.DatabaseTables:
             db_schema += table.definition
@@ -200,8 +207,6 @@ async def develop_route(
 
 
 if __name__ == "__main__":
-    import asyncio
-
     import prisma
 
     import codex.common.test_const as test_consts
