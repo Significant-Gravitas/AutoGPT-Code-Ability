@@ -281,7 +281,9 @@ def create_server_route_code(compiled_route: CompiledRoute) -> str:
     route_decorator += ")\n"
 
     # TODO(SwiftyOS): consider replacing the prefix with a proper import and func call.
-    route_function_def = f"async def api_{http_verb.lower()}_{main_function.functionName}("
+    route_function_def = (
+        f"async def api_{http_verb.lower()}_{main_function.functionName}("
+    )
     route_function_def += ", ".join([f"{arg.name}: {arg.typeName}" for arg in args])
     route_function_def += ")"
 
