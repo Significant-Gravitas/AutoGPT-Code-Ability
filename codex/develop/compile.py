@@ -130,7 +130,8 @@ async def recursive_compile_route(
             imports.extend(obj.importStatements)
 
     # Child Functions
-    assert function.ChildFunctions is not None, "ChildFunctions should be an array"
+    if function.ChildFunctions is None:
+        raise AssertionError("ChildFunctions should be an array")
     for child_function in function.ChildFunctions:
         compiled_function = await recursive_compile_route(
             child_function, object_type_ids
@@ -207,7 +208,9 @@ async def get_object_field_deps(
             "RelatedTypes": {"include": {"Fields": {"include": {"RelatedTypes": True}}}}
         },
     )
-    assert field.RelatedTypes is not None, "Field RelatedTypes should be an array"
+
+    if field.RelatedTypes is None:
+        raise AssertionError("Field RelatedTypes should be an array")
     types = [t for t in field.RelatedTypes if t.id not in object_type_ids]
     if not types:
         # If the field is a primitive type or we have already processed this object,
@@ -246,12 +249,16 @@ def create_server_route_code(compiled_route: CompiledRoute) -> str:
         raise ValueError("Compiled route must have a root function.")
 
     return_type = main_function.FunctionReturn
-    assert return_type is not None, "Compiled route must have a return type."
+    if return_type is None:
+        raise AssertionError("Compiled route must have a return type.")
+
     args = main_function.FunctionArgs
-    assert args is not None, "Compiled route must have function arguments."
+    if args is None:
+        raise AssertionError("Compiled route must have function arguments.")
 
     route_spec = compiled_route.ApiRouteSpec
-    assert route_spec is not None, "Compiled route must have an API route spec."
+    if route_spec is None:
+        raise AssertionError("Compiled route must have an API route spec.")
 
     is_file_response = False
     response_model = "JSONResponse"

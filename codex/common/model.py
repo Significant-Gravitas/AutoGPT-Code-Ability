@@ -257,7 +257,9 @@ async def create_object_type(
             if object.name not in extract_field_type(field.typeName):
                 continue
 
-            assert field.RelatedTypes is not None, "RelatedTypes should be an array"
+            if field.RelatedTypes is None:
+                raise AssertionError("RelatedTypes should be an array")
+
             if object.name in [f.name for f in field.RelatedTypes]:
                 continue
 
