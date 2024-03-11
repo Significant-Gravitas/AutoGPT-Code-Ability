@@ -2,10 +2,8 @@ import logging
 
 from prisma.enums import AccessLevel
 
-from codex.common.model import (
-    ObjectTypeModel as ObjectTypeModel,
-    ObjectFieldModel as ObjectFieldE,
-)
+from codex.common.model import ObjectFieldModel as ObjectFieldE
+from codex.common.model import ObjectTypeModel as ObjectTypeModel
 from codex.requirements.model import (
     APIRouteRequirement,
     ApplicationRequirements,
@@ -374,13 +372,13 @@ def profile_management() -> ApplicationRequirements:
     profiles_table = DatabaseTable(
         description="Stores user profile information",
         definition="""
-        model Profile {
-        id          Int     @id @default(autoincrement())
-        user_type   String
-        name        String
-        contact     String
-        preferences Json?
-        }
+model Profile {
+id          Int     @id @default(autoincrement())
+user_type   String
+name        String
+contact     String
+preferences Json?
+}
         """,
     )
 

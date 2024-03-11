@@ -15,11 +15,11 @@ from prisma.types import (
     ObjectTypeArgsFromAPIRouteSpecRecursive4,
 )
 
-from codex.common.database import INCLUDE_FUNC
 import codex.database
 import codex.deploy.agent as deploy_agent
 import codex.deploy.database
 from codex.api_model import DeploymentResponse, DeploymentsListResponse, Identifiers
+from codex.common.database import INCLUDE_FUNC
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,8 @@ async def create_deployment(
                                     }
                                 }
                             ),
-                        )
+                            DatabaseSchema={"include": {"DatabaseTables": True}},
+                        ),
                     ),
                     RootFunction=INCLUDE_FUNC,
                 )

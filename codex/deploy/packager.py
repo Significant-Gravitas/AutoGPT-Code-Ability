@@ -27,6 +27,54 @@ def generate_requirements_txt(
     return "\n".join(sorted(requirements))
 
 
+def create_prisma_scheama_file(application: Application) -> str:
+    tables = []
+    table_names = set()
+    if (
+        application.completed_app.CompiledRoutes
+        and application.completed_app.CompiledRoutes
+    ):
+        for route in application.completed_app.CompiledRoutes:
+            if (
+                route.ApiRouteSpec
+                and route.ApiRouteSpec.DatabaseSchema
+                and route.ApiRouteSpec.DatabaseSchema.DatabaseTables
+            ):
+                for table in route.ApiRouteSpec.DatabaseSchema.DatabaseTables:
+                    if table.name not in table_names:
+                        tables.append(table)
+                        table_names.add(table.name)
+
+    prisma_file = """
+// datasource db defines the database connection settings.
+// It is configured for PostgreSQL and uses an environment variable for the connection URL.
+// The 'extensions' feature enables the use of PostgreSQL-specific data types.
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
+}
+
+// generator db configures Prisma Client settings.
+// It is set up to use Prisma Client Python with asyncio interface and specific features.
+generator db {
+  provider             = "prisma-client-py"
+  interface            = "asyncio"
+  recursive_type_depth = 5
+  previewFeatures      = ["postgresqlExtensions"]
+}
+
+    """
+    if not tables:
+        return ""
+
+    for table in tables:
+        prisma_file += table.definition
+        prisma_file += "\n\n"
+
+    return prisma_file
+
+
 def create_zip_file(application: Application) -> bytes:
     """
     Creates a zip file from the application
@@ -100,6 +148,12 @@ def create_zip_file(application: Application) -> bytes:
 
             with open(requirements_file_path, mode="w") as requirements_file:
                 requirements_file.write(packages)
+
+            prism_schema_file_path = os.path.join(app_dir, "schema.prisma")
+            prisma_content = create_prisma_scheama_file(application)
+            if prisma_content:
+                with open(prism_schema_file_path, mode="w") as prisma_file:
+                    prisma_file.write(prisma_content)
 
             logger.info("Created server code")
             # Create a zip file of the directory
