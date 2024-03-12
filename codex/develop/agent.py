@@ -3,17 +3,23 @@ import logging
 import os
 
 from prisma.enums import FunctionState
-from prisma.models import CompiledRoute, CompletedApp, Function, Specification
+from prisma.models import (
+    CompiledRoute,
+    CompletedApp,
+    Function,
+    ObjectType,
+    Specification,
+)
 from prisma.types import CompiledRouteCreateInput
 
 from codex.api_model import Identifiers
 from codex.common.database import INCLUDE_FUNC
-from codex.develop.compile import compile_route, create_app
+from codex.develop.compile import compile_route, create_app, get_object_field_deps
 from codex.develop.develop import DevelopAIBlock
 from codex.develop.function import construct_function, generate_object_template
 from codex.develop.model import FunctionDef
 
-RECURSION_DEPTH_LIMIT = int(os.environ.get("RECURSION_DEPTH_LIMIT", 3))
+RECURSION_DEPTH_LIMIT = int(os.environ.get("RECURSION_DEPTH_LIMIT", 2))
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +86,8 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
                 ),
                 include={"RootFunction": INCLUDE_FUNC},
             )
+            if not compiled_route.RootFunction:
+                raise ValueError("Root function not created")
 
             route_root_func = await develop_route(
                 ids=ids,
@@ -118,7 +126,7 @@ async def develop_route(
         f"Developing for compiled route: "
         f"{compiled_route_id} - Func: {function.functionName}, depth: {depth}"
     )
-    if depth >= RECURSION_DEPTH_LIMIT:
+    if depth > RECURSION_DEPTH_LIMIT:
         raise ValueError("Recursion depth exceeded")
 
     compiled_route = await CompiledRoute.prisma().find_unique_or_raise(
@@ -131,21 +139,34 @@ async def develop_route(
             },
         },
     )
-    generated_func = {}
-    generated_objs = {}
-    for func in compiled_route.Functions + [compiled_route.RootFunction]:
-        if func.functionName != function.functionName:
-            generated_func[func.functionName] = func
+
+    functions = []
+    generated_func: dict[str, Function] = {}
+    generated_objs: dict[str, ObjectType] = {}
+    if compiled_route.Functions:
+        functions += compiled_route.Functions
+    if compiled_route.RootFunction:
+        functions.append(compiled_route.RootFunction)
+
+    object_ids = set()
+    for func in functions:
+        generated_func[func.functionName] = func
 
         # Populate generated request objects from the LLM
         for arg in func.FunctionArgs:
-            for type in arg.RelatedTypes:
+            for type in await get_object_field_deps(arg, object_ids):
                 generated_objs[type.name] = type
 
         # Populate generated response objects from the LLM
         if func.FunctionReturn:
-            for type in func.FunctionReturn.RelatedTypes:
+            for type in await get_object_field_deps(func.FunctionReturn, object_ids):
                 generated_objs[type.name] = type
+
+    provided_functions = [
+        func.template
+        for func in generated_func.values()
+        if func.functionName != function.functionName
+    ] + [generate_object_template(f) for f in generated_objs.values()]
 
     dev_invoke_params = {
         "function_name": function.functionName,
@@ -157,8 +178,7 @@ async def develop_route(
         "function_rets": function.FunctionReturn.typeName
         if function.FunctionReturn
         else None,
-        "provided_functions": [func.template for func in generated_func.values()]
-        + [generate_object_template(f) for f in generated_objs.values()],
+        "provided_functions": provided_functions,
         # compiled_route_id is not used by the prompt, but is used by the function
         "compiled_route_id": compiled_route_id,
         # available_objects is not used by the prompt, but is used by the function
@@ -182,6 +202,7 @@ async def develop_route(
     route_function = await DevelopAIBlock().invoke(
         ids=ids,
         invoke_params=dev_invoke_params,
+        
     )
 
     if route_function.ChildFunctions:
@@ -206,6 +227,7 @@ async def develop_route(
     return route_function
 
 
+
 if __name__ == "__main__":
     import prisma
 
@@ -228,3 +250,4 @@ if __name__ == "__main__":
 
     ans = asyncio.run(run_me())
     logger.info(ans)
+

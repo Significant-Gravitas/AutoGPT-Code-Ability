@@ -501,8 +501,10 @@ class TestModel(BaseModel):
 async def from_existing(db_client: Prisma, identifier: Identifiers) -> TestModel:
     await db_client.connect()
 
-    assert identifier.cloud_services_id
-    assert identifier.user_id
+    if not identifier.cloud_services_id:
+        raise ValueError("Cloud Services ID not found")
+    if not identifier.user_id:
+        raise ValueError("User ID not found")
 
     codex_client = await CodexClient.build_codex_client(
         client=db_client,
@@ -544,8 +546,10 @@ async def from_existing(db_client: Prisma, identifier: Identifiers) -> TestModel
 
 async def partial(db_client: Prisma, identifier: Identifiers) -> TestModel:
     await db_client.connect()
-    assert identifier.cloud_services_id
-    assert identifier.user_id
+    if not identifier.cloud_services_id:
+        raise ValueError("Cloud Services ID not found")
+    if not identifier.user_id:
+        raise ValueError("User ID not found")
 
     codex_client = await CodexClient.build_codex_client(
         client=db_client,

@@ -9,20 +9,22 @@ from prisma.types import (
     FunctionUpdateInput,
     PackageCreateWithoutRelationsInput,
 )
-from codex.common.database import INCLUDE_FUNC
+
 from codex.common.ai_block import (
     AIBlock,
     Identifiers,
     ValidatedResponse,
     ValidationError,
 )
+from codex.common.database import INCLUDE_FUNC
 from codex.common.model import (
-    ObjectTypeModel,
     ObjectFieldModel,
+    ObjectTypeModel,
     create_object_type,
-    is_type_equal,
     get_typing_imports,
+    is_type_equal,
 )
+from codex.develop.compile import ComplicationFailure
 from codex.develop.function import construct_function
 from codex.develop.model import (
     FunctionDef,
@@ -76,10 +78,10 @@ def parse_requirements(requirements_str: str) -> List[Package]:
 
 class FunctionVisitor(ast.NodeVisitor):
     def __init__(self):
-        self.functions = {}
-        self.objects = {}
-        self.imports = []
-        self.globals = []
+        self.functions: dict[str, FunctionDef] = {}
+        self.objects: dict[str, ObjectTypeModel] = {}
+        self.imports: list[str] = []
+        self.globals: list[str] = []
 
     def visit_Import(self, node):
         for alias in node.names:
@@ -169,6 +171,7 @@ class FunctionVisitor(ast.NodeVisitor):
 
         self.objects[node.name] = ObjectTypeModel(
             name=node.name,
+            code=ast.unparse(node),
             description=doc_string,
             Fields=[
                 ObjectFieldModel(
@@ -199,6 +202,28 @@ class FunctionVisitor(ast.NodeVisitor):
         ) and node.col_offset == 0:
             self.globals.append(ast.unparse(node))
         super().visit(node)
+
+
+def validate_matching_function(existing_func: Function, requested_func: FunctionDef):
+    expected_args = [(f.name, f.typeName) for f in existing_func.FunctionArgs or []]
+    expected_rets = (
+        existing_func.FunctionReturn.typeName if existing_func.FunctionReturn else None
+    )
+    func_name = existing_func.functionName
+
+    if any(
+        [
+            x[0] != y[0] or not is_type_equal(x[1], y[1])
+            for x, y in zip(expected_args, requested_func.arg_types)
+        ]
+    ):
+        raise ValidationError(
+            f"Function {func_name} has different arguments than expected, expected {expected_args} but got {requested_func.arg_types}"
+        )
+    if not is_type_equal(expected_rets, requested_func.return_type):
+        raise ValidationError(
+            f"Function {func_name} has different return type than expected, expected {expected_rets} but got {requested_func.return_type}"
+        )
 
 
 class DevelopAIBlock(AIBlock):
@@ -245,7 +270,6 @@ class DevelopAIBlock(AIBlock):
                 raise ValidationError(f"Function {func_name} not found in code")
 
             requested_func = visitor.functions.get(invoke_params["function_name"])
-
             if not requested_func or not requested_func.is_implemented:
                 raise ValidationError(
                     f"Main Function body {func_name} is not implemented."
@@ -256,38 +280,31 @@ class DevelopAIBlock(AIBlock):
             )
 
             # Validate the requested_func.args and requested_func.returns to the invoke_params
-            expected_args = invoke_params["function_args"]
-            expected_rets = invoke_params["function_rets"]
-
-            if any(
-                [
-                    x[0] != y[0] or not is_type_equal(x[1], y[1])
-                    for x, y in zip(expected_args, requested_func.arg_types)
-                ]
-            ):
-                raise ValidationError(
-                    f"Function {func_name} has different arguments than expected, expected {expected_args} but got {requested_func.arg_types}"
+            expected_func: Function = invoke_params["available_functions"].get(
+                func_name
+            )
+            if not expected_func:
+                raise ComplicationFailure(
+                    f"Function {func_name} signature not available"
                 )
-            if not is_type_equal(expected_rets, requested_func.return_type):
-                raise ValidationError(
-                    f"Function {func_name} has different return type than expected, expected {expected_rets} but got {requested_func.return_type}"
-                )
+            validate_matching_function(expected_func, requested_func)
 
             functions = visitor.functions.copy()
-            del functions[invoke_params["function_name"]]
+            del functions[func_name]
 
-            imports = set(
-                visitor.imports
-                + get_typing_imports([v[1] for v in expected_args] + [expected_rets])
-            )
+            expected_types = []
+            if expected_func.FunctionArgs:
+                expected_types.extend([v.typeName for v in expected_func.FunctionArgs])
+            if expected_func.FunctionReturn:
+                expected_types.append(expected_func.FunctionReturn.typeName)
+            imports = set(visitor.imports + get_typing_imports(expected_types))
 
             response.response = GeneratedFunctionResponse(
-                function_id=invoke_params["function_id"]
-                if "function_id" in invoke_params
-                else None,
-                function_name=invoke_params["function_name"],
+                function_id=expected_func.id,
+                function_name=expected_func.functionName,
                 compiled_route_id=invoke_params["compiled_route_id"],
                 available_objects=invoke_params["available_objects"],
+                available_functions=invoke_params["available_functions"],
                 rawCode=code,
                 packages=packages,
                 imports=sorted(imports),
@@ -324,9 +341,16 @@ class DevelopAIBlock(AIBlock):
 
         function_defs: list[FunctionCreateInput] = []
         if generated_response.functions:
-            for key, value in generated_response.functions.items():
+            for function in generated_response.functions.values():
+                # Skip if the function is already available
+                available_functions = generated_response.available_functions
+                if function.name in available_functions:
+                    same_func = available_functions[function.name]
+                    validate_matching_function(same_func, function)
+                    continue
+
                 model = await construct_function(
-                    value, generated_response.available_objects
+                    function, generated_response.available_objects
                 )
                 model["CompiledRoute"] = {
                     "connect": {"id": generated_response.compiled_route_id}

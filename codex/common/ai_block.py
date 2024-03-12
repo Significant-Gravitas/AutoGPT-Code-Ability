@@ -181,7 +181,8 @@ class AIBlock:
         attempt: int,
         prompt: Json,
     ):
-        assert self.call_template_id, "Call template ID not set"
+        if not self.call_template_id:
+            raise AssertionError("Call template ID not set")
 
         call_attempt = await LLMCallAttempt.prisma().create(
             data={
@@ -265,6 +266,10 @@ class AIBlock:
         return self.PYDANTIC_FORMAT_INSTRUCTIONS
 
     async def invoke(self, ids: Identifiers, invoke_params: dict, max_retries=3) -> Any:
+        if ids.user_id is None:
+            raise ValueError("User ID not set")
+        if ids.app_id is None:
+            raise ValueError("App ID not set")
         validated_response = None
         if not self.call_template_id:
             await self.store_call_template()
@@ -320,7 +325,8 @@ class AIBlock:
                         {"role": "user", "content": retry_prompt},
                     ]
                     presponse = await self.call_llm(request_params)
-                    assert request_params["messages"], "Messages not set"
+                    if not request_params["messages"]:
+                        raise AssertionError("Messages not set")
 
                     await self.store_call_attempt(
                         ids.user_id,

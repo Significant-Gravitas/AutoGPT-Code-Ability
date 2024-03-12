@@ -1,7 +1,7 @@
 from typing import Dict, List
 
 from prisma.models import Function as FunctionDBModel
-from prisma.models import ObjectType
+from prisma.models import ObjectType, Function
 from pydantic import BaseModel
 
 from codex.common.model import ObjectTypeModel as ObjectDef
@@ -25,8 +25,8 @@ class FunctionDef(BaseModel):
     function_template: str = None
 
     def __generate_function_template(f) -> str:
-        args_str = "".join([f"{name}: {type}" for name, type in f.arg_types])
-        arg_desc = "\n      ".join(
+        args_str = ", ".join([f"{name}: {type}" for name, type in f.arg_types])
+        arg_desc = f"\n{' '*12}".join(
             [
                 f'{name} ({type}): {f.arg_descs.get(name, "-")}'
                 for name, type in f.arg_types
@@ -61,6 +61,7 @@ class GeneratedFunctionResponse(BaseModel):
     function_name: str
     compiled_route_id: str
     available_objects: dict[str, ObjectType]
+    available_functions: dict[str, Function]
     template: str
 
     rawCode: str
@@ -69,8 +70,8 @@ class GeneratedFunctionResponse(BaseModel):
     imports: List[str]
     functionCode: str
 
-    functions: Dict[str, FunctionDef] | None = None
-    objects: Dict[str, ObjectDef] | None = None
+    functions: Dict[str, FunctionDef]
+    objects: Dict[str, ObjectDef]
 
 
 class ApplicationGraphs(BaseModel):

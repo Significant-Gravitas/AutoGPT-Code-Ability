@@ -85,10 +85,12 @@ def create_zip_file(application: Application) -> bytes:
         bytes: The zipped file
     """
     logger.info("Creating zip file")
-    assert application.completed_app, "Application must have a completed app"
-    assert (
-        application.completed_app.CompiledRoutes
-    ), "Application must have at least one compiled route"
+
+    if not application.completed_app:
+        raise ValueError("Application must have a completed app")
+    if not application.completed_app.CompiledRoutes:
+        raise ValueError("Application must have at least one compiled route")
+
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
             app_dir = os.path.join(temp_dir, "project")

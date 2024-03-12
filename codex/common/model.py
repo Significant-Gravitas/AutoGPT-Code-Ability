@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 class ObjectTypeModel(BaseModel):
     name: str = Field(description="The name of the object")
+    code: Optional[str] = Field(description="The code of the object", default=None)
     description: Optional[str] = Field(
         description="The description of the object", default=None
     )
@@ -216,7 +217,9 @@ async def create_object_type(
     if object.name in available_objects:
         return available_objects
 
-    fields = object.Fields or []
+    if object.Fields is None:
+        raise AssertionError("Fields should be an array")
+    fields = object.Fields
 
     field_inputs = []
     for field in fields:
@@ -239,6 +242,7 @@ async def create_object_type(
     created_object_type = await ObjectType.prisma().create(
         data={
             "name": object.name,
+            "code": object.code,
             "description": object.description,
             "Fields": {"create": field_inputs},
             "importStatements": ["from pydantic import BaseModel"] + typing_imports,
@@ -251,11 +255,17 @@ async def create_object_type(
     # Naively check each available object if it has a related field to the new object.
     # TODO(majdyz): Optimize this step if needed.
     for obj in available_objects.values():
-        for field in obj.Fields or []:
+        if obj.Fields is None:
+            raise AssertionError("Fields should be an array")
+
+        for field in obj.Fields:
             if object.name not in extract_field_type(field.typeName):
                 continue
-            # TODO: field.RelatedTypes shouldn't be None, this is just a symptom stop-gap.
-            if object.name in [f.name for f in field.RelatedTypes or []]:
+
+            if field.RelatedTypes is None:
+                raise AssertionError("RelatedTypes should be an array")
+
+            if object.name in [f.name for f in field.RelatedTypes]:
                 continue
 
             # Link created_object_type.id to the field.RelatedTypes
