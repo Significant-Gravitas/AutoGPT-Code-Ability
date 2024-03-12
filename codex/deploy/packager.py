@@ -6,7 +6,7 @@ import zipfile
 from typing import List
 
 from pipreqs import pipreqs
-from prisma.models import Package
+from prisma.models import DatabaseTable, Package
 
 from codex.deploy.model import Application
 
@@ -27,23 +27,21 @@ def generate_requirements_txt(
     return "\n".join(sorted(requirements))
 
 
-def create_prisma_scheama_file(application: Application) -> str:
+async def create_prisma_scheama_file(application: Application) -> str:
     tables = []
-    table_names = set()
+    db_schema_ids = set()
+
     if (
         application.completed_app.CompiledRoutes
         and application.completed_app.CompiledRoutes
     ):
         for route in application.completed_app.CompiledRoutes:
-            if (
-                route.ApiRouteSpec
-                and route.ApiRouteSpec.DatabaseSchema
-                and route.ApiRouteSpec.DatabaseSchema.DatabaseTables
-            ):
-                for table in route.ApiRouteSpec.DatabaseSchema.DatabaseTables:
-                    if table.name not in table_names:
-                        tables.append(table)
-                        table_names.add(table.name)
+            if route.ApiRouteSpec and route.ApiRouteSpec.DatabaseSchema:
+                db_schema_ids.add(route.ApiRouteSpec.DatabaseSchema.id)
+
+    tables = await DatabaseTable.prisma().find_many(
+        where={"id": {"in": list(db_schema_ids)}}
+    )
 
     prisma_file = """
 // datasource db defines the database connection settings.
@@ -75,7 +73,7 @@ generator db {
     return prisma_file
 
 
-def create_zip_file(application: Application) -> bytes:
+async def create_zip_file(application: Application) -> bytes:
     """
     Creates a zip file from the application
     Args:
