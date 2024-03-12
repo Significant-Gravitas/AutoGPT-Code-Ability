@@ -217,7 +217,9 @@ async def create_object_type(
     if object.name in available_objects:
         return available_objects
 
-    fields = object.Fields or []
+    if object.Fields is None:
+        raise AssertionError("Fields should be an array")
+    fields = object.Fields
 
     field_inputs = []
     for field in fields:
@@ -253,7 +255,10 @@ async def create_object_type(
     # Naively check each available object if it has a related field to the new object.
     # TODO(majdyz): Optimize this step if needed.
     for obj in available_objects.values():
-        for field in obj.Fields or []:
+        if obj.Fields is None:
+            raise AssertionError("Fields should be an array")
+
+        for field in obj.Fields:
             if object.name not in extract_field_type(field.typeName):
                 continue
 

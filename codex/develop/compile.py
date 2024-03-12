@@ -170,7 +170,7 @@ async def recursive_compile_route(
 
 
 async def __get_object_type_deps(
-    obj_type_id: int, object_type_ids: Set[str]
+    obj_type_id: str, object_type_ids: Set[str]
 ) -> List[ObjectType]:
     # Lookup the object getting all its subfields
     obj = await ObjectType.prisma().find_unique_or_raise(

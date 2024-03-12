@@ -7,7 +7,6 @@ from prisma.models import (
     CompiledRoute,
     CompletedApp,
     Function,
-    ObjectType,
     Specification,
 )
 from prisma.types import CompiledRouteCreateInput
@@ -86,14 +85,14 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
                 ),
                 include={"RootFunction": INCLUDE_FUNC},
             )
+            if not compiled_route.RootFunction:
+                raise ValueError("Root function not created")
 
             route_root_func = await develop_route(
                 ids=ids,
                 compiled_route_id=compiled_route.id,
                 goal_description=spec.context,
                 function=compiled_route.RootFunction,
-                generated_func={},
-                generated_objs={},
             )
             logger.info(f"Route function id: {route_root_func.id}")
             await compile_route(compiled_route.id, route_root_func)
@@ -106,8 +105,6 @@ async def develop_route(
     compiled_route_id: str,
     goal_description: str,
     function: Function,
-    generated_func: dict[str, Function],
-    generated_objs: dict[str, ObjectType],
     depth: int = 0,
 ) -> Function:
     """
@@ -138,7 +135,10 @@ async def develop_route(
             "Functions": INCLUDE_FUNC,
         },
     )
+
     functions = []
+    generated_func = {}
+    generated_objs = {}
     if compiled_route.Functions:
         functions += compiled_route.Functions
     if compiled_route.RootFunction:
@@ -196,8 +196,6 @@ async def develop_route(
                 goal_description=goal_description,
                 function=child,
                 depth=depth + 1,
-                generated_func=generated_func,
-                generated_objs=generated_objs,
             )
             for child in route_function.ChildFunctions
             if child.state == FunctionState.DEFINITION
@@ -207,29 +205,3 @@ async def develop_route(
         logger.info("📦 No child functions to develop")
         logger.debug(route_function.rawCode)
     return route_function
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    import prisma
-
-    import codex.common.test_const as test_consts
-    from codex.common.ai_model import OpenAIChatClient
-    from codex.common.logging import setup_logging
-    from codex.requirements.database import get_latest_specification
-
-    OpenAIChatClient.configure({})
-    setup_logging(local=True)
-    client = prisma.Prisma(auto_register=True)
-
-    async def run_me():
-        await client.connect()
-        ids = test_consts.identifier_1
-        spec = await get_latest_specification(ids.user_id, ids.app_id)
-        ans = await develop_application(ids=ids, spec=spec)
-        await client.disconnect()
-        return ans
-
-    ans = asyncio.run(run_me())
-    logger.info(ans)
