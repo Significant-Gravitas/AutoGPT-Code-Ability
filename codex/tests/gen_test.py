@@ -31,7 +31,7 @@ async def generate_function(
         is_connected = True
 
     ids = Identifiers(user_id=user_id, app_id=app_id, cloud_services_id=cloud_id)
-    if spec_id:
+    if spec_id != "":
         spec = await get_specification(ids.user_id, ids.app_id, spec_id)
     else:
         spec = await get_latest_specification(ids.user_id, ids.app_id)

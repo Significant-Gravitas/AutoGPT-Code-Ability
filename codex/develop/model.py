@@ -1,7 +1,7 @@
 from typing import Dict, List
 
 from prisma.models import Function as FunctionDBModel
-from prisma.models import ObjectType
+from prisma.models import ObjectType, Function
 from pydantic import BaseModel
 
 from codex.common.model import ObjectTypeModel as ObjectDef
@@ -61,6 +61,7 @@ class GeneratedFunctionResponse(BaseModel):
     function_name: str
     compiled_route_id: str
     available_objects: dict[str, ObjectType]
+    available_functions: dict[str, Function]
     template: str
 
     rawCode: str
