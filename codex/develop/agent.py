@@ -144,7 +144,7 @@ async def develop_route(
     if compiled_route.RootFunction:
         functions.append(compiled_route.RootFunction)
 
-    object_ids = {}
+    object_ids = set()
     for func in functions:
         if func.functionName != function.functionName:
             generated_func[func.functionName] = func

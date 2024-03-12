@@ -8,7 +8,7 @@ from codex.common.ai_model import OpenAIChatClient
 from codex.common.logging_config import setup_logging
 from codex.common.test_const import Identifiers, app_id_11, user_id_1
 from codex.develop import agent
-from codex.requirements.database import get_latest_specification
+from codex.requirements.database import get_latest_specification, get_specification
 
 load_dotenv()
 if not OpenAIChatClient._configured:
@@ -18,15 +18,23 @@ setup_logging(local=True)
 is_connected = False
 
 
-async def generate_function():
+async def generate_function(
+    user_id=user_id_1,
+    app_id=app_id_11,
+    cloud_id="",
+    spec_id="",
+):
     global is_connected
 
     if not is_connected:
         await db_client.connect()
         is_connected = True
 
-    ids = Identifiers(user_id=user_id_1, app_id=app_id_11, cloud_services_id="")
-    spec = await get_latest_specification(ids.user_id, ids.app_id)
+    ids = Identifiers(user_id=user_id, app_id=app_id, cloud_services_id=cloud_id)
+    if spec_id:
+        spec = await get_specification(ids.user_id, ids.app_id, spec_id)
+    else:
+        spec = await get_latest_specification(ids.user_id, ids.app_id)
     func = await agent.develop_application(ids=ids, spec=spec)
 
     if is_connected:
