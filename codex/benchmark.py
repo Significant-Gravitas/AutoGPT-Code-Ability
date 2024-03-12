@@ -202,4 +202,3 @@ async def run_benchmark(skip_requirements: bool, task: ExampleTask | None = None
                     )
 
     await client.disconnect()
-3
