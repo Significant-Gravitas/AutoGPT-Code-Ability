@@ -155,14 +155,14 @@ if __name__ == "__main__":
                         logger.info(
                             f"\t\t\t\t\tField Related Types: {k.related_types!r}"
                         )
-                        for l in k.related_types or []:
-                            logger.info(f"\t\t\t\t\t\t{l}")
-                            logger.info(f"\t\t\t\t\t\tRelated Type Name: {l.name}")
+                        for z in k.related_types or []:
+                            logger.info(f"\t\t\t\t\t\t{z}")
+                            logger.info(f"\t\t\t\t\t\tRelated Type Name: {z.name}")
                             logger.info(
-                                f"\t\t\t\t\t\tRelated Type Description: {l.description}"
+                                f"\t\t\t\t\t\tRelated Type Description: {z.description}"
                             )
-                            logger.info(f"\t\t\t\t\t\tRelated Type Fields: {l.Fields}")
-                            for m in l.Fields or []:
+                            logger.info(f"\t\t\t\t\t\tRelated Type Fields: {z.Fields}")
+                            for m in z.Fields or []:
                                 logger.info(f"\t\t\t\t\t\t\t{m}")
                                 logger.info(f"\t\t\t\t\t\t\tField Name: {m.name}")
                                 logger.info(
@@ -207,14 +207,14 @@ if __name__ == "__main__":
                         logger.info(
                             f"\t\t\t\t\tField Related Types: {k.related_types!r}"
                         )
-                        for l in k.related_types or []:
-                            logger.info(f"\t\t\t\t\t\t{l}")
-                            logger.info(f"\t\t\t\t\t\tRelated Type Name: {l.name}")
+                        for z in k.related_types or []:
+                            logger.info(f"\t\t\t\t\t\t{z}")
+                            logger.info(f"\t\t\t\t\t\tRelated Type Name: {z.name}")
                             logger.info(
-                                f"\t\t\t\t\t\tRelated Type Description: {l.description}"
+                                f"\t\t\t\t\t\tRelated Type Description: {z.description}"
                             )
-                            logger.info(f"\t\t\t\t\t\tRelated Type Fields: {l.Fields}")
-                            for m in l.Fields or []:
+                            logger.info(f"\t\t\t\t\t\tRelated Type Fields: {z.Fields}")
+                            for m in z.Fields or []:
                                 logger.info(f"\t\t\t\t\t\t\t{m}")
                                 logger.info(f"\t\t\t\t\t\t\tField Name: {m.name}")
                                 logger.info(
