@@ -22,11 +22,11 @@ async def create_test_data():
     user_1_discord = test_const.discord_id_1
     user_2 = test_const.identifier_2
     user_2_discord = test_const.discord_id_2
-    if not user_1.user_id or not user_2.user_id: 
+    if not user_1.user_id or not user_2.user_id:
         raise ValueError("User ID not found for user 1 and user 2")
     if not user_1.cloud_services_id or not user_2.cloud_services_id:
         raise ValueError("Cloud Services ID not found for user 1 and user 2")
-    
+
     await User.prisma().create_many(
         [
             UserCreateWithoutRelationsInput(

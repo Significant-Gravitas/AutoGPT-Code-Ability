@@ -387,7 +387,7 @@ async def create_app(
     """
     if spec.ApiRouteSpecs is None:
         raise ValueError("Specification must have at least one API route.")
-    
+
     if not ids.user_id:
         raise ValueError("User ID is required.")
 
