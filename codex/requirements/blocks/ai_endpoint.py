@@ -76,6 +76,7 @@ if __name__ == "__main__":
 
     OpenAIChatClient.configure({})
     db_client = Prisma(auto_register=True)
+    logging.info("Running block")
 
     endpoint1_repr = """Endpoint(name='OAuth2 Login', type='POST', description='Endpoint for handling OAuth2 logins, returning user tokens and session data.', path='/auth/oauth2/login', request_model=None, response_model=None, data_models=None, database_schema=None)"""
 
@@ -123,15 +124,110 @@ if __name__ == "__main__":
             logger.info(f"\tDB Models Needed: {item.db_models_needed}")
             logger.info(f"\tEnd Thoughts: {item.end_thoughts}")
             logger.info("\tAPI Endpoint Request: ")
-            for i in item.api_endpoint.request_model:
-                logger.info(f"\t\t{i}")
-                logger.info(f"\t\tRequest Model Name: {i.name}")
-                logger.info(f"\t\tRequest Model Description: {i.description}")
+            # Request Model
+            logger.info(f"\t\t{item.api_endpoint.request_model}")
+            logger.info(
+                f"\t\tRequest Model Name: {item.api_endpoint.request_model.name}"
+            )
+            logger.info(
+                f"\t\tRequest Model Description: {item.api_endpoint.request_model.description}"
+            )
+            logger.info(
+                f"\t\tRequest Model Fields: {item.api_endpoint.request_model.Fields}"
+            )
+            # This shouldn't be longer than this Surely
+            for i in item.api_endpoint.request_model.Fields or []:
+                logger.info(f"\t\t\t{i}")
+                logger.info(f"\t\t\tField Name: {i.name}")
+                logger.info(f"\t\t\tField Description: {i.description}")
+                logger.info(f"\t\t\tField Type: {i.type}")
+                logger.info(f"\t\t\tField Related Types: {i.related_types!r}")
+                for j in i.related_types or []:
+                    logger.info(f"\t\t\t\t{j}")
+                    logger.info(f"\t\t\t\tRelated Type Name: {j.name}")
+                    logger.info(f"\t\t\t\tRelated Type Description: {j.description}")
+                    logger.info(f"\t\t\t\tRelated Type Fields: {j.Fields}")
+                    for k in j.Fields or []:
+                        logger.info(f"\t\t\t\t\t{k}")
+                        logger.info(f"\t\t\t\t\tField Name: {k.name}")
+                        logger.info(f"\t\t\t\t\tField Description: {k.description}")
+                        logger.info(f"\t\t\t\t\tField Type: {k.type}")
+                        logger.info(
+                            f"\t\t\t\t\tField Related Types: {k.related_types!r}"
+                        )
+                        for l in k.related_types or []:
+                            logger.info(f"\t\t\t\t\t\t{l}")
+                            logger.info(f"\t\t\t\t\t\tRelated Type Name: {l.name}")
+                            logger.info(
+                                f"\t\t\t\t\t\tRelated Type Description: {l.description}"
+                            )
+                            logger.info(f"\t\t\t\t\t\tRelated Type Fields: {l.Fields}")
+                            for m in l.Fields or []:
+                                logger.info(f"\t\t\t\t\t\t\t{m}")
+                                logger.info(f"\t\t\t\t\t\t\tField Name: {m.name}")
+                                logger.info(
+                                    f"\t\t\t\t\t\t\tField Description: {m.description}"
+                                )
+                                logger.info(f"\t\t\t\t\t\t\tField Type: {m.type}")
+                                logger.info(
+                                    f"\t\t\t\t\t\t\tField Related Types: {m.related_types!r}"
+                                )
+                                if len(m.related_types or []) > 0:
+                                    logger.info("This is insanely recursive")
+                                    breakpoint()
             logger.info("\tAPI Endpoint Response:")
-            for i in item.api_endpoint.response_model:
-                logger.info(f"\t\t{i}")
-                logger.info(f"\t\tResponse Model Name: {i.name}")
-                logger.info(f"\t\tResponse Model Description: {i.description}")
+            # Response Model
+            logger.info(f"\t\t{item.api_endpoint.response_model}")
+            logger.info(
+                f"\t\tResponse Model Name: {item.api_endpoint.response_model.name}"
+            )
+            logger.info(
+                f"\t\tResponse Model Description: {item.api_endpoint.response_model.description}"
+            )
+            logger.info(
+                f"\t\tResponse Model Fields: {item.api_endpoint.response_model.Fields}"
+            )
+            # This shouldn't be longer than this Surely
+            for i in item.api_endpoint.response_model.Fields or []:
+                logger.info(f"\t\t\t{i}")
+                logger.info(f"\t\t\tField Name: {i.name}")
+                logger.info(f"\t\t\tField Description: {i.description}")
+                logger.info(f"\t\t\tField Type: {i.type}")
+                logger.info(f"\t\t\tField Related Types: {i.related_types!r}")
+                for j in i.related_types or []:
+                    logger.info(f"\t\t\t\t{j}")
+                    logger.info(f"\t\t\t\tRelated Type Name: {j.name}")
+                    logger.info(f"\t\t\t\tRelated Type Description: {j.description}")
+                    logger.info(f"\t\t\t\tRelated Type Fields: {j.Fields}")
+                    for k in j.Fields or []:
+                        logger.info(f"\t\t\t\t\t{k}")
+                        logger.info(f"\t\t\t\t\tField Name: {k.name}")
+                        logger.info(f"\t\t\t\t\tField Description: {k.description}")
+                        logger.info(f"\t\t\t\t\tField Type: {k.type}")
+                        logger.info(
+                            f"\t\t\t\t\tField Related Types: {k.related_types!r}"
+                        )
+                        for l in k.related_types or []:
+                            logger.info(f"\t\t\t\t\t\t{l}")
+                            logger.info(f"\t\t\t\t\t\tRelated Type Name: {l.name}")
+                            logger.info(
+                                f"\t\t\t\t\t\tRelated Type Description: {l.description}"
+                            )
+                            logger.info(f"\t\t\t\t\t\tRelated Type Fields: {l.Fields}")
+                            for m in l.Fields or []:
+                                logger.info(f"\t\t\t\t\t\t\t{m}")
+                                logger.info(f"\t\t\t\t\t\t\tField Name: {m.name}")
+                                logger.info(
+                                    f"\t\t\t\t\t\t\tField Description: {m.description}"
+                                )
+                                logger.info(f"\t\t\t\t\t\t\tField Type: {m.type}")
+                                logger.info(
+                                    f"\t\t\t\t\t\t\tField Related Types: {m.related_types!r}"
+                                )
+                                if len(m.related_types or []) > 0:
+                                    logger.info("????")
+                                    breakpoint()
+            logger.info("\n\n\n")
         else:
             logger.info("????")
             breakpoint()
