@@ -214,7 +214,8 @@ def validate_matching_function(existing_func: Function, requested_func: Function
     if any(
         [
             x[0] != y[0] or not is_type_equal(x[1], y[1])
-            for x, y in zip(expected_args, requested_func.arg_types)
+            # TODO: remove sorted and provide a stable order for one-to-many arg-types.
+            for x, y in zip(sorted(expected_args), sorted(requested_func.arg_types))
         ]
     ):
         raise ValidationError(
