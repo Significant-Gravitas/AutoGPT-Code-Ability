@@ -70,7 +70,7 @@ generator db {
   previewFeatures      = ["postgresqlExtensions"]
 }
 
-    """
+"""
     if not tables:
         return ""
 

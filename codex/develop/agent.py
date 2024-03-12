@@ -6,6 +6,7 @@ from prisma.enums import FunctionState
 from prisma.models import (
     CompiledRoute,
     CompletedApp,
+    DatabaseTable,
     Function,
     ObjectType,
     Specification,
@@ -195,7 +196,12 @@ async def develop_route(
         and compiled_route.ApiRouteSpec.DatabaseSchema.DatabaseTables
     ):
         db_schema = ""
-        for table in compiled_route.ApiRouteSpec.DatabaseSchema.DatabaseTables:
+
+        tables = await DatabaseTable.prisma().find_many(
+            where={"databaseSchemaId": compiled_route.ApiRouteSpec.DatabaseSchema.id}
+        )
+
+        for table in tables:
             db_schema += table.definition
             db_schema += "\n\n"
         dev_invoke_params["db_schema"] = db_schema

@@ -26,11 +26,7 @@ from codex.common.model import (
 )
 from codex.develop.compile import ComplicationFailure
 from codex.develop.function import construct_function
-from codex.develop.model import (
-    FunctionDef,
-    GeneratedFunctionResponse,
-    Package,
-)
+from codex.develop.model import FunctionDef, GeneratedFunctionResponse, Package
 
 logger = logging.getLogger(__name__)
 
@@ -255,6 +251,36 @@ class DevelopAIBlock(AIBlock):
                     + "There should be exactly 1"
                 )
             code = code_blocks[0].split("```")[0]
+
+            if (".connect()" in code) or ("async with Prisma() as db:" in code):
+                raise ValidationError(
+                    """
+
+There is no need to use "await prisma_client.connect()" in the code it is already connected.
+
+Database access should be done using the prisma.models, not using a prisma client.
+
+import prisma.models
+
+user = await prisma.models.User.prisma().create(
+    data={
+        'name': 'Robert',
+        'email': 'robert@craigie.dev',
+        'posts': {
+            'create': {
+                'title': 'My first post from Prisma!',
+            },
+        },
+    },
+)
+
+"""
+                )
+
+            if "from prisma import Prisma" in code:
+                raise ValidationError(
+                    "There is no need to do `from prisma import Prisma` as we are using the prisma.models to access the database."
+                )
 
             try:
                 tree = ast.parse(code)
