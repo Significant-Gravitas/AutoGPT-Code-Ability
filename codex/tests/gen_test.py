@@ -26,6 +26,8 @@ async def generate_function():
         is_connected = True
 
     ids = Identifiers(user_id=user_id_1, app_id=app_id_11, cloud_services_id="")
+    if not ids.user_id or not ids.app_id:
+        raise ValueError("User ID or App ID not set")
     spec = await get_latest_specification(ids.user_id, ids.app_id)
     func = await agent.develop_application(ids=ids, spec=spec)
 
