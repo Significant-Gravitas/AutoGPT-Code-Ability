@@ -48,7 +48,7 @@ async def create_prisma_scheama_file(application: Application) -> str:
         return ""
 
     tables: List[DatabaseTable] = await DatabaseTable.prisma().find_many(
-        where={"id": db_schema_id}
+        where={"databaseSchemaId": db_schema_id}
     )
 
     prisma_file = """
