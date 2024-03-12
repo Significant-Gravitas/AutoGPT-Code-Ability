@@ -29,18 +29,26 @@ def generate_requirements_txt(
 
 async def create_prisma_scheama_file(application: Application) -> str:
     tables = []
-    db_schema_ids = set()
+    db_schema_id = None
 
-    if (
+    if not (
         application.completed_app.CompiledRoutes
         and application.completed_app.CompiledRoutes
     ):
-        for route in application.completed_app.CompiledRoutes:
-            if route.ApiRouteSpec and route.ApiRouteSpec.DatabaseSchema:
-                db_schema_ids.add(route.ApiRouteSpec.DatabaseSchema.id)
+        raise ValueError("Application must have at least one compiled route")
 
-    tables = await DatabaseTable.prisma().find_many(
-        where={"id": {"in": list(db_schema_ids)}}
+    for route in application.completed_app.CompiledRoutes:
+        if route.ApiRouteSpec and route.ApiRouteSpec.DatabaseSchema:
+            db_schema_id = route.ApiRouteSpec.DatabaseSchema.id
+            # the same schema is used for all routes
+            break
+
+    if not db_schema_id:
+        logger.warning("No database schema found")
+        return ""
+
+    tables: List[DatabaseTable] = await DatabaseTable.prisma().find_many(
+        where={"id": db_schema_id}
     )
 
     prisma_file = """
