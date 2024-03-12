@@ -324,9 +324,7 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
     # DB Enums
     db_enum_names: list[str] = []
     if running_state_obj.database:
-        db_enum_names = [
-            enum.name or "" for enum in running_state_obj.database.enums
-        ]
+        db_enum_names = [enum.name or "" for enum in running_state_obj.database.enums]
 
     # This process just refineds the api endpoints. It can be ran in parallel
     # for all the modules and their endpoints
