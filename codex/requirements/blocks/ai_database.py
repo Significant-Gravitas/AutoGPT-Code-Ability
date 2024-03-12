@@ -6,6 +6,8 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
+from codex.common.ai_model import OpenAIChatClient
+from codex.common.logging_config import setup_logging
 from codex.requirements.model import DatabaseTable, DBResponse
 
 logger = logging.getLogger(__name__)
@@ -60,14 +62,17 @@ if __name__ == "__main__":
     """
     from asyncio import run
 
-    from openai import AsyncOpenAI
     from prisma import Prisma
 
     from codex.common.test_const import identifier_1
 
     ids = identifier_1
+
+    setup_logging(local=True)
+
+    OpenAIChatClient.configure({})
     db_client = Prisma(auto_register=True)
-    oai = AsyncOpenAI()
+    logging.info("Running block")
 
     # This is the input to the block
     obj = {
@@ -76,9 +81,7 @@ if __name__ == "__main__":
         "modules": "Authentication Module, User Management Module, Scheduling Module, Invoice Management Module, Financial Reporting Module, Notification Module",
     }
 
-    database_block = DatabaseGenerationBlock(
-        oai_client=oai,
-    )
+    database_block = DatabaseGenerationBlock()
 
     async def run_ai() -> dict[str, DBResponse]:
         await db_client.connect()
