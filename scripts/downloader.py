@@ -95,6 +95,9 @@ def download_bounties():
         while True:
             print("Fetching bounties")
             data = fetch_bounties(after_cursor=next_cursor)
+            if not data:
+                raise ValueError("Failed to download bounties")
+
             bounties = data["data"]["bountySearch"]["items"]
             all_bounties.extend(bounties)
             page_info = data["data"]["bountySearch"]["pageInfo"]
@@ -157,7 +160,7 @@ if __name__ == "__main__":
     # Extract the corresponding descriptions
     closest_descriptions = [descriptions[i] for i in closest_points]
 
-    closest_descriptions
+    print(closest_descriptions)
 
     print(total * 0.01)
 
