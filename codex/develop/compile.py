@@ -57,12 +57,15 @@ async def compile_route(
     code += "\n\n".join(compiled_function.pydantic_models)
     code += "\n\n"
     code += compiled_function.code
+
+    # Run the formatting engines
     try:
         formatted_code = isort.code(code)
         formatted_code = black.format_str(formatted_code, mode=black.FileMode())
     except Exception as e:
         logger.exception(f"Error formatting code: {e}")
         raise ComplicationFailure(f"Error formatting code: {e}")
+
     data = CompiledRouteUpdateInput(
         Packages={"connect": [{"id": package_id} for package_id in unique_packages]},
         compiledCode=formatted_code,
@@ -219,7 +222,9 @@ async def get_object_field_deps(
             f"Skipping field {field.name} as it's a primitive type or already processed"
         )
         return []
-    assert types, "Field type is not defined"
+    if not types:
+        logging.exception(f"Field type is not defined for {field.name}")
+        raise AssertionError(f"Field type is not defined for {field.name}")
 
     logger.debug(f"Processing field {field.name} of type {field.typeName}")
     object_type_ids.update([t.id for t in types])
@@ -379,6 +384,9 @@ async def create_app(
     """
     if spec.ApiRouteSpecs is None:
         raise ValueError("Specification must have at least one API route.")
+    
+    if not ids.user_id:
+        raise ValueError("User ID is required.")
 
     data = CompletedAppCreateInput(
         name=spec.name,
