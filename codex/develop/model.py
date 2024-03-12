@@ -25,8 +25,8 @@ class FunctionDef(BaseModel):
     function_template: str = None
 
     def __generate_function_template(f) -> str:
-        args_str = "".join([f"{name}: {type}" for name, type in f.arg_types])
-        arg_desc = "\n      ".join(
+        args_str = ", ".join([f"{name}: {type}" for name, type in f.arg_types])
+        arg_desc = f"\n{' '*12}".join(
             [
                 f'{name} ({type}): {f.arg_descs.get(name, "-")}'
                 for name, type in f.arg_types

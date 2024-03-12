@@ -169,9 +169,14 @@ async def recursive_compile_route(
     )
 
 
-async def get_object_type_deps(
-    obj: ObjectType, object_type_ids: Set[str]
+async def __get_object_type_deps(
+    obj_type_id: int, object_type_ids: Set[str]
 ) -> List[ObjectType]:
+    # Lookup the object getting all its subfields
+    obj = await ObjectType.prisma().find_unique_or_raise(
+        where={"id": obj_type_id},
+        include={"Fields": {"include": {"RelatedTypes": True}}},
+    )
     if obj.Fields is None:
         raise ValueError(f"ObjectType {obj.name} has no fields.")
 
@@ -204,9 +209,7 @@ async def get_object_field_deps(
     # Lookup the field object getting all its subfields
     field = await ObjectField.prisma().find_unique_or_raise(
         where={"id": field.id},
-        include={
-            "RelatedTypes": {"include": {"Fields": {"include": {"RelatedTypes": True}}}}
-        },
+        include={"RelatedTypes": True},
     )
 
     if field.RelatedTypes is None:
@@ -227,7 +230,7 @@ async def get_object_field_deps(
     # TODO: this can run in parallel
     pydantic_classes = []
     for type in types:
-        pydantic_classes.extend(await get_object_type_deps(type, object_type_ids))
+        pydantic_classes.extend(await __get_object_type_deps(type.id, object_type_ids))
 
     return pydantic_classes
 

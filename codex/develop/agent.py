@@ -14,7 +14,7 @@ from prisma.types import CompiledRouteCreateInput
 
 from codex.api_model import Identifiers
 from codex.common.database import INCLUDE_FUNC
-from codex.develop.compile import compile_route, create_app
+from codex.develop.compile import compile_route, create_app, get_object_field_deps
 from codex.develop.develop import DevelopAIBlock
 from codex.develop.function import construct_function, generate_object_template
 from codex.develop.model import FunctionDef
@@ -93,7 +93,7 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
                 goal_description=spec.context,
                 function=compiled_route.RootFunction,
                 generated_func={},
-                generated_objs=available_types,
+                generated_objs={},
             )
             logger.info(f"Route function id: {route_root_func.id}")
             await compile_route(compiled_route.id, route_root_func)
@@ -144,18 +144,19 @@ async def develop_route(
     if compiled_route.RootFunction:
         functions.append(compiled_route.RootFunction)
 
+    object_ids = {obj.id for obj in generated_objs.values()}
     for func in functions:
         if func.functionName != function.functionName:
             generated_func[func.functionName] = func
 
         # Populate generated request objects from the LLM
         for arg in func.FunctionArgs:
-            for type in arg.RelatedTypes:
+            for type in await get_object_field_deps(arg, object_ids):
                 generated_objs[type.name] = type
 
         # Populate generated response objects from the LLM
         if func.FunctionReturn:
-            for type in func.FunctionReturn.RelatedTypes:
+            for type in await get_object_field_deps(func.FunctionReturn, object_ids):
                 generated_objs[type.name] = type
 
     route_function = await DevelopAIBlock().invoke(
