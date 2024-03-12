@@ -185,6 +185,7 @@ async def develop_route(
         "available_objects": generated_objs,
         # function_id is used, so we can update the function with the implementation
         "function_id": function.id,
+        "available_functions": generated_func,
         "allow_stub": depth < RECURSION_DEPTH_LIMIT,
     }
 
