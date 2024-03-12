@@ -120,6 +120,8 @@ async def finsh_interview(
             },
         },
     )
+    if not updated_interview:
+        raise ValueError(f"Interview {interview_id} not found")
     return updated_interview
 
 
