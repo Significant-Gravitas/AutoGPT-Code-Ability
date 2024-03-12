@@ -202,7 +202,6 @@ async def develop_route(
     route_function = await DevelopAIBlock().invoke(
         ids=ids,
         invoke_params=dev_invoke_params,
-        
     )
 
     if route_function.ChildFunctions:
@@ -227,7 +226,6 @@ async def develop_route(
     return route_function
 
 
-
 if __name__ == "__main__":
     import prisma
 
@@ -250,4 +248,3 @@ if __name__ == "__main__":
 
     ans = asyncio.run(run_me())
     logger.info(ans)
-
