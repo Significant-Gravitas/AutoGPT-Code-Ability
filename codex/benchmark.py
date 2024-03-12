@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 port = os.environ.get("PORT", 8000)
 
+
 async def develop_application(
     session: aiohttp.ClientSession, task: ExampleTask, user_id: str, app_id: str
 ) -> dict[str, str]:
@@ -46,9 +47,7 @@ async def develop_application(
                 deployment_file_name = deploy_data["file_name"]
 
                 # Download the zip file
-                download_url = (
-                    f"http://127.0.0.1:{port}/api/v1/deployments/{deployment_id}/download"
-                )
+                download_url = f"http://127.0.0.1:{port}/api/v1/deployments/{deployment_id}/download"
                 async with session.get(download_url) as download_response:
                     content = await download_response.read()
                     content = io.BytesIO(content)
