@@ -59,6 +59,11 @@ async def construct_function(
 
 
 def generate_object_template(obj: ObjectType) -> str:
+    # If the object already has code, use it.
+    if obj.code:
+        return obj.code
+
+    # Auto-generate a template for the object, this will not capture any class functions.
     fields = f"\n{' ' * 8}".join(
         [
             f"{field.name}: {field.typeName}  # {field.description}"

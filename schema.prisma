@@ -155,6 +155,7 @@ model ObjectType {
   createdAt   DateTime @default(now())
   name        String
   description String?
+  code        String?
 
   Fields ObjectField[] @relation("ObjectTypeFields")
 

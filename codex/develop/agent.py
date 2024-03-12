@@ -13,7 +13,7 @@ from prisma.types import CompiledRouteCreateInput
 
 from codex.api_model import Identifiers
 from codex.common.database import INCLUDE_FUNC
-from codex.develop.compile import compile_route, create_app
+from codex.develop.compile import compile_route, create_app, get_object_field_deps
 from codex.develop.develop import DevelopAIBlock
 from codex.develop.function import construct_function, generate_object_template
 from codex.develop.model import FunctionDef
@@ -85,6 +85,8 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
                 ),
                 include={"RootFunction": INCLUDE_FUNC},
             )
+            if not compiled_route.RootFunction:
+                raise ValueError("Root function not created")
 
             route_root_func = await develop_route(
                 ids=ids,
@@ -133,20 +135,28 @@ async def develop_route(
             "Functions": INCLUDE_FUNC,
         },
     )
+
+    functions = []
     generated_func = {}
     generated_objs = {}
-    for func in compiled_route.Functions + [compiled_route.RootFunction]:
+    if compiled_route.Functions:
+        functions += compiled_route.Functions
+    if compiled_route.RootFunction:
+        functions.append(compiled_route.RootFunction)
+
+    object_ids = set()
+    for func in functions:
         if func.functionName != function.functionName:
             generated_func[func.functionName] = func
 
         # Populate generated request objects from the LLM
         for arg in func.FunctionArgs:
-            for type in arg.RelatedTypes:
+            for type in await get_object_field_deps(arg, object_ids):
                 generated_objs[type.name] = type
 
         # Populate generated response objects from the LLM
         if func.FunctionReturn:
-            for type in func.FunctionReturn.RelatedTypes:
+            for type in await get_object_field_deps(func.FunctionReturn, object_ids):
                 generated_objs[type.name] = type
 
     route_function = await DevelopAIBlock().invoke(
@@ -156,7 +166,9 @@ async def develop_route(
             "goal": goal_description,
             "function_signature": function.template,
             # function_args is not used by the prompt, but used for function validation
-            "function_args": [(f.name, f.typeName) for f in function.FunctionArgs],
+            "function_args": [
+                (f.name, f.typeName) for f in function.FunctionArgs or []
+            ],
             # function_rets is not used by the prompt, but used for function validation
             "function_rets": function.FunctionReturn.typeName
             if function.FunctionReturn
@@ -193,29 +205,3 @@ async def develop_route(
         logger.info("📦 No child functions to develop")
         logger.debug(route_function.rawCode)
     return route_function
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    import prisma
-
-    import codex.common.test_const as test_consts
-    from codex.common.ai_model import OpenAIChatClient
-    from codex.common.logging import setup_logging
-    from codex.requirements.database import get_latest_specification
-
-    OpenAIChatClient.configure({})
-    setup_logging(local=True)
-    client = prisma.Prisma(auto_register=True)
-
-    async def run_me():
-        await client.connect()
-        ids = test_consts.identifier_1
-        spec = await get_latest_specification(ids.user_id, ids.app_id)
-        ans = await develop_application(ids=ids, spec=spec)
-        await client.disconnect()
-        return ans
-
-    ans = asyncio.run(run_me())
-    logger.info(ans)

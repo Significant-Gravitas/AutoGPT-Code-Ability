@@ -169,6 +169,7 @@ class FunctionVisitor(ast.NodeVisitor):
 
         self.objects[node.name] = ObjectTypeModel(
             name=node.name,
+            code=ast.unparse(node),
             description=doc_string,
             Fields=[
                 ObjectFieldModel(
@@ -324,7 +325,7 @@ class DevelopAIBlock(AIBlock):
 
         function_defs: list[FunctionCreateInput] = []
         if generated_response.functions:
-            for key, value in generated_response.functions.items():
+            for value in generated_response.functions.values():
                 model = await construct_function(
                     value, generated_response.available_objects
                 )
