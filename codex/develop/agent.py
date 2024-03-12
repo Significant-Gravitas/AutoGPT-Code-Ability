@@ -7,6 +7,7 @@ from prisma.models import (
     CompiledRoute,
     CompletedApp,
     Function,
+    ObjectType,
     Specification,
 )
 from prisma.types import CompiledRouteCreateInput
@@ -18,7 +19,7 @@ from codex.develop.develop import DevelopAIBlock
 from codex.develop.function import construct_function, generate_object_template
 from codex.develop.model import FunctionDef
 
-RECURSION_DEPTH_LIMIT = int(os.environ.get("RECURSION_DEPTH_LIMIT", 3))
+RECURSION_DEPTH_LIMIT = int(os.environ.get("RECURSION_DEPTH_LIMIT", 2))
 
 logger = logging.getLogger(__name__)
 
@@ -125,7 +126,7 @@ async def develop_route(
         f"Developing for compiled route: "
         f"{compiled_route_id} - Func: {function.functionName}, depth: {depth}"
     )
-    if depth >= RECURSION_DEPTH_LIMIT:
+    if depth > RECURSION_DEPTH_LIMIT:
         raise ValueError("Recursion depth exceeded")
 
     compiled_route = await CompiledRoute.prisma().find_unique_or_raise(
@@ -137,8 +138,8 @@ async def develop_route(
     )
 
     functions = []
-    generated_func = {}
-    generated_objs = {}
+    generated_func: dict[str, Function] = {}
+    generated_objs: dict[str, ObjectType] = {}
     if compiled_route.Functions:
         functions += compiled_route.Functions
     if compiled_route.RootFunction:
@@ -146,8 +147,7 @@ async def develop_route(
 
     object_ids = set()
     for func in functions:
-        if func.functionName != function.functionName:
-            generated_func[func.functionName] = func
+        generated_func[func.functionName] = func
 
         # Populate generated request objects from the LLM
         for arg in func.FunctionArgs:
@@ -159,28 +159,24 @@ async def develop_route(
             for type in await get_object_field_deps(func.FunctionReturn, object_ids):
                 generated_objs[type.name] = type
 
+    provided_functions = [
+        func.template
+        for func in generated_func.values()
+        if func.functionName != function.functionName
+    ] + [generate_object_template(f) for f in generated_objs.values()]
     route_function = await DevelopAIBlock().invoke(
         ids=ids,
         invoke_params={
             "function_name": function.functionName,
             "goal": goal_description,
             "function_signature": function.template,
-            # function_args is not used by the prompt, but used for function validation
-            "function_args": [
-                (f.name, f.typeName) for f in function.FunctionArgs or []
-            ],
-            # function_rets is not used by the prompt, but used for function validation
-            "function_rets": function.FunctionReturn.typeName
-            if function.FunctionReturn
-            else None,
-            "provided_functions": [func.template for func in generated_func.values()]
-            + [generate_object_template(f) for f in generated_objs.values()],
+            "provided_functions": provided_functions,
             # compiled_route_id is not used by the prompt, but is used by the function
             "compiled_route_id": compiled_route_id,
             # available_objects is not used by the prompt, but is used by the function
             "available_objects": generated_objs,
-            # function_id is used, so we can update the function with the implementation
-            "function_id": function.id,
+            # available_functions is not used by the prompt, but is used by the function
+            "available_functions": generated_func,
             "allow_stub": depth < RECURSION_DEPTH_LIMIT,
         },
     )
