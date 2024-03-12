@@ -22,6 +22,8 @@ from codex.requirements.model import ExampleTask
 
 logger = logging.getLogger(__name__)
 
+port = os.environ.get("PORT", 8000)
+
 
 async def develop_application(
     session: aiohttp.ClientSession, task: ExampleTask, user_id: str, app_id: str
@@ -30,7 +32,7 @@ async def develop_application(
     spec = await get_latest_specification(user_id, app_id)
     spec_id = spec.id
     logger.info(f"[{task.value}] Developing the application")
-    url = f"http://127.0.0.1:8000/api/v1/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/"
+    url = f"http://127.0.0.1:{port}/api/v1/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/"
     async with session.post(url, timeout=1200) as response:
         try:
             creation_time = datetime.now()
@@ -38,16 +40,14 @@ async def develop_application(
                 return {"app_name": spec.name, "status": "failed"}
             data = await response.json()
             deliverable_id = data["id"]
-            deploy_url = f"http://127.0.0.1:8000/api/v1/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/"
+            deploy_url = f"http://127.0.0.1:{port}/api/v1/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/"
             async with session.post(deploy_url) as dresponse:
                 deploy_data = await dresponse.json()
                 deployment_id = deploy_data["id"]
                 deployment_file_name = deploy_data["file_name"]
 
                 # Download the zip file
-                download_url = (
-                    f"http://127.0.0.1:8000/api/v1/deployments/{deployment_id}/download"
-                )
+                download_url = f"http://127.0.0.1:{port}/api/v1/deployments/{deployment_id}/download"
                 async with session.get(download_url) as download_response:
                     content = await download_response.read()
                     content = io.BytesIO(content)
@@ -118,7 +118,7 @@ async def run_benchmark_example(
 ):
     try:
         codex_client = CodexClient(
-            client=client, base_url="http://127.0.0.1:8000/api/v1"
+            client=client, base_url=f"http://127.0.0.1:{port}/api/v1"
         )
         await codex_client.init(codex_user_id=user_id)
         app_id = ExampleTask.get_app_id(task=task)
