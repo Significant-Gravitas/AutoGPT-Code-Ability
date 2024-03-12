@@ -6,7 +6,9 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
-from codex.requirements.model import DatabaseTable, DBResponse
+from codex.common.ai_model import OpenAIChatClient
+from codex.common.logging_config import setup_logging
+from codex.requirements.model import DatabaseEnums, DatabaseTable, DBResponse
 
 logger = logging.getLogger(__name__)
 
@@ -60,14 +62,18 @@ if __name__ == "__main__":
     """
     from asyncio import run
 
-    from openai import AsyncOpenAI
     from prisma import Prisma
 
     from codex.common.test_const import identifier_1
 
     ids = identifier_1
+    
+
+    setup_logging(local=True)
+
+    OpenAIChatClient.configure({})
     db_client = Prisma(auto_register=True)
-    oai = AsyncOpenAI()
+    logging.info("Running block")
 
     # This is the input to the block
     obj = {
@@ -76,9 +82,7 @@ if __name__ == "__main__":
         "modules": "Authentication Module, User Management Module, Scheduling Module, Invoice Management Module, Financial Reporting Module, Notification Module",
     }
 
-    database_block = DatabaseGenerationBlock(
-        oai_client=oai,
-    )
+    database_block = DatabaseGenerationBlock()
 
     async def run_ai() -> dict[str, DBResponse]:
         await db_client.connect()
@@ -110,15 +114,12 @@ if __name__ == "__main__":
             logger.info(f"\tFull Schema: {item.full_schema}")
             logger.info(f"\tConclusions: {item.conclusions}")
 
-            # think: str
-            # anti_think: str
-            # plan: str
-            # refine: str
-            # pre_answer: str
-            # pre_answer_issues: str
-            # full_schema: str
-            # database_schema: DBSchemaResponseWrapper
-            # conclusions: str
+            enums: list[DatabaseEnums] = item.database_schema.enums
+            for e in enums:
+                logger.info(f"\t\tEnum Name: {e.name}")
+                logger.info(f"\t\tEnum Values: {e.values}")
+                logger.info(f"\t\tEnum Description: {e.description}")
+                logger.info(f"\t\tEnum Definition: {e.definition}")
             tables: list[DatabaseTable] = item.database_schema.tables
             for t in tables:
                 logger.info(f"\t\tTable Name: {t.name}")

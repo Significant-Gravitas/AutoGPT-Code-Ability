@@ -275,6 +275,16 @@ class ModuleRefinementRequirement(BaseModel):
         return f"#### Requirement: {self.name}\n{self.description}\n"
 
 
+class DatabaseEnums(BaseModel):
+    name: str
+    description: str
+    values: list[str]
+    definition: str
+
+    def __str__(self):
+        return f"**{self.name}**\n\n**Description**: {self.description}\n\n**Values**:\n{', '.join(self.values)}\n"
+
+
 class DatabaseTable(BaseModel):
     name: str | None = None
     description: str
@@ -288,6 +298,7 @@ class DatabaseSchema(BaseModel):
     name: str  # name of the database schema
     description: str  # context on what the database schema is
     tables: List[DatabaseTable]  # list of tables in the database schema
+    enums: List[DatabaseEnums]
 
     def __str__(self):
         tables_str = "\n".join(str(table) for table in self.tables)
@@ -401,10 +412,6 @@ class ModuleResponse(BaseModel):
         return f"Thoughts: {self.think_general}\nAnti:{self.think_anti}\n{answer_str}"
 
 
-# class DBSchemaTableResponseWrapper(BaseModel):
-#     table: DatabaseTable
-
-
 class DBSchemaResponseWrapper(BaseModel):
     # name of the database schema
     name: str
@@ -412,6 +419,7 @@ class DBSchemaResponseWrapper(BaseModel):
     description: str
     # list of tables in the database schema
     tables: List[DatabaseTable]
+    enums: List[DatabaseEnums]
 
 
 class PreAnswer(BaseModel):

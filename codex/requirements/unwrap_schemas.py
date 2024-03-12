@@ -8,7 +8,10 @@ from codex.requirements.model import (
 
 def convert_db_schema(input: DBSchemaResponseWrapper) -> DatabaseSchema:
     return DatabaseSchema(
-        name=input.name, description=input.description, tables=input.tables
+        name=input.name,
+        description=input.description,
+        tables=input.tables,
+        enums=input.enums,
     )
 
 
