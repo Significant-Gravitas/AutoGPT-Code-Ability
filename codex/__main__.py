@@ -94,10 +94,9 @@ def serve() -> None:
     from codex.common.ai_model import OpenAIChatClient
 
     OpenAIChatClient.configure({})
-    os.environ.get("ENV", "CLOUD").lower() == "local"
 
     uvicorn.run(
-        "codex.app:app",
+        app="codex.app:app",
         host="0.0.0.0",
         port=int(os.environ.get("PORT", 8000)),
     )

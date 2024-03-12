@@ -211,6 +211,9 @@ async def populate_database_interviews():
     for task in examples:
         app_id = ExampleTask.get_app_id(task)
         interview_id = ExampleTask.get_interview_id(task)
+        if not interview_id:
+            raise ValueError(f"Interview ID not found for task: {task.value}")
+
         print(f"Creating Interview for {task}, with app_id {app_id}")
         interview = hardcoded_interview(task)
         ids.app_id = app_id
