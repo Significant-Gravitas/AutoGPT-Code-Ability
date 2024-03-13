@@ -308,6 +308,11 @@ user = await prisma.models.User.prisma().create(
                     "There is no need to do `from prisma import Prisma` as we are using the prisma.models to access the database."
                 )
 
+            if ("prisma.errors." in code) and ("import prisma.errors" not in code):
+                raise ValidationError(
+                    "You are using prisma.errors but not importing it. Please add `import prisma.errors` at the top of the code."
+                )
+
             try:
                 tree = ast.parse(code)
                 visitor = FunctionVisitor()
