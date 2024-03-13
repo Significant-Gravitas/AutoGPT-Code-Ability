@@ -129,7 +129,10 @@ async def run_benchmark_example(
             app_id = app.id
             await create_requirements(codex_client, task)
 
-        assert app_id, f"[{task.value}] App ID not found for task: {task.value}"
+        if not app_id:
+            raise AssertionError(
+                f"[{task.value}] App ID not found for task: {task.value}"
+            )
 
         results = await develop_application(session, task, user_id, app_id)
         return results
@@ -148,7 +151,10 @@ async def run_benchmark(skip_requirements: bool, task: ExampleTask | None = None
     examples = list(ExampleTask)
     if task:
         examples = [task]
-        assert ExampleTask.get_app_id(task) is not None, f"App ID not found for {task}"
+        if skip_requirements:
+            assert (
+                ExampleTask.get_app_id(task) is not None
+            ), f"App ID not found for {task}"
     else:
         if skip_requirements:
             examples: list[ExampleTask] = [

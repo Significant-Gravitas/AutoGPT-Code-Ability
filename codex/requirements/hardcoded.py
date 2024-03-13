@@ -2,10 +2,8 @@ import logging
 
 from prisma.enums import AccessLevel
 
-from codex.common.model import (
-    ObjectTypeModel as ObjectTypeModel,
-    ObjectFieldModel as ObjectFieldE,
-)
+from codex.common.model import ObjectFieldModel as ObjectFieldE
+from codex.common.model import ObjectTypeModel as ObjectTypeModel
 from codex.requirements.model import (
     APIRouteRequirement,
     ApplicationRequirements,
@@ -374,13 +372,13 @@ def profile_management() -> ApplicationRequirements:
     profiles_table = DatabaseTable(
         description="Stores user profile information",
         definition="""
-        model Profile {
-        id          Int     @id @default(autoincrement())
-        user_type   String
-        name        String
-        contact     String
-        preferences Json?
-        }
+model Profile {
+id          Int     @id @default(autoincrement())
+user_type   String
+name        String
+contact     String
+preferences Json?
+}
         """,
     )
 
@@ -397,7 +395,7 @@ def profile_management() -> ApplicationRequirements:
             path="/api/profile/create",
             function_name="create_profile",
             access_level=AccessLevel.PUBLIC,
-            description="Creates a new user profile",
+            description="Creates a new user profile and stores it in the database",
             request_model=create_profile_request,
             response_model=create_profile_response,
             database_schema=profiles_schema,
@@ -407,7 +405,7 @@ def profile_management() -> ApplicationRequirements:
             path="/api/profile/update",
             function_name="update_profile",
             access_level=AccessLevel.USER,
-            description="Updates an existing user profile",
+            description="Updates an existing user profile in the database",
             request_model=update_profile_request,
             response_model=update_profile_response,
             database_schema=profiles_schema,
@@ -417,7 +415,7 @@ def profile_management() -> ApplicationRequirements:
             path="/api/profile/retrieve",
             function_name="retrieve_profile",
             access_level=AccessLevel.USER,
-            description="Retrieves a user profile",
+            description="Retrieves a user profile from the database",
             request_model=retrieve_profile_request,
             response_model=retrieve_profile_response,
             database_schema=profiles_schema,
@@ -427,7 +425,7 @@ def profile_management() -> ApplicationRequirements:
             path="/api/profile/delete",
             function_name="delete_profile",
             access_level=AccessLevel.USER,
-            description="Deletes a user profile",
+            description="Deletes a user profile from the database",
             request_model=delete_profile_request,
             response_model=delete_profile_response,
             database_schema=profiles_schema,

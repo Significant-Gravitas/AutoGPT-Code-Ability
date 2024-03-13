@@ -6,6 +6,7 @@ from prisma.enums import FunctionState
 from prisma.models import (
     CompiledRoute,
     CompletedApp,
+    DatabaseTable,
     Function,
     ObjectType,
     Specification,
@@ -134,6 +135,9 @@ async def develop_route(
         include={
             "RootFunction": INCLUDE_FUNC,
             "Functions": INCLUDE_FUNC,
+            "ApiRouteSpec": {
+                "include": {"DatabaseSchema": {"include": {"DatabaseTables": True}}}
+            },
         },
     )
 
@@ -164,21 +168,47 @@ async def develop_route(
         for func in generated_func.values()
         if func.functionName != function.functionName
     ] + [generate_object_template(f) for f in generated_objs.values()]
+
+    dev_invoke_params = {
+        "function_name": function.functionName,
+        "goal": goal_description,
+        "function_signature": function.template,
+        # function_args is not used by the prompt, but used for function validation
+        "function_args": [(f.name, f.typeName) for f in function.FunctionArgs],
+        # function_rets is not used by the prompt, but used for function validation
+        "function_rets": function.FunctionReturn.typeName
+        if function.FunctionReturn
+        else None,
+        "provided_functions": provided_functions,
+        # compiled_route_id is not used by the prompt, but is used by the function
+        "compiled_route_id": compiled_route_id,
+        # available_objects is not used by the prompt, but is used by the function
+        "available_objects": generated_objs,
+        # function_id is used, so we can update the function with the implementation
+        "function_id": function.id,
+        "available_functions": generated_func,
+        "allow_stub": depth < RECURSION_DEPTH_LIMIT,
+    }
+
+    if (
+        compiled_route.ApiRouteSpec
+        and compiled_route.ApiRouteSpec.DatabaseSchema
+        and compiled_route.ApiRouteSpec.DatabaseSchema.DatabaseTables
+    ):
+        db_schema = ""
+
+        tables = await DatabaseTable.prisma().find_many(
+            where={"databaseSchemaId": compiled_route.ApiRouteSpec.DatabaseSchema.id}
+        )
+
+        for table in tables:
+            db_schema += table.definition
+            db_schema += "\n\n"
+        dev_invoke_params["db_schema"] = db_schema
+
     route_function = await DevelopAIBlock().invoke(
         ids=ids,
-        invoke_params={
-            "function_name": function.functionName,
-            "goal": goal_description,
-            "function_signature": function.template,
-            "provided_functions": provided_functions,
-            # compiled_route_id is not used by the prompt, but is used by the function
-            "compiled_route_id": compiled_route_id,
-            # available_objects is not used by the prompt, but is used by the function
-            "available_objects": generated_objs,
-            # available_functions is not used by the prompt, but is used by the function
-            "available_functions": generated_func,
-            "allow_stub": depth < RECURSION_DEPTH_LIMIT,
-        },
+        invoke_params=dev_invoke_params,
     )
 
     if route_function.ChildFunctions:
@@ -201,3 +231,27 @@ async def develop_route(
         logger.info("📦 No child functions to develop")
         logger.debug(route_function.rawCode)
     return route_function
+
+
+if __name__ == "__main__":
+    import prisma
+
+    import codex.common.test_const as test_consts
+    from codex.common.ai_model import OpenAIChatClient
+    from codex.common.logging_config import setup_logging
+    from codex.requirements.database import get_latest_specification
+
+    OpenAIChatClient.configure({})
+    setup_logging(local=True)
+    client = prisma.Prisma(auto_register=True)
+
+    async def run_me():
+        await client.connect()
+        ids = test_consts.identifier_1
+        spec = await get_latest_specification(ids.user_id, ids.app_id)
+        ans = await develop_application(ids=ids, spec=spec)
+        await client.disconnect()
+        return ans
+
+    ans = asyncio.run(run_me())
+    logger.info(ans)
