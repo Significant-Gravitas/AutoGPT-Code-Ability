@@ -416,6 +416,13 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
     logger.info("Full Spec Done")
     saved_spec: Specification = await create_spec(ids, full_spec)
     logger.info("Saved Spec Done")
+    if logger.level == logging.DEBUG:
+        with open("requirements_debug.py", "a+") as f:
+            f.write(f"# Name: {running_state_obj.product_name}\n")
+            f.write(f"full_spec = {full_spec!r}\n")
+            f.write(f"saved_spec = {saved_spec!r}\n")
+            f.write("\n")
+            f.write("\n")
     # Step 8) Return the application requirements
     return saved_spec
 

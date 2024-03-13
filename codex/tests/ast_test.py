@@ -1,12 +1,9 @@
 import ast
-
-from dotenv import load_dotenv
+import pytest
 
 from codex.develop.develop import FunctionVisitor
-import pytest
 from codex.common.ai_block import ValidationError
 
-load_dotenv()
 
 SAMPLE_CODE = """
 from pydantic import BaseModel
@@ -149,6 +146,56 @@ def test_function_visitor():
     assert visitor.functions["create_schedule"].is_implemented
     assert not visitor.functions["is_within_working_hours"].is_implemented
     assert not visitor.functions["calculate_travel_time"].is_implemented
+
+
+CLASS_AND_ENUM_SAMPLE_CODE = """
+from pydantic import BaseModel
+from enum import Enum
+
+class Location(BaseModel):
+    name: str  # For named locations or coordinates as a string
+    latitude: float = 0.0
+    longitude: float = 0.0
+    
+class Role(Enum):
+    USER = 'USER'
+    ADMIN = 'ADMIN'
+"""
+
+
+def test_function_visitor_with_enum():
+    tree = ast.parse(CLASS_AND_ENUM_SAMPLE_CODE)
+
+    visitor = FunctionVisitor()
+    visitor.visit(tree)
+
+    # Check that all Pydantic classes are identified
+    assert "Location" in visitor.objects
+    assert "Role" in visitor.objects
+
+    # Check that all functions are identified
+    assert len(get_pydantic_classes(visitor)) == 1
+    assert len(visitor.functions) == 0
+
+    assert visitor.objects["Location"].is_pydantic
+    assert visitor.objects["Role"].is_enum
+
+    assert visitor.objects["Location"].Fields[0].name == "name"
+    assert visitor.objects["Location"].Fields[0].type == "str"
+    assert visitor.objects["Location"].Fields[0].value is None
+    assert visitor.objects["Location"].Fields[1].name == "latitude"
+    assert visitor.objects["Location"].Fields[1].type == "float"
+    assert visitor.objects["Location"].Fields[1].value == "0.0"
+    assert visitor.objects["Location"].Fields[2].name == "longitude"
+    assert visitor.objects["Location"].Fields[2].type == "float"
+    assert visitor.objects["Location"].Fields[2].value == "0.0"
+
+    assert visitor.objects["Role"].Fields[0].name == "USER"
+    assert visitor.objects["Role"].Fields[0].type == "str"
+    assert visitor.objects["Role"].Fields[0].value == "'USER'"
+    assert visitor.objects["Role"].Fields[1].name == "ADMIN"
+    assert visitor.objects["Role"].Fields[1].type == "str"
+    assert visitor.objects["Role"].Fields[1].value == "'ADMIN'"
 
 
 # Visiting a simple function definition with no arguments or return type
