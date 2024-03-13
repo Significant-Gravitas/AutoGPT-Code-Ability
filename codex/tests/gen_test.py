@@ -124,7 +124,7 @@ class Board(BaseModel):
         self.cells = [' ' for _ in range(size ** 2)]
 
 class SomeCustomClass(BaseModel):
-    request: TurnRequest
+    request: int
     response: GameStateResponse
 
 def some_helper_function(custom_arg: SomeCustomClass) -> SomeCustomClass:
