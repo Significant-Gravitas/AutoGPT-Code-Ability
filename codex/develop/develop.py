@@ -26,11 +26,7 @@ from codex.common.model import (
 )
 from codex.develop.compile import ComplicationFailure
 from codex.develop.function import construct_function
-from codex.develop.model import (
-    FunctionDef,
-    GeneratedFunctionResponse,
-    Package,
-)
+from codex.develop.model import FunctionDef, GeneratedFunctionResponse, Package
 
 logger = logging.getLogger(__name__)
 
@@ -163,28 +159,52 @@ class FunctionVisitor(ast.NodeVisitor):
             [
                 (isinstance(base, ast.Name) and base.id == "BaseModel")
                 or (isinstance(base, ast.Attribute) and base.attr == "BaseModel")
+                for base in node.bases
             ]
-            for base in node.bases
+        )
+        is_enum = any(
+            [
+                (isinstance(base, ast.Name) and base.id.endswith("Enum"))
+                or (isinstance(base, ast.Attribute) and base.attr.endswith("Enum"))
+                for base in node.bases
+            ]
         )
         is_implemented = not any(isinstance(v, ast.Pass) for v in node.body)
         doc_string = ""
         if node.body and isinstance(node.body[0], ast.Expr):
             doc_string = ast.unparse(node.body[0])
 
+        fields = []
+        for v in node.body:
+            if isinstance(v, ast.AnnAssign):
+                field = ObjectFieldModel(
+                    name=ast.unparse(v.target),
+                    description=ast.unparse(v.annotation),
+                    type=ast.unparse(v.annotation),
+                    value=ast.unparse(v.value) if v.value else None,
+                )
+            elif isinstance(v, ast.Assign):
+                if len(v.targets) > 1:
+                    raise ValidationError(
+                        f"Class {node.name} has multiple assignments in a single line."
+                    )
+                field = ObjectFieldModel(
+                    name=ast.unparse(v.targets[0]),
+                    description=ast.unparse(v.targets[0]),
+                    type=type(ast.unparse(v.value)).__name__,
+                    value=ast.unparse(v.value) if v.value else None,
+                )
+            else:
+                continue
+            fields.append(field)
+
         self.objects[node.name] = ObjectTypeModel(
             name=node.name,
             code=ast.unparse(node),
             description=doc_string,
-            Fields=[
-                ObjectFieldModel(
-                    name=ast.unparse(v.target),
-                    description=ast.unparse(v.annotation),
-                    type=ast.unparse(v.annotation),
-                )
-                for v in node.body
-                if isinstance(v, ast.AnnAssign)
-            ],
+            Fields=fields,
             is_pydantic=is_pydantic,
+            is_enum=is_enum,
             is_implemented=is_implemented,
         )
 
@@ -216,7 +236,8 @@ def validate_matching_function(existing_func: Function, requested_func: Function
     if any(
         [
             x[0] != y[0] or not is_type_equal(x[1], y[1])
-            for x, y in zip(expected_args, requested_func.arg_types)
+            # TODO: remove sorted and provide a stable order for one-to-many arg-types.
+            for x, y in zip(sorted(expected_args), sorted(requested_func.arg_types))
         ]
     ):
         raise ValidationError(
@@ -257,6 +278,36 @@ class DevelopAIBlock(AIBlock):
                     + "There should be exactly 1"
                 )
             code = code_blocks[0].split("```")[0]
+
+            if (".connect()" in code) or ("async with Prisma() as db:" in code):
+                raise ValidationError(
+                    """
+
+There is no need to use "await prisma_client.connect()" in the code it is already connected.
+
+Database access should be done using the prisma.models, not using a prisma client.
+
+import prisma.models
+
+user = await prisma.models.User.prisma().create(
+    data={
+        'name': 'Robert',
+        'email': 'robert@craigie.dev',
+        'posts': {
+            'create': {
+                'title': 'My first post from Prisma!',
+            },
+        },
+    },
+)
+
+"""
+                )
+
+            if "from prisma import Prisma" in code:
+                raise ValidationError(
+                    "There is no need to do `from prisma import Prisma` as we are using the prisma.models to access the database."
+                )
 
             try:
                 tree = ast.parse(code)

@@ -17,7 +17,7 @@ async def create_deployment(ids: Identifiers, completedApp: CompletedApp) -> Dep
 
     app = create_server_code(completedApp)
 
-    zip_file = create_zip_file(app)
+    zip_file = await create_zip_file(app)
     file_name = completedApp.name.replace(" ", "_")
 
     try:

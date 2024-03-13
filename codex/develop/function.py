@@ -58,20 +58,29 @@ async def construct_function(
     return input
 
 
-def generate_object_template(obj: ObjectType) -> str:
+def generate_object_template(obj: ObjectType, force_generation=False) -> str:
     # If the object already has code, use it.
-    if obj.code:
+    if obj.code and not force_generation:
         return obj.code
 
     # Auto-generate a template for the object, this will not capture any class functions.
     fields = f"\n{' ' * 8}".join(
         [
-            f"{field.name}: {field.typeName}  # {field.description}"
+            f"{field.name}: {field.typeName} "
+            f"{('= '+field.value) if field.value else ''} "
+            f"{('# '+field.description) if field.description else ''}"
             for field in obj.Fields or []
         ]
     )
+
+    parent_class = ""
+    if obj.isEnum:
+        parent_class = "Enum"
+    elif obj.isPydantic:
+        parent_class = "BaseModel"
+
     template = f"""
-    class {obj.name}(BaseModel):
+    class {obj.name}({parent_class}):
         \"\"\"
         {obj.description}
         \"\"\"

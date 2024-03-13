@@ -19,6 +19,7 @@ class ObjectTypeModel(BaseModel):
     is_implemented: bool = Field(
         description="Whether the object is implemented", default=True
     )
+    is_enum: bool = Field(description="Whether the object is an enum", default=False)
 
 
 class ObjectFieldModel(BaseModel):
@@ -26,9 +27,10 @@ class ObjectFieldModel(BaseModel):
     description: Optional[str] = Field(
         description="The description of the field", default=None
     )
-    type: "str" = Field(
+    type: str = Field(
         description="The type of the field. Can be a string like List[str] or an use any of they related types like list[User]",
     )
+    value: Optional[str] = Field(description="The value of the field", default=None)
     related_types: Optional[List[ObjectTypeModel]] = Field(
         description="The related types of the field", default=[]
     )
@@ -223,11 +225,19 @@ async def create_object_type(
 
     field_inputs = []
     for field in fields:
+        for related_type in field.related_types or []:
+            if related_type.name in available_objects:
+                continue
+            available_objects = await create_object_type(
+                related_type, available_objects
+            )
+
         field_inputs.append(
             {
                 "name": field.name,
                 "description": field.description,
                 "typeName": normalize_type(field.type),
+                "value": field.value,
                 "RelatedTypes": {
                     "connect": [
                         {"id": t.id}
@@ -238,6 +248,10 @@ async def create_object_type(
         )
 
     typing_imports = get_typing_imports([f.type for f in fields])
+    if object.is_pydantic:
+        typing_imports.append("from pydantic import BaseModel")
+    if object.is_enum:
+        typing_imports.append("from enum import Enum")
 
     created_object_type = await ObjectType.prisma().create(
         data={
@@ -245,7 +259,9 @@ async def create_object_type(
             "code": object.code,
             "description": object.description,
             "Fields": {"create": field_inputs},
-            "importStatements": ["from pydantic import BaseModel"] + typing_imports,
+            "importStatements": typing_imports,
+            "isPydantic": object.is_pydantic,
+            "isEnum": object.is_enum,
         },
         include={"Fields": {"include": {"RelatedTypes": True}}},
     )

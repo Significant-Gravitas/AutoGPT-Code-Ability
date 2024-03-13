@@ -7,7 +7,8 @@ from codex.api_model import (
     SpecificationResponse,
     SpecificationsListResponse,
 )
-from codex.common.model import ObjectTypeModel as ObjectTypeE, create_object_type
+from codex.common.model import ObjectTypeModel as ObjectTypeE
+from codex.common.model import create_object_type
 from codex.requirements.model import ApplicationRequirements
 
 
@@ -45,6 +46,7 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
                         {
                             "description": table.description,
                             "definition": table.definition,
+                            "isEnum": table.isEnum,
                         }
                         for table in route.database_schema.tables
                     ],
