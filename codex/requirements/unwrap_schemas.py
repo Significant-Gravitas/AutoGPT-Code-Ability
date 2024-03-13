@@ -1,5 +1,6 @@
 from codex.requirements.model import (
     DatabaseSchema,
+    DatabaseTable,
     DBSchemaResponseWrapper,
     Endpoint,
     EndpointSchemaRefinementResponse,
@@ -7,10 +8,21 @@ from codex.requirements.model import (
 
 
 def convert_db_schema(input: DBSchemaResponseWrapper) -> DatabaseSchema:
+    enum_tables = [
+        DatabaseTable(
+            name=t.name,
+            description=t.description,
+            definition=t.definition,
+            isEnum=True,
+        )
+        for t in input.enums
+    ]
+    tables = input.tables + enum_tables
+
     return DatabaseSchema(
         name=input.name,
         description=input.description,
-        tables=input.tables,
+        tables=tables,
         enums=input.enums,
     )
 

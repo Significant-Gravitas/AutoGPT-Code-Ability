@@ -289,6 +289,7 @@ class DatabaseTable(BaseModel):
     name: str | None = None
     description: str
     definition: str  # prisma model for a table
+    isEnum: bool = False
 
     def __str__(self):
         return f"**{self.name}**\n\n**Description**: {self.description}\n\n**Definition**:\n```\n{self.definition}\n```\n"
