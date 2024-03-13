@@ -256,29 +256,38 @@ def static_code_analysis(func: GeneratedFunctionResponse) -> str:
         imports.extend(obj.importStatements)
     imports_code = "\n".join(sorted(set(imports)))
 
-    template_code = "\n\n".join([
-        generate_object_template(obj, noqa=True, stub=True)
-        for obj in func.available_objects.values()
-    ])
+    template_code = "\n\n".join(
+        [
+            generate_object_template(obj, noqa=True, stub=True)
+            for obj in func.available_objects.values()
+        ]
+    )
 
-    objects_code = "\n\n".join([
-        generate_object_template(obj, noqa=True, stub=False)
-        for obj in func.available_objects.values()
-    ] + [
-        obj.code
-        for obj in func.objects.values()
-    ])
+    objects_code = "\n\n".join(
+        [
+            generate_object_template(obj, noqa=True, stub=False)
+            for obj in func.available_objects.values()
+        ]
+        + [obj.code for obj in func.objects.values()]
+    )
 
-    functions_code = "\n\n".join([
-        func.function_code for func in func.functions.values()
-    ])
+    functions_code = "\n\n".join(
+        [func.function_code for func in func.functions.values()]
+    )
 
     separator = "#==FunctionCode==#"
-    code = (imports_code +
-            "\n\n" + template_code +
-            "\n\n" + objects_code +
-            "\n\n" + functions_code +
-            "\n\n" + separator + func.functionCode)
+    code = (
+        imports_code
+        + "\n\n"
+        + template_code
+        + "\n\n"
+        + objects_code
+        + "\n\n"
+        + functions_code
+        + "\n\n"
+        + separator
+        + func.functionCode
+    )
 
     ruff_errors = ""
     # Run ruff to validate the code
@@ -309,6 +318,7 @@ def static_code_analysis(func: GeneratedFunctionResponse) -> str:
         raise ValidationError(f"Errors with code generation: {ruff_errors}")
 
     return code
+
 
 class DevelopAIBlock(AIBlock):
     developement_phase: DevelopmentPhase = DevelopmentPhase.DEVELOPMENT

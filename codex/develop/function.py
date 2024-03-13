@@ -58,7 +58,9 @@ async def construct_function(
     return input
 
 
-def generate_object_template(obj: ObjectType, force_gen=False, stub=False, noqa=False) -> str:
+def generate_object_template(
+    obj: ObjectType, force_gen=False, stub=False, noqa=False
+) -> str:
     # If the object already has code, use it.
     if obj.code and not force_gen:
         return obj.code
