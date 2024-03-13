@@ -129,7 +129,10 @@ async def run_benchmark_example(
             app_id = app.id
             await create_requirements(codex_client, task)
 
-        assert app_id, f"[{task.value}] App ID not found for task: {task.value}"
+        if not app_id:
+            raise AssertionError(
+                f"[{task.value}] App ID not found for task: {task.value}"
+            )
 
         results = await develop_application(session, task, user_id, app_id)
         return results

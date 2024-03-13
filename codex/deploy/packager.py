@@ -27,7 +27,7 @@ def generate_requirements_txt(
     return "\n".join(sorted(requirements))
 
 
-async def create_prisma_scheama_file(application: Application) -> str:
+async def create_prisma_schema_file(application: Application) -> str:
     tables = []
     db_schema_id = None
 
@@ -158,7 +158,7 @@ async def create_zip_file(application: Application) -> bytes:
                 requirements_file.write(packages)
 
             prism_schema_file_path = os.path.join(app_dir, "schema.prisma")
-            prisma_content = await create_prisma_scheama_file(application)
+            prisma_content = await create_prisma_schema_file(application)
             if prisma_content:
                 with open(prism_schema_file_path, mode="w") as prisma_file:
                     prisma_file.write(prisma_content)
