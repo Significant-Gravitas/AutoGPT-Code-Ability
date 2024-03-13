@@ -213,6 +213,7 @@ model DatabaseTable {
   embedding   Unsupported("vector(1536)")?
   description String
   definition  String
+  isEnum      Boolean                      @default(false)
 
   // This seems like its gonna be a nightmare to keep track of for 1-1 1-M and M-M relationships
   RelatedFromTables DatabaseTable[] @relation("TableRelations")
