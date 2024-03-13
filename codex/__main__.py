@@ -83,7 +83,7 @@ def example(hardcoded: bool):
     print("------")
     case = int(input("Enter number of the case to run: "))
 
-    task = list(ExampleTask)[case - 1]
+    task = examples[case - 1]
     asyncio.run(run_benchmark(hardcoded, task))
 
 
