@@ -250,7 +250,7 @@ def validate_matching_function(existing_func: Function, requested_func: Function
         )
 
 
-def static_code_analysis(func: GeneratedFunctionResponse):
+def static_code_analysis(func: GeneratedFunctionResponse) -> str:
     imports = func.imports.copy()
     for obj in func.available_objects.values():
         imports.extend(obj.importStatements)
@@ -308,6 +308,7 @@ def static_code_analysis(func: GeneratedFunctionResponse):
     if ruff_errors:
         raise ValidationError(f"Errors with code generation: {ruff_errors}")
 
+    return code
 
 class DevelopAIBlock(AIBlock):
     developement_phase: DevelopmentPhase = DevelopmentPhase.DEVELOPMENT
@@ -412,7 +413,7 @@ user = await prisma.models.User.prisma().create(
                 expected_types.append(expected_func.FunctionReturn.typeName)
             imports = set(visitor.imports + get_typing_imports(expected_types))
 
-            response.response = GeneratedFunctionResponse(
+            result = GeneratedFunctionResponse(
                 function_id=expected_func.id,
                 function_name=expected_func.functionName,
                 compiled_route_id=invoke_params["compiled_route_id"],
@@ -426,7 +427,8 @@ user = await prisma.models.User.prisma().create(
                 functionCode=function_code,
                 functions=functions,
             )
-            static_code_analysis(response.response)
+            result.functionCode = static_code_analysis(result)
+            response.response = result
 
             return response
         except Exception as e:
