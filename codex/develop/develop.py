@@ -267,8 +267,11 @@ def static_code_analysis(func: GeneratedFunctionResponse) -> str:
         [
             generate_object_template(obj, noqa=True, stub=False)
             for obj in func.available_objects.values()
+        ] + [
+            obj.code
+            for obj in func.objects.values()
+            if obj not in func.available_objects
         ]
-        + [obj.code for obj in func.objects.values()]
     )
 
     functions_code = "\n\n".join(
@@ -309,7 +312,7 @@ def static_code_analysis(func: GeneratedFunctionResponse) -> str:
                 logger.error(f"Ruff Errors: {stderr}")
                 ruff_errors = stderr
             with open(temp_file_path, "r") as f:
-                code = f.read().split(separator, 1)[1]
+                functions_code = f.read().split(separator, 1)[1]
         finally:
             # Ensure the temporary file is deleted
             os.remove(temp_file_path)
@@ -317,7 +320,7 @@ def static_code_analysis(func: GeneratedFunctionResponse) -> str:
     if ruff_errors:
         raise ValidationError(f"Errors with code generation: {ruff_errors}")
 
-    return code
+    return functions_code
 
 
 class DevelopAIBlock(AIBlock):
