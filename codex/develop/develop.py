@@ -1,8 +1,5 @@
 import ast
 import logging
-import os
-import subprocess
-import tempfile
 from typing import List
 
 from prisma.enums import DevelopmentPhase, FunctionState
@@ -20,6 +17,7 @@ from codex.common.ai_block import (
     ValidationError,
 )
 from codex.common.database import INCLUDE_FUNC
+from codex.common.exec_external_tool import exec_external_on_contents
 from codex.common.model import (
     ObjectFieldModel,
     ObjectTypeModel,
@@ -295,35 +293,9 @@ def static_code_analysis(func: GeneratedFunctionResponse) -> str:
         + func.functionCode
     )
 
-    ruff_errors = ""
-    # Run ruff to validate the code
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".py") as temp_file:
-        temp_file_path = temp_file.name
-        temp_file.write(code.encode("utf-8"))
-        temp_file.flush()
-
-        # Run Ruff on the temporary file
-        try:
-            result = subprocess.run(
-                ["ruff", "check", temp_file_path, "--fix"],
-                capture_output=True,
-                text=True,
-            )
-            logger.info(f"Ruff Output: {result.stdout}")
-            if temp_file_path in result.stdout:
-                stderr = result.stdout.replace(temp_file.name, "generated code")
-                logger.error(f"Ruff Errors: {stderr}")
-                ruff_errors = stderr
-            with open(temp_file_path, "r") as f:
-                functions_code = f.read().split(separator, 1)[1]
-        finally:
-            # Ensure the temporary file is deleted
-            os.remove(temp_file_path)
-
-    if ruff_errors:
-        raise ValidationError(f"Errors with code generation: {ruff_errors}")
-
-    return functions_code
+    return exec_external_on_contents(
+        command_arguments=["ruff", "check", "--fix"], file_contents=code, suffix=".py"
+    ).split(separator, maxsplit=1)[1]
 
 
 class DevelopAIBlock(AIBlock):
