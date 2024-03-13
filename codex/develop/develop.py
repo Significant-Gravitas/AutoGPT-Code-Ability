@@ -267,7 +267,8 @@ def static_code_analysis(func: GeneratedFunctionResponse) -> str:
         [
             generate_object_template(obj, noqa=True, stub=False)
             for obj in func.available_objects.values()
-        ] + [
+        ]
+        + [
             obj.code
             for obj in func.objects.values()
             if obj not in func.available_objects
