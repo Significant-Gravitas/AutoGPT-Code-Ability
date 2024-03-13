@@ -99,7 +99,7 @@ async def test_nested_function():
 @pytest.mark.asyncio
 @pytest.mark.integration_test
 async def test_with_llm_function_generation():
-    # ai_block.MOCK_RESPONSE = COMPLEX_RESPONSE
+    ai_block.MOCK_RESPONSE = COMPLEX_RESPONSE
     func = await generate_function()
     assert func is not None
 
