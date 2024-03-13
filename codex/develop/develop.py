@@ -1,5 +1,8 @@
 import ast
 import logging
+import os
+import subprocess
+import tempfile
 from typing import List
 
 from prisma.enums import DevelopmentPhase, FunctionState
@@ -16,13 +19,17 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
-from codex.develop.function import construct_function
-from codex.develop.model import (
-    FunctionDef,
-    GeneratedFunctionResponse,
-    ObjectDef,
-    Package,
+from codex.common.database import INCLUDE_FUNC
+from codex.common.model import (
+    ObjectFieldModel,
+    ObjectTypeModel,
+    create_object_type,
+    get_typing_imports,
+    is_type_equal,
 )
+from codex.develop.compile import ComplicationFailure
+from codex.develop.function import construct_function, generate_object_template
+from codex.develop.model import FunctionDef, GeneratedFunctionResponse, Package
 
 logger = logging.getLogger(__name__)
 
@@ -70,10 +77,10 @@ def parse_requirements(requirements_str: str) -> List[Package]:
 
 class FunctionVisitor(ast.NodeVisitor):
     def __init__(self):
-        self.functions = {}
-        self.objects = {}
-        self.imports = []
-        self.globals = []
+        self.functions: dict[str, FunctionDef] = {}
+        self.objects: dict[str, ObjectTypeModel] = {}
+        self.imports: list[str] = []
+        self.globals: list[str] = []
 
     def visit_Import(self, node):
         for alias in node.names:
@@ -91,8 +98,12 @@ class FunctionVisitor(ast.NodeVisitor):
             self.imports.append(import_line)
         self.generic_visit(node)
 
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef):
+        # treat async functions as normal functions
+        self.visit_FunctionDef(node)  # type: ignore
+
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
-        if node.name == "__init__":
+        if node.name in ["__init__", "__repr__"]:
             self.generic_visit(node)
             return
 
@@ -150,20 +161,60 @@ class FunctionVisitor(ast.NodeVisitor):
             [
                 (isinstance(base, ast.Name) and base.id == "BaseModel")
                 or (isinstance(base, ast.Attribute) and base.attr == "BaseModel")
+                for base in node.bases
             ]
-            for base in node.bases
+        )
+        is_enum = any(
+            [
+                (isinstance(base, ast.Name) and base.id.endswith("Enum"))
+                or (isinstance(base, ast.Attribute) and base.attr.endswith("Enum"))
+                for base in node.bases
+            ]
+        )
+        is_implemented = not any(isinstance(v, ast.Pass) for v in node.body)
+        doc_string = ""
+        if node.body and isinstance(node.body[0], ast.Expr):
+            doc_string = ast.unparse(node.body[0])
+
+        fields = []
+        for v in node.body:
+            if isinstance(v, ast.AnnAssign):
+                field = ObjectFieldModel(
+                    name=ast.unparse(v.target),
+                    description=ast.unparse(v.annotation),
+                    type=ast.unparse(v.annotation),
+                    value=ast.unparse(v.value) if v.value else None,
+                )
+            elif isinstance(v, ast.Assign):
+                if len(v.targets) > 1:
+                    raise ValidationError(
+                        f"Class {node.name} has multiple assignments in a single line."
+                    )
+                field = ObjectFieldModel(
+                    name=ast.unparse(v.targets[0]),
+                    description=ast.unparse(v.targets[0]),
+                    type=type(ast.unparse(v.value)).__name__,
+                    value=ast.unparse(v.value) if v.value else None,
+                )
+            else:
+                continue
+            fields.append(field)
+
+        self.objects[node.name] = ObjectTypeModel(
+            name=node.name,
+            code=ast.unparse(node),
+            description=doc_string,
+            Fields=fields,
+            is_pydantic=is_pydantic,
+            is_enum=is_enum,
+            is_implemented=is_implemented,
         )
 
-        self.objects[node.name] = ObjectDef(
-            name=node.name,
-            fields={
-                ast.unparse(v.target): ast.unparse(v.annotation)
-                for v in node.body
-                if isinstance(v, ast.AnnAssign)
-            },
-            is_pydantic=is_pydantic,
-            is_implemented=not any(isinstance(v, ast.Pass) for v in node.body),
-        )
+        if not is_implemented:
+            raise ValidationError(
+                f"Class {node.name} is not implemented. "
+                f"Please complete the implementation of this class!"
+            )
 
         self.generic_visit(node)
 
@@ -175,6 +226,104 @@ class FunctionVisitor(ast.NodeVisitor):
         ) and node.col_offset == 0:
             self.globals.append(ast.unparse(node))
         super().visit(node)
+
+
+def validate_matching_function(existing_func: Function, requested_func: FunctionDef):
+    expected_args = [(f.name, f.typeName) for f in existing_func.FunctionArgs or []]
+    expected_rets = (
+        existing_func.FunctionReturn.typeName if existing_func.FunctionReturn else None
+    )
+    func_name = existing_func.functionName
+
+    if any(
+        [
+            x[0] != y[0] or not is_type_equal(x[1], y[1])
+            # TODO: remove sorted and provide a stable order for one-to-many arg-types.
+            for x, y in zip(sorted(expected_args), sorted(requested_func.arg_types))
+        ]
+    ):
+        raise ValidationError(
+            f"Function {func_name} has different arguments than expected, expected {expected_args} but got {requested_func.arg_types}"
+        )
+    if not is_type_equal(expected_rets, requested_func.return_type):
+        raise ValidationError(
+            f"Function {func_name} has different return type than expected, expected {expected_rets} but got {requested_func.return_type}"
+        )
+
+
+def static_code_analysis(func: GeneratedFunctionResponse) -> str:
+    imports = func.imports.copy()
+    for obj in func.available_objects.values():
+        imports.extend(obj.importStatements)
+    imports_code = "\n".join(sorted(set(imports)))
+
+    template_code = "\n\n".join(
+        [
+            generate_object_template(obj, noqa=True, stub=True)
+            for obj in func.available_objects.values()
+        ]
+    )
+
+    objects_code = "\n\n".join(
+        [
+            generate_object_template(obj, noqa=True, stub=False)
+            for obj in func.available_objects.values()
+        ]
+        + [
+            obj.code
+            for obj in func.objects.values()
+            if obj.name not in func.available_objects
+        ]
+    )
+
+    functions_code = "\n\n".join(
+        [func.function_code for func in func.functions.values()]
+    )
+
+    separator = "#==FunctionCode==#"
+    code = (
+        imports_code
+        + "\n\n"
+        + template_code
+        + "\n\n"
+        + objects_code
+        + "\n\n"
+        + functions_code
+        + "\n\n"
+        + separator
+        + "\n"
+        + func.functionCode
+    )
+
+    ruff_errors = ""
+    # Run ruff to validate the code
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".py") as temp_file:
+        temp_file_path = temp_file.name
+        temp_file.write(code.encode("utf-8"))
+        temp_file.flush()
+
+        # Run Ruff on the temporary file
+        try:
+            result = subprocess.run(
+                ["ruff", "check", temp_file_path, "--fix"],
+                capture_output=True,
+                text=True,
+            )
+            logger.info(f"Ruff Output: {result.stdout}")
+            if temp_file_path in result.stdout:
+                stderr = result.stdout.replace(temp_file.name, "generated code")
+                logger.error(f"Ruff Errors: {stderr}")
+                ruff_errors = stderr
+            with open(temp_file_path, "r") as f:
+                functions_code = f.read().split(separator, 1)[1]
+        finally:
+            # Ensure the temporary file is deleted
+            os.remove(temp_file_path)
+
+    if ruff_errors:
+        raise ValidationError(f"Errors with code generation: {ruff_errors}")
+
+    return functions_code
 
 
 class DevelopAIBlock(AIBlock):
@@ -207,6 +356,41 @@ class DevelopAIBlock(AIBlock):
                 )
             code = code_blocks[0].split("```")[0]
 
+            if (".connect()" in code) or ("async with Prisma() as db:" in code):
+                raise ValidationError(
+                    """
+
+There is no need to use "await prisma_client.connect()" in the code it is already connected.
+
+Database access should be done using the prisma.models, not using a prisma client.
+
+import prisma.models
+
+user = await prisma.models.User.prisma().create(
+    data={
+        'name': 'Robert',
+        'email': 'robert@craigie.dev',
+        'posts': {
+            'create': {
+                'title': 'My first post from Prisma!',
+            },
+        },
+    },
+)
+
+"""
+                )
+
+            if "from prisma import Prisma" in code:
+                raise ValidationError(
+                    "There is no need to do `from prisma import Prisma` as we are using the prisma.models to access the database."
+                )
+
+            if ("prisma.errors." in code) and ("import prisma.errors" not in code):
+                raise ValidationError(
+                    "You are using prisma.errors but not importing it. Please add `import prisma.errors` at the top of the code."
+                )
+
             try:
                 tree = ast.parse(code)
                 visitor = FunctionVisitor()
@@ -220,50 +404,53 @@ class DevelopAIBlock(AIBlock):
                 # Important: ValidationErrors are used in the retry prompt
                 raise ValidationError(f"Function {func_name} not found in code")
 
-            requested_func: FunctionDef = visitor.functions[
-                invoke_params["function_name"]
-            ]
-
-            if not requested_func.is_implemented:
-                # Important: ValidationErrors are used in the retry prompt
+            requested_func = visitor.functions.get(invoke_params["function_name"])
+            if not requested_func or not requested_func.is_implemented:
                 raise ValidationError(
-                    "Main Function body is empty, it should contain"
-                    + " the implementation of this function!"
+                    f"Main Function body {func_name} is not implemented."
+                    f" Please complete the implementation of this function!"
                 )
             function_code = (
                 "\n".join(visitor.globals) + "\n\n" + requested_func.function_code
             )
 
             # Validate the requested_func.args and requested_func.returns to the invoke_params
-            expected_args = invoke_params["function_args"]
-            expected_rets = invoke_params["function_rets"]
-            if expected_args != requested_func.arg_types:
-                raise ValidationError(
-                    f"Function {func_name} has different arguments than expected, expected {expected_args} but got {requested_func.arg_types}"
+            expected_func: Function = invoke_params["available_functions"].get(
+                func_name
+            )
+            if not expected_func:
+                raise ComplicationFailure(
+                    f"Function {func_name} signature not available"
                 )
-            if expected_rets != requested_func.return_type:
-                raise ValidationError(
-                    f"Function {func_name} has different return type than expected, expected {expected_rets} but got {requested_func.return_type}"
-                )
+            validate_matching_function(expected_func, requested_func)
 
             functions = visitor.functions.copy()
-            del functions[invoke_params["function_name"]]
+            del functions[func_name]
 
-            response.response = GeneratedFunctionResponse(
-                function_id=invoke_params["function_id"]
-                if "function_id" in invoke_params
-                else None,
-                function_name=invoke_params["function_name"],
-                api_route_spec=invoke_params["api_route"],
+            expected_types = []
+            if expected_func.FunctionArgs:
+                expected_types.extend([v.typeName for v in expected_func.FunctionArgs])
+            if expected_func.FunctionReturn:
+                expected_types.append(expected_func.FunctionReturn.typeName)
+            imports = set(visitor.imports + get_typing_imports(expected_types))
+
+            result = GeneratedFunctionResponse(
+                function_id=expected_func.id,
+                function_name=expected_func.functionName,
+                compiled_route_id=invoke_params["compiled_route_id"],
                 available_objects=invoke_params["available_objects"],
+                available_functions=invoke_params["available_functions"],
                 rawCode=code,
                 packages=packages,
-                imports=visitor.imports,
+                imports=sorted(imports),
                 objects=visitor.objects,
                 template=requested_func.function_template,
                 functionCode=function_code,
                 functions=functions,
             )
+            result.functionCode = static_code_analysis(result)
+            response.response = result
+
             return response
         except Exception as e:
             # Important: ValidationErrors are used in the retry prompt
@@ -285,15 +472,30 @@ class DevelopAIBlock(AIBlock):
             func: The updated item
         """
         generated_response: GeneratedFunctionResponse = validated_response.response
+
+        available_objects = generated_response.available_objects
+        for obj in generated_response.objects.values():
+            available_objects = await create_object_type(obj, available_objects)
+
         function_defs: list[FunctionCreateInput] = []
         if generated_response.functions:
-            for key, value in generated_response.functions.items():
-                model = construct_function(value, generated_response.available_objects)
+            for function in generated_response.functions.values():
+                # Skip if the function is already available
+                available_functions = generated_response.available_functions
+                if function.name in available_functions:
+                    same_func = available_functions[function.name]
+                    validate_matching_function(same_func, function)
+                    continue
+
+                model = await construct_function(
+                    function, generated_response.available_objects
+                )
+                model["CompiledRoute"] = {
+                    "connect": {"id": generated_response.compiled_route_id}
+                }
                 function_defs.append(model)
 
         update_obj = FunctionUpdateInput(
-            functionName=generated_response.function_name,
-            template=generated_response.template,
             state=FunctionState.WRITTEN,
             Packages={
                 "create": [
@@ -308,50 +510,25 @@ class DevelopAIBlock(AIBlock):
             rawCode=generated_response.rawCode,
             importStatements=generated_response.imports,
             functionCode=generated_response.functionCode,
-            ChildFunction={"create": function_defs},
-            ApiRouteSpec={"connect": {"id": generated_response.api_route_spec.id}},
+            ChildFunctions={"create": function_defs},
         )
 
         if not generated_response.function_id:
             raise AssertionError("Function ID is required to update")
 
         func: Function | None = await Function.prisma().update(
-            where={"id": generated_response.function_id}, data=update_obj
+            where={"id": generated_response.function_id},
+            data=update_obj,
+            include={
+                **INCLUDE_FUNC["include"],
+                "ParentFunction": INCLUDE_FUNC,
+                "ChildFunctions": INCLUDE_FUNC,
+            },
         )
         if not func:
             raise AssertionError(
                 f"Function with id {generated_response.function_id} not found"
             )
-
-        # Child Functions Must be created without relations
-        # Here we add the relations after the function is created
-        if func.ChildFunction:
-            for function_def in func.ChildFunction:
-                await Function.prisma().update(
-                    where={"id": function_def.id},
-                    data={
-                        "ApiRouteSpec": {
-                            "connect": {"id": generated_response.api_route_spec.id}
-                        }
-                    },
-                )
-        # We need to reload from the database the child functions so they
-        # have the api route spec attached
-        func = await Function.prisma().find_unique_or_raise(
-            where={"id": func.id},
-            include={
-                "ParentFunction": True,
-                "FunctionArgs": True,
-                "FunctionReturn": True,
-                "ChildFunction": {
-                    "include": {
-                        "ApiRouteSpec": True,
-                        "FunctionArgs": True,
-                        "FunctionReturn": True,
-                    }
-                },
-            },
-        )
 
         logger.info(f"✅ Updated Function: {func.functionName} - {func.id}")
 

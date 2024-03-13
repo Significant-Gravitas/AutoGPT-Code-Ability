@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from dotenv import load_dotenv
 from fastapi.testclient import TestClient
@@ -9,8 +11,8 @@ from codex.common.test_const import app_id_1, user_id_1
 
 load_dotenv()
 
-
-OpenAIChatClient.configure({})
+openai_api_key = os.environ.get("OPENAI_API_KEY", "")
+OpenAIChatClient.configure({"api_key": openai_api_key})
 setup_logging(local=True)
 
 
@@ -23,6 +25,7 @@ def client():
 API: str = "/api/v1"
 
 
+@pytest.mark.integration_test
 def test_user_apis(client):
     # List Users
     response = client.get(
@@ -53,6 +56,7 @@ def test_user_apis(client):
     assert user["id"] == user_id_1
 
 
+@pytest.mark.integration_test
 def test_apps_apis(client):
     # Create App
     response = client.post(f"{API}/user/{user_id_1}/apps/", json={"name": "Test App"})
@@ -81,6 +85,7 @@ def test_apps_apis(client):
     assert next((a for a in apps if a["id"] == app["id"]), None) is None
 
 
+@pytest.mark.integration_test
 def test_interview_apis(client):
     # Create Interview
     response = client.post(
@@ -113,6 +118,7 @@ def test_interview_apis(client):
     assert response.status_code == 200
 
 
+@pytest.mark.integration_test
 def test_specs_apis(client):
     # List Specs
     response = client.get(f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/")
@@ -143,6 +149,7 @@ def test_specs_apis(client):
     # assert next((s for s in specs if s['id'] == spec['id']), None) is None
 
 
+@pytest.mark.integration_test
 def test_deliverables_and_deployments_apis(client):
     ###### Deliverables ######
     spec_id = client.get(f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/").json()[

@@ -12,9 +12,12 @@ logger = logging.getLogger(__name__)
 
 
 async def create_deployment(ids: Identifiers, completedApp: CompletedApp) -> Deployment:
+    if not ids.user_id:
+        raise ValueError("User ID is required to create a deployment")
+
     app = create_server_code(completedApp)
 
-    zip_file = create_zip_file(app)
+    zip_file = await create_zip_file(app)
     file_name = completedApp.name.replace(" ", "_")
 
     try:

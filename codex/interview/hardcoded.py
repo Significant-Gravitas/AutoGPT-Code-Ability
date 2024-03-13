@@ -222,6 +222,30 @@ def invoice_payment_tracking() -> Interview:
     return interview
 
 
+def ticktacktoe_game() -> Interview:
+    interview = Interview(
+        app_name="TicTacToe",
+        project_description="A simple game of TicTacToe",
+        questions=[
+            InterviewMessageWithResponseOptionalId(
+                tool="ask",
+                content="What are the requirements for the game?",
+                response="The game should allow two players to take turns marking the spaces in a 3x3 grid. The player who succeeds in placing three of their marks in a horizontal, vertical, or diagonal row is the winner.",
+                id=None,
+            ),
+            InterviewMessageWithResponseOptionalId(
+                tool="ask",
+                content="What are the main challenges faced with the current game?",
+                response="The main challenges include manual data entry, lack of real-time tracking, and difficulty in generating comprehensive financial reports.",
+                id=None,
+            ),
+        ],
+        id=str(uuid.uuid4()),
+        createdAt=datetime.now(),
+    )
+    return interview
+
+
 if __name__ == "__main__":
     from codex.common.logging_config import setup_logging
 

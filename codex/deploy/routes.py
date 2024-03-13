@@ -19,6 +19,7 @@ import codex.database
 import codex.deploy.agent as deploy_agent
 import codex.deploy.database
 from codex.api_model import DeploymentResponse, DeploymentsListResponse, Identifiers
+from codex.common.database import INCLUDE_FUNC
 
 logger = logging.getLogger(__name__)
 
@@ -47,19 +48,23 @@ async def create_deployment(
                     ApiRouteSpec=APIRouteSpecArgsFromCompiledRouteRecursive2(
                         include=APIRouteSpecIncludeFromAPIRouteSpecRecursive3(
                             RequestObject=ObjectTypeArgsFromAPIRouteSpecRecursive4(
-                                **{"include": {"Fields": True}}
+                                **{
+                                    "include": {
+                                        "Fields": {"include": {"RelatedTypes": True}}
+                                    }
+                                }
                             ),
                             ResponseObject=ObjectTypeArgsFromAPIRouteSpecRecursive4(
-                                **{"include": {"Fields": True}}
+                                **{
+                                    "include": {
+                                        "Fields": {"include": {"RelatedTypes": True}}
+                                    }
+                                }
                             ),
-                        )
+                            DatabaseSchema={"include": {"DatabaseTables": True}},
+                        ),
                     ),
-                    RootFunction={  # type: ignore
-                        "include": {
-                            "FunctionArgs": {"include": {"Type": True}},
-                            "FunctionReturn": {"include": {"Type": True}},
-                        }
-                    },
+                    RootFunction=INCLUDE_FUNC,
                 )
             ),
         )

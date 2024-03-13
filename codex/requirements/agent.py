@@ -3,13 +3,16 @@ import json
 import logging
 from asyncio import run
 
-import openai
 import prisma
 from prisma.enums import AccessLevel
 from prisma.models import Specification
 from pydantic.json import pydantic_encoder
 
 from codex.api_model import Identifiers
+from codex.common.ai_model import OpenAIChatClient
+from codex.common.logging_config import setup_logging
+from codex.common.model import ObjectFieldModel
+from codex.common.model import ObjectTypeModel as ObjectTypeE
 from codex.common.test_const import identifier_1
 from codex.interview.database import get_interview
 from codex.prompts.claude.requirements.NestJSDocs import (
@@ -40,11 +43,8 @@ from codex.requirements.database import create_spec
 from codex.requirements.hardcoded import (
     appointment_optimization_requirements,
     availability_checker_requirements,
-    calendar_booking_system,
     distance_calculator_requirements,
-    inventory_mgmt_system,
     invoice_generator_requirements,
-    invoice_payment_tracking,
     profile_management,
     tictactoe_game_requirements,
 )
@@ -54,18 +54,15 @@ from codex.requirements.model import (
     ApplicationRequirements,
     Clarification,
     DBResponse,
-    Endpoint,
-    EndpointSchemaRefinementResponse,
     ExampleTask,
     Feature,
     FeaturesSuperObject,
+    Module,
     ModuleRefinement,
     ModuleResponse,
     QandA,
-    RequestModel,
     RequirementsGenResponse,
     RequirementsRefined,
-    ResponseModel,
     StateObj,
 )
 from codex.requirements.unwrap_schemas import convert_db_schema, convert_endpoint
@@ -80,18 +77,19 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
 
     Args:
         ids (Identifiers): Relevant ids for database operations
-        app_name (str): name of the application
         description (str): description of the application
 
     Returns:
         ApplicationRequirements: The system requirements for the application
     """
+    if not ids.user_id or not ids.app_id:
+        raise ValueError("User and App Ids are required")
 
     running_state_obj = StateObj(task=description)
 
     logger.info("State Object Created")
-    # User Interview
 
+    # User Interview
     interview = await get_interview(
         user_id=ids.user_id, app_id=ids.app_id, interview_id=ids.interview_id or ""
     )
@@ -174,7 +172,7 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
     )
 
     # Parsing
-    running_state_obj.product_name = feature_so.project_name
+    running_state_obj.product_name = interview.name
     running_state_obj.product_description = feature_so.description
     features: list[Feature] = []
 
@@ -250,20 +248,25 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
 
     logger.info("Modules 1st Step Done")
 
-    # Database Design
-    database_block = DatabaseGenerationBlock()
-    db_response: DBResponse = await database_block.invoke(
-        ids=ids,
-        invoke_params={
-            "product_spec": running_state_obj.__str__(),
-            "needed_auth_roles": running_state_obj.refined_requirement_q_a.authorization_roles,
-            "modules": ", ".join(module.name for module in running_state_obj.modules),
-        },
-    )
+    # Database Generation
+    if running_state_obj.refined_requirement_q_a.need_db:
+        logger.info("DB Started")
+        # Database Design
+        database_block = DatabaseGenerationBlock()
+        db_response: DBResponse = await database_block.invoke(
+            ids=ids,
+            invoke_params={
+                "product_spec": running_state_obj.__str__(),
+                "needed_auth_roles": running_state_obj.refined_requirement_q_a.authorization_roles,
+                "modules": ", ".join(
+                    module.name for module in running_state_obj.modules
+                ),
+            },
+        )
 
-    running_state_obj.database = convert_db_schema(db_response.database_schema)
+        running_state_obj.database = convert_db_schema(db_response.database_schema)
 
-    logger.info("DB Done")
+        logger.info("DB Done")
 
     # Module Refinement
     # Build the requirements from the Q&A
@@ -312,24 +315,34 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
     logger.info("Refined Modules Done")
 
     # DB Schemas
-    db_table_names: list[str] = [
-        table.name or "" for table in running_state_obj.database.tables
-    ]
+    db_table_names: list[str] = []
+    if running_state_obj.database:
+        db_table_names = [
+            table.name or "" for table in running_state_obj.database.tables
+        ]
 
-    for i, module in enumerate(running_state_obj.modules):
+    # DB Enums
+    db_enum_names: list[str] = []
+    if running_state_obj.database:
+        db_enum_names = [enum.name or "" for enum in running_state_obj.database.enums]
+
+    # This process just refineds the api endpoints. It can be ran in parallel
+    # for all the modules and their endpoints
+    async def process_module(
+        module: Module, running_state_obj: StateObj, db_table_names: list[str]
+    ):
         if module.endpoints:
             logger.info(f"Endpoints for {module.name} Started")
 
             endpoint_block = EndpointSchemaRefinementBlock()
-            new_endpoints: list[
-                EndpointSchemaRefinementResponse
-            ] = await asyncio.gather(
+            new_endpoints = await asyncio.gather(
                 *[
                     endpoint_block.invoke(
                         ids=ids,
                         invoke_params={
                             "spec": running_state_obj.__str__(),
                             "db_models": f"[{','.join(db_table_names)}]",
+                            "db_enums": f"[{','.join(db_enum_names)}]",
                             "module_repr": f"{module!r}",
                             "endpoint_repr": f"{endpoint!r}",
                         },
@@ -337,28 +350,28 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
                     for endpoint in module.endpoints
                 ]
             )
+
             for j, new_endpoint in enumerate(new_endpoints):
-                converted: Endpoint = convert_endpoint(
+                converted = convert_endpoint(
                     input=new_endpoint,
                     existing=module.endpoints[j],
                     database=running_state_obj.database,
                 )
                 logger.debug(f"{converted!r}")
                 logger.info(f"Endpoint {converted.type} {converted.name} Done")
-                running_state_obj.modules[i].endpoints[j] = converted  # type: ignore
-        logger.info(f"Endpoints for {module.name} Done")
+                module.endpoints[j] = converted
+            logger.info(f"Endpoints for {module.name} Done")
+
+    # Gather all module processing tasks
+    module_tasks = [
+        process_module(module, running_state_obj, db_table_names)
+        for module in running_state_obj.modules
+    ]
+
+    # Run all module tasks in parallel
+    await asyncio.gather(*module_tasks)
 
     logger.info("Endpoints Done")
-
-    # Add support and tracking for models by module and add them to the prompt
-
-    # Step 5) Define the request and response models
-
-    # We maybe able to avoid needing llm calls for that
-
-    # Step 6) Generate the complete api route requirements
-
-    # Step 7) Compile the application requirements
 
     api_routes: list[APIRouteRequirement] = []
     for module in running_state_obj.modules:
@@ -373,20 +386,25 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
                         path=route.path,
                         description=route.description,
                         request_model=route.request_model
-                        or RequestModel(
-                            name="None Provided",
-                            description="None Provided",
-                            params=[],
-                        ),
+                        or ObjectTypeE(name="None", Fields=[]),
                         response_model=route.response_model
-                        or ResponseModel(
-                            name="None Provided",
-                            description="None Provided",
-                            params=[],
+                        or ObjectTypeE(
+                            name="Output",
+                            Fields=[
+                                ObjectFieldModel(
+                                    name="message",
+                                    type="str",
+                                    description="The message returned by the route",
+                                ),
+                                ObjectFieldModel(
+                                    name="status_code",
+                                    type="int",
+                                    description="The status returned by the route",
+                                ),
+                            ],
                         ),
                         database_schema=route.database_schema,
                         access_level=AccessLevel.PUBLIC,
-                        data_models=route.data_models,
                     )
                 )
 
@@ -398,6 +416,13 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
     logger.info("Full Spec Done")
     saved_spec: Specification = await create_spec(ids, full_spec)
     logger.info("Saved Spec Done")
+    if logger.level == logging.DEBUG:
+        with open("requirements_debug.py", "a+") as f:
+            f.write(f"# Name: {running_state_obj.product_name}\n")
+            f.write(f"full_spec = {full_spec!r}\n")
+            f.write(f"saved_spec = {saved_spec!r}\n")
+            f.write("\n")
+            f.write("\n")
     # Step 8) Return the application requirements
     return saved_spec
 
@@ -419,12 +444,6 @@ def hardcoded_requirements(task: ExampleTask) -> ApplicationRequirements:
             return distance_calculator_requirements()
         case ExampleTask.PROFILE_MANAGEMENT_SYSTEM:
             return profile_management()
-        case ExampleTask.CALENDAR_BOOKING_SYSTEM:
-            return calendar_booking_system()
-        case ExampleTask.INVENTORY_MANAGEMENT_SYSTEM:
-            return inventory_mgmt_system()
-        case ExampleTask.INVOICING_AND_PAYMENT_TRACKING_SYSTEM:
-            return invoice_payment_tracking()
         case ExampleTask.TICTACTOE_GAME:
             return tictactoe_game_requirements()
         case _:
@@ -446,8 +465,10 @@ async def populate_database_specs():
       7 | 2024-02-08 11:51:15.216 | 2024-02-08 11:51:15.216 | Scurvey Tool                  | t       |      2
     """
     ids = identifier_1
-
-    for task in list(ExampleTask):
+    examples: list[ExampleTask] = [
+        task for task in list(ExampleTask) if ExampleTask.get_app_id(task) is not None
+    ]
+    for task in examples:
         app_id = ExampleTask.get_app_id(task)
         print(f"Creating Spec for {task}, with app_id {app_id}")
         spec = hardcoded_requirements(task)
@@ -457,13 +478,12 @@ async def populate_database_specs():
 
 
 if __name__ == "__main__":
-    from codex.common.test_const import identifier_1
+    from codex.common.test_const import identifier_1, interview_id_1
 
     ids = identifier_1
     db_client = prisma.Prisma(auto_register=True)
 
-    oai = openai.AsyncOpenAI()
-
+    OpenAIChatClient.configure({})
     task = """The Tutor App is an app designed for tutors to manage their clients,
  schedules, and invoices.
 
@@ -482,6 +502,8 @@ Additionally, it will have proper management of financials, including invoice ma
 
     async def run_gen():
         await db_client.connect()
+        ids.interview_id = interview_id_1
+        setup_logging(local=True)
         logger.info("Starting Requirements Generation")
         output = await generate_requirements(ids=ids, description=task)
         logger.info("Requirements Generation Done")

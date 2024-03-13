@@ -8,6 +8,7 @@ from prisma.enums import AccessLevel
 from pydantic import BaseModel, ConfigDict
 
 import codex.common.test_const as test_consts
+from codex.common.model import ObjectTypeModel as ObjectTypeE
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,20 @@ class ExampleTask(Enum):
 
     @staticmethod
     def get_app_id(task):
+        """
+        Get the corresponding app ID based on the given task.
+        If we do not have hardcoded requirements we return None
+
+        Args:
+            task (ExampleTask): The task for which to retrieve the app ID.
+
+        Returns:
+            str or None: The app ID corresponding to the task, or None if no app ID is available.
+
+        Raises:
+            NotImplementedError: If the given task is not implemented.
+
+        """
         match task:
             case ExampleTask.AVAILABILITY_CHECKER:
                 return test_consts.app_id_1
@@ -43,11 +58,14 @@ class ExampleTask(Enum):
             case ExampleTask.PROFILE_MANAGEMENT_SYSTEM:
                 return test_consts.app_id_5
             case ExampleTask.CALENDAR_BOOKING_SYSTEM:
-                return test_consts.app_id_6
+                # return test_consts.app_id_6
+                return None
             case ExampleTask.INVENTORY_MANAGEMENT_SYSTEM:
-                return test_consts.app_id_7
+                # return test_consts.app_id_7
+                return None
             case ExampleTask.INVOICING_AND_PAYMENT_TRACKING_SYSTEM:
-                return test_consts.app_id_8
+                # return test_consts.app_id_8
+                return None
             case ExampleTask.TICTACTOE_GAME:
                 return test_consts.app_id_11
             case _:
@@ -55,6 +73,20 @@ class ExampleTask(Enum):
 
     @staticmethod
     def get_interview_id(task):
+        """
+        Get the interview ID based on the given task.
+        If we do not have hardcoded requirements we return None
+
+        Args:
+            task (ExampleTask): The task for which to retrieve the interview ID.
+
+        Returns:
+            int or None: The interview ID corresponding to the task, or None if no interview ID is available.
+
+        Raises:
+            NotImplementedError: If the task is not implemented.
+
+        """
         match task:
             case ExampleTask.AVAILABILITY_CHECKER:
                 return test_consts.interview_id_1
@@ -67,11 +99,53 @@ class ExampleTask(Enum):
             case ExampleTask.PROFILE_MANAGEMENT_SYSTEM:
                 return test_consts.interview_id_5
             case ExampleTask.CALENDAR_BOOKING_SYSTEM:
-                return test_consts.interview_id_6
+                # return test_consts.interview_id_6
+                return None
             case ExampleTask.INVENTORY_MANAGEMENT_SYSTEM:
-                return test_consts.interview_id_7
+                # return test_consts.interview_id_7
+                return None
             case ExampleTask.INVOICING_AND_PAYMENT_TRACKING_SYSTEM:
-                return test_consts.interview_id_8
+                # return test_consts.interview_id_8
+                return None
+            case ExampleTask.TICTACTOE_GAME:
+                return test_consts.interview_id_11
+            case _:
+                raise NotImplementedError(f"Example Task {task.value} not implemented")
+
+    @staticmethod
+    def get_task_description(task):
+        """
+        Returns the description of a given task.
+
+        Parameters:
+        - task: An instance of the ExampleTask enum.
+
+        Returns:
+        - A string representing the description of the task.
+
+        Raises:
+        - NotImplementedError: If the task is not implemented.
+        """
+
+        match task:
+            case ExampleTask.AVAILABILITY_CHECKER:
+                return "Function that returns the real-time availability of professionals, updating based on current activity or schedule."
+            case ExampleTask.INVOICE_GENERATOR:
+                return "Generates invoices based on services, billable hours, and parts used, with options for different rates and taxes."
+            case ExampleTask.APPOINTMENT_OPTIMIZATION_TOOL:
+                return "Suggests optimal appointment slots based on availability, working hours, and travel time considerations."
+            case ExampleTask.DISTANCE_CALCULATOR:
+                return "Calculates the distance between the professional's and client's locations for planning travel time."
+            case ExampleTask.PROFILE_MANAGEMENT_SYSTEM:
+                return "Allows creation and updating of client and professional profiles, storing contact info, preferences, and history."
+            case ExampleTask.CALENDAR_BOOKING_SYSTEM:
+                return "Enables booking, rescheduling, or canceling of appointments, and allows professionals to manage their schedules."
+            case ExampleTask.INVENTORY_MANAGEMENT_SYSTEM:
+                return "Tracks inventory levels and usage for each client service, including adding, updating, and deleting items."
+            case ExampleTask.INVOICING_AND_PAYMENT_TRACKING_SYSTEM:
+                return "Manages invoicing for services rendered, tracks payments, and handles financial reports and insights."
+            case ExampleTask.TICTACTOE_GAME:
+                return "Two Players TicTacToe Game communicate through an API."
             case _:
                 raise NotImplementedError(f"Example Task {task.value} not implemented")
 
@@ -188,10 +262,6 @@ class FeaturesSuperObject(BaseModel):
     features: list[FeatureWrapper]
 
 
-# class WrappedRequirementsQA(BaseModel):
-#     wrapper: RequirementsQA
-
-
 class RequirementsResponse(BaseModel):
     think: str
     answer: list[RequirementsQA]
@@ -205,39 +275,21 @@ class ModuleRefinementRequirement(BaseModel):
         return f"#### Requirement: {self.name}\n{self.description}\n"
 
 
-class Parameter(BaseModel):
-    name: str
-    param_type: str
-    description: str
-
-    def __str__(self):
-        return f"- **Name**: {self.name}\n  - **Type**: {self.param_type}\n  - **Description**: {self.description}\n"
-
-
-class RequestModel(BaseModel):
+class DatabaseEnums(BaseModel):
     name: str
     description: str
-    params: List[Parameter]
+    values: list[str]
+    definition: str
 
     def __str__(self):
-        params_str = "\n".join(param.__str__() for param in self.params)
-        return f"###### {self.name}\n**Description**: {self.description}\n\n**Parameters**:\n{params_str}\n"
-
-
-class ResponseModel(BaseModel):
-    name: str
-    description: str
-    params: List[Parameter]
-
-    def __str__(self):
-        params_str = "\n".join(param.__str__() for param in self.params)
-        return f"###### {self.name}\n**Description**: {self.description}\n\n**Parameters**:\n{params_str}\n"
+        return f"**{self.name}**\n\n**Description**: {self.description}\n\n**Values**:\n{', '.join(self.values)}\n"
 
 
 class DatabaseTable(BaseModel):
     name: str | None = None
     description: str
     definition: str  # prisma model for a table
+    isEnum: bool = False
 
     def __str__(self):
         return f"**{self.name}**\n\n**Description**: {self.description}\n\n**Definition**:\n```\n{self.definition}\n```\n"
@@ -247,33 +299,22 @@ class DatabaseSchema(BaseModel):
     name: str  # name of the database schema
     description: str  # context on what the database schema is
     tables: List[DatabaseTable]  # list of tables in the database schema
+    enums: List[DatabaseEnums]
 
     def __str__(self):
         tables_str = "\n".join(str(table) for table in self.tables)
         return f"## {self.name}\n**Description**: {self.description}\n**Tables**:\n{tables_str}\n"
 
 
-class EndpointDataModel(BaseModel):
-    name: str
-    description: Optional[str]
-    params: List[Parameter]
-
-
-class NewAPIModel(BaseModel):
-    name: str
-    description: Optional[str]
-    params: List[Parameter]
-
-
 class APIEndpointWrapper(BaseModel):
-    request_model: NewAPIModel
-    response_model: NewAPIModel
+    request_model: ObjectTypeE
+    response_model: ObjectTypeE
 
 
 class EndpointSchemaRefinementResponse(BaseModel):
     think: str
     db_models_needed: list[str]
-    new_api_models: list[NewAPIModel]
+    # new_api_models: list[ObjectTypeE]
     api_endpoint: APIEndpointWrapper
     end_thoughts: Optional[str]
 
@@ -295,9 +336,10 @@ class Endpoint(BaseModel):
     ]
     description: str
     path: str
-    request_model: Optional[RequestModel]
-    response_model: Optional[ResponseModel]
-    data_models: Optional[List[EndpointDataModel]]
+    request_model: Optional[ObjectTypeE]
+    response_model: Optional[ObjectTypeE]
+    # TODO(ntindle): reintroduce this when supported by the system?
+    # data_models: Optional[List[ObjectFieldE]]
     database_schema: Optional[DatabaseSchema]
 
     def __str__(self):
@@ -308,10 +350,7 @@ class Endpoint(BaseModel):
             request_response_text += f"##### Request: `{self.request_model.__str__() or 'Not defined yet'}`\n"
         if self.response_model:
             request_response_text += f"##### Response:`{self.request_model.__str__() or 'Not defined yet'}`\n"
-        if self.data_models:
-            data_model_text += "\n\n".join(
-                [data_model.__str__() for data_model in self.data_models]
-            )
+
         if self.database_schema:
             database_text += (
                 f"##### Database Schema\n\n{self.database_schema.__str__()}"
@@ -374,10 +413,6 @@ class ModuleResponse(BaseModel):
         return f"Thoughts: {self.think_general}\nAnti:{self.think_anti}\n{answer_str}"
 
 
-# class DBSchemaTableResponseWrapper(BaseModel):
-#     table: DatabaseTable
-
-
 class DBSchemaResponseWrapper(BaseModel):
     # name of the database schema
     name: str
@@ -385,6 +420,7 @@ class DBSchemaResponseWrapper(BaseModel):
     description: str
     # list of tables in the database schema
     tables: List[DatabaseTable]
+    enums: List[DatabaseEnums]
 
 
 class PreAnswer(BaseModel):
@@ -499,14 +535,14 @@ class APIRouteRequirement(BaseModel):
     access_level: AccessLevel
 
     # This is the model for the request and response
-    request_model: RequestModel | None
-    response_model: ResponseModel | None
+    request_model: ObjectTypeE
+    response_model: ObjectTypeE
 
     # This is the database schema this api route will use
     # I'm thinking it will be a prisma table schema or maybe a list of table schemas
     # See the schema.prisma file in the codex directory more info
     database_schema: DatabaseSchema | None = None
-    data_models: Optional[List[EndpointDataModel]] = None
+    # data_models: Optional[List[ObjectFieldE]] = None
 
     def __str__(self):
         db_schema_str = (

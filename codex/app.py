@@ -4,6 +4,7 @@ import os
 import sentry_sdk
 from fastapi import FastAPI
 from prisma import Prisma
+from contextlib import asynccontextmanager
 from sentry_sdk.integrations.aiohttp import AioHttpIntegration
 from sentry_sdk.integrations.asyncio import AsyncioIntegration
 from sentry_sdk.integrations.fastapi import FastApiIntegration
@@ -18,6 +19,14 @@ from codex.requirements.routes import spec_router
 logger = logging.getLogger(__name__)
 
 db_client = Prisma(auto_register=True)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await db_client.connect()
+    yield
+    await db_client.disconnect()
+
 
 sentry_sdk.init(
     dsn="https://0dc3905d347a9e4e81280f02deac234d@o4505260022104064.ingest.sentry.io/4506844882075648",
@@ -44,6 +53,7 @@ app = FastAPI(
     ),
     summary="Codex API",
     version="0.1",
+    lifespan=lifespan,
 )
 
 
@@ -52,13 +62,3 @@ app.include_router(interview_router, prefix="/api/v1")
 app.include_router(spec_router, prefix="/api/v1")
 app.include_router(delivery_router, prefix="/api/v1")
 app.include_router(deployment_router, prefix="/api/v1")
-
-
-@app.on_event("startup")
-async def startup():
-    await db_client.connect()
-
-
-@app.on_event("shutdown")
-async def shutdown():
-    await db_client.disconnect()

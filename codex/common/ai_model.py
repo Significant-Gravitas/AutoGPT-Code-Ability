@@ -1,8 +1,12 @@
+from typing import Optional
 from openai import AsyncOpenAI
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class OpenAIChatClient:
-    _instance: "OpenAIChatClient" = None
+    _instance: Optional["OpenAIChatClient"] = None
     _configured = False
     openai: AsyncOpenAI
 
@@ -12,11 +16,11 @@ class OpenAIChatClient:
             cls._instance = cls(openai_config)
             cls._configured = True
         else:
-            raise Exception("Singleton instance has already been configured")
+            logger.warning("OpenAIChatClient instance has already been configured")
 
     @classmethod
     def get_instance(cls) -> "OpenAIChatClient":
-        if not cls._configured:
+        if not cls._configured or cls._instance is None:
             raise Exception("Singleton instance needs to be configured first")
         return cls._instance
 

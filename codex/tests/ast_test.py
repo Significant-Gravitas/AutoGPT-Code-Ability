@@ -1,16 +1,15 @@
 import ast
-
-from dotenv import load_dotenv
+import pytest
 
 from codex.develop.develop import FunctionVisitor
-
-load_dotenv()
+from codex.common.ai_block import ValidationError
 
 
 SAMPLE_CODE = """
 from pydantic import BaseModel
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple
+
 
 class Location(BaseModel):
     name: str  # For named locations or coordinates as a string
@@ -149,6 +148,56 @@ def test_function_visitor():
     assert not visitor.functions["calculate_travel_time"].is_implemented
 
 
+CLASS_AND_ENUM_SAMPLE_CODE = """
+from pydantic import BaseModel
+from enum import Enum
+
+class Location(BaseModel):
+    name: str  # For named locations or coordinates as a string
+    latitude: float = 0.0
+    longitude: float = 0.0
+    
+class Role(Enum):
+    USER = 'USER'
+    ADMIN = 'ADMIN'
+"""
+
+
+def test_function_visitor_with_enum():
+    tree = ast.parse(CLASS_AND_ENUM_SAMPLE_CODE)
+
+    visitor = FunctionVisitor()
+    visitor.visit(tree)
+
+    # Check that all Pydantic classes are identified
+    assert "Location" in visitor.objects
+    assert "Role" in visitor.objects
+
+    # Check that all functions are identified
+    assert len(get_pydantic_classes(visitor)) == 1
+    assert len(visitor.functions) == 0
+
+    assert visitor.objects["Location"].is_pydantic
+    assert visitor.objects["Role"].is_enum
+
+    assert visitor.objects["Location"].Fields[0].name == "name"
+    assert visitor.objects["Location"].Fields[0].type == "str"
+    assert visitor.objects["Location"].Fields[0].value is None
+    assert visitor.objects["Location"].Fields[1].name == "latitude"
+    assert visitor.objects["Location"].Fields[1].type == "float"
+    assert visitor.objects["Location"].Fields[1].value == "0.0"
+    assert visitor.objects["Location"].Fields[2].name == "longitude"
+    assert visitor.objects["Location"].Fields[2].type == "float"
+    assert visitor.objects["Location"].Fields[2].value == "0.0"
+
+    assert visitor.objects["Role"].Fields[0].name == "USER"
+    assert visitor.objects["Role"].Fields[0].type == "str"
+    assert visitor.objects["Role"].Fields[0].value == "'USER'"
+    assert visitor.objects["Role"].Fields[1].name == "ADMIN"
+    assert visitor.objects["Role"].Fields[1].type == "str"
+    assert visitor.objects["Role"].Fields[1].value == "'ADMIN'"
+
+
 # Visiting a simple function definition with no arguments or return type
 def test_simple_function_definition():
     # Initialize FunctionVisitor
@@ -189,7 +238,11 @@ def test_function_with_default_arguments():
     # Assert the properties of the FunctionDef object
     function_def = visitor.functions["my_function"]
     assert function_def.name == "my_function"
-    assert function_def.arg_types == [("arg1", None), ("arg2", None), ("arg3", None)]
+    assert function_def.arg_types == [
+        ("arg1", "object"),
+        ("arg2", "object"),
+        ("arg3", "object"),
+    ], f"{function_def.arg_types}"
     assert function_def.return_type is None
     assert (
         function_def.function_template
@@ -232,8 +285,10 @@ def test_visiting_class_definition_no_pydantic_inheritance():
     # Create AST for a class definition with no Pydantic inheritance
     code = ast.parse("class MyClass:\n    pass")
 
-    # Visit the AST
-    visitor.visit(code)
+    # Use pytest.raises to check if a ValidationError is raised
+    with pytest.raises(ValidationError):
+        # Visit the AST
+        visitor.visit(code)
 
     # Assert that the pydantic_classes list is empty
     assert len(get_pydantic_classes(visitor)) == 0
@@ -245,7 +300,7 @@ def test_visiting_class_with_pydantic_inheritance():
     visitor = FunctionVisitor()
 
     # Create AST for a class definition with Pydantic inheritance
-    code = ast.parse("class MyClass(pydantic.BaseModel):\n    pass")
+    code = ast.parse("class MyClass(pydantic.BaseModel):\n    i: int")
 
     # Visit the AST
     visitor.visit(code)

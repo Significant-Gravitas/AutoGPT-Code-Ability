@@ -35,6 +35,8 @@ pipreqs = "^0.5.0"
 pytest = "^7.4.3"
 pre-commit = "^3.6.0"
 ruff = "^0.1.11"
+pytest-cov = "^4.1.0"
+pytest-integration = "^0.2.3"
 
 [tool.black]
 line-length = 79

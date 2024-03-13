@@ -1,4 +1,5 @@
 from prisma.models import Interview, Question
+from prisma.types import InterviewCreateInput
 
 from codex.api_model import Identifiers
 from codex.interview.model import (
@@ -9,23 +10,29 @@ from codex.interview.model import (
 
 
 async def create_interview(ids: Identifiers, interview: InterviewDBBase) -> Interview:
-    new_interview = await Interview.prisma().create(
-        data={
-            "applicationId": ids.app_id,
-            "userId": ids.user_id,
-            "task": interview.project_description,
-            "name": interview.app_name,
-            "finished": interview.finished,
-            "Questions": {
-                "create": [
-                    {
-                        "question": q.content,
-                        "tool": q.tool,
-                    }
-                    for q in interview.questions
-                ]
-            },
+    if not ids.user_id:
+        raise ValueError("User ID is required to create an interview")
+    if not ids.app_id:
+        raise ValueError("App ID is required to create an interview")
+
+    data = InterviewCreateInput(
+        applicationId=ids.app_id,
+        userId=ids.user_id,
+        task=interview.project_description,
+        name=interview.app_name,
+        finished=interview.finished,
+        Questions={
+            "create": [
+                {
+                    "question": q.content,
+                    "tool": q.tool,
+                }
+                for q in interview.questions
+            ]
         },
+    )
+    new_interview = await Interview.prisma().create(
+        data=data,
         include={"Questions": True},
     )
     return new_interview
@@ -34,24 +41,29 @@ async def create_interview(ids: Identifiers, interview: InterviewDBBase) -> Inte
 async def _create_interview_testing_only(
     ids: Identifiers, interview: InterviewDBBase, id: str
 ) -> Interview:
-    new_interview = await Interview.prisma().create(
-        data={
-            "id": id,
-            "applicationId": ids.app_id,
-            "userId": ids.user_id,
-            "task": interview.project_description,
-            "name": interview.app_name,
-            "finished": interview.finished,
-            "Questions": {
-                "create": [
-                    {
-                        "question": q.content,
-                        "tool": q.tool,
-                    }
-                    for q in interview.questions
-                ]
-            },
+    if not ids.user_id:
+        raise ValueError("User ID is required to create an interview")
+    if not ids.app_id:
+        raise ValueError("App ID is required to create an interview")
+    data = InterviewCreateInput(
+        id=id,
+        applicationId=ids.app_id,
+        userId=ids.user_id,
+        task=interview.project_description,
+        name=interview.app_name,
+        finished=interview.finished,
+        Questions={
+            "create": [
+                {
+                    "question": q.content,
+                    "tool": q.tool,
+                }
+                for q in interview.questions
+            ]
         },
+    )
+    new_interview = await Interview.prisma().create(
+        data=data,
         include={"Questions": True},
     )
     return new_interview
@@ -120,6 +132,8 @@ async def finsh_interview(
             },
         },
     )
+    if not updated_interview:
+        raise ValueError(f"Interview {interview_id} not found")
     return updated_interview
 
 
