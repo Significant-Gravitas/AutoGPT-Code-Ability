@@ -223,6 +223,13 @@ async def create_object_type(
 
     field_inputs = []
     for field in fields:
+        for related_type in field.related_types or []:
+            if related_type.name in available_objects:
+                continue
+            available_objects = await create_object_type(
+                related_type, available_objects
+            )
+
         field_inputs.append(
             {
                 "name": field.name,
