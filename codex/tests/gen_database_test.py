@@ -56,7 +56,7 @@ async def test_simple_function_failure():
     database_block = DatabaseGenerationBlock()
 
     try:
-        database: DBResponse = await database_block.invoke(
+        await database_block.invoke(
             ids=ids,
             invoke_params={
                 "product_spec": obj["product_spec"],
@@ -84,7 +84,7 @@ async def test_parsing_invalid_prisma_schema():
     database_block = DatabaseGenerationBlock()
 
     try:
-        database: DBResponse = await database_block.invoke(
+        await database_block.invoke(
             ids=ids,
             invoke_params={
                 "product_spec": obj["product_spec"],
