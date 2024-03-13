@@ -252,7 +252,6 @@ async def create_object_type(
         typing_imports.append("from pydantic import BaseModel")
     if object.is_enum:
         typing_imports.append("from enum import Enum")
-        # constant
 
     created_object_type = await ObjectType.prisma().create(
         data={
