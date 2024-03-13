@@ -95,8 +95,9 @@ class FunctionVisitor(ast.NodeVisitor):
             self.imports.append(import_line)
         self.generic_visit(node)
 
-    def visit_AsyncFunctionDef(self, node):
-        self.visit_FunctionDef(node)
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef):
+        # treat async functions as normal functions
+        self.visit_FunctionDef(node)  # type: ignore
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         if node.name == "__init__":
@@ -305,6 +306,11 @@ user = await prisma.models.User.prisma().create(
             if "from prisma import Prisma" in code:
                 raise ValidationError(
                     "There is no need to do `from prisma import Prisma` as we are using the prisma.models to access the database."
+                )
+
+            if ("prisma.errors." in code) and ("import prisma.errors" not in code):
+                raise ValidationError(
+                    "You are using prisma.errors but not importing it. Please add `import prisma.errors` at the top of the code."
                 )
 
             try:

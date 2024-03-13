@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from prisma.models import Function as FunctionDBModel
 from prisma.models import ObjectType, Function
@@ -17,12 +17,12 @@ class FunctionDef(BaseModel):
     name: str
     arg_types: List[tuple[str, str]]
     arg_descs: dict[str, str]
-    return_type: str | None
+    return_type: str | None = None
     return_desc: str
     is_implemented: bool
     function_desc: str
     function_code: str
-    function_template: str = None
+    function_template: str | None = None
 
     def __generate_function_template(f) -> str:
         args_str = ", ".join([f"{name}: {type}" for name, type in f.arg_types])
@@ -48,7 +48,7 @@ class FunctionDef(BaseModel):
         """
         return "\n".join([line[8:] for line in template.split("\n")]).strip()
 
-    def __init__(self, function_template: str = None, **data):
+    def __init__(self, function_template: Optional[str] = None, **data):
         super().__init__(**data)
         self.function_template = (
             function_template or self.__generate_function_template()

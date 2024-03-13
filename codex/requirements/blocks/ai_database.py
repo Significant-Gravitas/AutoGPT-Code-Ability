@@ -10,6 +10,7 @@ from codex.common.ai_model import OpenAIChatClient
 from codex.common.logging_config import setup_logging
 from codex.requirements.model import DatabaseEnums, DatabaseTable, DBResponse
 
+
 logger = logging.getLogger(__name__)
 
 
