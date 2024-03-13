@@ -289,6 +289,7 @@ def static_code_analysis(func: GeneratedFunctionResponse) -> str:
         + functions_code
         + "\n\n"
         + separator
+        + "\n"
         + func.functionCode
     )
 
