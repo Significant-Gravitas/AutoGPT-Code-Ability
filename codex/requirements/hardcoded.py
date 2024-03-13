@@ -386,6 +386,7 @@ preferences Json?
         name="ProfilesDatabase",
         description="Schema for storing client and professional profiles",
         tables=[profiles_table],
+        enums=[],
     )
 
     # Define API routes with their corresponding request and response models and link the database schema
