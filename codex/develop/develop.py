@@ -1,5 +1,8 @@
 import ast
 import logging
+import os
+import subprocess
+import tempfile
 from typing import List
 
 from prisma.enums import DevelopmentPhase, FunctionState
@@ -25,7 +28,7 @@ from codex.common.model import (
     is_type_equal,
 )
 from codex.develop.compile import ComplicationFailure
-from codex.develop.function import construct_function
+from codex.develop.function import construct_function, generate_object_template
 from codex.develop.model import FunctionDef, GeneratedFunctionResponse, Package
 
 logger = logging.getLogger(__name__)
@@ -99,7 +102,7 @@ class FunctionVisitor(ast.NodeVisitor):
         self.visit_FunctionDef(node)
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
-        if node.name == "__init__":
+        if node.name in ["__init__", "__repr__"]:
             self.generic_visit(node)
             return
 
@@ -247,6 +250,65 @@ def validate_matching_function(existing_func: Function, requested_func: Function
         )
 
 
+def static_code_analysis(func: GeneratedFunctionResponse):
+    imports = func.imports.copy()
+    for obj in func.available_objects.values():
+        imports.extend(obj.importStatements)
+    imports_code = "\n".join(sorted(set(imports)))
+
+    template_code = "\n\n".join([
+        generate_object_template(obj, noqa=True, stub=True)
+        for obj in func.available_objects.values()
+    ])
+
+    objects_code = "\n\n".join([
+        generate_object_template(obj, noqa=True, stub=False)
+        for obj in func.available_objects.values()
+    ] + [
+        obj.code
+        for obj in func.objects.values()
+    ])
+
+    functions_code = "\n\n".join([
+        func.function_code for func in func.functions.values()
+    ])
+
+    separator = "#==FunctionCode==#"
+    code = (imports_code +
+            "\n\n" + template_code +
+            "\n\n" + objects_code +
+            "\n\n" + functions_code +
+            "\n\n" + separator + func.functionCode)
+
+    ruff_errors = ""
+    # Run ruff to validate the code
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".py") as temp_file:
+        temp_file_path = temp_file.name
+        temp_file.write(code.encode("utf-8"))
+        temp_file.flush()
+
+        # Run Ruff on the temporary file
+        try:
+            result = subprocess.run(
+                ["ruff", "check", temp_file_path, "--fix"],
+                capture_output=True,
+                text=True,
+            )
+            logger.info(f"Ruff Output: {result.stdout}")
+            if temp_file_path in result.stdout:
+                stderr = result.stdout.replace(temp_file.name, "generated code")
+                logger.error(f"Ruff Errors: {stderr}")
+                ruff_errors = stderr
+            with open(temp_file_path, "r") as f:
+                code = f.read().split(separator, 1)[1]
+        finally:
+            # Ensure the temporary file is deleted
+            os.remove(temp_file_path)
+
+    if ruff_errors:
+        raise ValidationError(f"Errors with code generation: {ruff_errors}")
+
+
 class DevelopAIBlock(AIBlock):
     developement_phase: DevelopmentPhase = DevelopmentPhase.DEVELOPMENT
     prompt_template_name = "develop"
@@ -364,6 +426,8 @@ user = await prisma.models.User.prisma().create(
                 functionCode=function_code,
                 functions=functions,
             )
+            static_code_analysis(response.response)
+
             return response
         except Exception as e:
             # Important: ValidationErrors are used in the retry prompt

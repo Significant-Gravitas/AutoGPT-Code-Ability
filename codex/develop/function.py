@@ -58,9 +58,9 @@ async def construct_function(
     return input
 
 
-def generate_object_template(obj: ObjectType, force_generation=False) -> str:
+def generate_object_template(obj: ObjectType, force_gen=False, stub=False, noqa=False) -> str:
     # If the object already has code, use it.
-    if obj.code and not force_generation:
+    if obj.code and not force_gen:
         return obj.code
 
     # Auto-generate a template for the object, this will not capture any class functions.
@@ -80,10 +80,10 @@ def generate_object_template(obj: ObjectType, force_generation=False) -> str:
         parent_class = "BaseModel"
 
     template = f"""
-    class {obj.name}({parent_class}):
+    class {obj.name}({parent_class}):{" # noqa" if noqa else ""}
         \"\"\"
         {obj.description}
         \"\"\"
-        {fields}
+        {"pass" if stub else fields}
     """
     return "\n".join([line[4:] for line in template.split("\n")]).strip()
