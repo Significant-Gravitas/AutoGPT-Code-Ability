@@ -96,7 +96,6 @@ class FunctionVisitor(ast.NodeVisitor):
         self.generic_visit(node)
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef):
-        logger.error("Async functions are not supported")
         # treat async functions as normal functions
         self.visit_FunctionDef(node)  # type: ignore
 
