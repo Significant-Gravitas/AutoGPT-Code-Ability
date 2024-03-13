@@ -156,6 +156,8 @@ model ObjectType {
   name        String
   description String?
   code        String?
+  isPydantic  Boolean  @default(true)
+  isEnum      Boolean  @default(false)
 
   Fields ObjectField[] @relation("ObjectTypeFields")
 
@@ -177,6 +179,7 @@ model ObjectField {
   createdAt   DateTime @default(now())
   name        String
   description String?
+  value       String?
 
   RelatedTypes ObjectType[] @relation("ObjectFieldTypes")
   typeName     String // list,dict,etc for primitive types, Type.name for composite types.

@@ -161,28 +161,52 @@ class FunctionVisitor(ast.NodeVisitor):
             [
                 (isinstance(base, ast.Name) and base.id == "BaseModel")
                 or (isinstance(base, ast.Attribute) and base.attr == "BaseModel")
+                for base in node.bases
             ]
-            for base in node.bases
+        )
+        is_enum = any(
+            [
+                (isinstance(base, ast.Name) and base.id.endswith("Enum"))
+                or (isinstance(base, ast.Attribute) and base.attr.endswith("Enum"))
+                for base in node.bases
+            ]
         )
         is_implemented = not any(isinstance(v, ast.Pass) for v in node.body)
         doc_string = ""
         if node.body and isinstance(node.body[0], ast.Expr):
             doc_string = ast.unparse(node.body[0])
 
+        fields = []
+        for v in node.body:
+            if isinstance(v, ast.AnnAssign):
+                field = ObjectFieldModel(
+                    name=ast.unparse(v.target),
+                    description=ast.unparse(v.annotation),
+                    type=ast.unparse(v.annotation),
+                    value=ast.unparse(v.value) if v.value else None,
+                )
+            elif isinstance(v, ast.Assign):
+                if len(v.targets) > 1:
+                    raise ValidationError(
+                        f"Class {node.name} has multiple assignments in a single line."
+                    )
+                field = ObjectFieldModel(
+                    name=ast.unparse(v.targets[0]),
+                    description=ast.unparse(v.targets[0]),
+                    type=type(ast.unparse(v.value)).__name__,
+                    value=ast.unparse(v.value) if v.value else None,
+                )
+            else:
+                continue
+            fields.append(field)
+
         self.objects[node.name] = ObjectTypeModel(
             name=node.name,
             code=ast.unparse(node),
             description=doc_string,
-            Fields=[
-                ObjectFieldModel(
-                    name=ast.unparse(v.target),
-                    description=ast.unparse(v.annotation),
-                    type=ast.unparse(v.annotation),
-                )
-                for v in node.body
-                if isinstance(v, ast.AnnAssign)
-            ],
+            Fields=fields,
             is_pydantic=is_pydantic,
+            is_enum=is_enum,
             is_implemented=is_implemented,
         )
 
