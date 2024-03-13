@@ -17,12 +17,12 @@ class FunctionDef(BaseModel):
     name: str
     arg_types: List[tuple[str, str]]
     arg_descs: dict[str, str]
-    return_type: str | None
+    return_type: str | None = None
     return_desc: str
     is_implemented: bool
     function_desc: str
     function_code: str
-    function_template: str
+    function_template: str | None = None
 
     def __generate_function_template(f) -> str:
         args_str = ", ".join([f"{name}: {type}" for name, type in f.arg_types])
