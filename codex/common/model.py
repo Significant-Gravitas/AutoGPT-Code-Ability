@@ -260,6 +260,8 @@ async def create_object_type(
             "description": object.description,
             "Fields": {"create": field_inputs},
             "importStatements": typing_imports,
+            "isPydantic": object.is_pydantic,
+            "isEnum": object.is_enum,
         },
         include={"Fields": {"include": {"RelatedTypes": True}}},
     )

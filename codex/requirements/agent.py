@@ -321,6 +321,11 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
             table.name or "" for table in running_state_obj.database.tables
         ]
 
+    # DB Enums
+    db_enum_names: list[str] = []
+    if running_state_obj.database:
+        db_enum_names = [enum.name or "" for enum in running_state_obj.database.enums]
+
     # This process just refineds the api endpoints. It can be ran in parallel
     # for all the modules and their endpoints
     async def process_module(
@@ -337,6 +342,7 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
                         invoke_params={
                             "spec": running_state_obj.__str__(),
                             "db_models": f"[{','.join(db_table_names)}]",
+                            "db_enums": f"[{','.join(db_enum_names)}]",
                             "module_repr": f"{module!r}",
                             "endpoint_repr": f"{endpoint!r}",
                         },
