@@ -310,13 +310,13 @@ class DevelopAIBlock(AIBlock):
         try:
             text = response.response
 
-            requirment_blocks = text.split("```requirements")
-            requirment_blocks.pop(0)
-            if len(requirment_blocks) != 1:
+            requirement_blocks = text.split("```requirements")
+            requirement_blocks.pop(0)
+            if len(requirement_blocks) != 1:
                 packages = []
             else:
                 packages: List[Package] = parse_requirements(
-                    requirment_blocks[0].split("```")[0]
+                    requirement_blocks[0].split("```")[0]
                 )
 
             code_blocks = text.split("```python")
@@ -445,9 +445,8 @@ user = await prisma.models.User.prisma().create(
         """
         generated_response: GeneratedFunctionResponse = validated_response.response
 
-        available_objects = generated_response.available_objects
         for obj in generated_response.objects.values():
-            available_objects = await create_object_type(obj, available_objects)
+            generated_response.available_objects = await create_object_type(obj, generated_response.available_objects)
 
         function_defs: list[FunctionCreateInput] = []
         if generated_response.functions:

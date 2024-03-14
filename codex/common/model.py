@@ -265,7 +265,7 @@ async def create_object_type(
             "isPydantic": object.is_pydantic,
             "isEnum": object.is_enum,
         },
-        include=INCLUDE_FIELD["include"],
+        **INCLUDE_FIELD,
     )
     available_objects[object.name] = created_object_type
 
