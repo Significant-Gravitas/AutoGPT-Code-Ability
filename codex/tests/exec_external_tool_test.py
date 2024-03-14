@@ -55,7 +55,6 @@ def test_exec_external_with_ruff_fails():
     # Test case 5: Command execution with ruff fails
     command_arguments = ["ruff", "check"]
     file_contents = "print('Hello World'"
-    expected_output = "print('Hello World'"
     with pytest.raises(Exception) as exc_info:
         exec_external_on_contents(command_arguments, file_contents)
     assert (
