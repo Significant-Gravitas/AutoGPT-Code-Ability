@@ -54,7 +54,7 @@ def generate_dotenv_example_file(application: Application) -> str:
         application.completed_app.name.lower().replace(" ", "_").replace("-", "_")
     )
     # regex to keep only a-z and _
-    db_name = "".join([c if c.isalpha() else "_" for c in db_name])
+    db_name = "".join([c if c.isalpha() else "" for c in db_name])
     env_example = """
 # Example .env file
 # Copy this file to .env and fill in the values for the environment variables
@@ -64,7 +64,7 @@ DB_PASS="{random_password}"
 DB_HOST="localhost"
 DB_PORT="5432"
 DB_NAME="{db_name}"
-DATABASE_URL="postgresql://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
+DATABASE_URL="postgresql://${{DB_USER}}:${{DB_PASS}}@${{DB_HOST}}:${{DB_PORT}}/${{DB_NAME}}"
 """
     env_example = env_example.format(random_password=random_password, db_name=db_name)
 
