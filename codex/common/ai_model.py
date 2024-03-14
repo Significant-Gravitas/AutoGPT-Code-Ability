@@ -1,6 +1,7 @@
-from typing import Optional
-from openai import AsyncOpenAI
 import logging
+from typing import Optional
+
+from openai import AsyncOpenAI
 
 logger = logging.getLogger(__name__)
 

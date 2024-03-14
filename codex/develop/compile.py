@@ -269,8 +269,8 @@ def create_server_route_code(compiled_route: CompiledRoute) -> str:
         raise AssertionError("Compiled route must have an API route spec.")
 
     is_file_response = False
-    response_model = "JSONResponse"
-    route_response_annotation = "JSONResponse"
+    response_model = "Response"
+    route_response_annotation = "Response"
     if (
         return_type.RelatedTypes
         and return_type.RelatedTypes[0]
@@ -280,7 +280,7 @@ def create_server_route_code(compiled_route: CompiledRoute) -> str:
         is_file_response = True
     else:
         if return_type.typeName is not None:
-            response_model = f"{return_type.typeName} | JSONResponse"
+            response_model = f"{return_type.typeName} | Response"
             route_response_annotation = return_type.typeName
 
     # 4. Determine path parameters
@@ -344,7 +344,11 @@ def create_server_route_code(compiled_route: CompiledRoute) -> str:
         logger.exception("Error processing request")
         res = dict()
         res["error"] =  str(e)
-        return JSONResponse(content=jsonable_encoder(res))
+        return Response(
+                content=jsonable_encoder(res)),
+                status_code=500,
+                media_type="application/json",
+            )
     """
     route_code = route_decorator
     route_code += route_function_def
@@ -418,7 +422,7 @@ def create_server_code(completed_app: CompletedApp) -> Application:
 
     server_code_imports = [
         "from fastapi import FastAPI",
-        "from fastapi.responses import JSONResponse, StreamingResponse",
+        "from fastapi.responses import Response, StreamingResponse",
         "from fastapi.encoders import jsonable_encoder",
         "from prisma import Prisma",
         "from prisma.models import *",

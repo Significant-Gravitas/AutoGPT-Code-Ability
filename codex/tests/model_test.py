@@ -2,9 +2,9 @@ import pytest
 from dotenv import load_dotenv
 
 from codex.app import db_client
-from codex.common.model import create_object_type, ObjectTypeModel, ObjectFieldModel
 from codex.common.ai_model import OpenAIChatClient
 from codex.common.logging_config import setup_logging
+from codex.common.model import ObjectFieldModel, ObjectTypeModel, create_object_type
 
 load_dotenv()
 if not OpenAIChatClient._configured:

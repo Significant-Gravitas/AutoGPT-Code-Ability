@@ -1,9 +1,9 @@
 import ast
+
 import pytest
 
-from codex.develop.develop import FunctionVisitor
 from codex.common.ai_block import ValidationError
-
+from codex.develop.develop import FunctionVisitor
 
 SAMPLE_CODE = """
 from pydantic import BaseModel

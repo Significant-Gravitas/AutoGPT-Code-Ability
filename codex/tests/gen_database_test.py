@@ -1,4 +1,5 @@
 from shutil import which
+
 import pytest
 from dotenv import load_dotenv
 

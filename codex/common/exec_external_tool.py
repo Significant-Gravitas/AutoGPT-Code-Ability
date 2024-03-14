@@ -49,10 +49,10 @@ def exec_external_on_contents(
                 capture_output=True,
                 text=True,
             )
-            logger.info(f"Output: {result.stdout}")
+            logger.debug(f"Output: {result.stdout}")
             if temp_file_path in result.stdout:
                 stderr = result.stdout.replace(temp_file.name, "generated_file")
-                logger.error(f"Errors: {stderr}")
+                logger.debug(f"Errors: {stderr}")
                 errors = stderr
             with open(temp_file_path, "r") as f:
                 file_contents = f.read()
