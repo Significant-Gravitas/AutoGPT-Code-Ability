@@ -217,7 +217,7 @@ async def take_next_step(
                     InterviewMessage(id=x.id, tool=x.tool, content=x.question)
                 )
 
-        # Take a step
+        # Process the next step in the interview, handling pending questions and determining if the interview is finished.
         next_set = await next_step(
             task=interview.task, ids=ids, memory=memory, tools=tools
         )
