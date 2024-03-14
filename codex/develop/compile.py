@@ -345,10 +345,10 @@ def create_server_route_code(compiled_route: CompiledRoute) -> str:
         res = dict()
         res["error"] =  str(e)
         return Response(
-                content=jsonable_encoder(res)),
-                status_code=500,
-                media_type="application/json",
-            )
+            content=jsonable_encoder(res),
+            status_code=500,
+            media_type="application/json",
+        )
     """
     route_code = route_decorator
     route_code += route_function_def

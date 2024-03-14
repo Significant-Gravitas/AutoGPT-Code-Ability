@@ -86,6 +86,6 @@ def generate_object_template(
         \"\"\"
         {obj.description}
         \"\"\"
-        {"pass" if stub else fields}
+        {"pass" if stub or not fields else fields}
     """
     return "\n".join([line[4:] for line in template.split("\n")]).strip()
