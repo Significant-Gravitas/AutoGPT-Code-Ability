@@ -62,3 +62,21 @@ def test_exec_external_with_ruff_fails():
         exc_info.value.args[0]
         == "Errors with code generation: generated_file:1:20: E999 SyntaxError: unexpected EOF while parsing\nFound 1 error.\n"
     )
+
+
+## This test only runs if I'm in debug mode on vscode?????????????? otherwise it can't find
+# the prisma command
+def test_exec_external_with_prisma():
+    if which("prisma") is None:
+        pytest.skip("Prisma not installed")
+    # Test case 6: Command execution with prisma
+    command_arguments = ["prisma", "format"]
+    file_contents = (
+        "model User {\n  id Int @id @default(autoincrement())\n  name String\n}"
+    )
+    expected_output = (
+        "model User {\n  id Int @id @default(autoincrement())\n  name String\n}"
+    )
+
+    result = exec_external_on_contents(command_arguments, file_contents)
+    assert result == expected_output
