@@ -147,6 +147,37 @@ __pycache__/
 """
 
 
+def generate_docker_compose_file(application: Application) -> str:
+    """
+    Generates a docker-compose.yml file from the application
+    Args:
+        application (Application): The application to be used to generate the docker-compose.yml file
+
+    Returns:
+        str: The docker-compose.yml file
+    """
+    logger.info("Generating docker-compose.yml file")
+
+    if not application.completed_app:
+        raise ValueError("Application must have a completed app")
+    if not application.completed_app.CompiledRoutes:
+        raise ValueError("Application must have at least one compiled route")
+
+    docker_compose = """version: '3.8'
+services:
+    db:
+        image: ankane/pgvector:latest
+        environment:
+            POSTGRES_USER: ${DB_USER}
+            POSTGRES_PASSWORD: ${DB_PASS}
+            POSTGRES_DB: ${DB_NAME}
+        ports:
+        - "5432:5432"
+"""
+
+    return docker_compose
+
+
 async def create_prisma_schema_file(application: Application) -> str:
     tables = []
     db_schema_id = None
@@ -300,6 +331,12 @@ async def create_zip_file(application: Application) -> bytes:
             gitignore = generate_gitignore_file()
             with open(gitignore_file_path, mode="w") as gitignore_file:
                 gitignore_file.write(gitignore)
+
+            # Make a docker-compose.yml file
+            docker_compose_file_path = os.path.join(app_dir, "docker-compose.yml")
+            docker_compose = generate_docker_compose_file(application)
+            with open(docker_compose_file_path, mode="w") as docker_compose_file:
+                docker_compose_file.write(docker_compose)
 
             logger.info("Created server code")
             # Create a zip file of the directory
