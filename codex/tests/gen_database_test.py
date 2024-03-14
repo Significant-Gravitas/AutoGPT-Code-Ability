@@ -47,7 +47,7 @@ async def test_simple_function():
     if is_connected:
         await db_client.disconnect()
         is_connected = False
-    
+
     assert database is not None
     assert database.database_schema.enums is not None
     assert database.database_schema.tables is not None
