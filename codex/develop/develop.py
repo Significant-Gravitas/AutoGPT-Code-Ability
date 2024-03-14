@@ -446,7 +446,9 @@ user = await prisma.models.User.prisma().create(
         generated_response: GeneratedFunctionResponse = validated_response.response
 
         for obj in generated_response.objects.values():
-            generated_response.available_objects = await create_object_type(obj, generated_response.available_objects)
+            generated_response.available_objects = await create_object_type(
+                obj, generated_response.available_objects
+            )
 
         function_defs: list[FunctionCreateInput] = []
         if generated_response.functions:
