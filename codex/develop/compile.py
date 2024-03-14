@@ -19,7 +19,7 @@ from prisma.types import CompiledRouteUpdateInput, CompletedAppCreateInput
 from pydantic import BaseModel
 
 from codex.api_model import Identifiers
-from codex.common.database import INCLUDE_FUNC, INCLUDE_FIELD
+from codex.common.database import INCLUDE_FIELD, INCLUDE_FUNC
 from codex.deploy.model import Application
 from codex.develop.function import generate_object_template
 

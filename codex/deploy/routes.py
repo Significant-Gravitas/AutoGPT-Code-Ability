@@ -7,7 +7,6 @@ from fastapi import APIRouter, HTTPException, Query, Response
 from fastapi.responses import StreamingResponse
 from prisma.models import CompletedApp
 from prisma.types import (
-    APIRouteSpecArgsFromCompiledRouteRecursive2,
     CompiledRouteIncludeFromCompiledRouteRecursive1,
     CompletedAppInclude,
     FindManyCompiledRouteArgsFromCompletedApp,
@@ -17,7 +16,7 @@ import codex.database
 import codex.deploy.agent as deploy_agent
 import codex.deploy.database
 from codex.api_model import DeploymentResponse, DeploymentsListResponse, Identifiers
-from codex.common.database import INCLUDE_FUNC, INCLUDE_API_ROUTE
+from codex.common.database import INCLUDE_API_ROUTE, INCLUDE_FUNC
 
 logger = logging.getLogger(__name__)
 
