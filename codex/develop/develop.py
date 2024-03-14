@@ -235,7 +235,7 @@ def validate_matching_function(existing_func: Function, requested_func: Function
 
     if any(
         [
-            x[0] != y[0] or not is_type_equal(x[1], y[1])
+            x[0] != y[0] or not is_type_equal(x[1], y[1]) and x[1] != "object"
             # TODO: remove sorted and provide a stable order for one-to-many arg-types.
             for x, y in zip(sorted(expected_args), sorted(requested_func.arg_types))
         ]
@@ -243,7 +243,10 @@ def validate_matching_function(existing_func: Function, requested_func: Function
         raise ValidationError(
             f"Function {func_name} has different arguments than expected, expected {expected_args} but got {requested_func.arg_types}"
         )
-    if not is_type_equal(expected_rets, requested_func.return_type):
+    if (
+        not is_type_equal(expected_rets, requested_func.return_type)
+        and expected_rets != "object"
+    ):
         raise ValidationError(
             f"Function {func_name} has different return type than expected, expected {expected_rets} but got {requested_func.return_type}"
         )
@@ -405,6 +408,25 @@ user = await prisma.models.User.prisma().create(
             if expected_func.FunctionReturn:
                 expected_types.append(expected_func.FunctionReturn.typeName)
             imports = set(visitor.imports + get_typing_imports(expected_types))
+
+            already_declared_entities = set(
+                [
+                    obj.name
+                    for obj in visitor.objects.values()
+                    if obj.name in invoke_params["available_objects"].keys()
+                ]
+                + [
+                    func.name
+                    for func in visitor.functions.values()
+                    if func.name in invoke_params["available_functions"].keys()
+                ]
+            )
+            if not already_declared_entities:
+                raise ValidationError(
+                    "These class/function names has already been declared in the code, "
+                    "no need to declare them again: "
+                    + ", ".join(already_declared_entities)
+                )
 
             result = GeneratedFunctionResponse(
                 function_id=expected_func.id,
