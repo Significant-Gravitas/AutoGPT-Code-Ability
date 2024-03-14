@@ -123,7 +123,7 @@ def replace_field_type(field_type: str) -> str:
 
 def copy_object_type(
     source_model: ObjectTypeModel, target_model: ObjectTypeModel, object_type_name: str
-) -> None:
+) -> bool:
     def find_object_type(fields: List[Any]) -> Optional[ObjectTypeModel]:
         for field in fields:
             if isinstance(field, ObjectTypeModel) and field.name == object_type_name:
@@ -144,18 +144,23 @@ def copy_object_type(
         for field in target_model.Fields:
             if isinstance(field, ObjectFieldModel) and object_type_name in field.type:
                 field.related_types.append(copied_object_type)
+        return True
     else:
         print(f"Object type not found: {object_type_name}")
+        return False
 
 
 def resolve_invalid_types(
     invalid_types: List[str],
     source_model: ObjectTypeModel,
     target_model: ObjectTypeModel,
-) -> None:
+) -> List[str]:
+    resolved_types: List[str] = []
     for invalid_type in invalid_types:
         print(f"Resolving invalid type: {invalid_type}")
-        copy_object_type(source_model, target_model, invalid_type)
+        if copy_object_type(source_model, target_model, invalid_type):
+            resolved_types.append(invalid_type)
+    return resolved_types
 
 
 def parse_object_model(
@@ -170,6 +175,8 @@ def parse_object_model(
     List[ObjectTypeModel],
     ObjectTypeModel,
     ObjectTypeModel,
+    List[str],
+    List[str],
 ]:
     request_types: Set[str] = set()
     response_types: Set[str] = set()
@@ -199,11 +206,27 @@ def parse_object_model(
         if not is_valid_type(type_name, response_type_names, enum_names, table_names)
     ]
 
-    print(f"Invalid Request Types: {invalid_request_types}")
-    print(f"Invalid Response Types: {invalid_response_types}")
+    while invalid_request_types or invalid_response_types:
+        resolved_request_types = resolve_invalid_types(
+            invalid_request_types, response_model, request_model
+        )
+        resolved_response_types = resolve_invalid_types(
+            invalid_response_types, request_model, response_model
+        )
 
-    resolve_invalid_types(invalid_request_types, response_model, request_model)
-    resolve_invalid_types(invalid_response_types, request_model, response_model)
+        if not resolved_request_types and not resolved_response_types:
+            break
+
+        invalid_request_types = [
+            type_name
+            for type_name in invalid_request_types
+            if type_name not in resolved_request_types
+        ]
+        invalid_response_types = [
+            type_name
+            for type_name in invalid_response_types
+            if type_name not in resolved_response_types
+        ]
 
     return (
         request_types,
@@ -212,6 +235,8 @@ def parse_object_model(
         response_object_types,
         request_model,
         response_model,
+        invalid_request_types,
+        invalid_response_types,
     )
 
 
@@ -281,7 +306,7 @@ if __name__ == "__main__":
             ObjectFieldModel(
                 name="provider",
                 description="The name of the OAuth2 provider (e.g., 'google', 'facebook').",
-                type="str",
+                type="House",
                 related_types=[],
             ),
             ObjectFieldModel(
@@ -318,7 +343,7 @@ if __name__ == "__main__":
             ObjectFieldModel(
                 name="token",
                 description="The token received from the OAuth2 provider after the user has authenticated.",
-                type="list[Tree]",
+                type="dict[Tree, House]",
                 related_types=[],
             ),
         ],
@@ -334,10 +359,22 @@ if __name__ == "__main__":
                 related_types=[],
             ),
             ObjectFieldModel(
-                name="email",
+                name="home",
                 description="The email address of the newly registered user.",
-                type="str",
-                related_types=[],
+                type="House",
+                related_types=[
+                    ObjectTypeModel(
+                        name="House",
+                        description="A house model for testing.",
+                        Fields=[
+                            ObjectFieldModel(
+                                name="type",
+                                description="The type of the access token provided. Typically 'Bearer'.",
+                                type="str",
+                            )
+                        ],
+                    )
+                ],
             ),
             ObjectFieldModel(
                 name="access_token",
@@ -367,7 +404,7 @@ if __name__ == "__main__":
             ObjectFieldModel(
                 name="expires_in",
                 description="The duration in seconds for which the access token is valid.",
-                type="list[Tree]",
+                type="dict[Tree, House]",
                 related_types=[
                     ObjectTypeModel(
                         name="Tree",
@@ -377,7 +414,13 @@ if __name__ == "__main__":
                                 name="type",
                                 description="The type of the access token provided. Typically 'Bearer'.",
                                 type="str",
-                            )
+                            ),
+                            ObjectFieldModel(
+                                name="thing",
+                                description="The type of the access token provided. Typically",
+                                type="House",
+                                related_types=[],
+                            ),
                         ],
                     )
                 ],
@@ -393,15 +436,17 @@ if __name__ == "__main__":
         response_object_types,
         new_request_model,
         new_response_model,
+        invalid_request_types,
+        invalid_response_types,
     ) = parse_object_model(request_model, response_model, db_enums, db_models)
 
     print(f"All Types{response_types}")
     print(f"Found Types{[x.name for x in response_object_types]}")
-    # print(f"Invalid Types{invalid_response_types} ")
+    print(f"Invalid Types{invalid_response_types} ")
 
     print(f"All Types: {request_types}")
     print(f"Found Types: {[x.name for x in request_object_types]}")
-    # print(f"Invalid Types: {invalid_request_types} ")
+    print(f"Invalid Types: {invalid_request_types} ")
 
     print(f"Request Model: {new_request_model.model_dump_json()}")
 
