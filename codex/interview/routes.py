@@ -139,6 +139,16 @@ async def take_next_step(
                 media_type="application/json",
             )
 
+        # Check if the app exists
+        try:
+            await codex.database.get_app_by_id(user_id, app_id)
+        except PrismaErrors.RecordNotFoundError:
+            return Response(
+                content=json.dumps({"error": f"App '{app_id}' not found in database."}),
+                status_code=404,
+                media_type="application/json",
+            )
+
         ids = Identifiers(
             user_id=user_id,
             app_id=app_id,
