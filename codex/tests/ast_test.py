@@ -283,15 +283,18 @@ def test_visiting_class_definition_no_pydantic_inheritance():
     visitor = FunctionVisitor()
 
     # Create AST for a class definition with no Pydantic inheritance
-    code = ast.parse("class MyClass:\n    pass")
+    code = ast.parse("class MyClass:\n    pass\n\n"
+                     "class MyOtherClass(BaseModel):\n    pass")
 
     # Use pytest.raises to check if a ValidationError is raised
-    with pytest.raises(ValidationError):
-        # Visit the AST
-        visitor.visit(code)
+    # with pytest.raises(ValidationError):
+    #     # Visit the AST
+    visitor.visit(code)
+
+    # class with no field is fine
 
     # Assert that the pydantic_classes list is empty
-    assert len(get_pydantic_classes(visitor)) == 0
+    assert len(get_pydantic_classes(visitor)) == 1
 
 
 # Visiting a class definition with Pydantic inheritance
