@@ -58,7 +58,6 @@ async def create_prisma_schema_file(application: Application) -> str:
 datasource db {
   provider   = "postgresql"
   url        = env("DATABASE_URL")
-  extensions = [vector]
 }
 
 // generator db configures Prisma Client settings.
