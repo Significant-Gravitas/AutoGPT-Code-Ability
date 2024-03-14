@@ -1,5 +1,5 @@
 import logging
-from typing import Any, List, Set, Tuple
+from typing import Any, List, Optional, Set, Tuple
 
 from codex.common.ai_block import (
     AIBlock,
@@ -124,23 +124,39 @@ def replace_field_type(field_type: str) -> str:
 def copy_object_type(
     source_model: ObjectTypeModel, target_model: ObjectTypeModel, object_type_name: str
 ) -> None:
-    source_object_types = {
-        obj_type.name: obj_type
-        for obj_type in source_model.Fields
-        if isinstance(obj_type, ObjectTypeModel)
-    }
-    if object_type_name in source_object_types:
-        target_model.Fields.append(source_object_types[object_type_name])
+    def find_object_type(fields: List[Any]) -> Optional[ObjectTypeModel]:
+        for field in fields:
+            if isinstance(field, ObjectTypeModel) and field.name == object_type_name:
+                return field
+            elif isinstance(field, ObjectFieldModel) and field.related_types:
+                found_type = find_object_type(field.related_types)
+                if found_type:
+                    return found_type
+        return None
+
+    print(f"Searching for object type: {object_type_name}")
+    found_type = find_object_type(source_model.Fields)
+    if found_type:
+        print(f"Copying object type: {object_type_name}")
+        copied_object_type = found_type.copy(deep=True)
+
+        # Find the field in the target model that references the object type
+        for field in target_model.Fields:
+            if isinstance(field, ObjectFieldModel) and field.type == object_type_name:
+                field.related_types.append(copied_object_type)
+                break
+    else:
+        print(f"Object type not found: {object_type_name}")
 
 
 def resolve_invalid_types(
     invalid_types: List[str],
-    request_model: ObjectTypeModel,
-    response_model: ObjectTypeModel,
+    source_model: ObjectTypeModel,
+    target_model: ObjectTypeModel,
 ) -> None:
     for invalid_type in invalid_types:
-        copy_object_type(response_model, request_model, invalid_type)
-        copy_object_type(request_model, response_model, invalid_type)
+        print(f"Resolving invalid type: {invalid_type}")
+        copy_object_type(source_model, target_model, invalid_type)
 
 
 def parse_object_model(
@@ -187,8 +203,8 @@ def parse_object_model(
     print(f"Invalid Request Types: {invalid_request_types}")
     print(f"Invalid Response Types: {invalid_response_types}")
 
-    resolve_invalid_types(invalid_request_types, request_model, response_model)
-    resolve_invalid_types(invalid_response_types, response_model, request_model)
+    resolve_invalid_types(invalid_request_types, response_model, request_model)
+    resolve_invalid_types(invalid_response_types, request_model, response_model)
 
     return (
         request_types,
@@ -303,7 +319,7 @@ if __name__ == "__main__":
             ObjectFieldModel(
                 name="token",
                 description="The token received from the OAuth2 provider after the user has authenticated.",
-                type="Tree",
+                type="list[Tree]",
                 related_types=[],
             ),
         ],
