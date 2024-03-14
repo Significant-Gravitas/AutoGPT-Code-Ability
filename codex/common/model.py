@@ -3,6 +3,8 @@ from typing import List, Optional, Tuple, __all__
 from prisma.models import ObjectField, ObjectType
 from pydantic import BaseModel, Field
 
+from codex.common.database import INCLUDE_FIELD, INCLUDE_TYPE
+
 
 class ObjectTypeModel(BaseModel):
     name: str = Field(description="The name of the object")
@@ -263,7 +265,7 @@ async def create_object_type(
             "isPydantic": object.is_pydantic,
             "isEnum": object.is_enum,
         },
-        include={"Fields": {"include": {"RelatedTypes": True}}},
+        include=INCLUDE_FIELD["include"],
     )
     available_objects[object.name] = created_object_type
 
@@ -289,7 +291,7 @@ async def create_object_type(
             updated_object_field = await ObjectField.prisma().update(
                 where={"id": field.id},
                 data={"RelatedTypes": {"connect": [{"id": t.id} for t in reltypes]}},
-                include={"RelatedTypes": True},
+                **INCLUDE_TYPE,
             )
             if updated_object_field:
                 field.RelatedTypes = updated_object_field.RelatedTypes

@@ -19,7 +19,7 @@ from prisma.types import CompiledRouteUpdateInput, CompletedAppCreateInput
 from pydantic import BaseModel
 
 from codex.api_model import Identifiers
-from codex.common.database import INCLUDE_FUNC
+from codex.common.database import INCLUDE_FUNC, INCLUDE_FIELD
 from codex.deploy.model import Application
 from codex.develop.function import generate_object_template
 
@@ -178,7 +178,7 @@ async def __get_object_type_deps(
     # Lookup the object getting all its subfields
     obj = await ObjectType.prisma().find_unique_or_raise(
         where={"id": obj_type_id},
-        include={"Fields": {"include": {"RelatedTypes": True}}},
+        **INCLUDE_FIELD,
     )
     if obj.Fields is None:
         raise ValueError(f"ObjectType {obj.name} has no fields.")
