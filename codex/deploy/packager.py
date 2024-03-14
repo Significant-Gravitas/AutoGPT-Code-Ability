@@ -1,6 +1,7 @@
 import datetime
 import logging
 import os
+import random
 import tempfile
 import zipfile
 from typing import List
@@ -25,6 +26,125 @@ def generate_requirements_txt(
         requirements.add(package.replace("\n", "").strip())
 
     return "\n".join(sorted(requirements))
+
+
+def generate_dotenv_example_file(application: Application) -> str:
+    """
+    Generates a .env.example file from the application
+    Args:
+        application (Application): The application to be used to generate the .env.example file
+
+    Returns:
+        str: The .env.example file
+    """
+    logger.info("Generating .env.example file")
+
+    if not application.completed_app:
+        raise ValueError("Application must have a completed app")
+    if not application.completed_app.CompiledRoutes:
+        raise ValueError("Application must have at least one compiled route")
+
+    # Generate a random password
+    random_password = "".join(
+        random.choice("abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+")
+        for i in range(20)
+    )
+    # normalized app name. keeping only a-z and _
+    db_name: str = (
+        application.completed_app.name.lower().replace(" ", "_").replace("-", "_")
+    )
+    # regex to keep only a-z and _
+    db_name = "".join([c if c.isalpha() else "" for c in db_name])
+    env_example = """
+# Example .env file
+# Copy this file to .env and fill in the values for the environment variables
+# The .env file should not be committed to version control
+DB_USER="codexrulesman"
+DB_PASS="{random_password}"
+DB_HOST="localhost"
+DB_PORT="5432"
+DB_NAME="{db_name}"
+DATABASE_URL="postgresql://${{DB_USER}}:${{DB_PASS}}@${{DB_HOST}}:${{DB_PORT}}/${{DB_NAME}}"
+"""
+    env_example = env_example.format(random_password=random_password, db_name=db_name)
+
+    # env_example = ""
+    # for compiled_route in application.completed_app.CompiledRoutes:
+    #     if compiled_route.ApiRouteSpec and compiled_route.ApiRouteSpec.envVars:
+    #         for env_var in compiled_route.ApiRouteSpec.envVars:
+    #             env_example += f"{env_var.name}=\n"
+
+    return env_example
+
+
+def generate_gitignore_file() -> str:
+    """
+    Generates a .gitignore file
+    Returns:
+        str: The .gitignore file
+    """
+    return """
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Translations
+*.mo
+*.pot
+
+# FastAPI
+__pycache__/
+
+# Environment variables
+.env
+.env.(local|development|production|test|staging|qa)
+.env*
+!.env.example
+"""
 
 
 async def create_prisma_schema_file(application: Application) -> str:
@@ -102,6 +222,7 @@ async def create_zip_file(application: Application) -> bytes:
             app_dir = os.path.join(temp_dir, "project")
             os.makedirs(app_dir, exist_ok=True)
 
+            # Make a readme file
             readme_file_path = os.path.join(app_dir, "README.md")
             with open(readme_file_path, "w") as readme_file:
                 readme_file.write("---\n")
@@ -113,19 +234,23 @@ async def create_zip_file(application: Application) -> bytes:
                 readme_file.write(f"# {application.completed_app.name}\n\n")
                 readme_file.write(application.completed_app.description)
 
+            # Make a __init__.py file
             init_file_path = os.path.join(app_dir, "__init__.py")
             with open(init_file_path, "w") as init_file:
                 init_file.write("")
 
+            # Make a server.py file
             server_file_path = os.path.join(app_dir, "server.py")
             with open(server_file_path, "w") as server_file:
                 server_file.write(application.server_code)
 
+            # Make all the service files
             for compiled_route in application.completed_app.CompiledRoutes:
                 service_file_path = os.path.join(app_dir, compiled_route.fileName)
                 with open(service_file_path, "w") as service_file:
                     service_file.write(compiled_route.compiledCode)
 
+            # Make a requirements file
             pipreqs.init(
                 {
                     "<path>": app_dir,
@@ -157,11 +282,24 @@ async def create_zip_file(application: Application) -> bytes:
             with open(requirements_file_path, mode="w") as requirements_file:
                 requirements_file.write(packages)
 
+            # Make a prisma schema file
             prism_schema_file_path = os.path.join(app_dir, "schema.prisma")
             prisma_content = await create_prisma_schema_file(application)
             if prisma_content:
                 with open(prism_schema_file_path, mode="w") as prisma_file:
                     prisma_file.write(prisma_content)
+
+            # Make a .env.example file
+            dotenv_example_file_path = os.path.join(app_dir, ".env.example")
+            dotenv_example = generate_dotenv_example_file(application)
+            with open(dotenv_example_file_path, mode="w") as dotenv_example_file:
+                dotenv_example_file.write(dotenv_example)
+
+            # Make a .gitignore file
+            gitignore_file_path = os.path.join(app_dir, ".gitignore")
+            gitignore = generate_gitignore_file()
+            with open(gitignore_file_path, mode="w") as gitignore_file:
+                gitignore_file.write(gitignore)
 
             logger.info("Created server code")
             # Create a zip file of the directory
