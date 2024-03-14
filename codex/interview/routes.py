@@ -155,12 +155,20 @@ async def take_next_step(
             cloud_services_id=user.cloudServicesId if user else "",
         )
 
-        interview = await codex.interview.database.get_interview(
-            user_id, app_id, interview_id
-        )
+        # Get the interview
+        try:
+            interview = await codex.interview.database.get_interview(
+                user_id, app_id, interview_id
+            )
+        except PrismaErrors.RecordNotFoundError:
+            return Response(
+                content=json.dumps(
+                    {"error": f"Interview '{interview_id}' not found in database."}
+                ),
+                status_code=404,
+                media_type="application/json",
+            )
 
-        # Add Answers to questions that were answered by the user
-        # TODO: check if the user answers a question that was not asked
         updated_interview = await codex.interview.database.answer_questions(
             interview_id=interview.id,
             answers=[x for x in answers if isinstance(x, InterviewMessageWithResponse)],
