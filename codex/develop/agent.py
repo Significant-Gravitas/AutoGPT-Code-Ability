@@ -15,7 +15,12 @@ from prisma.types import CompiledRouteCreateInput
 
 from codex.api_model import Identifiers
 from codex.common.database import INCLUDE_FUNC
-from codex.develop.compile import compile_route, create_app, get_object_field_deps
+from codex.develop.compile import (
+    compile_route,
+    create_app,
+    get_object_field_deps,
+    get_object_type_deps,
+)
 from codex.develop.develop import DevelopAIBlock
 from codex.develop.function import construct_function, generate_object_template
 from codex.develop.model import FunctionDef
@@ -66,10 +71,12 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
                 function_desc=api_route.description,
                 function_code="",
             )
+            object_type_ids = set()
             available_types = {
-                obj.name: obj
+                dep_type.name: dep_type
                 for obj in [api_route.RequestObject, api_route.ResponseObject]
                 if obj
+                for dep_type in await get_object_type_deps(obj.id, object_type_ids)
             }
             compiled_route = await CompiledRoute.prisma().create(
                 data=CompiledRouteCreateInput(

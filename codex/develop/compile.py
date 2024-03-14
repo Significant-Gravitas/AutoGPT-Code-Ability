@@ -172,7 +172,7 @@ async def recursive_compile_route(
     )
 
 
-async def __get_object_type_deps(
+async def get_object_type_deps(
     obj_type_id: str, object_type_ids: Set[str]
 ) -> List[ObjectType]:
     # Lookup the object getting all its subfields
@@ -235,7 +235,7 @@ async def get_object_field_deps(
     # TODO: this can run in parallel
     pydantic_classes = []
     for type in types:
-        pydantic_classes.extend(await __get_object_type_deps(type.id, object_type_ids))
+        pydantic_classes.extend(await get_object_type_deps(type.id, object_type_ids))
 
     return pydantic_classes
 
