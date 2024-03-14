@@ -169,6 +169,23 @@ async def take_next_step(
                 media_type="application/json",
             )
 
+        # Check if any of the question IDs in the answers don't exist in the interview
+        asked_question_ids = {x.id for x in interview.Questions or []}
+        answered_question_ids = {
+            x.id for x in answers if isinstance(x, InterviewMessageWithResponse)
+        }
+        nonexistent_question_ids = answered_question_ids.difference(asked_question_ids)
+
+        # If the user answered a question that doesn't exist in the interview, return an error
+        if nonexistent_question_ids:
+            error_message = f"Answered questions with IDs '{',' .join(nonexistent_question_ids)}' do not exist in the interview."
+            logger.warning(msg=error_message)
+            return Response(
+                content=json.dumps({"error": error_message}),
+                status_code=400,
+                media_type="application/json",
+            )
+
         updated_interview = await codex.interview.database.answer_questions(
             interview_id=interview.id,
             answers=[x for x in answers if isinstance(x, InterviewMessageWithResponse)],
