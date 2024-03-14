@@ -421,6 +421,9 @@ def create_server_code(completed_app: CompletedApp) -> Application:
         "from fastapi.responses import JSONResponse, StreamingResponse",
         "from fastapi.encoders import jsonable_encoder",
         "from prisma import Prisma",
+        "from prisma.models import *",
+        "from prisma.types import *",
+        "from prisma.enums import *",
         "from contextlib import asynccontextmanager",
         "import logging",
         "import io",
@@ -428,16 +431,15 @@ def create_server_code(completed_app: CompletedApp) -> Application:
     ]
     server_code_header = f"""logger = logging.getLogger(__name__)
 
-app = FastAPI(title="{name}", description='''{desc}''')
-
 db_client = Prisma(auto_register=True)
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await db_client.connect()
     yield
     await db_client.disconnect()
+
+app = FastAPI(title="{name}", lifespan=lifespan, description='''{desc}''')
 
 """
 
