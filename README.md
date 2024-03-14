@@ -6,11 +6,13 @@
 
 The Codex System is an innovative coding agent designed to streamline the software development process. It consists of four key sub-agents, each specialized in a different aspect of software development. These sub-agents work in harmony to ensure efficient and effective delivery of software applications. This README provides an overview of the Codex System and its components.
 
-## Getting Started
+## Setup Guide
 
 Welcome to the initial setup guide for your project. Follow these easy steps to get everything up and running.
 
 ### Step 1: Install Dependencies
+
+**Install Packages**
 
 Start by installing all necessary dependencies. In your terminal, run:
 
@@ -21,7 +23,19 @@ poetry shell
 
 This command installs all Python package dependencies required by your project.
 
-### Step 2: Initialize Containers
+**Select Poetry Python Interpreter**
+
+Now make sure you're using the poetry Python interpreter:
+
+In VSCode, bring up the "Show and Run Commands" view by pressing: `Ctrl/Cmd + Shift + P`
+
+Then input:
+```
+> Python: Select Interpreter
+```
+And select the Poetry Python Interpreter.
+
+### Step 2: Initialize Docker Containers
 
 Next, set up the Docker containers by executing:
 
@@ -31,15 +45,28 @@ docker compose up
 
 This spins up the necessary Docker containers as defined in your `docker-compose.yml`, ensuring your environment is correctly isolated.
 
+> Take note of the **port** printed in the output. e.g: `listening on IPv4 address "0.0.0.0", port 5432`.
+
 ### Step 3: Configure and Migrate Database
 
-To set up your database, begin by configuring the database URL through an environment variable:
+In a new terminal, copy the .env file template:
 
 ```
 cp .env.example .env
 ```
 
-Then, update the values to match your configuration, and migrate your database schema with:
+To set up your database, we'll begin by configuring the `DATABASE_URL` through an environment variable. 
+
+Simply set the database `port` you took note of above (e.g. 5432).
+
+Then, take this oppertunity to update the .env with your OpenAI key.
+
+Once you've updated the .env file with this info, launch a Poetry Shell:
+```
+poetry shell
+```
+
+Now migrate your database schema with:
 
 ```
 prisma migrate dev --name init
@@ -75,17 +102,17 @@ Set your environment to local and start the server:
 ./run serve
 ```
 
-This starts your application's server, making it available for development use.
+This starts the application's server, making it available for development use.
 
 ### Step 7: Access the Documentation
 
-Access your application's documentation at:
+Access the running application's interactive documentation at:
 
 ```
 http://127.0.0.1:8000/docs
 ```
 
-Here, you'll find detailed guides and references on interacting with your application.
+Here, you'll find detailed guides and references on interacting with the application.
 
 ### What's Next?
 
