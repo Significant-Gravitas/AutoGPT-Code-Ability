@@ -3,6 +3,7 @@ import logging
 from typing import List
 
 from fastapi import APIRouter, Response
+from prisma import errors as PrismaErrors
 
 import codex.database
 import codex.interview.database
@@ -126,7 +127,18 @@ async def take_next_step(
         ),
     ]
     try:
-        user = await codex.database.get_user(user_id)
+        try:
+            # Get the user
+            user = await codex.database.get_user(user_id)
+        except PrismaErrors.RecordNotFoundError:
+            return Response(
+                content=json.dumps(
+                    {"error": f"User '{user_id}' not found in database."}
+                ),
+                status_code=404,
+                media_type="application/json",
+            )
+
         ids = Identifiers(
             user_id=user_id,
             app_id=app_id,
