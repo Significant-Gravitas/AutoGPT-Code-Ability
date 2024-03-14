@@ -186,10 +186,23 @@ async def take_next_step(
                 media_type="application/json",
             )
 
+        # Check if the user answered a question where tool is not "ask"
+        for x in answers:
+            if x.tool != "ask":
+                error_message = "User answered a question with a tool other than 'ask'."
+                logger.warning(msg=error_message)
+                return Response(
+                    content=json.dumps({"error": error_message}),
+                    status_code=400,
+                    media_type="application/json",
+                )
+
+        # Add Answers to any questions that were answered by the user
         updated_interview = await codex.interview.database.answer_questions(
             interview_id=interview.id,
             answers=[x for x in answers if isinstance(x, InterviewMessageWithResponse)],
         )
+
         # Turn the questions into a list of InterviewMessageWithResponse and InterviewMessage
         memory: List[InterviewMessage | InterviewMessageWithResponse] = []
         for x in updated_interview.Questions or []:
