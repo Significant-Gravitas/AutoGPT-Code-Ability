@@ -1,5 +1,5 @@
 import re
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from pydantic import BaseModel, validator
 
@@ -38,20 +38,19 @@ class DatasourceInfo(BaseModel):
 class GeneratorInfo(BaseModel):
     provider: str
     name: str
-    interface: Optional[str] = None
-    recursive_type_depth: Optional[int] = None
-    preview_features: Optional[List[str]] = None
+    config: Dict[str, Union[str, List[str]]]
+    definition: str
 
     @validator("provider")
     def validate_provider(cls, v):
-        if v not in ["prisma-client-py"]:
+        if v not in ["prisma-client-py", "prisma-docs", "prisma-dbml-generator"]:
             raise ValueError(f"Invalid generator provider: {v}")
         return v
 
 
 class SchemaInfo(BaseModel):
     datasource: Optional[DatasourceInfo] = None
-    generator: Optional[GeneratorInfo] = None
+    generators: list[GeneratorInfo] = []
     enums: Dict[str, EnumInfo] = {}
     models: Dict[str, ModelInfo] = {}
 
@@ -87,26 +86,38 @@ def parse_prisma_schema(schema_text: str) -> SchemaInfo:
                 datasource_info[key] = value
         datasource = DatasourceInfo(name=datasource_name, **datasource_info)
 
-    # Parse generator
-    generator = None
-    generator_match = generator_pattern.search(schema_text)
-    if generator_match:
+    # Parse generators
+    generators = []
+    for generator_match in generator_pattern.finditer(schema_text):
         generator_name = generator_match.group(1)
+        generator_definition = generator_match.group(0)
         generator_fields = generator_match.group(2).strip().split("\n")
-        generator_info = {}
+        generator_config = {}
+        generator_provider = None
         for field in generator_fields:
             field = field.strip()
             if field:
                 key, value = field.split("=", 1)
                 key = key.strip()
-                value = value.strip().strip('"').strip("'")
-                if key == "previewFeatures":
-                    value = [
-                        feat.strip().strip('"').strip("'")
-                        for feat in value[1:-1].split(",")
-                    ]
-                generator_info[key] = value
-                generator = GeneratorInfo(name=generator_name, **generator_info)
+                value = value.strip()
+                if key == "provider":
+                    generator_provider = value.strip('"')
+                else:
+                    if value.startswith("[") and value.endswith("]"):
+                        value = [
+                            item.strip().strip('"') for item in value[1:-1].split(",")
+                        ]
+                    else:
+                        value = value.strip('"')
+                    generator_config[key] = value
+        if generator_provider:
+            generator = GeneratorInfo(
+                name=generator_name,
+                provider=generator_provider,
+                config=generator_config,
+                definition=generator_definition,
+            )
+            generators.append(generator)
 
     # Parse enums
     enums = {}
@@ -154,7 +165,7 @@ def parse_prisma_schema(schema_text: str) -> SchemaInfo:
         )
 
     return SchemaInfo(
-        datasource=datasource, generator=generator, enums=enums, models=models
+        datasource=datasource, generators=generators, enums=enums, models=models
     )
 
 
@@ -164,12 +175,11 @@ def print_parsed_schema(parsed_schema: SchemaInfo):
         print(f"  Provider: {parsed_schema.datasource.provider}")
         print(f"  URL: {parsed_schema.datasource.url}")
         print(f"  Extensions: {parsed_schema.datasource.extensions}")
-    if parsed_schema.generator:
-        print("Generator:")
-        print(f"  Provider: {parsed_schema.generator.provider}")
-        print(f"  Interface: {parsed_schema.generator.interface}")
-        print(f"  Recursive Type Depth: {parsed_schema.generator.recursive_type_depth}")
-        print(f"  Preview Features: {parsed_schema.generator.preview_features}")
+    if len(parsed_schema.generators) > 0:
+        for generator in parsed_schema.generators:
+            print(f"Generator {generator.name}:")
+            print(f"  Provider: {generator.provider}")
+            print(f"  Config: {generator.config}")
     for enum_name, enum_info in parsed_schema.enums.items():
         print(f"Enum: {enum_name}")
         print(f"  Definition: {enum_info.definition}")

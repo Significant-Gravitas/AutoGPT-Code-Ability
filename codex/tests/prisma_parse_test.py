@@ -292,6 +292,9 @@ generator client {
     interface            = "asyncio"
     recursive_type_depth = 5
     previewFeatures      = ["postgresqlExtensions"]
+}generator docs {
+    provider = "prisma-docs"
+    output   = "docs"
 }enum UserRole {
     Tutor
     Client
@@ -308,6 +311,21 @@ generator client {
 }
     """
     response = parse_prisma_schema(schema_text)
+
+    # Generator
+    assert response.generators
+    assert response.generators[0].name == "client"
+    assert response.generators[0].provider == "prisma-client-py"
+    assert response.generators[0].config == {
+        "interface": "asyncio",
+        "recursive_type_depth": "5",
+        "previewFeatures": ["postgresqlExtensions"],
+    }
+
+    assert response.generators[1].name == "docs"
+    assert response.generators[1].provider == "prisma-docs"
+    assert response.generators[1].config == {"output": "docs"}
+
     assert response.enums["UserRole"]
     assert response.enums["UserRole"].values == ["Tutor", "Client"]
     assert (
