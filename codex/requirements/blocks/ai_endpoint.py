@@ -140,11 +140,10 @@ def copy_object_type(
         print(f"Copying object type: {object_type_name}")
         copied_object_type = found_type.copy(deep=True)
 
-        # Find the field in the target model that references the object type
+        # Find the fields in the target model that reference the object type
         for field in target_model.Fields:
-            if isinstance(field, ObjectFieldModel) and field.type == object_type_name:
+            if isinstance(field, ObjectFieldModel) and object_type_name in field.type:
                 field.related_types.append(copied_object_type)
-                break
     else:
         print(f"Object type not found: {object_type_name}")
 
