@@ -208,11 +208,12 @@ class FunctionVisitor(ast.NodeVisitor):
             is_implemented=is_implemented,
         )
 
-        if not is_implemented:
-            raise ValidationError(
-                f"Class {node.name} is not implemented. "
-                f"Please complete the implementation of this class!"
-            )
+        """Some class are simply used as a type and doesn't have any new fields"""
+        # if not is_implemented:
+        #     raise ValidationError(
+        #         f"Class {node.name} is not implemented. "
+        #         f"Please complete the implementation of this class!"
+        #     )
 
         self.generic_visit(node)
 
@@ -278,7 +279,16 @@ def static_code_analysis(func: GeneratedFunctionResponse) -> str:
     )
 
     functions_code = "\n\n".join(
-        [func.function_code for func in func.functions.values()]
+        [
+            f.template
+            for f in func.available_functions.values()
+            if f.functionName != func.function_name
+        ]
+        + [
+            f.function_code
+            for f in func.functions.values()
+            if f.name not in func.available_functions
+        ]
     )
 
     separator = "#==FunctionCode==#"
