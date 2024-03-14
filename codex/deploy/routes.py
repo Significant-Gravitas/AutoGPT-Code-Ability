@@ -43,9 +43,7 @@ async def create_deployment(
         include = CompletedAppInclude(
             CompiledRoutes=FindManyCompiledRouteArgsFromCompletedApp(
                 include=CompiledRouteIncludeFromCompiledRouteRecursive1(
-                    ApiRouteSpec=APIRouteSpecArgsFromCompiledRouteRecursive2(
-                        include=INCLUDE_API_ROUTE
-                    ),
+                    ApiRouteSpec=INCLUDE_API_ROUTE,
                     RootFunction=INCLUDE_FUNC,
                 )
             ),
