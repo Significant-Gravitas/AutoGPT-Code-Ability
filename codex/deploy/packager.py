@@ -177,6 +177,7 @@ services:
 
     return docker_compose
 
+
 async def create_prisma_schema_file(application: Application) -> str:
     tables = []
     db_schema_id = None
