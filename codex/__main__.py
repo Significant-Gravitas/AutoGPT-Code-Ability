@@ -77,6 +77,7 @@ def benchmark(port: int = 8000):
         await asyncio.gather(*awaitables)
 
     asyncio.get_event_loop().run_until_complete(run_tasks())
+    asyncio.get_event_loop().run_until_complete(prisma_client.disconnect())
 
 
 @cli.command()
@@ -116,13 +117,17 @@ def example(port: int):
             base_url=base_url,
         )
     )
+    asyncio.get_event_loop().run_until_complete(prisma_client.disconnect())
 
 
 async def get_resume_points(prisma_client):
-    from prisma.models import ResumePoint
-    import prisma.types 
+    import datetime
 
-    await prisma_client.connect()
+    import prisma.types
+    from prisma.models import ResumePoint
+
+    if not prisma_client.is_connected():
+        await prisma_client.connect()
 
     resume_points = await ResumePoint.prisma().find_many(
         include=prisma.types.ResumePointInclude(
@@ -131,16 +136,35 @@ async def get_resume_points(prisma_client):
             Specification=True,
             CompletedApp=True,
             Deployment=True,
-        )
+        ),
+        take=20,
+        order=[{"updatedAt": "desc"}],
     )
 
+    print(
+        "\033[92m Todays\033[0m and\033[93m yesterdays\033[0m days resume points are colored:\n"
+    )
     print(
         f"{'':<3} | {'updatedAt':<20} | {'name':<30} | {'Interview':<10} | {'Specification':<15} | {'CompletedApp':<12} | {'Deployment':<10}"
     )
     separation_row = f"{'-' * 3}-+-{'-' * 20}-+-{'-' * 30}-+-{'-' * 10}-+-{'-' * 15}-+-{'-' * 12}-+-{'-' * 10}"
     print(separation_row)
     # Print table rows
+    today = datetime.date.today()
+    yesterday = today - datetime.timedelta(days=1)
+
     for i, resume_point in enumerate(resume_points):
+        updated_at_date = datetime.datetime.fromisoformat(
+            resume_point.updatedAt.isoformat().split(".")[0]
+        ).date()
+
+        # Determine the color based on the updated date
+        if updated_at_date == today:
+            color_code = "\033[92m"  # Green
+        elif updated_at_date == yesterday:
+            color_code = "\033[93m"  # Yellow
+        else:
+            color_code = "\033[0m"  # Reset to default
         row = [
             str(i + 1),
             resume_point.updatedAt.isoformat().split(".")[0],
@@ -150,9 +174,8 @@ async def get_resume_points(prisma_client):
             "✓" if resume_point.completedAppId else "X",
             "✓" if resume_point.deploymentId else "X",
         ]
-        print(
-            f"{row[0]:<3} | {row[1]:<20} | {row[2]:<30} | {row[3]:<10} | {row[4]:<15} | {row[5]:<12} | {row[6]:<10}"
-        )
+        formatted_row = f"{color_code}{row[0]:<3} | {row[1]:<20} | {row[2]:<30} | {row[3]:<10} | {row[4]:<15} | {row[5]:<12} | {row[6]:<10}\033[0m"
+        print(formatted_row)
     return resume_points
 
 
@@ -243,6 +266,7 @@ def resume(port: int):
             base_url=base_url,
         )
     )
+    asyncio.get_event_loop().run_until_complete(prisma_client.disconnect())
 
 
 @cli.command()

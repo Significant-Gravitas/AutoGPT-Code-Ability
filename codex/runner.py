@@ -89,8 +89,6 @@ async def run_task(
         await get_deployment(codex_client=codex_client, task_name=task_name)
     except Exception as e:
         logger.exception(f"Error running task: {e}")
-    finally:
-        await prisma_client.disconnect()
 
 
 async def resume(
@@ -250,8 +248,6 @@ async def resume(
 
     except Exception as e:
         logger.exception(f"Error resuming task: {e}")
-    finally:
-        await prisma_client.disconnect()
 
 
 async def run_interview(
