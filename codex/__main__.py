@@ -63,14 +63,18 @@ def benchmark(port: int = 8000):
     tasks = list(ExampleTask)
 
     async def run_tasks():
-        for task in tasks:
-            await codex.runner.run_task(
+        awaitables = [
+            codex.runner.run_task(
                 task_name=task.value,
                 task_description=ExampleTask.get_task_description(task),
                 user_id=codex.common.test_const.user_id_1,
                 prisma_client=prisma_client,
                 base_url=base_url,
             )
+            for task in tasks
+        ]
+        # Run all tasks concurrently
+        await asyncio.gather(*awaitables)
 
     asyncio.get_event_loop().run_until_complete(run_tasks())
 
