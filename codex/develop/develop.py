@@ -119,9 +119,9 @@ class FunctionVisitor(ast.NodeVisitor):
 
         # Extract doc_string & function body
         if (
-                node.body
-                and isinstance(node.body[0], ast.Expr)
-                and isinstance(node.body[0].value, (ast.Str, ast.Constant))
+            node.body
+            and isinstance(node.body[0], ast.Expr)
+            and isinstance(node.body[0].value, (ast.Str, ast.Constant))
         ):
             doc_string = ast.unparse(node.body[0])
             template_body = [node.body[0], ast.Pass()]
@@ -219,9 +219,9 @@ class FunctionVisitor(ast.NodeVisitor):
 
     def visit(self, node):
         if (
-                isinstance(node, ast.Assign)
-                or isinstance(node, ast.AnnAssign)
-                or isinstance(node, ast.AugAssign)
+            isinstance(node, ast.Assign)
+            or isinstance(node, ast.AnnAssign)
+            or isinstance(node, ast.AugAssign)
         ) and node.col_offset == 0:
             self.globals.append(ast.unparse(node))
         super().visit(node)
@@ -235,18 +235,18 @@ def validate_matching_function(existing_func: Function, requested_func: Function
     func_name = existing_func.functionName
 
     if any(
-            [
-                x[0] != y[0] or not is_type_equal(x[1], y[1]) and x[1] != "object"
-                # TODO: remove sorted and provide a stable order for one-to-many arg-types.
-                for x, y in zip(sorted(expected_args), sorted(requested_func.arg_types))
-            ]
+        [
+            x[0] != y[0] or not is_type_equal(x[1], y[1]) and x[1] != "object"
+            # TODO: remove sorted and provide a stable order for one-to-many arg-types.
+            for x, y in zip(sorted(expected_args), sorted(requested_func.arg_types))
+        ]
     ):
         raise ValidationError(
             f"Function {func_name} has different arguments than expected, expected {expected_args} but got {requested_func.arg_types}"
         )
     if (
-            not is_type_equal(expected_rets, requested_func.return_type)
-            and expected_rets != "object"
+        not is_type_equal(expected_rets, requested_func.return_type)
+        and expected_rets != "object"
     ):
         raise ValidationError(
             f"Function {func_name} has different return type than expected, expected {expected_rets} but got {requested_func.return_type}"
@@ -266,10 +266,8 @@ def static_code_analysis(func: GeneratedFunctionResponse) -> str:
             return f"class {name}(BaseModel):\n    pass"
 
     template_code = "\n\n".join(
-        [
-            generate_stub(obj.name, obj.isEnum)
-            for obj in func.available_objects.values()
-        ] + [
+        [generate_stub(obj.name, obj.isEnum) for obj in func.available_objects.values()]
+        + [
             generate_stub(obj.name, obj.is_enum)
             for obj in func.objects.values()
             if obj.name not in func.available_objects
@@ -303,17 +301,17 @@ def static_code_analysis(func: GeneratedFunctionResponse) -> str:
 
     separator = "#==FunctionCode==#"
     code = (
-            imports_code
-            + "\n\n"
-            + template_code
-            + "\n\n"
-            + objects_code
-            + "\n\n"
-            + functions_code
-            + "\n\n"
-            + separator
-            + "\n"
-            + func.functionCode
+        imports_code
+        + "\n\n"
+        + template_code
+        + "\n\n"
+        + objects_code
+        + "\n\n"
+        + functions_code
+        + "\n\n"
+        + separator
+        + "\n"
+        + func.functionCode
     )
 
     return exec_external_on_contents(
@@ -328,7 +326,7 @@ class DevelopAIBlock(AIBlock):
     langauge = "python"
 
     def validate(
-            self, invoke_params: dict, response: ValidatedResponse
+        self, invoke_params: dict, response: ValidatedResponse
     ) -> ValidatedResponse:
         try:
             text = response.response
@@ -406,7 +404,7 @@ user = await prisma.models.User.prisma().create(
                     f" Please complete the implementation of this function!"
                 )
             function_code = (
-                    "\n".join(visitor.globals) + "\n\n" + requested_func.function_code
+                "\n".join(visitor.globals) + "\n\n" + requested_func.function_code
             )
 
             # Validate the requested_func.args and requested_func.returns to the invoke_params
@@ -471,7 +469,7 @@ user = await prisma.models.User.prisma().create(
             raise ValidationError(f"Error validating response: {e}")
 
     async def create_item(
-            self, ids: Identifiers, validated_response: ValidatedResponse
+        self, ids: Identifiers, validated_response: ValidatedResponse
     ) -> Function:
         """
         Update an item in the database with the given identifiers
