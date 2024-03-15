@@ -424,6 +424,7 @@ user = await prisma.models.User.prisma().create(
 
             func_name = invoke_params["function_name"]
             requested_func = visitor.functions.get(func_name)
+            # TODO: Can we add this to the validation_errors list too
             if not requested_func or not requested_func.is_implemented:
                 raise ValidationError(
                     f"Main Function body {func_name} is not implemented."
