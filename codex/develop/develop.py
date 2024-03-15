@@ -284,7 +284,7 @@ def static_code_analysis(func: GeneratedFunctionResponse) -> str:
         + [
             obj.code
             for obj in func.objects.values()
-            if obj.name not in func.available_objects
+            if obj.code and obj.name not in func.available_objects
         ]
     )
 
