@@ -356,10 +356,10 @@ def copy_object_type(
                     return found_type
         return None
 
-    print(f"Searching for object type: {object_type_name}")
+    logging.debug(f"Searching for object type: {object_type_name}")
     found_type = find_object_type(source_model.Fields or [])
     if found_type:
-        print(f"Copying object type: {object_type_name}")
+        logging.debug(f"Copying object type: {object_type_name}")
         copied_object_type = found_type.copy(deep=True)
 
         # Find the fields in the target model that reference the object type
@@ -374,7 +374,7 @@ def copy_object_type(
                     field.related_types.append(copied_object_type)
         return True
     else:
-        print(f"Object type not found: {object_type_name}")
+        logging.debug(f"Object type not found: {object_type_name}")
         return False
 
 
@@ -385,7 +385,7 @@ def resolve_invalid_types(
 ) -> List[str]:
     resolved_types: List[str] = []
     for invalid_type in invalid_types:
-        print(f"Resolving invalid type: {invalid_type}")
+        logging.warn(f"Resolving invalid type: {invalid_type}")
         if copy_object_type(source_model, target_model, invalid_type):
             resolved_types.append(invalid_type)
     return resolved_types
