@@ -53,7 +53,7 @@ def test_simple_fix_any_Any():
     assert new_request_model.Fields
     assert len(new_request_model.Fields) == 1
     assert new_request_model.Fields[0].name == "provider"
-    assert new_request_model.Fields[0].type == "Dict[str,Any]"
+    assert new_request_model.Fields[0].type == "Dict[str, Any]"
     assert new_request_model.Fields[0].related_types == []
 
     assert new_response_model.name == "SignupWithOAuth2Response"
@@ -200,7 +200,7 @@ def test_filling_out_same_model_dict():
     assert len(new_request_model.Fields) == 2
 
     assert new_request_model.Fields[0].name == "provider"
-    assert new_request_model.Fields[0].type == "Dict[str,House]"
+    assert new_request_model.Fields[0].type == "Dict[str, House]"
     assert new_request_model.Fields[0].related_types
     assert len(new_request_model.Fields[0].related_types) == 1
     assert new_request_model.Fields[0].related_types[0].name == "House"
