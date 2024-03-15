@@ -161,7 +161,7 @@ async def run_benchmark_example(
             app = await codex_client.create_app(app_name=task.value)
             resume_point = await ResumePoint.prisma().create(
                 data={
-                    "Application": {"connect": {"id": app_id}},
+                    "Application": {"connect": {"id": app.id}},
                     "User": {"connect": {"id": user_id}},
                     "name": task.value,
                 }
@@ -267,7 +267,7 @@ async def resume_from_interview(
             "You must create an app and participate in an interview before generating a spec"
         )
 
-    url = f"http://127.0.0.1:{port}/user/{resume_point.userId}/apps/{app_id}/specs/"
+    url = f"http://127.0.0.1:{port}/api/v1/user/{resume_point.userId}/apps/{resume_point.applicationId}/specs"
 
     try:
         async with aiohttp.ClientSession() as session:
