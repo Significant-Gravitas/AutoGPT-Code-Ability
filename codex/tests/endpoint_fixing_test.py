@@ -787,3 +787,64 @@ def test_cross_model_with_db_fix():
         == "prisma.models.User"
     )
 
+
+# We don't resolve | operator in the type, but we do list it as invalid
+def test_simple_with_pipe_operator():
+    database_models = ["User", "Appointment", "Invoice", "Payment", "Notification"]
+    database_enums = ["UserRole", "AppointmentStatus", "InvoiceStatus", "PaymentStatus"]
+
+    request_model = ObjectTypeModel(
+        name="SignupWithOAuth2Request",
+        description="This request model captures the necessary information for registering a new user through OAuth2 authentication. It includes the OAuth2 provider name and the token received from the provider.",
+        Fields=[
+            ObjectFieldModel(
+                name="provider",
+                description="The name of the OAuth2 provider (e.g., 'google', 'facebook').",
+                type="User | None",
+                related_types=[],
+            ),
+        ],
+    )
+    response_model = ObjectTypeModel(
+        name="SignupWithOAuth2Response",
+        description="The response returned after a successful registration through OAuth2. It includes user details and an API token for subsequent requests.",
+        Fields=[
+            ObjectFieldModel(
+                name="user_id",
+                description="The unique identifier of the user in the system.",
+                type="str",
+                related_types=[],
+            ),
+        ],
+    )
+
+    (
+        request_types,
+        response_types,
+        request_object_types,
+        response_object_types,
+        new_request_model,
+        new_response_model,
+        invalid_request_types,
+        invalid_response_types,
+    ) = parse_object_model(
+        request_model, response_model, database_enums, database_models
+    )
+
+    assert len(request_types) == 2
+    assert len(response_types) == 2
+    assert invalid_request_types == ["User|None"]
+    assert invalid_response_types == []
+
+    assert new_request_model.name == "SignupWithOAuth2Request"
+    assert new_request_model.Fields
+    assert len(new_request_model.Fields) == 1
+    assert new_request_model.Fields[0].name == "provider"
+    assert new_request_model.Fields[0].type == "User|None"
+    assert new_request_model.Fields[0].related_types == []
+
+    assert new_response_model.name == "SignupWithOAuth2Response"
+    assert new_response_model.Fields
+    assert len(new_response_model.Fields) == 1
+    assert new_response_model.Fields[0].name == "user_id"
+    assert new_response_model.Fields[0].type == "str"
