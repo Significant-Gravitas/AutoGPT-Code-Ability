@@ -265,7 +265,7 @@ class AIBlock:
 
         return self.PYDANTIC_FORMAT_INSTRUCTIONS
 
-    async def invoke(self, ids: Identifiers, invoke_params: dict, max_retries=3) -> Any:
+    async def invoke(self, ids: Identifiers, invoke_params: dict, max_retries=5) -> Any:
         if ids.user_id is None:
             raise ValueError("User ID not set")
         if ids.app_id is None:
