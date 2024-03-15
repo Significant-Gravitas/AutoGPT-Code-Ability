@@ -55,7 +55,9 @@ async def run_task(
 
         await codex_client.init(codex_user_id=user_id)
 
-        app = await codex_client.create_app(app_name=task_name)
+        app = await codex_client.create_app(
+            app_name=task_name, app_description=task_description
+        )
 
         resume_point = await ResumePoint.prisma().create(
             data={

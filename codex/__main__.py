@@ -44,52 +44,78 @@ def populate_db(database):
 
 @cli.command()
 @click.option(
-    "-h",
-    "--hardcoded",
-    is_flag=True,
-    help="Flag indicating whether to use hardcoded values",
+    "--port",
+    "-p",
+    default=8000,
+    help="Port number of the Codex server",
+    type=int,
 )
-def benchmark(hardcoded: bool):
+def benchmark(port: int = 8000):
     """Run the benchmark tests"""
-    from codex.benchmark import run_benchmark
+    import prisma
 
-    asyncio.run(run_benchmark(skip_requirements=hardcoded))
+    import codex.common.test_const
+    import codex.runner
+    from codex.requirements.model import ExampleTask
+
+    base_url = f"http://127.0.0.1:{port}/api/v1"
+    prisma_client = prisma.Prisma(auto_register=True)
+    tasks = list(ExampleTask)
+
+    async def run_tasks():
+        for task in tasks:
+            await codex.runner.run_task(
+                task_name=task.value,
+                task_description=ExampleTask.get_task_description(task),
+                user_id=codex.common.test_const.user_id_1,
+                prisma_client=prisma_client,
+                base_url=base_url,
+            )
+
+    asyncio.get_event_loop().run_until_complete(run_tasks())
 
 
 @cli.command()
 @click.option(
-    "-h",
-    "--hardcoded",
-    is_flag=True,
-    help="Flag indicating whether to use hardcoded values",
+    "-p",
+    "--port",
+    default=8000,
+    help="Port number of the Codex server",
+    type=int,
 )
-def example(hardcoded: bool):
-    from codex.benchmark import run_benchmark
+def example(port: int):
+    import prisma
+
+    import codex.common.test_const
+    import codex.runner
     from codex.requirements.model import ExampleTask
 
+    base_url = f"http://127.0.0.1:{port}/api/v1"
+    prisma_client = prisma.Prisma(auto_register=True)
     i = 1
     click.echo("Select a test case:")
     examples = list(ExampleTask)
-    if hardcoded:
-        examples: list[ExampleTask] = [
-            task for task in examples if ExampleTask.get_app_id(task) is not None
-        ]
-
     for task in examples:
         click.echo(f"[{i}] {task.value}")
         i += 1
+
     print("------")
     case = int(input("Enter number of the case to run: "))
 
     task = examples[case - 1]
-    asyncio.run(run_benchmark(hardcoded, task))
+    asyncio.get_event_loop().run_until_complete(
+        codex.runner.run_task(
+            task_name=task.value,
+            task_description=ExampleTask.get_task_description(task),
+            user_id=codex.common.test_const.user_id_1,
+            prisma_client=prisma_client,
+            base_url=base_url,
+        )
+    )
 
 
-async def get_resume_points():
-    from prisma import Prisma
+async def get_resume_points(prisma_client):
     from prisma.models import ResumePoint
-
-    prisma_client = Prisma(auto_register=True)
 
     await prisma_client.connect()
 
@@ -118,33 +144,54 @@ async def get_resume_points():
 
 
 @cli.command()
-def resume():
-    import codex.benchmark
+@click.option(
+    "--port",
+    "-p",
+    default=8000,
+    help="Port number of the Codex server",
+    type=int,
+)
+def resume(port: int):
+    import prisma
 
+    import codex.runner
+
+    base_url = f"http://127.0.0.1:{port}/api/v1"
+    prisma_client = prisma.Prisma(auto_register=True)
     print("")
-    resume_points = asyncio.run(get_resume_points())
+    resume_points = asyncio.get_event_loop().run_until_complete(
+        get_resume_points(prisma_client)
+    )
     print("\n")
     case = int(input("Select index of the app you want to resume: "))
 
-    selected_application = resume_points[case - 1]
+    selected_resume_point = resume_points[case - 1]
 
     resume_prompt = "You can resume from, "
     resume_options = []
     valid_options = set()
+    step = codex.runner.ResumeStep.INTERVIEW  # do this step
 
-    if selected_application.interviewId:
+    resume_options.append("Beginning (b)")
+    valid_options.add("b")
+    valid_options.add("B")
+
+    if selected_resume_point.interviewId:
+        # Running from a completed Interview
         resume_options.append("Interview (i)")
         valid_options.add("i")
         valid_options.add("I")
-    if selected_application.specificationId:
+    if selected_resume_point.specificationId:
+        # Running from a completed Specification
         resume_options.append("Specification (s)")
         valid_options.add("s")
         valid_options.add("S")
-    if selected_application.completedAppId:
+    if selected_resume_point.completedAppId:
+        # Running from a completed App
         resume_options.append("Completed App (c)")
         valid_options.add("c")
         valid_options.add("C")
-    if selected_application.deploymentId:
+    if selected_resume_point.deploymentId:
         resume_options.append("Deployment (d)")
         valid_options.add("d")
         valid_options.add("D")
@@ -160,42 +207,29 @@ def resume():
         return
 
     if selection in set(["i", "I"]):
+        step = codex.runner.ResumeStep.SPECIFICATION
         print("Resuming from interview...")
-        asyncio.run(
-            codex.benchmark.resume_from_interview(
-                selected_application.applicationId,
-                selected_application.interviewId,
-                selected_application,
-            )
-        )
 
     if selection in set(["s", "S"]):
         print("Resuming from specification...")
-        asyncio.run(
-            codex.benchmark.resume_from_specification(
-                selected_application.applicationId,
-                selected_application.specificationId,
-                selected_application,
-            )
-        )
+        step = codex.runner.ResumeStep.DEVELOPMENT
 
     if selection in set(["c", "C"]):
-        print("Resuming from completed app...")
-        asyncio.run(
-            codex.benchmark.resume_from_completed_app(
-                selected_application.applicationId,
-                selected_application.completedAppId,
-                selected_application,
-            )
-        )
+        print("Resuming from the developed (completed) app...")
+        step = codex.runner.ResumeStep.COMPILE
 
     if selection in set(["d", "D"]):
-        print("Resuming from deployment...")
-        asyncio.run(
-            codex.benchmark.resume_from_deployment(
-                selected_application.applicationId, selected_application.deploymentId
-            )
+        print("Resuming from compiled app - Downloading file again...")
+        step = codex.runner.ResumeStep.DOWNLOAD
+
+    asyncio.get_event_loop().run_until_complete(
+        codex.runner.resume(
+            step=step,
+            resume_point=selected_resume_point,
+            prisma_client=prisma_client,
+            base_url=base_url,
         )
+    )
 
 
 @cli.command()

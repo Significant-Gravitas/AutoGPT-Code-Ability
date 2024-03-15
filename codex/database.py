@@ -230,6 +230,7 @@ async def create_app(user_id: str, app_data: ApplicationCreate) -> ApplicationRe
     app = await Application.prisma().create(
         data={
             "name": app_data.name,
+            "description": app_data.description,
             "userId": user_id,
         },
         include={"User": True},
