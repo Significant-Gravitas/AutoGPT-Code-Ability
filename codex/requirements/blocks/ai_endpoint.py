@@ -178,11 +178,31 @@ def attach_related_types(
             types = extract_types_2(field.type)
             for type_name in types:
                 if type_name in defined_types:
-                    if defined_types[type_name] not in field.related_types:
+                    if defined_types[type_name] not in (field.related_types or []):
                         field.related_types.append(defined_types[type_name])
+                else:
+                    if field.related_types:
+                        for related_type in field.related_types:
+                            if related_type.name == type_name:
+                                defined_types[type_name] = related_type
+                                break
             if field.related_types:
                 for related_type in field.related_types:
                     attach_related_types(related_type, defined_types)
+
+    # Check for all the models if they don't have related types attached
+    for field in model.Fields or []:
+        types = extract_types_2(field.type)
+        for type_name in types:
+            if type_name in defined_types:
+                for other_model in defined_types.values():
+                    if other_model.name == type_name:
+                        if not field.related_types:
+                            field.related_types = []
+                        if other_model not in field.related_types:
+                            field.related_types.append(other_model)
+                        break
+
     defined_types[model.name] = model
 
 
@@ -253,8 +273,8 @@ def parse_object_model(
 
     request_defined_types: Dict[str, ObjectTypeModel] = {}
     response_defined_types: Dict[str, ObjectTypeModel] = {}
-    attach_related_types(response_model, response_defined_types)
     attach_related_types(request_model, request_defined_types)
+    attach_related_types(response_model, response_defined_types)
 
     request_types_post: Set[str] = set()
     response_types_post: Set[str] = set()
@@ -285,10 +305,10 @@ def parse_object_model(
     ]
 
     return (
-        request_types,
-        response_types,
-        request_object_types,
-        response_object_types,
+        request_types_post,
+        response_types_post,
+        request_object_types_post,
+        response_object_types_post,
         request_model,
         response_model,
         invalid_request_types_post,
@@ -321,7 +341,6 @@ class EndpointSchemaRefinementBlock(AIBlock):
         blocks this is much more complex. If validation failes it triggers a retry.
         """
         try:
-            db_schema: DatabaseSchema | None = invoke_params["database_schema"]
             model: EndpointSchemaRefinementResponse = (
                 EndpointSchemaRefinementResponse.model_validate_json(
                     response.response, strict=False
@@ -332,6 +351,7 @@ class EndpointSchemaRefinementBlock(AIBlock):
             # 1. Check that all the ObjectTypes have definitions or a matching enum or table in the database schema
             # 2. Check that all the fields in the ObjectType have definitions or a matching field in the database schema
             # 3. Check that all the fields in the ObjectType have a correct type
+
             (
                 request_types,
                 response_types,
@@ -341,8 +361,19 @@ class EndpointSchemaRefinementBlock(AIBlock):
                 new_response_model,
                 invalid_request_types,
                 invalid_response_types,
-            ) = parse_object_model(request_model, response_model, db_enums, db_models)
-            
+            ) = parse_object_model(
+                request_model=model.api_endpoint.request_model,
+                response_model=model.api_endpoint.response_model,
+                enum_names=invoke_params["db_enums"],
+                table_names=invoke_params["db_models"],
+            )
+
+            if invalid_request_types or invalid_response_types:
+                raise ValidationError(
+                    f"Invalid types in request or response: {invalid_request_types} {invalid_response_types}"
+                )
+            model.api_endpoint.request_model = new_request_model
+            model.api_endpoint.response_model = new_response_model
 
             response.response = model
         except Exception as e:
@@ -359,7 +390,6 @@ class EndpointSchemaRefinementBlock(AIBlock):
         Atm I don't have a database model to store QnA responses, but we can add one
         """
         pass
-
 
 
 if __name__ == "__main__":
