@@ -571,7 +571,6 @@ def test_multilayer_type():
     assert new_response_model.Fields[0].type == "str"
 
 
-
 def test_multilayer_type_with_complexity():
     database_models = ["User", "Appointment", "Invoice", "Payment", "Notification"]
     database_enums = ["UserRole", "AppointmentStatus", "InvoiceStatus", "PaymentStatus"]
@@ -623,7 +622,10 @@ def test_multilayer_type_with_complexity():
     assert new_request_model.Fields
     assert len(new_request_model.Fields) == 1
     assert new_request_model.Fields[0].name == "provider"
-    assert new_request_model.Fields[0].type == "Optional[Dict[Union[str, UserRole], Union[str, bool]]]"
+    assert (
+        new_request_model.Fields[0].type
+        == "Optional[Dict[Union[str, UserRole], Union[str, bool]]]"
+    )
     assert new_request_model.Fields[0].related_types == []
 
     assert new_response_model.name == "SignupWithOAuth2Response"
