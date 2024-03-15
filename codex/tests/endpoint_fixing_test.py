@@ -2,7 +2,7 @@ from codex.common.model import ObjectFieldModel, ObjectTypeModel
 from codex.requirements.blocks.ai_endpoint import parse_object_model
 
 
-def test_simple_fix():
+def test_simple_fix_any_Any():
     database_models = ["User", "Appointment", "Invoice", "Payment", "Notification"]
     database_enums = ["UserRole", "AppointmentStatus", "InvoiceStatus", "PaymentStatus"]
 

@@ -21,12 +21,14 @@ def extract_types(
     if isinstance(obj, ObjectTypeModel):
         types.add(obj.name)
         object_types.append(obj)
-        for field in obj.Fields:
-            extract_types(field, types, object_types)
+        if obj.Fields:
+            for field in obj.Fields:
+                extract_types(field, types, object_types)
     elif isinstance(obj, ObjectFieldModel):
         extract_field_types(obj.type, types)
-        for related_type in obj.related_types:
-            extract_types(related_type, types, object_types)
+        if obj.related_types:
+            for related_type in obj.related_types:
+                extract_types(related_type, types, object_types)
     elif isinstance(obj, list):
         for item in obj:
             extract_types(item, types, object_types)
@@ -87,12 +89,14 @@ def replace_types(types: Set[str]) -> Set[str]:
 
 def replace_object_model_types(obj: Any) -> None:
     if isinstance(obj, ObjectTypeModel):
-        for field in obj.Fields:
-            replace_object_model_types(field)
+        if obj.Fields:
+            for field in obj.Fields:
+                replace_object_model_types(field)
     elif isinstance(obj, ObjectFieldModel):
         obj.type = replace_field_type(obj.type)
-        for related_type in obj.related_types:
-            replace_object_model_types(related_type)
+        if obj.related_types:
+            for related_type in obj.related_types:
+                replace_object_model_types(related_type)
     elif isinstance(obj, list):
         for item in obj:
             replace_object_model_types(item)
@@ -136,15 +140,21 @@ def copy_object_type(
         return None
 
     print(f"Searching for object type: {object_type_name}")
-    found_type = find_object_type(source_model.Fields)
+    found_type = find_object_type(source_model.Fields or [])
     if found_type:
         print(f"Copying object type: {object_type_name}")
         copied_object_type = found_type.copy(deep=True)
 
         # Find the fields in the target model that reference the object type
-        for field in target_model.Fields:
-            if isinstance(field, ObjectFieldModel) and object_type_name in field.type:
-                field.related_types.append(copied_object_type)
+        if target_model.Fields:
+            for field in target_model.Fields:
+                if (
+                    isinstance(field, ObjectFieldModel)
+                    and object_type_name in field.type
+                ):
+                    if not field.related_types:
+                        field.related_types = []
+                    field.related_types.append(copied_object_type)
         return True
     else:
         print(f"Object type not found: {object_type_name}")
@@ -179,6 +189,8 @@ def attach_related_types(
             for type_name in types:
                 if type_name in defined_types:
                     if defined_types[type_name] not in (field.related_types or []):
+                        if not field.related_types:
+                            field.related_types = []
                         field.related_types.append(defined_types[type_name])
                 else:
                     if field.related_types:
