@@ -532,7 +532,6 @@ user = await prisma.models.User.prisma().create(
             logger.exception(e)
             raise e
 
-
     async def create_item(
         self, ids: Identifiers, validated_response: ValidatedResponse
     ) -> Function:
