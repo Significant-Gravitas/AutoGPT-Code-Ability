@@ -17,7 +17,7 @@ Thinking carefully step by step. Always start your answer with your analysis of 
 * AVOID NESTED FUNCTIONS, THE STUBS AND FUNCTIONS MUST BE IN THE GLOBAL SCOPE.
 * ONLY WRITE FUNCTIONS NOT CLASS, UNLESS IT'S DATA CLASS OR NAMEDTUPLE.
 * NEVER USE DUMMY DATA OR GLOBAL VARIABLES! ALWAYS PASS WHAT'S NEEDED AS ARGUMENTS! NO HARDCODED VALUES!
-* ALWAYS USE PRISMA FOR STORING OBJECTS 
-* ALWAYS USE THE A `user = await User.prisma().create()``` style for connecting to the database.
-* REMBER TO CAPITILIZE THE TABLE NAME WHEN USING PRISMA
-* Database enums can be imported using `import prisma.enums` and then used as `prisma.enums.EnumName`
+* ALWAYS USE PRISMA FOR STORING OBJECTS.
+* ALWAYS USE THE `prisma.models` OR `prisma.enums` directly, DON'T USE `prisma_client` DIRECTLY AND NO NEED TO INITIALIZE THE CLIENT, DON'T CALL `await prisma_client.connect()` IN THE CODE, IT IS ALREADY CONNECTED.
+* REMEMBER TO CAPITALIZE THE TABLE NAME WHEN USING PRISMA
+* TO USE DATABASE ENUM, IMPORT `from prisma.enums import YourEnum` and use it, FOR TABLES, USE `from prisma.models import YourTable`.

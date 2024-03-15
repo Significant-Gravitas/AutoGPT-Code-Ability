@@ -78,6 +78,9 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
                 if obj
                 for dep_type in await get_object_type_deps(obj.id, object_type_ids)
             }
+            if api_route.RequestObject and api_route.RequestObject.Fields:
+                # RequestObject is unwrapped, so remove it from the available types
+                available_types.pop(api_route.RequestObject.name, None)
             compiled_route = await CompiledRoute.prisma().create(
                 data=CompiledRouteCreateInput(
                     description=api_route.description,

@@ -118,7 +118,9 @@ def is_type_equal(type1: str | None, type2: str | None) -> bool:
     evaluated_type1, children1 = unwrap_object_type(type1)
     evaluated_type2, children2 = unwrap_object_type(type2)
 
-    if evaluated_type1 != evaluated_type2:
+    # Compare the class name of the types (ignoring the module)
+    # TODO(majdyz): compare the module name as well.
+    if evaluated_type1.split(".")[-1] != evaluated_type2.split(".")[-1]:
         return False
 
     if len(children1) != len(children2):
