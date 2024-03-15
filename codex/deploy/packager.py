@@ -46,7 +46,7 @@ def generate_dotenv_example_file(application: Application) -> str:
 
     # Generate a random password
     random_password = "".join(
-        random.choice("abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+")
+        random.choice("abcdefghijklmnopqrstuvwxyz0123456789")
         for i in range(20)
     )
     # normalized app name. keeping only a-z and _
