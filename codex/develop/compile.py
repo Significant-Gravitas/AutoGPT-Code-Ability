@@ -59,12 +59,13 @@ async def compile_route(
     code += compiled_function.code
 
     # Run the formatting engines
+    formatted_code = code
     try:
-        formatted_code = isort.code(code)
+        formatted_code = isort.code(formatted_code)
         formatted_code = black.format_str(formatted_code, mode=black.FileMode())
     except Exception as e:
-        logger.exception(f"Error formatting code: {e}")
-        raise ComplicationFailure(f"Error formatting code: {e}")
+        # We move on with unformatted code if there's an error
+        logger.exception(f"Error formatting code: {e} for route #{compiled_route_id}")
 
     data = CompiledRouteUpdateInput(
         Packages={"connect": [{"id": package_id} for package_id in unique_packages]},
