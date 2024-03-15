@@ -7,9 +7,10 @@ from codex.common.ai_block import (
     ValidationError,
 )
 from codex.common.ai_model import OpenAIChatClient
+from codex.common.exec_external_tool import exec_external_on_contents
 from codex.common.logging_config import setup_logging
+from codex.common.parse_prisma import parse_prisma_schema
 from codex.requirements.model import DatabaseEnums, DatabaseTable, DBResponse
-
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,34 @@ class DatabaseGenerationBlock(AIBlock):
         """
         try:
             model = DBResponse.model_validate_json(response.response, strict=False)
+            text_schema = ""
+            for enum in model.database_schema.enums:
+                text_schema += enum.definition
+            for table in model.database_schema.tables:
+                text_schema += table.definition
+            # parse the prisma schema back into the tables and enum definitions
+            # and compare them to the original
+            unparsed = exec_external_on_contents(["prisma", "format"], text_schema)
+            unparsed = exec_external_on_contents(["prisma", "validate"], unparsed)
+
+            parsed_prisma = parse_prisma_schema(unparsed)
+            for enum in model.database_schema.enums:
+                if enum.name not in parsed_prisma.enums:
+                    raise ValidationError(
+                        f"Enum {enum.name} not found in parsed prisma schema"
+                    )
+                # replace the definition with the parsed definition
+                enum.definition = parsed_prisma.enums[enum.name].definition
+            for table in model.database_schema.tables:
+                if table.name not in parsed_prisma.models:
+                    raise ValidationError(
+                        f"Table {table.name} not found in parsed prisma schema"
+                    )
+                if not table.name:
+                    raise ValidationError("Tables all require a name")
+                # replace the definition with the parsed definition
+                table.definition = parsed_prisma.models[table.name].definition
+
             response.response = model
         except Exception as e:
             raise ValidationError(f"Error validating response: {e}")

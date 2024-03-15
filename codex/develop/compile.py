@@ -19,7 +19,7 @@ from prisma.types import CompiledRouteUpdateInput, CompletedAppCreateInput
 from pydantic import BaseModel
 
 from codex.api_model import Identifiers
-from codex.common.database import INCLUDE_FUNC
+from codex.common.database import INCLUDE_FIELD, INCLUDE_FUNC
 from codex.deploy.model import Application
 from codex.develop.function import generate_object_template
 
@@ -59,12 +59,13 @@ async def compile_route(
     code += compiled_function.code
 
     # Run the formatting engines
+    formatted_code = code
     try:
-        formatted_code = isort.code(code)
+        formatted_code = isort.code(formatted_code)
         formatted_code = black.format_str(formatted_code, mode=black.FileMode())
     except Exception as e:
-        logger.exception(f"Error formatting code: {e}")
-        raise ComplicationFailure(f"Error formatting code: {e}")
+        # We move on with unformatted code if there's an error
+        logger.exception(f"Error formatting code: {e} for route #{compiled_route_id}")
 
     data = CompiledRouteUpdateInput(
         Packages={"connect": [{"id": package_id} for package_id in unique_packages]},
@@ -172,13 +173,13 @@ async def recursive_compile_route(
     )
 
 
-async def __get_object_type_deps(
+async def get_object_type_deps(
     obj_type_id: str, object_type_ids: Set[str]
 ) -> List[ObjectType]:
     # Lookup the object getting all its subfields
     obj = await ObjectType.prisma().find_unique_or_raise(
         where={"id": obj_type_id},
-        include={"Fields": {"include": {"RelatedTypes": True}}},
+        **INCLUDE_FIELD,
     )
     if obj.Fields is None:
         raise ValueError(f"ObjectType {obj.name} has no fields.")
@@ -235,7 +236,7 @@ async def get_object_field_deps(
     # TODO: this can run in parallel
     pydantic_classes = []
     for type in types:
-        pydantic_classes.extend(await __get_object_type_deps(type.id, object_type_ids))
+        pydantic_classes.extend(await get_object_type_deps(type.id, object_type_ids))
 
     return pydantic_classes
 
@@ -269,8 +270,8 @@ def create_server_route_code(compiled_route: CompiledRoute) -> str:
         raise AssertionError("Compiled route must have an API route spec.")
 
     is_file_response = False
-    response_model = "JSONResponse"
-    route_response_annotation = "JSONResponse"
+    response_model = "Response"
+    route_response_annotation = "Response"
     if (
         return_type.RelatedTypes
         and return_type.RelatedTypes[0]
@@ -280,7 +281,7 @@ def create_server_route_code(compiled_route: CompiledRoute) -> str:
         is_file_response = True
     else:
         if return_type.typeName is not None:
-            response_model = f"{return_type.typeName} | JSONResponse"
+            response_model = f"{return_type.typeName} | Response"
             route_response_annotation = return_type.typeName
 
     # 4. Determine path parameters
@@ -344,7 +345,11 @@ def create_server_route_code(compiled_route: CompiledRoute) -> str:
         logger.exception("Error processing request")
         res = dict()
         res["error"] =  str(e)
-        return JSONResponse(content=jsonable_encoder(res))
+        return Response(
+            content=jsonable_encoder(res),
+            status_code=500,
+            media_type="application/json",
+        )
     """
     route_code = route_decorator
     route_code += route_function_def
@@ -418,26 +423,26 @@ def create_server_code(completed_app: CompletedApp) -> Application:
 
     server_code_imports = [
         "from fastapi import FastAPI",
-        "from fastapi.responses import JSONResponse, StreamingResponse",
+        "from fastapi.responses import Response, StreamingResponse",
         "from fastapi.encoders import jsonable_encoder",
         "from prisma import Prisma",
         "from contextlib import asynccontextmanager",
         "import logging",
+        "import prisma",
         "import io",
         "from typing import *",
     ]
     server_code_header = f"""logger = logging.getLogger(__name__)
 
-app = FastAPI(title="{name}", description='''{desc}''')
-
 db_client = Prisma(auto_register=True)
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await db_client.connect()
     yield
     await db_client.disconnect()
+
+app = FastAPI(title="{name}", lifespan=lifespan, description='''{desc}''')
 
 """
 

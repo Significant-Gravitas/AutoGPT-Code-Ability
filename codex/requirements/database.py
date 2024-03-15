@@ -7,6 +7,7 @@ from codex.api_model import (
     SpecificationResponse,
     SpecificationsListResponse,
 )
+from codex.common.database import INCLUDE_API_ROUTE
 from codex.common.model import ObjectTypeModel as ObjectTypeE
 from codex.common.model import create_object_type
 from codex.requirements.model import ApplicationRequirements
@@ -40,16 +41,27 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
         create_db = None
         if route.database_schema:
             create_db = {
+                "name": route.database_schema.name,
                 "description": route.database_schema.description,
                 "DatabaseTables": {
                     "create": [
                         {
+                            "name": table.name,
                             "description": table.description,
                             "definition": table.definition,
-                            "isEnum": table.isEnum,
+                            "isEnum": False,
                         }
                         for table in route.database_schema.tables
-                    ],
+                    ]
+                    + [
+                        {
+                            "name": enum.name,
+                            "description": enum.description,
+                            "definition": enum.definition,
+                            "isEnum": True,
+                        }
+                        for enum in route.database_schema.enums
+                    ]
                 },
             }
         create_route = {
@@ -81,15 +93,7 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
 
     new_spec = await Specification.prisma().create(
         data=create_spec,
-        include={
-            "ApiRouteSpecs": {
-                "include": {
-                    "RequestObject": {"include": {"Fields": True}},
-                    "ResponseObject": {"include": {"Fields": True}},
-                    "DatabaseSchema": {"include": {"DatabaseTables": True}},
-                }
-            }
-        },
+        include={"ApiRouteSpecs": INCLUDE_API_ROUTE},
     )
     return new_spec
 
@@ -101,14 +105,7 @@ async def get_specification(user_id: str, app_id: str, spec_id: str) -> Specific
             "userId": user_id,
             "applicationId": app_id,
         },
-        include={
-            "ApiRouteSpecs": {
-                "include": {
-                    "RequestObject": {"include": {"Fields": True}},
-                    "ResponseObject": {"include": {"Fields": True}},
-                }
-            }
-        },
+        include={"ApiRouteSpecs": INCLUDE_API_ROUTE},
     )
 
     return specification
@@ -131,14 +128,7 @@ async def get_latest_specification(user_id: str, app_id: str) -> Specification:
             "applicationId": app_id,
             "deleted": False,
         },
-        include={
-            "ApiRouteSpecs": {
-                "include": {
-                    "RequestObject": {"include": {"Fields": True}},
-                    "ResponseObject": {"include": {"Fields": True}},
-                }
-            }
-        },
+        include={"ApiRouteSpecs": INCLUDE_API_ROUTE},
         order={"createdAt": "desc"},
     )
     if not specification:
@@ -164,14 +154,7 @@ async def list_specifications(
     if total_items > 0:
         specs = await Specification.prisma().find_many(
             where={"userId": user_id, "applicationId": app_id, "deleted": False},
-            include={
-                "ApiRouteSpecs": {
-                    "include": {
-                        "RequestObject": {"include": {"Fields": True}},
-                        "ResponseObject": {"include": {"Fields": True}},
-                    }
-                }
-            },
+            include={"ApiRouteSpecs": INCLUDE_API_ROUTE},
             skip=skip,
             take=page_size,
         )

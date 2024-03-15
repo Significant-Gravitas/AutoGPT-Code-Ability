@@ -3,6 +3,8 @@ from typing import List, Optional, Tuple, __all__
 from prisma.models import ObjectField, ObjectType
 from pydantic import BaseModel, Field
 
+from codex.common.database import INCLUDE_FIELD, INCLUDE_TYPE
+
 
 class ObjectTypeModel(BaseModel):
     name: str = Field(description="The name of the object")
@@ -116,7 +118,9 @@ def is_type_equal(type1: str | None, type2: str | None) -> bool:
     evaluated_type1, children1 = unwrap_object_type(type1)
     evaluated_type2, children2 = unwrap_object_type(type2)
 
-    if evaluated_type1 != evaluated_type2:
+    # Compare the class name of the types (ignoring the module)
+    # TODO(majdyz): compare the module name as well.
+    if evaluated_type1.split(".")[-1] != evaluated_type2.split(".")[-1]:
         return False
 
     if len(children1) != len(children2):
@@ -263,7 +267,7 @@ async def create_object_type(
             "isPydantic": object.is_pydantic,
             "isEnum": object.is_enum,
         },
-        include={"Fields": {"include": {"RelatedTypes": True}}},
+        **INCLUDE_FIELD,
     )
     available_objects[object.name] = created_object_type
 
@@ -289,7 +293,7 @@ async def create_object_type(
             updated_object_field = await ObjectField.prisma().update(
                 where={"id": field.id},
                 data={"RelatedTypes": {"connect": [{"id": t.id} for t in reltypes]}},
-                include={"RelatedTypes": True},
+                **INCLUDE_TYPE,
             )
             if updated_object_field:
                 field.RelatedTypes = updated_object_field.RelatedTypes

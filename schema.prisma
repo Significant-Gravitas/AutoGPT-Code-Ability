@@ -37,6 +37,7 @@ model User {
   Deployments     Deployment[]
   CompletedApp    CompletedApp[]
   Interview       Interview[]
+  ResumePoint     ResumePoint[]
 }
 
 enum Role {
@@ -59,6 +60,7 @@ model Application {
   User            User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId          String?
   Interviews      Interview[]
+  ResumePoint     ResumePoint[]
 }
 
 // ------------------------- Interview Models ---------------------------- //
@@ -66,18 +68,19 @@ model Application {
 // ------------------------------------------------------------------------ //
 
 model Interview {
-  id            String      @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  deleted       Boolean     @default(false)
-  finished      Boolean     @default(false)
+  id            String        @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deleted       Boolean       @default(false)
+  finished      Boolean       @default(false)
   name          String
   task          String
-  User          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  User          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId        String
   Questions     Question[]
-  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  application   Application   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   applicationId String
+  ResumePoint   ResumePoint[]
 }
 
 model Question {
@@ -110,6 +113,7 @@ model Specification {
   userId        String?
   Application   Application?   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   applicationId String?
+  ResumePoint   ResumePoint[]
 }
 
 enum AccessLevel {
@@ -320,6 +324,7 @@ model CompletedApp {
   specificationId String?
   Application     Application?    @relation(fields: [applicationId], references: [id])
   applicationId   String?
+  ResumePoint     ResumePoint[]
 }
 
 // ---------------------------------------------------------------------- //
@@ -342,6 +347,7 @@ model Deployment {
   applicationId  String?
   CompletedApp   CompletedApp? @relation(fields: [completedAppId], references: [id], onDelete: Cascade)
   completedAppId String?
+  ResumePoint    ResumePoint[]
 }
 
 // ------------------------- LLM Models ----------------------------- //
@@ -382,4 +388,23 @@ model LLMCallAttempt {
   applicationId     String?
   LLMCallTemplate   LLMCallTemplate? @relation(fields: [llmCallTemplateId], references: [id], onDelete: Cascade)
   llmCallTemplateId String?
+}
+
+model ResumePoint {
+  id              String         @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @default(now()) @updatedAt
+  name            String
+  User            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  Application     Application?   @relation(fields: [applicationId], references: [id])
+  applicationId   String?
+  Interview       Interview?     @relation(fields: [interviewId], references: [id])
+  interviewId     String?
+  Specification   Specification? @relation(fields: [specificationId], references: [id])
+  specificationId String?
+  CompletedApp    CompletedApp?  @relation(fields: [completedAppId], references: [id])
+  completedAppId  String?
+  Deployment      Deployment?    @relation(fields: [deploymentId], references: [id])
+  deploymentId    String?
 }
