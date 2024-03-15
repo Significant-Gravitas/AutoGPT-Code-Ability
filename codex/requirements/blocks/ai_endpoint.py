@@ -452,6 +452,29 @@ def attach_related_types(
     defined_types[model.name] = model
 
 
+def replace_db_enum_types(
+    obj: Any, table_names: list[str], enum_names: list[str]
+) -> None:
+    """
+    Replace the database and enum types with prisma.models. and prisma.enums.
+    """
+    if isinstance(obj, ObjectTypeModel):
+        if obj.Fields:
+            for field in obj.Fields:
+                replace_db_enum_types(field, table_names, enum_names)
+    elif isinstance(obj, ObjectFieldModel):
+        if obj.type in table_names:
+            obj.type = f"prisma.models.{obj.type}"
+        elif obj.type in enum_names:
+            obj.type = f"prisma.enums.{obj.type}"
+        if obj.related_types:
+            for related_type in obj.related_types:
+                replace_db_enum_types(related_type, table_names, enum_names)
+    elif isinstance(obj, list):
+        for item in obj:
+            replace_db_enum_types(item, table_names, enum_names)
+
+
 def parse_object_model(
     request_model: ObjectTypeModel,
     response_model: ObjectTypeModel,
@@ -550,11 +573,21 @@ def parse_object_model(
         )
     ]
 
+    replace_db_enum_types(request_model, table_names, enum_names)
+    replace_db_enum_types(response_model, table_names, enum_names)
+
+    request_types_final: Set[str] = set()
+    response_types_final: Set[str] = set()
+    request_object_types_final: List[ObjectTypeModel] = []
+    response_object_types_final: List[ObjectTypeModel] = []
+    extract_types(request_model, request_types_final, request_object_types_final)
+    extract_types(response_model, response_types_final, response_object_types)
+
     return (
-        request_types_post,
-        response_types_post,
-        request_object_types_post,
-        response_object_types_post,
+        request_types_final,
+        response_types_final,
+        request_object_types_final,
+        response_object_types_final,
         request_model,
         response_model,
         invalid_request_types_post,
