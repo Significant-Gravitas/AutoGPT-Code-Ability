@@ -65,7 +65,7 @@ from codex.requirements.model import (
     RequirementsRefined,
     StateObj,
 )
-from codex.requirements.unwrap_schemas import convert_db_schema, convert_endpoint
+from codex.requirements.unwrap_schemas import convert_endpoint
 
 logger = logging.getLogger(__name__)
 
@@ -264,7 +264,7 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
             },
         )
 
-        running_state_obj.database = convert_db_schema(db_response.database_schema)
+        running_state_obj.database = db_response.database_schema
 
         logger.info("DB Done")
 

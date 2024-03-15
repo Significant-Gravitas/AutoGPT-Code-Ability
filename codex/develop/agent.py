@@ -14,7 +14,7 @@ from prisma.models import (
 from prisma.types import CompiledRouteCreateInput
 
 from codex.api_model import Identifiers
-from codex.common.database import INCLUDE_FUNC
+from codex.common.database import INCLUDE_API_ROUTE, INCLUDE_FUNC
 from codex.develop.compile import (
     compile_route,
     create_app,
@@ -142,9 +142,7 @@ async def develop_route(
         include={
             "RootFunction": INCLUDE_FUNC,
             "Functions": INCLUDE_FUNC,
-            "ApiRouteSpec": {
-                "include": {"DatabaseSchema": {"include": {"DatabaseTables": True}}}
-            },
+            "ApiRouteSpec": INCLUDE_API_ROUTE,
         },
     )
 
@@ -176,12 +174,27 @@ async def develop_route(
         if func.functionName != function.functionName
     ] + [generate_object_template(f) for f in generated_objs.values()]
 
+    database_schema = (
+        "\n\n".join(
+            [
+                t.definition
+                for t in compiled_route.ApiRouteSpec.DatabaseSchema.DatabaseTables
+            ]
+        )
+        if compiled_route
+        and compiled_route.ApiRouteSpec
+        and compiled_route.ApiRouteSpec.DatabaseSchema
+        and compiled_route.ApiRouteSpec.DatabaseSchema.DatabaseTables
+        else ""
+    )
+
     dev_invoke_params = {
+        "database_schema": database_schema,
         "function_name": function.functionName,
         "goal": goal_description,
         "function_signature": function.template,
         # function_args is not used by the prompt, but used for function validation
-        "function_args": [(f.name, f.typeName) for f in function.FunctionArgs],
+        "function_args": [(f.name, f.typeName) for f in function.FunctionArgs or []],
         # function_rets is not used by the prompt, but used for function validation
         "function_rets": function.FunctionReturn.typeName
         if function.FunctionReturn

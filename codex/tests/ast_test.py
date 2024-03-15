@@ -1,8 +1,6 @@
 import ast
 
-import pytest
 
-from codex.common.ai_block import ValidationError
 from codex.develop.develop import FunctionVisitor
 
 SAMPLE_CODE = """
@@ -283,8 +281,9 @@ def test_visiting_class_definition_no_pydantic_inheritance():
     visitor = FunctionVisitor()
 
     # Create AST for a class definition with no Pydantic inheritance
-    code = ast.parse("class MyClass:\n    pass\n\n"
-                     "class MyOtherClass(BaseModel):\n    pass")
+    code = ast.parse(
+        "class MyClass:\n    pass\n\n" "class MyOtherClass(BaseModel):\n    pass"
+    )
 
     # Use pytest.raises to check if a ValidationError is raised
     # with pytest.raises(ValidationError):

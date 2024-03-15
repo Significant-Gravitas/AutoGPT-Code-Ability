@@ -41,16 +41,27 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
         create_db = None
         if route.database_schema:
             create_db = {
+                "name": route.database_schema.name,
                 "description": route.database_schema.description,
                 "DatabaseTables": {
                     "create": [
                         {
+                            "name": table.name,
                             "description": table.description,
                             "definition": table.definition,
-                            "isEnum": table.isEnum,
+                            "isEnum": False,
                         }
                         for table in route.database_schema.tables
-                    ],
+                    ]
+                    + [
+                        {
+                            "name": enum.name,
+                            "description": enum.description,
+                            "definition": enum.definition,
+                            "isEnum": True,
+                        }
+                        for enum in route.database_schema.enums
+                    ]
                 },
             }
         create_route = {
