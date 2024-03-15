@@ -36,26 +36,10 @@ def extract_types(
 def extract_field_types(field_type: str, types: Set[str]) -> None:
     field_type = field_type.replace(" ", "")
     if "[" in field_type:
-        outer_type, inner_type = field_type.split("[", 1)
-        inner_type = inner_type[:-1]  # Remove the closing bracket
+        outer_type, inner_type = extract_outer_inner_types(field_type)
         types.add(outer_type)
-
-        # Handle nested types recursively
-        bracket_count = 0
-        start_index = 0
-        for i in range(len(inner_type)):
-            if inner_type[i] == "[":
-                bracket_count += 1
-            elif inner_type[i] == "]":
-                bracket_count -= 1
-            elif inner_type[i] == "," and bracket_count == 0:
-                inner_type_part = inner_type[start_index:i]
-                extract_field_types(inner_type_part, types)
-                start_index = i + 1
-
-        # Handle the last inner type part
-        if start_index < len(inner_type):
-            inner_type_part = inner_type[start_index:]
+        replaced_inner_types = replace_inner_types(inner_type)
+        for inner_type_part in replaced_inner_types:
             extract_field_types(inner_type_part, types)
     else:
         types.add(field_type)
@@ -186,16 +170,13 @@ def is_valid_type(
         "PosixPath",
         "WindowsPath",
     ]
-
-    if (
+    return (
         type_name in object_type_names
         or type_name in typing_types
         or type_name in default_types
         or type_name in enum_names
         or type_name in table_names
-    ):
-        return True
-    return False
+    )
 
 
 def replace_types(types: Set[str]) -> Set[str]:
@@ -258,14 +239,7 @@ def replace_types(types: Set[str]) -> Set[str]:
         "container": "Container",
     }
 
-    replaced_types = set()
-    for type_name in types:
-        if type_name.lower() in type_replacements:
-            replaced_types.add(type_replacements[type_name.lower()])
-        else:
-            replaced_types.add(type_name)
-
-    return replaced_types
+    return {type_replacements.get(type_name.lower(), type_name) for type_name in types}
 
 
 def replace_object_model_types(obj: Any) -> None:
