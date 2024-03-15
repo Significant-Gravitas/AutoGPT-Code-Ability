@@ -20,12 +20,12 @@ from codex.common.ai_block import (
 from codex.common.database import INCLUDE_FUNC
 from codex.common.exec_external_tool import exec_external_on_contents
 from codex.common.model import (
+    PYTHON_TYPES,
     ObjectFieldModel,
     ObjectTypeModel,
     create_object_type,
     get_typing_imports,
     is_type_equal,
-    PYTHON_TYPES,
 )
 from codex.develop.compile import ComplicationFailure
 from codex.develop.function import construct_function, generate_object_template
@@ -333,7 +333,9 @@ def static_code_analysis(func: GeneratedFunctionResponse) -> str:
     )
 
     return exec_external_on_contents(
-        command_arguments=["ruff", "check", "--fix"], file_contents=code, suffix=".py"
+        command_arguments=["ruff", "check", "--fix", "--ignore", "F841"],
+        file_contents=code,
+        suffix=".py",
     ).split(separator, maxsplit=1)[1]
 
 
@@ -422,6 +424,7 @@ user = await prisma.models.User.prisma().create(
 
             func_name = invoke_params["function_name"]
             requested_func = visitor.functions.get(func_name)
+            # TODO: Can we add this to the validation_errors list too
             if not requested_func or not requested_func.is_implemented:
                 raise ValidationError(
                     f"Main Function body {func_name} is not implemented."
@@ -439,7 +442,10 @@ user = await prisma.models.User.prisma().create(
                 raise ComplicationFailure(
                     f"Function {func_name} signature not available"
                 )
-            validate_matching_function(expected_func, requested_func)
+            try:
+                validate_matching_function(expected_func, requested_func)
+            except ValidationError as e:
+                validation_errors.append(str(e))
 
             functions = visitor.functions.copy()
             del functions[func_name]
@@ -517,17 +523,25 @@ user = await prisma.models.User.prisma().create(
                 functionCode=function_code,
                 functions=functions,
             )
-            result.functionCode = static_code_analysis(result)
+            try:
+                result.functionCode = static_code_analysis(result)
+            except ValidationError as e:
+                validation_errors.append(str(e))
+
             response.response = result
 
-            return response
         except Exception as e:
-            validation_errors.append(str(e))
+            # This is not a validation error we want to the agent to fix
+            # it is a code bug in the validation logic
+            logger.exception(e)
+            raise e
 
         if validation_errors:
             # Important: ValidationErrors are used in the retry prompt
             errors = [f"\n  - {e}" for e in validation_errors]
             raise ValidationError(f"Error validating response:{''.join(errors)}")
+
+        return response
 
     async def create_item(
         self, ids: Identifiers, validated_response: ValidatedResponse

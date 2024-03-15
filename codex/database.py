@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from prisma.enums import Role
 from prisma.models import Application, User
 from prisma.types import UserCreateWithoutRelationsInput
@@ -50,89 +48,6 @@ async def create_test_data():
                 role=Role.USER,
                 deleted=False,
             ),
-        ]
-    )
-
-    # Insert applications
-    await Application.prisma().create_many(
-        [
-            {
-                "name": "Availability Checker",
-                "deleted": False,
-                "id": test_const.app_id_1,
-                "userId": user_1.user_id,
-                "updatedAt": datetime.now(),
-            },
-            {
-                "name": "Invoice Generator",
-                "deleted": False,
-                "id": test_const.app_id_2,
-                "userId": user_1.user_id,
-                "updatedAt": datetime.now(),
-            },
-            {
-                "name": "Appointment Optimization Tool",
-                "deleted": False,
-                "id": test_const.app_id_3,
-                "userId": user_1.user_id,
-                "updatedAt": datetime.now(),
-            },
-            {
-                "name": "Distance Calculator",
-                "deleted": False,
-                "id": test_const.app_id_4,
-                "userId": user_1.user_id,
-                "updatedAt": datetime.now(),
-            },
-            {
-                "name": "Profile Management System",
-                "deleted": False,
-                "id": test_const.app_id_5,
-                "userId": user_1.user_id,
-                "updatedAt": datetime.now(),
-            },
-            {
-                "name": "Calendar Booking System",
-                "deleted": False,
-                "id": test_const.app_id_6,
-                "userId": user_1.user_id,
-                "updatedAt": datetime.now(),
-            },
-            {
-                "name": "Inventory Management System",
-                "deleted": False,
-                "id": test_const.app_id_7,
-                "userId": user_1.user_id,
-                "updatedAt": datetime.now(),
-            },
-            {
-                "name": "Invoice Payment Tracking",
-                "deleted": False,
-                "id": test_const.app_id_8,
-                "userId": user_1.user_id,
-                "updatedAt": datetime.now(),
-            },
-            {
-                "name": "Survey Tool",
-                "deleted": False,
-                "id": test_const.app_id_9,
-                "userId": user_1.user_id,
-                "updatedAt": datetime.now(),
-            },
-            {
-                "name": "Scurvey Tool",
-                "deleted": True,
-                "id": test_const.app_id_10,
-                "userId": user_1.user_id,
-                "updatedAt": datetime.now(),
-            },
-            {
-                "name": "TicTacToe Game",
-                "deleted": False,
-                "id": test_const.app_id_11,
-                "userId": user_2.user_id,
-                "updatedAt": datetime.now(),
-            },
         ]
     )
 
@@ -230,6 +145,7 @@ async def create_app(user_id: str, app_data: ApplicationCreate) -> ApplicationRe
     app = await Application.prisma().create(
         data={
             "name": app_data.name,
+            "description": app_data.description,
             "userId": user_id,
         },
         include={"User": True},

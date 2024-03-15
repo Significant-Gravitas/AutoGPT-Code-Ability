@@ -29,6 +29,67 @@ RECURSION_DEPTH_LIMIT = int(os.environ.get("RECURSION_DEPTH_LIMIT", 2))
 logger = logging.getLogger(__name__)
 
 
+async def process_api_route(api_route, ids, spec, app):
+    if not api_route.RequestObject:
+        types = []
+        descs = {}
+    elif api_route.RequestObject.Fields:
+        # Unwrap the first level of the fields if it's a nested object.
+        types = [(f.name, f.typeName) for f in api_route.RequestObject.Fields]
+        descs = {f.name: f.description for f in api_route.RequestObject.Fields}
+    else:
+        types = [("request", api_route.RequestObject.name)]
+        descs = {"request": api_route.RequestObject.description}
+
+    function_def = FunctionDef(
+        name=api_route.functionName,
+        arg_types=types,
+        arg_descs=descs,
+        return_type=api_route.ResponseObject.name if api_route.ResponseObject else None,
+        return_desc=api_route.ResponseObject.description
+        if api_route.ResponseObject
+        else None,
+        is_implemented=False,
+        function_desc=api_route.description,
+        function_code="",
+    )
+    object_type_ids = set()
+    available_types = {
+        dep_type.name: dep_type
+        for obj in [api_route.RequestObject, api_route.ResponseObject]
+        if obj
+        for dep_type in await get_object_type_deps(obj.id, object_type_ids)
+    }
+    if api_route.RequestObject and api_route.RequestObject.Fields:
+        # RequestObject is unwrapped, so remove it from the available types
+        available_types.pop(api_route.RequestObject.name, None)
+    compiled_route = await CompiledRoute.prisma().create(
+        data=CompiledRouteCreateInput(
+            description=api_route.description,
+            fileName=api_route.functionName + "_service.py",
+            mainFunctionName=api_route.functionName,
+            compiledCode="",  # This will be updated by compile_route
+            RootFunction={
+                "create": await construct_function(function_def, available_types)
+            },
+            CompletedApp={"connect": {"id": app.id}},
+            ApiRouteSpec={"connect": {"id": api_route.id}},
+        ),
+        include={"RootFunction": INCLUDE_FUNC},
+    )
+    if not compiled_route.RootFunction:
+        raise ValueError("Root function not created")
+
+    route_root_func = await develop_route(
+        ids=ids,
+        compiled_route_id=compiled_route.id,
+        goal_description=spec.context,
+        function=compiled_route.RootFunction,
+    )
+    logger.info(f"Route function id: {route_root_func.id}")
+    await compile_route(compiled_route.id, route_root_func)
+
+
 async def develop_application(ids: Identifiers, spec: Specification) -> CompletedApp:
     """
     Develops an application based on the given identifiers and specification.
@@ -42,71 +103,16 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
 
     """
     app = await create_app(ids, spec, [])
+    tasks = []
 
     if spec.ApiRouteSpecs:
         for api_route in spec.ApiRouteSpecs:
-            if not api_route.RequestObject:
-                types = []
-                descs = {}
-            elif api_route.RequestObject.Fields:
-                # Unwrap the first level of the fields if it's a nested object.
-                types = [(f.name, f.typeName) for f in api_route.RequestObject.Fields]
-                descs = {f.name: f.description for f in api_route.RequestObject.Fields}
-            else:
-                types = [("request", api_route.RequestObject.name)]
-                descs = {"request": api_route.RequestObject.description}
+            # Schedule each API route for processing
+            task = process_api_route(api_route, ids, spec, app)
+            tasks.append(task)
 
-            function_def = FunctionDef(
-                name=api_route.functionName,
-                arg_types=types,
-                arg_descs=descs,
-                return_type=api_route.ResponseObject.name
-                if api_route.ResponseObject
-                else None,
-                return_desc=api_route.ResponseObject.description
-                if api_route.ResponseObject
-                else None,
-                is_implemented=False,
-                function_desc=api_route.description,
-                function_code="",
-            )
-            object_type_ids = set()
-            available_types = {
-                dep_type.name: dep_type
-                for obj in [api_route.RequestObject, api_route.ResponseObject]
-                if obj
-                for dep_type in await get_object_type_deps(obj.id, object_type_ids)
-            }
-            if api_route.RequestObject and api_route.RequestObject.Fields:
-                # RequestObject is unwrapped, so remove it from the available types
-                available_types.pop(api_route.RequestObject.name, None)
-            compiled_route = await CompiledRoute.prisma().create(
-                data=CompiledRouteCreateInput(
-                    description=api_route.description,
-                    fileName=api_route.functionName + "_service.py",
-                    mainFunctionName=api_route.functionName,
-                    compiledCode="",  # This will be updated by compile_route
-                    RootFunction={
-                        "create": await construct_function(
-                            function_def, available_types
-                        )
-                    },
-                    CompletedApp={"connect": {"id": app.id}},
-                    ApiRouteSpec={"connect": {"id": api_route.id}},
-                ),
-                include={"RootFunction": INCLUDE_FUNC},
-            )
-            if not compiled_route.RootFunction:
-                raise ValueError("Root function not created")
-
-            route_root_func = await develop_route(
-                ids=ids,
-                compiled_route_id=compiled_route.id,
-                goal_description=spec.context,
-                function=compiled_route.RootFunction,
-            )
-            logger.info(f"Route function id: {route_root_func.id}")
-            await compile_route(compiled_route.id, route_root_func)
+        # Run the tasks concurrently
+        await asyncio.gather(*tasks)
 
     return app
 

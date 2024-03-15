@@ -40,21 +40,12 @@ from codex.requirements.blocks.ai_requirements import (
     FuncNonFuncRequirementsBlock,
 )
 from codex.requirements.database import create_spec
-from codex.requirements.hardcoded import (
-    appointment_optimization_requirements,
-    availability_checker_requirements,
-    distance_calculator_requirements,
-    invoice_generator_requirements,
-    profile_management,
-    tictactoe_game_requirements,
-)
 from codex.requirements.matching import find_best_match
 from codex.requirements.model import (
     APIRouteRequirement,
     ApplicationRequirements,
     Clarification,
     DBResponse,
-    ExampleTask,
     Feature,
     FeaturesSuperObject,
     Module,
@@ -425,56 +416,6 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
             f.write("\n")
     # Step 8) Return the application requirements
     return saved_spec
-
-
-def hardcoded_requirements(task: ExampleTask) -> ApplicationRequirements:
-    """
-    This will take the application name and return the manually
-    defined requirements for the application in the correct format
-    """
-    logger.warning("⚠️ Using hardcoded requirements")
-    match task:
-        case ExampleTask.AVAILABILITY_CHECKER:
-            return availability_checker_requirements()
-        case ExampleTask.INVOICE_GENERATOR:
-            return invoice_generator_requirements()
-        case ExampleTask.APPOINTMENT_OPTIMIZATION_TOOL:
-            return appointment_optimization_requirements()
-        case ExampleTask.DISTANCE_CALCULATOR:
-            return distance_calculator_requirements()
-        case ExampleTask.PROFILE_MANAGEMENT_SYSTEM:
-            return profile_management()
-        case ExampleTask.TICTACTOE_GAME:
-            return tictactoe_game_requirements()
-        case _:
-            raise NotImplementedError(f"Task {task} not implemented")
-
-
-async def populate_database_specs():
-    """
-        This function will populate the database with the hardcoded requirements
-
-         id |        createdAt        |        updatedAt        |             name              | deleted | userId
-    ----+-------------------------+-------------------------+-------------------------------+---------+--------
-      1 | 2024-02-08 11:51:15.216 | 2024-02-08 11:51:15.216 | Availability Checker          | f       |      1
-      2 | 2024-02-08 11:51:15.216 | 2024-02-08 11:51:15.216 | Invoice Generator             | f       |      1
-      3 | 2024-02-08 11:51:15.216 | 2024-02-08 11:51:15.216 | Appointment Optimization Tool | f       |      1
-      4 | 2024-02-08 11:51:15.216 | 2024-02-08 11:51:15.216 | Distance Calculator           | f       |      1
-      5 | 2024-02-08 11:51:15.216 | 2024-02-08 11:51:15.216 | Profile Management System     | f       |      1
-      6 | 2024-02-08 11:51:15.216 | 2024-02-08 11:51:15.216 | Survey Tool                   | f       |      2
-      7 | 2024-02-08 11:51:15.216 | 2024-02-08 11:51:15.216 | Scurvey Tool                  | t       |      2
-    """
-    ids = identifier_1
-    examples: list[ExampleTask] = [
-        task for task in list(ExampleTask) if ExampleTask.get_app_id(task) is not None
-    ]
-    for task in examples:
-        app_id = ExampleTask.get_app_id(task)
-        print(f"Creating Spec for {task}, with app_id {app_id}")
-        spec = hardcoded_requirements(task)
-        ids.app_id = app_id
-        print(ids)
-        await create_spec(ids, spec)
 
 
 if __name__ == "__main__":

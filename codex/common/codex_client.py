@@ -126,7 +126,9 @@ class CodexClient:
             logger.exception(f"Unknown Error when trying to get user: {e}")
             raise e
 
-    async def create_app(self, app_name: str) -> ApplicationResponse:
+    async def create_app(
+        self, app_name: str, app_description: str
+    ) -> ApplicationResponse:
         """
         Creates a new app for the given user.
 
@@ -141,7 +143,7 @@ class CodexClient:
         url = f"{self.base_url}/user/{self.codex_user_id}/apps/"
         # headers = {"accept": "application/json", "Content-Type": "application/json"}
 
-        data = ApplicationCreate(name=app_name)
+        data = ApplicationCreate(name=app_name, description=app_description)
 
         try:
             async with aiohttp.ClientSession() as session:

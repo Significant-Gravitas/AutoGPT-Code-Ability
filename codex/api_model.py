@@ -72,6 +72,9 @@ class UsersListResponse(BaseModel):
 
 class ApplicationBase(BaseModel):
     name: str = Field(..., description="The name of the application")
+    description: Optional[str] = Field(
+        None, description="A description of the application"
+    )
 
 
 class ApplicationCreate(ApplicationBase):

@@ -1,6 +1,5 @@
 import ast
 
-
 from codex.develop.develop import FunctionVisitor
 
 SAMPLE_CODE = """
