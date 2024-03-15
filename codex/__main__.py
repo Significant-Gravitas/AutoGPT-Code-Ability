@@ -120,10 +120,19 @@ def example(port: int):
 
 async def get_resume_points(prisma_client):
     from prisma.models import ResumePoint
+    import prisma.types 
 
     await prisma_client.connect()
 
-    resume_points = await ResumePoint.prisma().find_many()
+    resume_points = await ResumePoint.prisma().find_many(
+        include=prisma.types.ResumePointInclude(
+            Application=True,
+            Interview=True,
+            Specification=True,
+            CompletedApp=True,
+            Deployment=True,
+        )
+    )
 
     print(
         f"{'':<3} | {'updatedAt':<20} | {'name':<30} | {'Interview':<10} | {'Specification':<15} | {'CompletedApp':<12} | {'Deployment':<10}"
@@ -136,7 +145,7 @@ async def get_resume_points(prisma_client):
             str(i + 1),
             resume_point.updatedAt.isoformat().split(".")[0],
             resume_point.name,
-            "✓" if resume_point.interviewId else "X",
+            "✓" if resume_point.Interview and resume_point.Interview.finished else "X",
             "✓" if resume_point.specificationId else "X",
             "✓" if resume_point.completedAppId else "X",
             "✓" if resume_point.deploymentId else "X",
