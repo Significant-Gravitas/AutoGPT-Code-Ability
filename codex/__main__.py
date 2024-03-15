@@ -168,7 +168,7 @@ async def get_resume_points(prisma_client):
         row = [
             str(i + 1),
             resume_point.updatedAt.isoformat().split(".")[0],
-            resume_point.name,
+            resume_point.name[:30],
             "✓" if resume_point.Interview and resume_point.Interview.finished else "X",
             "✓" if resume_point.specificationId else "X",
             "✓" if resume_point.completedAppId else "X",
