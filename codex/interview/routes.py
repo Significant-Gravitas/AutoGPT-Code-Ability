@@ -3,6 +3,7 @@ import logging
 from typing import List
 
 from fastapi import APIRouter, Response
+from prisma import errors as PrismaErrors
 
 import codex.database
 import codex.interview.database
@@ -126,23 +127,82 @@ async def take_next_step(
         ),
     ]
     try:
-        user = await codex.database.get_user(user_id)
+        try:
+            # Get the user
+            user = await codex.database.get_user(user_id)
+        except PrismaErrors.RecordNotFoundError:
+            return Response(
+                content=json.dumps(
+                    {"error": f"User '{user_id}' not found in database."}
+                ),
+                status_code=404,
+                media_type="application/json",
+            )
+
+        # Check if the app exists
+        try:
+            await codex.database.get_app_by_id(user_id, app_id)
+        except PrismaErrors.RecordNotFoundError:
+            return Response(
+                content=json.dumps({"error": f"App '{app_id}' not found in database."}),
+                status_code=404,
+                media_type="application/json",
+            )
+
         ids = Identifiers(
             user_id=user_id,
             app_id=app_id,
             cloud_services_id=user.cloudServicesId if user else "",
         )
 
-        interview = await codex.interview.database.get_interview(
-            user_id, app_id, interview_id
-        )
+        # Get the interview
+        try:
+            interview = await codex.interview.database.get_interview(
+                user_id, app_id, interview_id
+            )
+        except PrismaErrors.RecordNotFoundError:
+            return Response(
+                content=json.dumps(
+                    {"error": f"Interview '{interview_id}' not found in database."}
+                ),
+                status_code=404,
+                media_type="application/json",
+            )
 
-        # Add Answers to questions that were answered by the user
-        # TODO: check if the user answers a question that was not asked
+        # Check if any of the question IDs in the answers don't exist in the interview
+        asked_question_ids = {x.id for x in interview.Questions or []}
+        answered_question_ids = {
+            x.id for x in answers if isinstance(x, InterviewMessageWithResponse)
+        }
+        nonexistent_question_ids = answered_question_ids.difference(asked_question_ids)
+
+        # If the user answered a question that doesn't exist in the interview, return an error
+        if nonexistent_question_ids:
+            error_message = f"Answered questions with IDs '{',' .join(nonexistent_question_ids)}' do not exist in the interview."
+            logger.warning(msg=error_message)
+            return Response(
+                content=json.dumps({"error": error_message}),
+                status_code=400,
+                media_type="application/json",
+            )
+
+        # Check if the user answered a question where tool is not "ask"
+        for x in answers:
+            if x.tool != "ask":
+                error_message = "User answered a question with a tool other than 'ask'."
+                logger.warning(msg=error_message)
+                return Response(
+                    content=json.dumps({"error": error_message}),
+                    status_code=400,
+                    media_type="application/json",
+                )
+
+        # Add Answers to any questions that were answered by the user
         updated_interview = await codex.interview.database.answer_questions(
             interview_id=interview.id,
             answers=[x for x in answers if isinstance(x, InterviewMessageWithResponse)],
         )
+
         # Turn the questions into a list of InterviewMessageWithResponse and InterviewMessage
         memory: List[InterviewMessage | InterviewMessageWithResponse] = []
         for x in updated_interview.Questions or []:
@@ -157,7 +217,7 @@ async def take_next_step(
                     InterviewMessage(id=x.id, tool=x.tool, content=x.question)
                 )
 
-        # Take a step
+        # Process the next step in the interview, handling pending questions and determining if the interview is finished.
         next_set = await next_step(
             task=interview.task, ids=ids, memory=memory, tools=tools
         )
