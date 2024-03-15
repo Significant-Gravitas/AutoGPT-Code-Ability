@@ -1,5 +1,4 @@
 import logging
-import re
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from codex.common.ai_block import (
@@ -40,9 +39,24 @@ def extract_field_types(field_type: str, types: Set[str]) -> None:
         outer_type, inner_type = field_type.split("[", 1)
         inner_type = inner_type[:-1]  # Remove the closing bracket
         types.add(outer_type)
-        inner_types = inner_type.split(",")
-        for inner_type in inner_types:
-            extract_field_types(inner_type, types)
+
+        # Handle nested types recursively
+        bracket_count = 0
+        start_index = 0
+        for i in range(len(inner_type)):
+            if inner_type[i] == "[":
+                bracket_count += 1
+            elif inner_type[i] == "]":
+                bracket_count -= 1
+            elif inner_type[i] == "," and bracket_count == 0:
+                inner_type_part = inner_type[start_index:i]
+                extract_field_types(inner_type_part, types)
+                start_index = i + 1
+
+        # Handle the last inner type part
+        if start_index < len(inner_type):
+            inner_type_part = inner_type[start_index:]
+            extract_field_types(inner_type_part, types)
     else:
         types.add(field_type)
 
@@ -331,16 +345,49 @@ def replace_field_type(field_type: str) -> str:
 
     field_type = field_type.replace(" ", "")
     if "[" in field_type:
-        outer_type, inner_type = field_type.split("[", 1)
-        inner_type = inner_type[:-1]  # Remove the closing bracket
+        outer_type, inner_type = extract_outer_inner_types(field_type)
         outer_type = type_replacements.get(outer_type.lower(), outer_type)
-        inner_types = inner_type.split(",")
-        replaced_inner_types = [
-            replace_field_type(inner_type) for inner_type in inner_types
-        ]
+        replaced_inner_types = replace_inner_types(inner_type)
         return f"{outer_type}[{', '.join(replaced_inner_types)}]"
     else:
         return type_replacements.get(field_type.lower(), field_type)
+
+def extract_outer_inner_types(field_type: str) -> Tuple[str, str]:
+    bracket_count = 0
+    outer_type = ""
+    inner_type = ""
+    for char in field_type:
+        if char == "[":
+            bracket_count += 1
+            if bracket_count == 1:
+                continue
+        elif char == "]":
+            bracket_count -= 1
+            if bracket_count == 0:
+                break
+        if bracket_count == 0:
+            outer_type += char
+        else:
+            inner_type += char
+    return outer_type, inner_type
+
+def replace_inner_types(inner_type: str) -> List[str]:
+    replaced_inner_types = []
+    bracket_count = 0
+    current_type = ""
+    for char in inner_type:
+        if char == "[":
+            bracket_count += 1
+        elif char == "]":
+            bracket_count -= 1
+        elif char == "," and bracket_count == 0:
+            replaced_inner_types.append(replace_field_type(current_type))
+            current_type = ""
+            continue
+        current_type += char
+    if current_type:
+        replaced_inner_types.append(replace_field_type(current_type))
+    return replaced_inner_types
 
 
 def copy_object_type(
@@ -391,18 +438,13 @@ def resolve_invalid_types(
     return resolved_types
 
 
-def extract_types_2(type_str: str) -> List[str]:
-    type_pattern = r"(\w+)"
-    types = re.findall(type_pattern, type_str)
-    return types
-
-
 def attach_related_types(
     model: ObjectTypeModel, defined_types: Dict[str, ObjectTypeModel]
 ) -> None:
     if model.Fields:
         for field in model.Fields:
-            types = extract_types_2(field.type)
+            types = set()
+            extract_field_types(field.type, types)
             for type_name in types:
                 if type_name in defined_types:
                     if defined_types[type_name] not in (field.related_types or []):
@@ -418,10 +460,10 @@ def attach_related_types(
             if field.related_types:
                 for related_type in field.related_types:
                     attach_related_types(related_type, defined_types)
-
     # Check for all the models if they don't have related types attached
     for field in model.Fields or []:
-        types = extract_types_2(field.type)
+        types = set()
+        extract_field_types(field.type, types)
         for type_name in types:
             if type_name in defined_types:
                 for other_model in defined_types.values():
@@ -431,7 +473,6 @@ def attach_related_types(
                         if other_model not in field.related_types:
                             field.related_types.append(other_model)
                         break
-
     defined_types[model.name] = model
 
 
