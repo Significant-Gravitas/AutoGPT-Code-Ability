@@ -352,6 +352,7 @@ def replace_field_type(field_type: str) -> str:
     else:
         return type_replacements.get(field_type.lower(), field_type)
 
+
 def extract_outer_inner_types(field_type: str) -> Tuple[str, str]:
     bracket_count = 0
     outer_type = ""
@@ -370,6 +371,7 @@ def extract_outer_inner_types(field_type: str) -> Tuple[str, str]:
         else:
             inner_type += char
     return outer_type, inner_type
+
 
 def replace_inner_types(inner_type: str) -> List[str]:
     replaced_inner_types = []
