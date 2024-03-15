@@ -46,7 +46,6 @@ from codex.requirements.model import (
     ApplicationRequirements,
     Clarification,
     DBResponse,
-    ExampleTask,
     Feature,
     FeaturesSuperObject,
     Module,

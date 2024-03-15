@@ -20,12 +20,12 @@ from codex.common.ai_block import (
 from codex.common.database import INCLUDE_FUNC
 from codex.common.exec_external_tool import exec_external_on_contents
 from codex.common.model import (
+    PYTHON_TYPES,
     ObjectFieldModel,
     ObjectTypeModel,
     create_object_type,
     get_typing_imports,
     is_type_equal,
-    PYTHON_TYPES,
 )
 from codex.develop.compile import ComplicationFailure
 from codex.develop.function import construct_function, generate_object_template

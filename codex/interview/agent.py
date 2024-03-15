@@ -5,9 +5,7 @@ import logging
 from codex.common.ai_block import Identifiers, Tool
 from codex.interview.blocks.ai_interview import InterviewBlock
 from codex.interview.choose_tool import use_tool
-from codex.interview.database import _create_interview_testing_only
 from codex.interview.model import (
-    Interview,
     InterviewMessage,
     InterviewMessageOptionalId,
     InterviewMessageUse,
@@ -15,7 +13,6 @@ from codex.interview.model import (
     InterviewMessageWithResponseOptionalId,
     NextStepResponse,
 )
-from codex.requirements.model import ExampleTask
 
 logger = logging.getLogger(__name__)
 
@@ -160,6 +157,7 @@ async def next_step(
             questions_to_ask=running_message.uses,
             finished=False,
         )
+
 
 # if __name__ == "__main__":
 #     from asyncio import run
