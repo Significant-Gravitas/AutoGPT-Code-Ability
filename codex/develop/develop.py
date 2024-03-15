@@ -408,6 +408,9 @@ user = await prisma.models.User.prisma().create(
                     "You are using prisma.errors but not importing it. Please add `import prisma.errors` at the top of the code."
                 )
 
+            if ("prisma." in code) and ("import prisma\n" not in code):
+                code = "import prisma\n" + code
+
             try:
                 tree = ast.parse(code)
                 visitor = FunctionVisitor()
@@ -457,7 +460,18 @@ user = await prisma.models.User.prisma().create(
                 # Check prisma models & enums on imports
                 for import_statement in imports:
                     if f"from prisma.{entity}s import " in import_statement:
-                        names.append(import_statement.split("import ")[1].strip())
+                        name = import_statement.split("import ")[-1].strip()
+                        validation_errors.append(
+                            f"{import_statement} is not allowed. Use the full package "
+                            f"name: prisma.{entity}s.{name} directly in the code without "
+                            f"importing it to avoid naming conflict!"
+                        )
+                        continue
+                    if f"from prisma import {entity}s" in import_statement:
+                        validation_errors.append(
+                            f"{import_statement} is not allowed. {entity}s should use "
+                            f"the full package name without import to avoid conflict!"
+                        )
 
                 # Check prisma models & enums on function_code
                 regex = f"prisma.{entity}s.([a-zA-Z0-9_]+)"

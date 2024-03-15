@@ -425,11 +425,9 @@ def create_server_code(completed_app: CompletedApp) -> Application:
         "from fastapi.responses import Response, StreamingResponse",
         "from fastapi.encoders import jsonable_encoder",
         "from prisma import Prisma",
-        "from prisma.models import *",
-        "from prisma.types import *",
-        "from prisma.enums import *",
         "from contextlib import asynccontextmanager",
         "import logging",
+        "import prisma",
         "import io",
         "from typing import *",
     ]

@@ -6,7 +6,6 @@ from prisma.enums import FunctionState
 from prisma.models import (
     CompiledRoute,
     CompletedApp,
-    DatabaseTable,
     Function,
     ObjectType,
     Specification,
@@ -212,22 +211,6 @@ async def develop_route(
         "available_functions": generated_func,
         "allow_stub": depth < RECURSION_DEPTH_LIMIT,
     }
-
-    if (
-        compiled_route.ApiRouteSpec
-        and compiled_route.ApiRouteSpec.DatabaseSchema
-        and compiled_route.ApiRouteSpec.DatabaseSchema.DatabaseTables
-    ):
-        db_schema = ""
-
-        tables = await DatabaseTable.prisma().find_many(
-            where={"databaseSchemaId": compiled_route.ApiRouteSpec.DatabaseSchema.id}
-        )
-
-        for table in tables:
-            db_schema += table.definition
-            db_schema += "\n\n"
-        dev_invoke_params["db_schema"] = db_schema
 
     route_function = await DevelopAIBlock().invoke(
         ids=ids,
