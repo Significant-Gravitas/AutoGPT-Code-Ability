@@ -289,7 +289,6 @@ class DatabaseTable(BaseModel):
     name: str | None = None
     description: str
     definition: str  # prisma model for a table
-    isEnum: bool = False
 
     def __str__(self):
         return f"**{self.name}**\n\n**Description**: {self.description}\n\n**Definition**:\n```\n{self.definition}\n```\n"
@@ -413,16 +412,6 @@ class ModuleResponse(BaseModel):
         return f"Thoughts: {self.think_general}\nAnti:{self.think_anti}\n{answer_str}"
 
 
-class DBSchemaResponseWrapper(BaseModel):
-    # name of the database schema
-    name: str
-    # context on what the database schema is
-    description: str
-    # list of tables in the database schema
-    tables: List[DatabaseTable]
-    enums: List[DatabaseEnums]
-
-
 class PreAnswer(BaseModel):
     tables: list[dict[str, str]]
     enums: list[dict[str, str]]
@@ -436,7 +425,7 @@ class DBResponse(BaseModel):
     pre_answer: PreAnswer
     pre_answer_issues: str
     full_schema: str
-    database_schema: DBSchemaResponseWrapper
+    database_schema: DatabaseSchema
     conclusions: str
 
 

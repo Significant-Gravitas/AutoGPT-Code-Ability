@@ -6,7 +6,6 @@ from prisma.enums import FunctionState
 from prisma.models import (
     CompiledRoute,
     CompletedApp,
-    DatabaseTable,
     Function,
     ObjectType,
     Specification,
@@ -14,8 +13,13 @@ from prisma.models import (
 from prisma.types import CompiledRouteCreateInput
 
 from codex.api_model import Identifiers
-from codex.common.database import INCLUDE_FUNC
-from codex.develop.compile import compile_route, create_app, get_object_field_deps
+from codex.common.database import INCLUDE_API_ROUTE, INCLUDE_FUNC
+from codex.develop.compile import (
+    compile_route,
+    create_app,
+    get_object_field_deps,
+    get_object_type_deps,
+)
 from codex.develop.develop import DevelopAIBlock
 from codex.develop.function import construct_function, generate_object_template
 from codex.develop.model import FunctionDef
@@ -66,11 +70,16 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
                 function_desc=api_route.description,
                 function_code="",
             )
+            object_type_ids = set()
             available_types = {
-                obj.name: obj
+                dep_type.name: dep_type
                 for obj in [api_route.RequestObject, api_route.ResponseObject]
                 if obj
+                for dep_type in await get_object_type_deps(obj.id, object_type_ids)
             }
+            if api_route.RequestObject and api_route.RequestObject.Fields:
+                # RequestObject is unwrapped, so remove it from the available types
+                available_types.pop(api_route.RequestObject.name, None)
             compiled_route = await CompiledRoute.prisma().create(
                 data=CompiledRouteCreateInput(
                     description=api_route.description,
@@ -135,9 +144,7 @@ async def develop_route(
         include={
             "RootFunction": INCLUDE_FUNC,
             "Functions": INCLUDE_FUNC,
-            "ApiRouteSpec": {
-                "include": {"DatabaseSchema": {"include": {"DatabaseTables": True}}}
-            },
+            "ApiRouteSpec": INCLUDE_API_ROUTE,
         },
     )
 
@@ -169,12 +176,27 @@ async def develop_route(
         if func.functionName != function.functionName
     ] + [generate_object_template(f) for f in generated_objs.values()]
 
+    database_schema = (
+        "\n\n".join(
+            [
+                t.definition
+                for t in compiled_route.ApiRouteSpec.DatabaseSchema.DatabaseTables
+            ]
+        )
+        if compiled_route
+        and compiled_route.ApiRouteSpec
+        and compiled_route.ApiRouteSpec.DatabaseSchema
+        and compiled_route.ApiRouteSpec.DatabaseSchema.DatabaseTables
+        else ""
+    )
+
     dev_invoke_params = {
+        "database_schema": database_schema,
         "function_name": function.functionName,
         "goal": goal_description,
         "function_signature": function.template,
         # function_args is not used by the prompt, but used for function validation
-        "function_args": [(f.name, f.typeName) for f in function.FunctionArgs],
+        "function_args": [(f.name, f.typeName) for f in function.FunctionArgs or []],
         # function_rets is not used by the prompt, but used for function validation
         "function_rets": function.FunctionReturn.typeName
         if function.FunctionReturn
@@ -189,22 +211,6 @@ async def develop_route(
         "available_functions": generated_func,
         "allow_stub": depth < RECURSION_DEPTH_LIMIT,
     }
-
-    if (
-        compiled_route.ApiRouteSpec
-        and compiled_route.ApiRouteSpec.DatabaseSchema
-        and compiled_route.ApiRouteSpec.DatabaseSchema.DatabaseTables
-    ):
-        db_schema = ""
-
-        tables = await DatabaseTable.prisma().find_many(
-            where={"databaseSchemaId": compiled_route.ApiRouteSpec.DatabaseSchema.id}
-        )
-
-        for table in tables:
-            db_schema += table.definition
-            db_schema += "\n\n"
-        dev_invoke_params["db_schema"] = db_schema
 
     route_function = await DevelopAIBlock().invoke(
         ids=ids,

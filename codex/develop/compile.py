@@ -59,12 +59,13 @@ async def compile_route(
     code += compiled_function.code
 
     # Run the formatting engines
+    formatted_code = code
     try:
-        formatted_code = isort.code(code)
+        formatted_code = isort.code(formatted_code)
         formatted_code = black.format_str(formatted_code, mode=black.FileMode())
     except Exception as e:
-        logger.exception(f"Error formatting code: {e}")
-        raise ComplicationFailure(f"Error formatting code: {e}")
+        # We move on with unformatted code if there's an error
+        logger.exception(f"Error formatting code: {e} for route #{compiled_route_id}")
 
     data = CompiledRouteUpdateInput(
         Packages={"connect": [{"id": package_id} for package_id in unique_packages]},
@@ -172,7 +173,7 @@ async def recursive_compile_route(
     )
 
 
-async def __get_object_type_deps(
+async def get_object_type_deps(
     obj_type_id: str, object_type_ids: Set[str]
 ) -> List[ObjectType]:
     # Lookup the object getting all its subfields
@@ -235,7 +236,7 @@ async def get_object_field_deps(
     # TODO: this can run in parallel
     pydantic_classes = []
     for type in types:
-        pydantic_classes.extend(await __get_object_type_deps(type.id, object_type_ids))
+        pydantic_classes.extend(await get_object_type_deps(type.id, object_type_ids))
 
     return pydantic_classes
 
@@ -345,10 +346,10 @@ def create_server_route_code(compiled_route: CompiledRoute) -> str:
         res = dict()
         res["error"] =  str(e)
         return Response(
-                content=jsonable_encoder(res)),
-                status_code=500,
-                media_type="application/json",
-            )
+            content=jsonable_encoder(res),
+            status_code=500,
+            media_type="application/json",
+        )
     """
     route_code = route_decorator
     route_code += route_function_def
@@ -425,11 +426,9 @@ def create_server_code(completed_app: CompletedApp) -> Application:
         "from fastapi.responses import Response, StreamingResponse",
         "from fastapi.encoders import jsonable_encoder",
         "from prisma import Prisma",
-        "from prisma.models import *",
-        "from prisma.types import *",
-        "from prisma.enums import *",
         "from contextlib import asynccontextmanager",
         "import logging",
+        "import prisma",
         "import io",
         "from typing import *",
     ]

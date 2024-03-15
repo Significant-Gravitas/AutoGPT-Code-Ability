@@ -1,5 +1,6 @@
 import ast
 import logging
+import re
 from typing import List
 
 from prisma.enums import DevelopmentPhase, FunctionState
@@ -24,6 +25,7 @@ from codex.common.model import (
     create_object_type,
     get_typing_imports,
     is_type_equal,
+    PYTHON_TYPES,
 )
 from codex.develop.compile import ComplicationFailure
 from codex.develop.function import construct_function, generate_object_template
@@ -79,6 +81,7 @@ class FunctionVisitor(ast.NodeVisitor):
         self.objects: dict[str, ObjectTypeModel] = {}
         self.imports: list[str] = []
         self.globals: list[str] = []
+        self.errors: list[str] = []
 
     def visit_Import(self, node):
         for alias in node.names:
@@ -113,7 +116,7 @@ class FunctionVisitor(ast.NodeVisitor):
 
         # Raise validation error on nested functions
         if any(isinstance(v, ast.FunctionDef) for v in node.body):
-            raise ValidationError(
+            self.errors.append(
                 "Nested functions are not allowed in the code: " + node.name
             )
 
@@ -174,6 +177,12 @@ class FunctionVisitor(ast.NodeVisitor):
         if node.body and isinstance(node.body[0], ast.Expr):
             doc_string = ast.unparse(node.body[0])
 
+        if node.name in PYTHON_TYPES:
+            self.errors.append(
+                f"Can't declare class with a Python built-in name "
+                f"`{node.name}`. Please use a different name."
+            )
+
         fields = []
         for v in node.body:
             if isinstance(v, ast.AnnAssign):
@@ -185,7 +194,7 @@ class FunctionVisitor(ast.NodeVisitor):
                 )
             elif isinstance(v, ast.Assign):
                 if len(v.targets) > 1:
-                    raise ValidationError(
+                    self.errors.append(
                         f"Class {node.name} has multiple assignments in a single line."
                     )
                 field = ObjectFieldModel(
@@ -208,11 +217,12 @@ class FunctionVisitor(ast.NodeVisitor):
             is_implemented=is_implemented,
         )
 
-        if not is_implemented:
-            raise ValidationError(
-                f"Class {node.name} is not implemented. "
-                f"Please complete the implementation of this class!"
-            )
+        """Some class are simply used as a type and doesn't have any new fields"""
+        # if not is_implemented:
+        #     raise ValidationError(
+        #         f"Class {node.name} is not implemented. "
+        #         f"Please complete the implementation of this class!"
+        #     )
 
         self.generic_visit(node)
 
@@ -232,21 +242,28 @@ def validate_matching_function(existing_func: Function, requested_func: Function
         existing_func.FunctionReturn.typeName if existing_func.FunctionReturn else None
     )
     func_name = existing_func.functionName
+    errors = []
 
     if any(
         [
-            x[0] != y[0] or not is_type_equal(x[1], y[1])
+            x[0] != y[0] or not is_type_equal(x[1], y[1]) and x[1] != "object"
             # TODO: remove sorted and provide a stable order for one-to-many arg-types.
             for x, y in zip(sorted(expected_args), sorted(requested_func.arg_types))
         ]
     ):
-        raise ValidationError(
+        errors.append(
             f"Function {func_name} has different arguments than expected, expected {expected_args} but got {requested_func.arg_types}"
         )
-    if not is_type_equal(expected_rets, requested_func.return_type):
-        raise ValidationError(
+    if (
+        not is_type_equal(expected_rets, requested_func.return_type)
+        and expected_rets != "object"
+    ):
+        errors.append(
             f"Function {func_name} has different return type than expected, expected {expected_rets} but got {requested_func.return_type}"
         )
+
+    if errors:
+        raise ValidationError("Signature validation errors:\n  " + "\n  ".join(errors))
 
 
 def static_code_analysis(func: GeneratedFunctionResponse) -> str:
@@ -255,27 +272,49 @@ def static_code_analysis(func: GeneratedFunctionResponse) -> str:
         imports.extend(obj.importStatements)
     imports_code = "\n".join(sorted(set(imports)))
 
-    template_code = "\n\n".join(
-        [
-            generate_object_template(obj, noqa=True, stub=True)
-            for obj in func.available_objects.values()
-        ]
-    )
+    def generate_stub(name, is_enum):
+        if is_enum:
+            return f"class {name}(Enum):\n    pass"
+        else:
+            return f"class {name}(BaseModel):\n    pass"
 
-    objects_code = "\n\n".join(
-        [
-            generate_object_template(obj, noqa=True, stub=False)
-            for obj in func.available_objects.values()
-        ]
+    template_code = "\n\n".join(
+        [generate_stub(obj.name, obj.isEnum) for obj in func.available_objects.values()]
         + [
-            obj.code
+            generate_stub(obj.name, obj.is_enum)
             for obj in func.objects.values()
             if obj.name not in func.available_objects
         ]
     )
 
+    def append_no_qa(code_block: str) -> str:
+        lines = code_block.split("\n")
+        lines[0] = lines[0] + " # noqa"
+        return "\n".join(lines)
+
+    objects_code = "\n\n".join(
+        [
+            append_no_qa(generate_object_template(obj))
+            for obj in func.available_objects.values()
+        ]
+        + [
+            append_no_qa(obj.code)
+            for obj in func.objects.values()
+            if obj.code and obj.name not in func.available_objects
+        ]
+    )
+
     functions_code = "\n\n".join(
-        [func.function_code for func in func.functions.values()]
+        [
+            f.template
+            for f in func.available_functions.values()
+            if f.functionName != func.function_name
+        ]
+        + [
+            f.function_code
+            for f in func.functions.values()
+            if f.name not in func.available_functions
+        ]
     )
 
     separator = "#==FunctionCode==#"
@@ -307,29 +346,35 @@ class DevelopAIBlock(AIBlock):
     def validate(
         self, invoke_params: dict, response: ValidatedResponse
     ) -> ValidatedResponse:
+        validation_errors = []
         try:
             text = response.response
 
-            requirment_blocks = text.split("```requirements")
-            requirment_blocks.pop(0)
-            if len(requirment_blocks) != 1:
+            requirement_blocks = text.split("```requirements")
+            requirement_blocks.pop(0)
+            if len(requirement_blocks) != 1:
                 packages = []
             else:
                 packages: List[Package] = parse_requirements(
-                    requirment_blocks[0].split("```")[0]
+                    requirement_blocks[0].split("```")[0]
                 )
 
             code_blocks = text.split("```python")
             code_blocks.pop(0)
             if len(code_blocks) != 1:
-                raise ValidationError(
+                error = (
                     f"There are {len(code_blocks)} code blocks in the response. "
                     + "There should be exactly 1"
                 )
+                if len(code_blocks) == 0:
+                    raise ValidationError("No code blocks found in the response")
+                else:
+                    validation_errors.append(error)
+
             code = code_blocks[0].split("```")[0]
 
             if (".connect()" in code) or ("async with Prisma() as db:" in code):
-                raise ValidationError(
+                validation_errors.append(
                     """
 
 There is no need to use "await prisma_client.connect()" in the code it is already connected.
@@ -354,29 +399,29 @@ user = await prisma.models.User.prisma().create(
                 )
 
             if "from prisma import Prisma" in code:
-                raise ValidationError(
+                validation_errors.append(
                     "There is no need to do `from prisma import Prisma` as we are using the prisma.models to access the database."
                 )
 
             if ("prisma.errors." in code) and ("import prisma.errors" not in code):
-                raise ValidationError(
+                validation_errors.append(
                     "You are using prisma.errors but not importing it. Please add `import prisma.errors` at the top of the code."
                 )
+
+            if ("prisma." in code) and ("import prisma\n" not in code):
+                code = "import prisma\n" + code
 
             try:
                 tree = ast.parse(code)
                 visitor = FunctionVisitor()
                 visitor.visit(tree)
+                validation_errors.extend(visitor.errors)
             except Exception as e:
                 # Important: ValidationErrors are used in the retry prompt
                 raise ValidationError(f"Error parsing code: {e}")
 
             func_name = invoke_params["function_name"]
-            if func_name not in visitor.functions:
-                # Important: ValidationErrors are used in the retry prompt
-                raise ValidationError(f"Function {func_name} not found in code")
-
-            requested_func = visitor.functions.get(invoke_params["function_name"])
+            requested_func = visitor.functions.get(func_name)
             if not requested_func or not requested_func.is_implemented:
                 raise ValidationError(
                     f"Main Function body {func_name} is not implemented."
@@ -406,6 +451,58 @@ user = await prisma.models.User.prisma().create(
                 expected_types.append(expected_func.FunctionReturn.typeName)
             imports = set(visitor.imports + get_typing_imports(expected_types))
 
+            # Prisma entity validation
+            # TODO: improve this checks!
+            db_schema = invoke_params.get("database_schema", "")
+            for entity in ["model", "enum"]:
+                names = []
+
+                # Check prisma models & enums on imports
+                for import_statement in imports:
+                    if f"from prisma.{entity}s import " in import_statement:
+                        name = import_statement.split("import ")[-1].strip()
+                        validation_errors.append(
+                            f"{import_statement} is not allowed. Use the full package "
+                            f"name: prisma.{entity}s.{name} directly in the code without "
+                            f"importing it to avoid naming conflict!"
+                        )
+                        continue
+                    if f"from prisma import {entity}s" in import_statement:
+                        validation_errors.append(
+                            f"{import_statement} is not allowed. {entity}s should use "
+                            f"the full package name without import to avoid conflict!"
+                        )
+
+                # Check prisma models & enums on function_code
+                regex = f"prisma.{entity}s.([a-zA-Z0-9_]+)"
+                for match in re.findall(regex, function_code):
+                    names.append(match.split(".")[-1])
+
+                for name in names:
+                    if f"{entity} {name} " not in db_schema:
+                        validation_errors.append(
+                            f"{entity} {name} is not available in the prisma schema"
+                        )
+
+            already_declared_entities = set(
+                [
+                    obj.name
+                    for obj in visitor.objects.values()
+                    if obj.name in invoke_params["available_objects"].keys()
+                ]
+                + [
+                    func.name
+                    for func in visitor.functions.values()
+                    if func.name in invoke_params["available_functions"].keys()
+                ]
+            )
+            if not already_declared_entities:
+                validation_errors.append(
+                    "These class/function names has already been declared in the code, "
+                    "no need to declare them again: "
+                    + ", ".join(already_declared_entities)
+                )
+
             result = GeneratedFunctionResponse(
                 function_id=expected_func.id,
                 function_name=expected_func.functionName,
@@ -425,8 +522,12 @@ user = await prisma.models.User.prisma().create(
 
             return response
         except Exception as e:
+            validation_errors.append(str(e))
+
+        if validation_errors:
             # Important: ValidationErrors are used in the retry prompt
-            raise ValidationError(f"Error validating response: {e}")
+            errors = [f"\n  - {e}" for e in validation_errors]
+            raise ValidationError(f"Error validating response:{''.join(errors)}")
 
     async def create_item(
         self, ids: Identifiers, validated_response: ValidatedResponse
@@ -445,9 +546,10 @@ user = await prisma.models.User.prisma().create(
         """
         generated_response: GeneratedFunctionResponse = validated_response.response
 
-        available_objects = generated_response.available_objects
         for obj in generated_response.objects.values():
-            available_objects = await create_object_type(obj, available_objects)
+            generated_response.available_objects = await create_object_type(
+                obj, generated_response.available_objects
+            )
 
         function_defs: list[FunctionCreateInput] = []
         if generated_response.functions:
