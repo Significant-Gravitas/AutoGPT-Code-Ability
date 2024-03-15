@@ -520,14 +520,18 @@ user = await prisma.models.User.prisma().create(
             result.functionCode = static_code_analysis(result)
             response.response = result
 
+            if validation_errors:
+                # Important: ValidationErrors are used in the retry prompt
+                errors = [f"\n  - {e}" for e in validation_errors]
+                raise ValidationError(f"Error validating response:{''.join(errors)}")
+
             return response
         except Exception as e:
-            validation_errors.append(str(e))
+            # This is not a validation error we want to the agent to fix
+            # it is a code bug in the validation logic
+            logger.exception(e)
+            raise e
 
-        if validation_errors:
-            # Important: ValidationErrors are used in the retry prompt
-            errors = [f"\n  - {e}" for e in validation_errors]
-            raise ValidationError(f"Error validating response:{''.join(errors)}")
 
     async def create_item(
         self, ids: Identifiers, validated_response: ValidatedResponse
