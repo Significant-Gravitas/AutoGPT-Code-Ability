@@ -8,7 +8,7 @@ from codex.common.ai_block import (
     ValidationError,
 )
 from codex.common.logging_config import setup_logging
-from codex.common.model import ObjectFieldModel, ObjectTypeModel
+from codex.common.model import RENAMED_TYPES, ObjectFieldModel, ObjectTypeModel
 from codex.requirements.model import EndpointSchemaRefinementResponse
 
 logger = logging.getLogger(__name__)
@@ -180,66 +180,7 @@ def is_valid_type(
 
 
 def replace_types(types: Set[str]) -> Set[str]:
-    type_replacements = {
-        "any": "Any",
-        "list": "List",
-        "dict": "Dict",
-        "tuple": "Tuple",
-        "set": "Set",
-        "optional": "Optional",
-        "union": "Union",
-        "callable": "Callable",
-        "iterable": "Iterable",
-        "iterator": "Iterator",
-        "generator": "Generator",
-        "sequence": "Sequence",
-        "mapping": "Mapping",
-        "mutablemapping": "MutableMapping",
-        "hashable": "Hashable",
-        "typevar": "TypeVar",
-        "generic": "Generic",
-        "type": "Type",
-        "bytestring": "ByteString",
-        "anystr": "AnyStr",
-        "text": "Text",
-        "io": "IO",
-        "binaryio": "BinaryIO",
-        "textio": "TextIO",
-        "contextmanager": "ContextManager",
-        "asynciterable": "AsyncIterable",
-        "asynciterator": "AsyncIterator",
-        "asyncgenerator": "AsyncGenerator",
-        "coroutine": "Coroutine",
-        "collection": "Collection",
-        "abstractset": "AbstractSet",
-        "mutableset": "MutableSet",
-        "mutablesequence": "MutableSequence",
-        "counter": "Counter",
-        "deque": "Deque",
-        "defaultdict": "DefaultDict",
-        "ordereddict": "OrderedDict",
-        "chainmap": "ChainMap",
-        "awaitable": "Awaitable",
-        "asynccontextmanager": "AsyncContextManager",
-        "newtype": "NewType",
-        "namedtuple": "NamedTuple",
-        "protocol": "Protocol",
-        "final": "Final",
-        "literal": "Literal",
-        "classvar": "ClassVar",
-        "annotated": "Annotated",
-        "typeddict": "TypedDict",
-        "supportsint": "SupportsInt",
-        "supportsfloat": "SupportsFloat",
-        "supportscomplex": "SupportsComplex",
-        "supportsbytes": "SupportsBytes",
-        "supportsabs": "SupportsAbs",
-        "supportsround": "SupportsRound",
-        "reversible": "Reversible",
-        "container": "Container",
-    }
-
-    return {type_replacements.get(type_name.lower(), type_name) for type_name in types}
+    return {RENAMED_TYPES.get(type_name.lower(), type_name) for type_name in types}
 
 
 def replace_object_model_types(obj: Any) -> None:
@@ -258,73 +199,14 @@ def replace_object_model_types(obj: Any) -> None:
 
 
 def replace_field_type(field_type: str) -> str:
-    type_replacements = {
-        "any": "Any",
-        "list": "List",
-        "dict": "Dict",
-        "tuple": "Tuple",
-        "set": "Set",
-        "optional": "Optional",
-        "union": "Union",
-        "callable": "Callable",
-        "iterable": "Iterable",
-        "iterator": "Iterator",
-        "generator": "Generator",
-        "sequence": "Sequence",
-        "mapping": "Mapping",
-        "mutablemapping": "MutableMapping",
-        "hashable": "Hashable",
-        "typevar": "TypeVar",
-        "generic": "Generic",
-        "type": "Type",
-        "bytestring": "ByteString",
-        "anystr": "AnyStr",
-        "text": "Text",
-        "io": "IO",
-        "binaryio": "BinaryIO",
-        "textio": "TextIO",
-        "contextmanager": "ContextManager",
-        "asynciterable": "AsyncIterable",
-        "asynciterator": "AsyncIterator",
-        "asyncgenerator": "AsyncGenerator",
-        "coroutine": "Coroutine",
-        "collection": "Collection",
-        "abstractset": "AbstractSet",
-        "mutableset": "MutableSet",
-        "mutablesequence": "MutableSequence",
-        "counter": "Counter",
-        "deque": "Deque",
-        "defaultdict": "DefaultDict",
-        "ordereddict": "OrderedDict",
-        "chainmap": "ChainMap",
-        "awaitable": "Awaitable",
-        "asynccontextmanager": "AsyncContextManager",
-        "newtype": "NewType",
-        "namedtuple": "NamedTuple",
-        "protocol": "Protocol",
-        "final": "Final",
-        "literal": "Literal",
-        "classvar": "ClassVar",
-        "annotated": "Annotated",
-        "typeddict": "TypedDict",
-        "supportsint": "SupportsInt",
-        "supportsfloat": "SupportsFloat",
-        "supportscomplex": "SupportsComplex",
-        "supportsbytes": "SupportsBytes",
-        "supportsabs": "SupportsAbs",
-        "supportsround": "SupportsRound",
-        "reversible": "Reversible",
-        "container": "Container",
-    }
-
     field_type = field_type.replace(" ", "")
     if "[" in field_type:
         outer_type, inner_type = extract_outer_inner_types(field_type)
-        outer_type = type_replacements.get(outer_type.lower(), outer_type)
+        outer_type = RENAMED_TYPES.get(outer_type.lower(), outer_type)
         replaced_inner_types = replace_inner_types(inner_type)
         return f"{outer_type}[{', '.join(replaced_inner_types)}]"
     else:
-        return type_replacements.get(field_type.lower(), field_type)
+        return RENAMED_TYPES.get(field_type.lower(), field_type)
 
 
 def extract_outer_inner_types(field_type: str) -> Tuple[str, str]:
