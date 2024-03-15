@@ -35,8 +35,6 @@ def populate_db(database):
     async def popdb():
         await db.connect()
         await create_test_data()
-        # await populate_database_interviews()
-        # await populate_database_specs()
         await db.disconnect()
 
     asyncio.run(popdb())
