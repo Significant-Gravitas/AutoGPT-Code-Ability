@@ -463,3 +463,4 @@ Prisma is an open-source database toolkit that simplifies database access and ma
 ### Conclusion
 
 This cheat sheet covers the basics of setting up Prisma in a Python project and performing essential database operations. Remember that using Prisma with Python is less straightforward than with JavaScript/TypeScript, and it may require additional setup and handling. For more detailed information, refer to the [Prisma Documentation](https://www.prisma.io/docs/).
+
