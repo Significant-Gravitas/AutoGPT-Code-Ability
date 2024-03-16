@@ -1,16 +1,6 @@
 import ast
 
-from dotenv import load_dotenv
-load_dotenv()
 from codex.develop.develop import FunctionVisitor
-
-from codex.common.ai_model import OpenAIChatClient
-from codex.common.logging_config import setup_logging
-if not OpenAIChatClient._configured:
-    OpenAIChatClient.configure({})
-setup_logging(local=True)
-
-is_connected = False
 
 SAMPLE_CODE = """
 from pydantic import BaseModel
@@ -326,14 +316,16 @@ def test_visiting_import_statement_with_alias():
     visitor = FunctionVisitor()
 
     # Create AST for an import statement with an alias
-    code = ast.parse("""
-import module as m
-from module import (function1, function2, function3 as f3)
-from module2 import (
-    A as B,
-    C as D
-)
-    """)
+    code = ast.parse(
+        """
+        import module as m
+        from module import (function1, function2, function3 as f3)
+        from module2 import (
+            A as B,
+            C as D
+        )
+    """
+    )
 
     # Visit the AST
     visitor.visit(code)
