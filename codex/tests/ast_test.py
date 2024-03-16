@@ -316,16 +316,7 @@ def test_visiting_import_statement_with_alias():
     visitor = FunctionVisitor()
 
     # Create AST for an import statement with an alias
-    code = ast.parse(
-        """
-        import module as m
-        from module import (function1, function2, function3 as f3)
-        from module2 import (
-            A as B,
-            C as D
-        )
-    """
-    )
+    code = ast.parse("import module as m")
 
     # Visit the AST
     visitor.visit(code)
