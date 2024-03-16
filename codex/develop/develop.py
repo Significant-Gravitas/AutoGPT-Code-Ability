@@ -396,7 +396,7 @@ user = await prisma.models.User.prisma().create(
         pattern = r"(?<!\.)\b{}\b".format(re.escape(old_name))
         return re.sub(pattern, new_name, code)
 
-    def parse_import_alias(stmt: str) -> (str, str):
+    def parse_import_alias(stmt: str) -> tuple[str, str]:
         if "import " not in stmt:
             return "", ""
 
@@ -557,9 +557,9 @@ class DevelopAIBlock(AIBlock):
                 available_functions=invoke_params["available_functions"],
                 rawCode=code,
                 packages=packages,
-                imports=imports,
+                imports=sorted(imports),
                 objects=visitor.objects,
-                template=requested_func.function_template,
+                template=requested_func.function_template or "",
                 functionCode=function_code,
                 functions=functions,
             )
