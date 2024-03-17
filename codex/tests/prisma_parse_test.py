@@ -416,3 +416,51 @@ generator client {
     # assert response.generator
     # assert response.generator.provider == "prisma-client-py"
     # assert response.generator.interface == "asyncio
+
+
+def test_prisma_code_validation():
+    from codex.common.ai_block import ValidationError
+    from codex.develop.develop import validate_normalize_prisma_code
+
+    # Models & enum should be replaced with fully qualified name
+    db_schema = """
+        model User {}
+        model UserPost {}
+        enum UserRole {}
+        enum RoleType {}
+    """
+    imports = [
+        "from prisma import enums",
+        "from prisma.models import User",
+        "from prisma.models import UserPost as UserPostDB",
+        "from prisma.models import ObjectType",
+        "from prisma.enums import UserRole",
+        "import pydantic",
+    ]
+    code = (
+        "result = "
+        "(User.select().where(UserPostDB.id == 1), "
+        "UserRole.Tutor, "
+        "enums.RoleType.Admin)"
+    )
+
+    imports, code = validate_normalize_prisma_code(db_schema, imports, code)
+
+    assert set(imports) == set(
+        [
+            "import pydantic",
+            "import prisma",
+            "import prisma.errors",
+            "import prisma.models",
+        ]
+    )
+    assert code == (
+        "result = "
+        "(prisma.models.User.select().where(prisma.models.UserPost.id == 1), "
+        "prisma.enums.UserRole.Tutor, "
+        "prisma.enums.RoleType.Admin)"
+    )
+
+    # catch validation error without using db_schema
+    with pytest.raises(ValidationError):
+        validate_normalize_prisma_code("", imports, code)

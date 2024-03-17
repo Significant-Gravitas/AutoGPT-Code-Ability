@@ -1,7 +1,7 @@
 import ast
 import logging
 import re
-from typing import List
+from typing import Iterable, List
 
 from prisma.enums import DevelopmentPhase, FunctionState
 from prisma.models import Function
@@ -268,9 +268,14 @@ def validate_matching_function(existing_func: Function, requested_func: Function
 
 def static_code_analysis(func: GeneratedFunctionResponse) -> str:
     imports = func.imports.copy()
+    imports.append("from enum import Enum")
+    # logger.info(f"Imports: {imports}")
     for obj in func.available_objects.values():
         imports.extend(obj.importStatements)
-    imports_code = "\n".join(sorted(set(imports)))
+
+    imports_code = "\n".join(sorted(set([i.strip() for i in imports])))
+
+    # logger.info(f"Imports Code: {imports_code}  ")
 
     def generate_stub(name, is_enum):
         if is_enum:
@@ -332,11 +337,126 @@ def static_code_analysis(func: GeneratedFunctionResponse) -> str:
         + func.functionCode
     )
 
+    # logger.info(code)
+
+    # E402 module level import not at top of file
+    # F841 local variable is assigned to but never used
     return exec_external_on_contents(
-        command_arguments=["ruff", "check", "--fix", "--ignore", "F841"],
+        command_arguments=[
+            "ruff",
+            "check",
+            "--fix",
+            "--ignore",
+            "F841",
+            "--ignore",
+            "E402",
+        ],
         file_contents=code,
         suffix=".py",
     ).split(separator, maxsplit=1)[1]
+
+
+def validate_normalize_prisma_code(
+    db_schema: str, imports: list[str], code: str
+) -> tuple[list[str], str]:
+    """
+    Validates and normalizes the prisma code.
+    Args:
+        imports (list[str]): List of import statements.
+        code (str): The code to be validated and normalized.
+    Returns:
+        list[str]: List of normalized import statements.
+        str: Normalized code.
+    Raises:
+        ValidationError: If the prisma usage in the code is not valid.
+    """
+    validation_errors = []
+
+    if (".connect()" in code) or ("async with Prisma() as db:" in code):
+        validation_errors.append(
+            """
+There is no need to use "await prisma_client.connect()" in the code it is already connected.
+
+Database access should be done using the prisma.models, not using a prisma client.
+
+import prisma.models
+
+user = await prisma.models.User.prisma().create(
+    data={
+        'name': 'Robert',
+        'email': 'robert@craigie.dev',
+        'posts': {
+            'create': {
+                'title': 'My first post from Prisma!',
+            },
+        },
+    },
+)
+
+"""
+        )
+
+    if "from prisma import Prisma" in code:
+        validation_errors.append(
+            "There is no need to do `from prisma import Prisma` as we are using the prisma.models to access the database."
+        )
+
+    def rename_code_variable(code: str, old_name: str, new_name: str) -> str:
+        pattern = r"(?<!\.)\b{}\b".format(re.escape(old_name))
+        return re.sub(pattern, new_name, code)
+
+    def parse_import_alias(stmt: str) -> tuple[str, str]:
+        if "import " not in stmt:
+            return "", ""
+
+        expr = stmt.split("import ")[1]
+        if " as " in expr:
+            name, alias = expr.split(" as ")
+        else:
+            name = alias = expr
+
+        return name, alias
+
+    for entity in ["model", "enum"]:
+        new_imports = []
+        for import_statement in imports:
+            if f"from prisma.{entity}s import" in import_statement:
+                name, alias = parse_import_alias(import_statement)
+                code = rename_code_variable(code, alias, f"prisma.{entity}s.{name}")
+                continue
+            if f"from prisma import {entity}s" in import_statement:
+                name, alias = parse_import_alias(import_statement)
+                code = rename_code_variable(code, alias, f"prisma.{name}")
+                continue
+            new_imports.append(import_statement)
+
+        imports = new_imports
+        names = []
+        model_pattern = f"prisma.{entity}s.([a-zA-Z0-9_]+)"
+        for match in re.findall(model_pattern, code):
+            names.append(match)
+
+        for name in names:
+            if f"{entity} {name} " not in db_schema:
+                validation_errors.append(
+                    f"prisma.{entity}s.{name} is not available in the prisma schema. Only use models/enums available in the database schema."
+                )
+
+    # Just always add these as there are loads of edge cases where they dont get added
+    # We do set on the imports anyway so it will remove duplicates
+    imports.append("import prisma.models")
+    imports.append("import prisma.errors")
+    imports.append("import prisma")
+
+    # Sometimes it does this, it's not a valid import
+    if "from pydantic import Optional" in imports:
+        imports.remove("from pydantic import Optional")
+    imports = list(set([i.strip() for i in imports]))
+
+    if validation_errors:
+        raise ValidationError(validation_errors)
+
+    return imports, code
 
 
 class DevelopAIBlock(AIBlock):
@@ -351,7 +471,7 @@ class DevelopAIBlock(AIBlock):
         validation_errors = []
         try:
             text = response.response
-
+            # logger.warning(f"RAW RESPONSE:\n\n{text}")
             requirement_blocks = text.split("```requirements")
             requirement_blocks.pop(0)
             if len(requirement_blocks) != 1:
@@ -374,44 +494,6 @@ class DevelopAIBlock(AIBlock):
                     validation_errors.append(error)
 
             code = code_blocks[0].split("```")[0]
-
-            if (".connect()" in code) or ("async with Prisma() as db:" in code):
-                validation_errors.append(
-                    """
-
-There is no need to use "await prisma_client.connect()" in the code it is already connected.
-
-Database access should be done using the prisma.models, not using a prisma client.
-
-import prisma.models
-
-user = await prisma.models.User.prisma().create(
-    data={
-        'name': 'Robert',
-        'email': 'robert@craigie.dev',
-        'posts': {
-            'create': {
-                'title': 'My first post from Prisma!',
-            },
-        },
-    },
-)
-
-"""
-                )
-
-            if "from prisma import Prisma" in code:
-                validation_errors.append(
-                    "There is no need to do `from prisma import Prisma` as we are using the prisma.models to access the database."
-                )
-
-            if ("prisma.errors." in code) and ("import prisma.errors" not in code):
-                validation_errors.append(
-                    "You are using prisma.errors but not importing it. Please add `import prisma.errors` at the top of the code."
-                )
-
-            if ("prisma." in code) and ("import prisma\n" not in code):
-                code = "import prisma\n" + code
 
             try:
                 tree = ast.parse(code)
@@ -457,38 +539,16 @@ user = await prisma.models.User.prisma().create(
                 expected_types.append(expected_func.FunctionReturn.typeName)
             imports = set(visitor.imports + get_typing_imports(expected_types))
 
-            # Prisma entity validation
-            # TODO: improve this checks!
-            db_schema = invoke_params.get("database_schema", "")
-            for entity in ["model", "enum"]:
-                names = []
-
-                # Check prisma models & enums on imports
-                for import_statement in imports:
-                    if f"from prisma.{entity}s import " in import_statement:
-                        name = import_statement.split("import ")[-1].strip()
-                        validation_errors.append(
-                            f"{import_statement} is not allowed. Use the full package "
-                            f"name: prisma.{entity}s.{name} directly in the code without "
-                            f"importing it to avoid naming conflict!"
-                        )
-                        continue
-                    if f"from prisma import {entity}s" in import_statement:
-                        validation_errors.append(
-                            f"{import_statement} is not allowed. {entity}s should use "
-                            f"the full package name without import to avoid conflict!"
-                        )
-
-                # Check prisma models & enums on function_code
-                regex = f"prisma.{entity}s.([a-zA-Z0-9_]+)"
-                for match in re.findall(regex, function_code):
-                    names.append(match.split(".")[-1])
-
-                for name in names:
-                    if f"{entity} {name} " not in db_schema:
-                        validation_errors.append(
-                            f"{entity} {name} is not available in the prisma schema"
-                        )
+            try:
+                db_schema = invoke_params.get("database_schema", "")
+                imports, function_code = validate_normalize_prisma_code(
+                    db_schema, sorted(imports), function_code
+                )
+            except ValidationError as errors:
+                if isinstance(errors, Iterable):
+                    validation_errors.extend(errors)
+                else:
+                    validation_errors.append(str(errors))
 
             already_declared_entities = set(
                 [
@@ -519,7 +579,7 @@ user = await prisma.models.User.prisma().create(
                 packages=packages,
                 imports=sorted(imports),
                 objects=visitor.objects,
-                template=requested_func.function_template,
+                template=requested_func.function_template or "",
                 functionCode=function_code,
                 functions=functions,
             )
