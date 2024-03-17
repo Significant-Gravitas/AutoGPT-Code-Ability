@@ -332,8 +332,6 @@ def static_code_analysis(func: GeneratedFunctionResponse) -> str:
         + func.functionCode
     )
 
-    logger.info(code)
-
     # E402 module level import not at top of file
     # F841 local variable is assigned to but never used
     return exec_external_on_contents(
