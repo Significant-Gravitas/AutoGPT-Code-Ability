@@ -419,8 +419,8 @@ generator client {
 
 
 def test_prisma_code_validation():
-    from codex.develop.develop import validate_normalize_prisma_code
     from codex.common.ai_block import ValidationError
+    from codex.develop.develop import validate_normalize_prisma_code
 
     # Models & enum should be replaced with fully qualified name
     db_schema = """
@@ -444,12 +444,21 @@ def test_prisma_code_validation():
         "enums.RoleType.Admin)"
     )
 
-    assert validate_normalize_prisma_code(db_schema, imports, code) == (
-        ["import pydantic"],
+    imports, code = validate_normalize_prisma_code(db_schema, imports, code)
+
+    assert set(imports) == set(
+        [
+            "import pydantic",
+            "import prisma",
+            "import prisma.errors",
+            "import prisma.models",
+        ]
+    )
+    assert code == (
         "result = "
         "(prisma.models.User.select().where(prisma.models.UserPost.id == 1), "
         "prisma.enums.UserRole.Tutor, "
-        "prisma.enums.RoleType.Admin)",
+        "prisma.enums.RoleType.Admin)"
     )
 
     # catch validation error without using db_schema

@@ -268,9 +268,14 @@ def validate_matching_function(existing_func: Function, requested_func: Function
 
 def static_code_analysis(func: GeneratedFunctionResponse) -> str:
     imports = func.imports.copy()
+    imports.append("from enum import Enum")
+    # logger.info(f"Imports: {imports}")
     for obj in func.available_objects.values():
         imports.extend(obj.importStatements)
-    imports_code = "\n".join(sorted(set(imports)))
+
+    imports_code = "\n".join(sorted(set([i.strip() for i in imports])))
+
+    # logger.info(f"Imports Code: {imports_code}  ")
 
     def generate_stub(name, is_enum):
         if is_enum:
@@ -331,6 +336,8 @@ def static_code_analysis(func: GeneratedFunctionResponse) -> str:
         + "\n"
         + func.functionCode
     )
+
+    # logger.info(code)
 
     # E402 module level import not at top of file
     # F841 local variable is assigned to but never used
@@ -394,12 +401,6 @@ user = await prisma.models.User.prisma().create(
             "There is no need to do `from prisma import Prisma` as we are using the prisma.models to access the database."
         )
 
-    if ("prisma.errors." in code) and ("import prisma.errors" not in code):
-        code = "import prisma.errors"
-
-    if ("prisma." in code) and ("import prisma\n" not in code):
-        code = "import prisma\n" + code
-
     def rename_code_variable(code: str, old_name: str, new_name: str) -> str:
         pattern = r"(?<!\.)\b{}\b".format(re.escape(old_name))
         return re.sub(pattern, new_name, code)
@@ -438,8 +439,19 @@ user = await prisma.models.User.prisma().create(
         for name in names:
             if f"{entity} {name} " not in db_schema:
                 validation_errors.append(
-                    f"prisma.{entity}s.{name} is not available in the prisma schema"
+                    f"prisma.{entity}s.{name} is not available in the prisma schema. Only use models/enums available in the database schema."
                 )
+
+    # Just always add these as there are loads of edge cases where they dont get added
+    # We do set on the imports anyway so it will remove duplicates
+    imports.append("import prisma.models")
+    imports.append("import prisma.errors")
+    imports.append("import prisma")
+
+    # Sometimes it does this, it's not a valid import
+    if "from pydantic import Optional" in imports:
+        imports.remove("from pydantic import Optional")
+    imports = list(set([i.strip() for i in imports]))
 
     if validation_errors:
         raise ValidationError(validation_errors)
@@ -459,7 +471,7 @@ class DevelopAIBlock(AIBlock):
         validation_errors = []
         try:
             text = response.response
-
+            # logger.warning(f"RAW RESPONSE:\n\n{text}")
             requirement_blocks = text.split("```requirements")
             requirement_blocks.pop(0)
             if len(requirement_blocks) != 1:
