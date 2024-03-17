@@ -332,8 +332,20 @@ def static_code_analysis(func: GeneratedFunctionResponse) -> str:
         + func.functionCode
     )
 
+    logger.info(code)
+
+    # E402 module level import not at top of file
+    # F841 local variable is assigned to but never used
     return exec_external_on_contents(
-        command_arguments=["ruff", "check", "--fix", "--ignore", "F841"],
+        command_arguments=[
+            "ruff",
+            "check",
+            "--fix",
+            "--ignore",
+            "F841",
+            "--ignore",
+            "E402",
+        ],
         file_contents=code,
         suffix=".py",
     ).split(separator, maxsplit=1)[1]
@@ -385,9 +397,7 @@ user = await prisma.models.User.prisma().create(
         )
 
     if ("prisma.errors." in code) and ("import prisma.errors" not in code):
-        validation_errors.append(
-            "You are using prisma.errors but not importing it. Please add `import prisma.errors` at the top of the code."
-        )
+        code = "import prisma.errors"
 
     if ("prisma." in code) and ("import prisma\n" not in code):
         code = "import prisma\n" + code
