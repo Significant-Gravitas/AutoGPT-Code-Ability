@@ -78,8 +78,7 @@ def generate_object_template(obj: ObjectType) -> str:
     doc_string = (
         f"""\"\"\"
         {obj.description}
-        \"\"\"
-    """
+        \"\"\""""
         if obj.description
         else ""
     )

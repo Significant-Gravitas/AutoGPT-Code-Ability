@@ -501,11 +501,15 @@ user = await prisma.models.User.prisma().create(
                     f"prisma.{entity}s.{name} is not available in the prisma schema. Only use models/enums available in the database schema."
                 )
 
+    # Make sure `import prisma` is added when `prisma.` usage is found in the code
+    if "prisma." in code:
+        imports.append("import prisma")
+
     # Sometimes it does this, it's not a valid import
     if "from pydantic import Optional" in imports:
         imports.remove("from pydantic import Optional")
-    imports = list(set([i.strip() for i in imports]))
 
+    imports = sorted({i.strip() for i in imports})
     if validation_errors:
         raise ValidationError(validation_errors)
 

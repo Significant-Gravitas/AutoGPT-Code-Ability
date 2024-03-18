@@ -450,8 +450,6 @@ def test_prisma_code_validation():
         [
             "import pydantic",
             "import prisma",
-            "import prisma.errors",
-            "import prisma.models",
         ]
     )
     assert code == (
