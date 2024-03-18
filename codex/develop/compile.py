@@ -97,7 +97,7 @@ def add_full_import_parth_to_custom_types(module_name: str, arg: ObjectField) ->
         return arg.typeName
 
     ret_type = arg.typeName
-    logger.warning(f"Arg name: {arg.name}, arg type: {arg.typeName}")
+    logger.debug(f"Arg name: {arg.name}, arg type: {arg.typeName}")
 
     # For each related type, replace the type name with the full import path
     for t in arg.RelatedTypes:
