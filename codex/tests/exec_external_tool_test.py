@@ -43,7 +43,9 @@ def test_exec_external_with_ruff():
     file_contents = "print('Hello World')"
     expected_output = "print('Hello World')"
 
-    result = exec_external_on_contents(command_arguments, file_contents, output_type=OutputType.STD_OUT)
+    result = exec_external_on_contents(
+        command_arguments, file_contents, output_type=OutputType.STD_OUT
+    )
     assert result == expected_output
 
 
@@ -56,9 +58,10 @@ def test_exec_external_with_ruff_fails():
     command_arguments = ["ruff", "check"]
     file_contents = "print('Hello World'"
     with pytest.raises(Exception) as exc_info:
-        exec_external_on_contents(command_arguments, file_contents, output_type=OutputType.STD_OUT)
+        exec_external_on_contents(
+            command_arguments, file_contents, output_type=OutputType.STD_OUT
+        )
     assert exc_info.value.args[0]
-        
 
 
 ## This test only runs if I'm in debug mode on vscode?????????????? otherwise it can't find
