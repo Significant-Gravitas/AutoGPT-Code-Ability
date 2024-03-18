@@ -448,17 +448,13 @@ author: AutoGPT
 
 3. Open a terminal in the folder containing this README and run the following commands:
 
-    1. `cd project` - go into the `project` folder
+    1. `pip install -r requirements.txt` - install dependencies for the app
 
-    2. `pip install -r requirements.txt` - install dependencies for the app
+    2. `docker-compose up -d` - start the postgres database
 
-    3. `docker-compose up -d` - start the postgres database
+    3. `prisma generate` - generate the database client for the app
 
-    4. `prisma generate` - generate the database client for the app
-
-    5. `prisma db push` - set up the database schema, creating the necessary tables etc.
-
-    6. `cd ..` - move out of the `project` folder
+    4. `prisma db push` - set up the database schema, creating the necessary tables etc.
 
 4. Run `uvicorn project.server:app --reload` to start the app
 """.lstrip()
