@@ -84,13 +84,13 @@ def generate_object_template(obj: ObjectType) -> str:
         else ""
     )
 
-    method_body = ("\n" + " " * 8).join(obj.code.split("\n")) if obj.code else ""
+    method_body = ("\n" + " " * 8).join(obj.code.split("\n")) + "\n" if obj.code else ""
 
     template = f"""
     class {obj.name}({parent_class}):
-        {(doc_string + '\n') if doc_string else ""}
-        {(fields + '\n') if fields else ""}
-        {(method_body + '\n') if method_body else ""}
+        {doc_string if doc_string else ""}
+        {fields if fields else ""}
+        {method_body if method_body else ""}
         {"pass" if not fields and not method_body else ""}
     """
     return "\n".join([line[4:] for line in template.split("\n")]).strip()
