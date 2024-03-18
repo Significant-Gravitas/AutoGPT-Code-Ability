@@ -136,7 +136,7 @@ class FunctionVisitor(ast.NodeVisitor):
 
         # Construct function template
         original_body = node.body.copy()
-        node.body = template_body
+        node.body = template_body  # type: ignore
         function_template = ast.unparse(node)
         node.body = original_body
 
@@ -658,7 +658,7 @@ class DevelopAIBlock(AIBlock):
             rawCode=generated_response.rawCode,
             importStatements=generated_response.imports,
             functionCode=generated_response.functionCode,
-            ChildFunctions={"create": function_defs},
+            ChildFunctions={"create": function_defs},  # type: ignore
         )
 
         if not generated_response.function_id:
@@ -670,7 +670,7 @@ class DevelopAIBlock(AIBlock):
             include={
                 **INCLUDE_FUNC["include"],
                 "ParentFunction": INCLUDE_FUNC,
-                "ChildFunctions": INCLUDE_FUNC,
+                "ChildFunctions": INCLUDE_FUNC,  # type: ignore
             },
         )
         if not func:

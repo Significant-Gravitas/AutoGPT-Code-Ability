@@ -75,7 +75,7 @@ async def process_api_route(api_route, ids, spec, app):
             CompletedApp={"connect": {"id": app.id}},
             ApiRouteSpec={"connect": {"id": api_route.id}},
         ),
-        include={"RootFunction": INCLUDE_FUNC},
+        include={"RootFunction": INCLUDE_FUNC},  # type: ignore
     )
     if not compiled_route.RootFunction:
         raise ValueError("Root function not created")
@@ -148,9 +148,9 @@ async def develop_route(
     compiled_route = await CompiledRoute.prisma().find_unique_or_raise(
         where={"id": compiled_route_id},
         include={
-            "RootFunction": INCLUDE_FUNC,
-            "Functions": INCLUDE_FUNC,
-            "ApiRouteSpec": INCLUDE_API_ROUTE,
+            "RootFunction": INCLUDE_FUNC,  # type: ignore
+            "Functions": INCLUDE_FUNC,  # type: ignore
+            "ApiRouteSpec": INCLUDE_API_ROUTE,  # type: ignore
         },
     )
 
@@ -260,6 +260,8 @@ if __name__ == "__main__":
     async def run_me():
         await client.connect()
         ids = test_consts.identifier_1
+        assert ids.user_id
+        assert ids.app_id
         spec = await get_latest_specification(ids.user_id, ids.app_id)
         ans = await develop_application(ids=ids, spec=spec)
         await client.disconnect()

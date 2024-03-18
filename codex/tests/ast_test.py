@@ -177,22 +177,21 @@ def test_function_visitor_with_enum():
     assert visitor.objects["Location"].is_pydantic
     assert visitor.objects["Role"].is_enum
 
-    assert visitor.objects["Location"].Fields[0].name == "name"
-    assert visitor.objects["Location"].Fields[0].type == "str"
-    assert visitor.objects["Location"].Fields[0].value is None
-    assert visitor.objects["Location"].Fields[1].name == "latitude"
-    assert visitor.objects["Location"].Fields[1].type == "float"
-    assert visitor.objects["Location"].Fields[1].value == "0.0"
-    assert visitor.objects["Location"].Fields[2].name == "longitude"
-    assert visitor.objects["Location"].Fields[2].type == "float"
-    assert visitor.objects["Location"].Fields[2].value == "0.0"
-
-    assert visitor.objects["Role"].Fields[0].name == "USER"
-    assert visitor.objects["Role"].Fields[0].type == "str"
-    assert visitor.objects["Role"].Fields[0].value == "'USER'"
-    assert visitor.objects["Role"].Fields[1].name == "ADMIN"
-    assert visitor.objects["Role"].Fields[1].type == "str"
-    assert visitor.objects["Role"].Fields[1].value == "'ADMIN'"
+    assert visitor.objects["Location"].Fields[0].name == "name"  # type: ignore
+    assert visitor.objects["Location"].Fields[0].type == "str"  # type: ignore
+    assert visitor.objects["Location"].Fields[0].value is None  # type: ignore
+    assert visitor.objects["Location"].Fields[1].name == "latitude"  # type: ignore
+    assert visitor.objects["Location"].Fields[1].type == "float"  # type: ignore
+    assert visitor.objects["Location"].Fields[1].value == "0.0"  # type: ignore
+    assert visitor.objects["Location"].Fields[2].name == "longitude"  # type: ignore
+    assert visitor.objects["Location"].Fields[2].type == "float"  # type: ignore
+    assert visitor.objects["Location"].Fields[2].value == "0.0"  # type: ignore
+    assert visitor.objects["Role"].Fields[0].name == "USER"  # type: ignore
+    assert visitor.objects["Role"].Fields[0].type == "str"  # type: ignore
+    assert visitor.objects["Role"].Fields[0].value == "'USER'"  # type: ignore
+    assert visitor.objects["Role"].Fields[1].name == "ADMIN"  # type: ignore
+    assert visitor.objects["Role"].Fields[1].type == "str"  # type: ignore
+    assert visitor.objects["Role"].Fields[1].value == "'ADMIN'"  # type: ignore
 
 
 # Visiting a simple function definition with no arguments or return type
@@ -334,7 +333,7 @@ def test_visiting_import_statement_with_no_alias():
     code = ast.parse("import module")
 
     # Visit the AST
-    visitor.visit_Import(code.body[0])
+    visitor.visit_Import(code.body[0])  # type: ignore
 
     # Assert that the import line was added to the imports list
     assert visitor.imports == ["import module"]

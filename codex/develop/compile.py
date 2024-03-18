@@ -105,7 +105,7 @@ async def recursive_compile_route(
         include={
             **INCLUDE_FUNC["include"],
             "ParentFunction": INCLUDE_FUNC,
-            "ChildFunctions": INCLUDE_FUNC,
+            "ChildFunctions": INCLUDE_FUNC,  # type: ignore
         },
     )
     logger.info(f"⚙️ Compiling function: {function.functionName}")
@@ -179,7 +179,7 @@ async def get_object_type_deps(
     # Lookup the object getting all its subfields
     obj = await ObjectType.prisma().find_unique_or_raise(
         where={"id": obj_type_id},
-        **INCLUDE_FIELD,
+        **INCLUDE_FIELD,  # type: ignore
     )
     if obj.Fields is None:
         raise ValueError(f"ObjectType {obj.name} has no fields.")
