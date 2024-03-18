@@ -251,9 +251,6 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
             "modules": ", ".join(module.name for module in running_state_obj.modules),
         }
 
-        with open("db_invoke_params.json", "w") as f:
-            f.write(json.dumps(db_invoke_params, indent=4))
-
         db_response: DBResponse = await database_block.invoke(
             ids=ids,
             invoke_params=db_invoke_params,
