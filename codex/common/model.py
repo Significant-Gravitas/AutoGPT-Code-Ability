@@ -166,7 +166,7 @@ def extract_field_type(field_type: str | None) -> set[str]:
     return result
 
 
-def normalize_type(type: str) -> str:
+def normalize_type(type: str, renamed_types: dict[str, str] = {}) -> str:
     """
     Normalize the type to a standard format.
     e.g. list[str] -> List[str], dict[str, int | float] -> Dict[str, Union[int, float]]
@@ -177,10 +177,14 @@ def normalize_type(type: str) -> str:
         str: The normalized type.
     """
     parent_type, children = unwrap_object_type(type)
+
+    if parent_type in renamed_types:
+        parent_type = renamed_types[parent_type]
+
     if len(children) == 0:
         return parent_type
 
-    return f"{parent_type}[{', '.join([normalize_type(c) for c in children])}]"
+    return f"{parent_type}[{', '.join([normalize_type(c, renamed_types) for c in children])}]"
 
 
 def get_related_types(

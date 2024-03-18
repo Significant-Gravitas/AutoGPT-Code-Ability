@@ -18,6 +18,7 @@ from prisma.models import (
 from prisma.types import CompiledRouteUpdateInput, CompletedAppCreateInput
 from pydantic import BaseModel
 
+import codex.common.model
 from codex.api_model import Identifiers
 from codex.common.database import INCLUDE_FIELD, INCLUDE_FUNC
 from codex.deploy.model import Application
@@ -100,9 +101,13 @@ def add_full_import_parth_to_custom_types(module_name: str, arg: ObjectField) ->
     logger.debug(f"Arg name: {arg.name}, arg type: {arg.typeName}")
 
     # For each related type, replace the type name with the full import path
+    renamed_types: dict[str, str] = {}
+
     for t in arg.RelatedTypes:
         if t.isPydantic or t.isEnum:
-            ret_type = ret_type.replace(t.name, f"{module_name}.{t.name}")
+            renamed_types[t.name] = f"{module_name}.{t.name}"
+
+    ret_type = codex.common.model.normalize_type(ret_type, renamed_types)
 
     return ret_type
 

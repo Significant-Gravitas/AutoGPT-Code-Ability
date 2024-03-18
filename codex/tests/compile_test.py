@@ -173,5 +173,36 @@ def test_multiple_related_types():
     # Assert
     assert result == "Tuple[project.RelatedType1, project.RelatedType2]"
 
+
+def test_multiple_related_types_with_similiar_name():
+    # Arrange
+    module_name = "project"
+    t1 = ObjectType(
+        id="asd",
+        createdAt=datetime.now(),
+        isPydantic=True,
+        isEnum=False,
+        name="User",
+        importStatements=[],
+    )
+    t2 = ObjectType(
+        id="asd",
+        createdAt=datetime.now(),
+        isPydantic=True,
+        isEnum=False,
+        name="UserProfile",
+        importStatements=[],
+    )
+    arg = ObjectField(
+        id="asd",
+        createdAt=datetime.now(),
+        name="arg1",
+        typeName="Tuple[User, UserProfile]",
+        RelatedTypes=[t1, t2],
+    )
+
+    # Act
+    result = add_full_import_parth_to_custom_types(module_name, arg)
+
     # Assert
-    assert result == "Tuple[project.RelatedType1, project.RelatedType2]"
+    assert result == "Tuple[project.User, project.UserProfile]"
