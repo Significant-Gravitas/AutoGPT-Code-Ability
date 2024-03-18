@@ -2,7 +2,7 @@ from datetime import datetime
 
 from prisma.models import ObjectField, ObjectType
 
-from codex.develop.compile import extract_path_params
+from codex.develop.compile import extract_path_params, get_arg_type
 from codex.develop.function import generate_object_template
 
 
@@ -95,3 +95,77 @@ def test_extract_path_parameters():
         "user_id",
         "app_id",
     ], f"Expected {params} to be ['user_id', 'app_id']"
+
+
+def test_return_type_no_related_types():
+    # Arrange
+    module_name = "project"
+    arg = ObjectField(
+        name="arg1", typeName="int", RelatedTypes=None, id="1", createdAt=datetime.now()
+    )
+
+    # Act
+    result = get_arg_type(module_name, arg)
+
+    # Assert
+    assert result == "int"
+
+
+def test_arg_type_with_related_type_fixed():
+    # Arrange
+    module_name = "project"
+    t = ObjectType(
+        id="asd",
+        createdAt=datetime.now(),
+        isPydantic=True,
+        isEnum=False,
+        name="RelatedType",
+        importStatements=[],
+    )
+    arg = ObjectField(
+        id="asd",
+        createdAt=datetime.now(),
+        name="arg1",
+        typeName="RelatedType",
+        RelatedTypes=[t],
+    )
+
+    # Act
+    result = get_arg_type(module_name, arg)
+
+    # Assert
+    assert result == "project.RelatedType"
+
+
+def test_multiple_related_types():
+    # Arrange
+    module_name = "project"
+    t1 = ObjectType(
+        id="asd",
+        createdAt=datetime.now(),
+        isPydantic=True,
+        isEnum=False,
+        name="RelatedType1",
+        importStatements=[],
+    )
+    t2 = ObjectType(
+        id="asd",
+        createdAt=datetime.now(),
+        isPydantic=True,
+        isEnum=False,
+        name="RelatedType2",
+        importStatements=[],
+    )
+    arg = ObjectField(
+        id="asd",
+        createdAt=datetime.now(),
+        name="arg1",
+        typeName="Tuple[RelatedType1, RelatedType2]",
+        RelatedTypes=[t1, t2],
+    )
+
+    # Act
+    result = get_arg_type(module_name, arg)
+
+    # Assert
+    assert result == "Tuple[project.RelatedType1, project.RelatedType2]"
