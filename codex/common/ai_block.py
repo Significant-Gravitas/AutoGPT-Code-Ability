@@ -180,6 +180,7 @@ class AIBlock:
         response: ValidatedResponse,
         attempt: int,
         prompt: Json,
+        prev_call_id: str | None = None,
     ):
         if not self.call_template_id:
             raise AssertionError("Call template ID not set")
@@ -196,6 +197,7 @@ class AIBlock:
                 "prompt": prompt,
                 "response": response.message,
                 "model": self.model,
+                "prevCallId": prev_call_id,
             }
         )
         return call_attempt
@@ -275,6 +277,7 @@ class AIBlock:
             await self.store_call_template()
         presponse = None
         retries = 0
+        last_llm_call_id = None
         try:
             if self.is_json_response:
                 invoke_params["format_instructions"] = self.get_format_instructions()
@@ -298,17 +301,22 @@ class AIBlock:
         try:
             presponse = await self.call_llm(request_params)
 
-            await self.store_call_attempt(
-                ids.user_id,
-                ids.app_id,
-                presponse,
-                retries,
-                Json(request_params["messages"]),
-            )
+            last_llm_call_id = (
+                await self.store_call_attempt(
+                    ids.user_id,
+                    ids.app_id,
+                    presponse,
+                    retries,
+                    Json(request_params["messages"]),
+                    last_llm_call_id,
+                )
+            ).id
 
             validated_response = self.validate(invoke_params, presponse)
         except ValidationError as validation_error:
-            logger.error(f"Failed initial generation attempt: {validation_error}")
+            logger.error(
+                f"Failed initial generation attempt: {validation_error}, LLM Call ID: {last_llm_call_id}"
+            )
             error_message = validation_error
             while retries < max_retries:
                 retries += 1
@@ -328,19 +336,23 @@ class AIBlock:
                     if not request_params["messages"]:
                         raise AssertionError("Messages not set")
 
-                    await self.store_call_attempt(
-                        ids.user_id,
-                        ids.app_id,
-                        presponse,
-                        retries,
-                        Json(request_params["messages"]),
-                    )
+                    last_llm_call_id = (
+                        await self.store_call_attempt(
+                            ids.user_id,
+                            ids.app_id,
+                            presponse,
+                            retries,
+                            Json(request_params["messages"]),
+                            last_llm_call_id,
+                        )
+                    ).id
                     validated_response = self.validate(invoke_params, presponse)
                     break
                 except ValidationError as retry_error:
                     logger.error(
                         f"{retries}/{max_retries}"
-                        + f" Failed validating response: {retry_error}"
+                        f" Failed validating response: {retry_error}"
+                        f" LLM Call ID: {last_llm_call_id}"
                     )
                     error_message = retry_error
                     continue

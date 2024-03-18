@@ -373,6 +373,7 @@ enum DevelopmentPhase {
 
 model LLMCallAttempt {
   id               String   @id @default(dbgenerated("gen_random_uuid()"))
+  prevCallId       String?
   createdAt        DateTime @default(now())
   model            String
   completionTokens Int

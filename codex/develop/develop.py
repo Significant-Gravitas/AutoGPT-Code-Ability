@@ -380,6 +380,15 @@ def fix_missing_imports(errors: list[str], func: GeneratedFunctionResponse) -> b
     Returns:
         bool: True if there are imports being added, False for otherwise
     """
+
+    # parse "model X {" and "enum X {" from func.db_schema
+    schema_imports = {}
+    for entity in ["model", "enum"]:
+        pattern = f"{entity} ([a-zA-Z0-9_]+) {{"
+        matches = re.findall(pattern, func.db_schema)
+        for match in matches:
+            schema_imports[match] = f"from prisma.{entity}s import {match}"
+
     missing_imports = []
     for error in errors:
         # Format: 'Undefined name `X`', parse X and see if X inside
@@ -393,6 +402,11 @@ def fix_missing_imports(errors: list[str], func: GeneratedFunctionResponse) -> b
             missing_imports.append(f"from typing import {missing_type}")
         elif missing_type in TYPES_PRISMA_ERRORS:
             missing_imports.append(f"import prisma.errors.{missing_type}")
+        elif missing_type == "prisma":
+            missing_imports.append("import prisma")
+        elif missing_type in schema_imports:
+            # TODO: This is a stop-gap fix until AGPT-546 is resolved.
+            missing_imports.append(schema_imports[missing_type])
 
     if not missing_imports:
         return False
@@ -445,9 +459,6 @@ user = await prisma.models.User.prisma().create(
         validation_errors.append(
             "There is no need to do `from prisma import Prisma` as we are using the prisma.models to access the database."
         )
-
-    if ("prisma." in code) and ("import prisma\n" not in code):
-        code = "import prisma\n" + code
 
     def rename_code_variable(code: str, old_name: str, new_name: str) -> str:
         pattern = r"(?<!\.)\b{}\b".format(re.escape(old_name))
@@ -574,9 +585,9 @@ class DevelopAIBlock(AIBlock):
             functions = visitor.functions.copy()
             del functions[func_name]
             imports = visitor.imports.copy()
+            db_schema = invoke_params.get("database_schema", "")
 
             try:
-                db_schema = invoke_params.get("database_schema", "")
                 imports, function_code = validate_normalize_prisma_code(
                     db_schema, imports, function_code
                 )
@@ -618,6 +629,7 @@ class DevelopAIBlock(AIBlock):
                 template=requested_func.function_template or "",
                 functionCode=function_code,
                 functions=functions,
+                db_schema=db_schema,
             )
             try:
                 static_code_analysis(result)
