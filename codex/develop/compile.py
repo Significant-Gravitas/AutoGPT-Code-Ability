@@ -18,6 +18,7 @@ from prisma.models import (
 from prisma.types import CompiledRouteUpdateInput, CompletedAppCreateInput
 from pydantic import BaseModel
 
+import codex.common.model
 from codex.api_model import Identifiers
 from codex.common.database import INCLUDE_FIELD, INCLUDE_FUNC
 from codex.deploy.model import Application
@@ -81,6 +82,36 @@ async def compile_route(
     return compiled_route
 
 
+def add_full_import_parth_to_custom_types(module_name: str, arg: ObjectField) -> str:
+    """
+    Adds the full import path to custom types in the given argument.
+
+    Args:
+        module_name (str): The name of the module.
+        arg (ObjectField): The argument to process.
+
+    Returns:
+        str: The modified argument type with the full import path.
+
+    """
+    if not arg.RelatedTypes:
+        return arg.typeName
+
+    ret_type = arg.typeName
+    logger.debug(f"Arg name: {arg.name}, arg type: {arg.typeName}")
+
+    # For each related type, replace the type name with the full import path
+    renamed_types: dict[str, str] = {}
+
+    for t in arg.RelatedTypes:
+        if t.isPydantic or t.isEnum:
+            renamed_types[t.name] = f"{module_name}.{t.name}"
+
+    ret_type = codex.common.model.normalize_type(ret_type, renamed_types)
+
+    return ret_type
+
+
 async def recursive_compile_route(
     in_function: Function, object_type_ids: Set[str]
 ) -> CompiledFunction:
@@ -105,8 +136,8 @@ async def recursive_compile_route(
         include={
             **INCLUDE_FUNC["include"],
             "ParentFunction": INCLUDE_FUNC,
-            "ChildFunctions": INCLUDE_FUNC,  # type: ignore
-        },
+            "ChildFunctions": INCLUDE_FUNC,
+        },  # type: ignore
     )
     logger.info(f"⚙️ Compiling function: {function.functionName}")
 
@@ -219,6 +250,7 @@ async def get_object_field_deps(
     if field.RelatedTypes is None:
         raise AssertionError("Field RelatedTypes should be an array")
     types = [t for t in field.RelatedTypes if t.id not in object_type_ids]
+
     if not types:
         # If the field is a primitive type or we have already processed this object,
         # we don't need to do anything
@@ -266,6 +298,8 @@ def create_server_route_code(compiled_route: CompiledRoute) -> str:
     if route_spec is None:
         raise AssertionError("Compiled route must have an API route spec.")
 
+    module_name = f"project.{compiled_route.fileName.replace('.py', '')}"
+
     is_file_response = False
     response_model = "Response"
     route_response_annotation = "Response"
@@ -278,30 +312,24 @@ def create_server_route_code(compiled_route: CompiledRoute) -> str:
         is_file_response = True
     else:
         if return_type.typeName is not None:
-            response_model = f"{return_type.typeName} | Response"
+            response_model = f"{module_name}.{return_type.typeName} | Response"
             route_response_annotation = return_type.typeName
 
     # 4. Determine path parameters
     path_params = extract_path_params(route_spec.path)
-    # params = set(
-    #     [arg.ReferredObjectType.name for arg in args if arg.ReferredObjectType]
-    # )
+
     func_args_names = set([arg.name for arg in args])
     if not set(path_params).issubset(func_args_names):
         logger.warning(
             f"Path parameters {path_params} not in function arguments {func_args_names}"
         )
-    #     raise ComplicationFailure(
-    #         f"Path parameters {path_params} not "
-    #         f"in function arguments {func_args_names}"
-    #     )
 
     http_verb = str(route_spec.method)
     route_decorator = f"@app.{http_verb.lower()}('{route_spec.path}'"
     if is_file_response:
         route_decorator += ", response_class=StreamingResponse"
     else:
-        route_decorator += f", response_model={route_response_annotation}"
+        route_decorator += f", response_model={module_name}.{route_response_annotation}"
 
     route_decorator += ")\n"
 
@@ -309,7 +337,12 @@ def create_server_route_code(compiled_route: CompiledRoute) -> str:
     route_function_def = (
         f"async def api_{http_verb.lower()}_{main_function.functionName}("
     )
-    route_function_def += ", ".join([f"{arg.name}: {arg.typeName}" for arg in args])
+    route_function_def += ", ".join(
+        [
+            f"{arg.name}: {add_full_import_parth_to_custom_types(module_name, arg)}"
+            for arg in args
+        ]
+    )
     route_function_def += ")"
 
     return_response = ""
@@ -336,7 +369,7 @@ def create_server_route_code(compiled_route: CompiledRoute) -> str:
     {route_spec.description}
     \"\"\"
     try:
-        res = await {main_function.functionName}({", ".join([arg.name for arg in args])})
+        res = await {module_name}.{main_function.functionName}({", ".join([arg.name for arg in args])})
         {return_response}
     except Exception as e:
         logger.exception("Error processing request")
@@ -484,8 +517,11 @@ app = FastAPI(title="{name}", lifespan=lifespan, description='''{desc}''')
         if compiled_route.Packages:
             packages.extend(compiled_route.Packages)
 
+        if compiled_route.RootFunction is None:
+            raise ValueError(f"Compiled route {compiled_route.id} has no root function")
+
         server_code_imports.append(
-            f"from project.{compiled_route.fileName.replace('.py', '')} import *"
+            f"import project.{compiled_route.fileName.replace('.py', '')}"
         )
 
         service_routes_code.append(create_server_route_code(compiled_route))
