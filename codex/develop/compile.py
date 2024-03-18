@@ -220,8 +220,12 @@ async def get_object_field_deps(
         raise AssertionError("Field RelatedTypes should be an array")
     types = [t for t in field.RelatedTypes if t.id not in object_type_ids]
     if not types:
-        logging.exception(f"Field type is not defined for {field.name}")
-        raise AssertionError(f"Field type is not defined for {field.name}")
+        # If the field is a primitive type or we have already processed this object,
+        # we don't need to do anything
+        logger.info(
+            f"Skipping field {field.name} as it's a primitive type or already processed"
+        )
+        return []
 
     logger.debug(f"Processing field {field.name} of type {field.typeName}")
     object_type_ids.update([t.id for t in types])
