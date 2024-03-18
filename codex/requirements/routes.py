@@ -43,6 +43,8 @@ async def create_spec(
             interview_id=interview_id,
             cloud_services_id=user.cloudServicesId if user else "",
         )
+        if not ids.user_id or not ids.app_id:
+            raise ValueError("User ID and App ID are required")
         interview = await get_interview(
             user_id=ids.user_id, app_id=ids.app_id, interview_id=interview_id
         )

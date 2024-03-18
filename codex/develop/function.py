@@ -13,6 +13,9 @@ from codex.develop.model import FunctionDef
 async def construct_function(
     function: FunctionDef, available_types: dict[str, ObjectType]
 ) -> FunctionCreateInput:
+    if not function.function_template:
+        raise ValueError("Function template is required")
+
     input = FunctionCreateInput(
         functionName=function.name,
         template=function.function_template or "",
@@ -53,7 +56,7 @@ async def construct_function(
             )
             for name, type in function.arg_types
         ]
-        input["FunctionArgs"] = {"create": fields}
+        input["FunctionArgs"] = {"create": fields}  # type: ignore
 
     return input
 

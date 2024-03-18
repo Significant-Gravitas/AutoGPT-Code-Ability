@@ -277,7 +277,7 @@ async def create_object_type(
             "isPydantic": object.is_pydantic,
             "isEnum": object.is_enum,
         },
-        **INCLUDE_FIELD,
+        **INCLUDE_FIELD,  # type: ignore
     )
     available_objects[object.name] = created_object_type
 
@@ -303,7 +303,7 @@ async def create_object_type(
             updated_object_field = await ObjectField.prisma().update(
                 where={"id": field.id},
                 data={"RelatedTypes": {"connect": [{"id": t.id} for t in reltypes]}},
-                **INCLUDE_TYPE,
+                **INCLUDE_TYPE,  # type: ignore
             )
             if updated_object_field:
                 field.RelatedTypes = updated_object_field.RelatedTypes

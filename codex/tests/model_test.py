@@ -62,9 +62,9 @@ async def test_create_nested_object_type():
 
     assert "SyncExternalCalendarRequest" in created_objects
     assert created_objects["SyncExternalCalendarRequest"] is not None
-    assert len(created_objects["SyncExternalCalendarRequest"].Fields) == 2
+    assert len(created_objects["SyncExternalCalendarRequest"].Fields) == 2  # type: ignore
     assert (
-        len(created_objects["SyncExternalCalendarRequest"].Fields[1].RelatedTypes) == 1
+        len(created_objects["SyncExternalCalendarRequest"].Fields[1].RelatedTypes) == 1  # type: ignore
     )
 
     assert "SyncOptions" in created_objects
