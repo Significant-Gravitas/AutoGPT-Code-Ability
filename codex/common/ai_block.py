@@ -197,7 +197,7 @@ class AIBlock:
                 "prompt": prompt,
                 "response": response.message,
                 "model": self.model,
-                "prevCallId": prev_call_id,
+                # "prevCallId": prev_call_id,
             }
         )
         return call_attempt
