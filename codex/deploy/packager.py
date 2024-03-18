@@ -353,6 +353,14 @@ async def create_zip_file(application: Application) -> bytes:
 
 
 def generate_readme(application: Application) -> str:
+    """Generates a README for the application
+
+    Params:
+        application (Application): The application for which to generate a README
+
+    Returns:
+        str: The README content
+    """
     content: str = ""
 
     # Header
