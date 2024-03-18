@@ -81,16 +81,28 @@ async def compile_route(
     return compiled_route
 
 
-def get_arg_type(module_name: str, arg: ObjectField) -> str:
+def add_full_import_parth_to_custom_types(module_name: str, arg: ObjectField) -> str:
+    """
+    Adds the full import path to custom types in the given argument.
+
+    Args:
+        module_name (str): The name of the module.
+        arg (ObjectField): The argument to process.
+
+    Returns:
+        str: The modified argument type with the full import path.
+
+    """
     if not arg.RelatedTypes:
         return arg.typeName
 
     ret_type = arg.typeName
     logger.warning(f"Arg name: {arg.name}, arg type: {arg.typeName}")
+
+    # For each related type, replace the type name with the full import path
     for t in arg.RelatedTypes:
         if t.isPydantic or t.isEnum:
             ret_type = ret_type.replace(t.name, f"{module_name}.{t.name}")
-            break
 
     return ret_type
 
@@ -321,7 +333,10 @@ def create_server_route_code(compiled_route: CompiledRoute) -> str:
         f"async def api_{http_verb.lower()}_{main_function.functionName}("
     )
     route_function_def += ", ".join(
-        [f"{arg.name}: {get_arg_type(module_name, arg)}" for arg in args]
+        [
+            f"{arg.name}: {add_full_import_parth_to_custom_types(module_name, arg)}"
+            for arg in args
+        ]
     )
     route_function_def += ")"
 

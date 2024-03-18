@@ -2,7 +2,10 @@ from datetime import datetime
 
 from prisma.models import ObjectField, ObjectType
 
-from codex.develop.compile import extract_path_params, get_arg_type
+from codex.develop.compile import (
+    add_full_import_parth_to_custom_types,
+    extract_path_params,
+)
 from codex.develop.function import generate_object_template
 
 
@@ -105,7 +108,7 @@ def test_return_type_no_related_types():
     )
 
     # Act
-    result = get_arg_type(module_name, arg)
+    result = add_full_import_parth_to_custom_types(module_name, arg)
 
     # Assert
     assert result == "int"
@@ -131,7 +134,7 @@ def test_arg_type_with_related_type_fixed():
     )
 
     # Act
-    result = get_arg_type(module_name, arg)
+    result = add_full_import_parth_to_custom_types(module_name, arg)
 
     # Assert
     assert result == "project.RelatedType"
@@ -165,7 +168,10 @@ def test_multiple_related_types():
     )
 
     # Act
-    result = get_arg_type(module_name, arg)
+    result = add_full_import_parth_to_custom_types(module_name, arg)
+
+    # Assert
+    assert result == "Tuple[project.RelatedType1, project.RelatedType2]"
 
     # Assert
     assert result == "Tuple[project.RelatedType1, project.RelatedType2]"
