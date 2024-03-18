@@ -372,6 +372,11 @@ async def create_zip_file(application: Application) -> bytes:
             with open(dotenv_example_file_path, mode="w") as dotenv_example_file:
                 dotenv_example_file.write(dotenv_example)
 
+            dotenv_example_file_path = os.path.join(package_dir, ".env")
+            dotenv_example = generate_dotenv_example_file(application)
+            with open(dotenv_example_file_path, mode="w") as dotenv_example_file:
+                dotenv_example_file.write(dotenv_example)
+
             # Make a .gitignore file
             gitignore_file_path = os.path.join(package_dir, ".gitignore")
             gitignore = generate_gitignore_file()
