@@ -1,9 +1,9 @@
-import datetime
 import logging
 import os
 import random
 import tempfile
 import zipfile
+from datetime import datetime
 from typing import List
 
 from pipreqs import pipreqs
@@ -64,7 +64,7 @@ DB_HOST="localhost"
 DB_PORT="5432"
 DB_NAME="{db_name}"
 DATABASE_URL="postgresql://${{DB_USER}}:${{DB_PASS}}@${{DB_HOST}}:${{DB_PORT}}/${{DB_NAME}}"
-"""
+""".lstrip()
     env_example = env_example.format(random_password=random_password, db_name=db_name)
 
     # env_example = ""
@@ -143,7 +143,7 @@ __pycache__/
 .env.(local|development|production|test|staging|qa)
 .env*
 !.env.example
-"""
+""".lstrip()
 
 
 def generate_docker_compose_file(application: Application) -> str:
@@ -162,7 +162,8 @@ def generate_docker_compose_file(application: Application) -> str:
     if not application.completed_app.CompiledRoutes:
         raise ValueError("Application must have at least one compiled route")
 
-    docker_compose = """version: '3.8'
+    docker_compose = """
+version: '3.8'
 services:
     db:
         image: ankane/pgvector:latest
@@ -172,7 +173,7 @@ services:
             POSTGRES_DB: ${DB_NAME}
         ports:
         - "5432:5432"
-"""
+""".lstrip()
 
     return docker_compose
 
@@ -219,7 +220,7 @@ generator db {
   previewFeatures      = ["postgresqlExtensions"]
 }
 
-"""
+""".lstrip()
     if not tables:
         return ""
 
@@ -254,14 +255,7 @@ async def create_zip_file(application: Application) -> bytes:
             # Make a readme file
             readme_file_path = os.path.join(app_dir, "README.md")
             with open(readme_file_path, "w") as readme_file:
-                readme_file.write("---\n")
-                current_date = datetime.datetime.now()
-                formatted_date = current_date.isoformat()
-                readme_file.write(f"date: {formatted_date}\n")
-                readme_file.write("author: codex\n")
-                readme_file.write("---\n\n")
-                readme_file.write(f"# {application.completed_app.name}\n\n")
-                readme_file.write(application.completed_app.description)
+                readme_file.write(generate_readme(application))
 
             # Make a __init__.py file
             init_file_path = os.path.join(app_dir, "__init__.py")
@@ -356,3 +350,62 @@ async def create_zip_file(application: Application) -> bytes:
     except Exception as e:
         logger.exception(e)
         raise e
+
+
+def generate_readme(application: Application) -> str:
+    content: str = ""
+
+    # Header
+    # App name + description
+    # Instructions to run the application
+    content += f"""
+---
+date: {datetime.now().isoformat()}
+author: AutoGPT Codex
+---
+
+# {application.completed_app.name}
+
+{application.completed_app.description}
+
+## What you'll need to run this
+* An unzipper (usually shipped with your OS)
+* A text editor
+* A terminal
+* Docker
+  > Docker is only needed to run a Postgres database. If you want to connect to your own
+  > Postgres instance, you may not have to follow the steps below to the letter.
+
+
+## How to run '{application.completed_app.name}'
+
+1. Unpack the ZIP file containing this package
+
+2. Customize the `POSTGRESS_USER`, `POSTGRESS_PASSWORD`, and `POSTGRESS_DB`
+   in `docker-compose.yml` however you like
+
+3. Create a file named `.env` alongside this `README.md` with the following in it:
+
+        DATABASE_URL="postgresql://{{USER}}:{{PASSWORD}}@localhost:5432/{{DB_NAME}}"
+
+    *Replace `{{USER}}`, `{{PASSWORD}}`, `{{DB_NAME}}` with the credentials in
+    `docker-compose.yml` from the previous step.*
+
+4. Open a terminal in the folder containing this README and run the following commands:
+
+    1. `cd project` - go into the `project` folder
+
+    2. `pip install -r requirements.txt` - install dependencies for the app
+
+    3. `docker-compose up -d` - start the postgres database
+
+    4. `prisma generate` - generate the database client for the app
+
+    5. `prisma db push` - set up the database schema, creating the necessary tables etc.
+
+    6. `cd ..` - move out of the `project` folder
+
+5. Run `uvicorn project.server:app --reload` to start the app
+""".lstrip()
+
+    return content
