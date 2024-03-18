@@ -1,3 +1,4 @@
+import enum
 import logging
 import os
 import subprocess
@@ -8,8 +9,17 @@ from codex.common.ai_block import ValidationError
 logger = logging.getLogger(__name__)
 
 
+class OutputType(enum.Enum):
+    STD_OUT = "stdout"
+    STD_ERR = "stderr"
+    BOTH = "both"
+
+
 def exec_external_on_contents(
-    command_arguments: list[str], file_contents, suffix: str = ".py"
+    command_arguments: list[str],
+    file_contents,
+    suffix: str = ".py",
+    output_type: OutputType = OutputType.BOTH,
 ) -> str:
     """
     Execute an external tool with the provided command arguments and file contents
@@ -54,7 +64,13 @@ def exec_external_on_contents(
             if temp_file_path in result.stdout:
                 stdout = result.stdout  # .replace(temp_file.name, "/generated_file")
                 logger.debug(f"Errors: {result.stderr}")
-                errors = stdout + "\n" + result.stderr
+                if output_type == OutputType.STD_OUT:
+                    errors = stdout
+                elif output_type == OutputType.STD_ERR:
+                    errors = result.stderr
+                else:
+                    errors = stdout + "\n" + result.stderr
+
             with open(temp_file_path, "r") as f:
                 file_contents = f.read()
         finally:

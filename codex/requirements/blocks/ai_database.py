@@ -7,7 +7,7 @@ from codex.common.ai_block import (
     ValidationError,
 )
 from codex.common.ai_model import OpenAIChatClient
-from codex.common.exec_external_tool import exec_external_on_contents
+from codex.common.exec_external_tool import OutputType, exec_external_on_contents
 from codex.common.logging_config import setup_logging
 from codex.common.parse_prisma import parse_prisma_schema
 from codex.requirements.model import (
@@ -53,9 +53,8 @@ class DatabaseGenerationBlock(AIBlock):
     # Model to use for the LLM
     model = "gpt-4-0125-preview"
     # Should we force the LLM to reply in JSON
-    is_json_response = True
+    is_json_response = False
     # If we are using is_json_response, what is the response model
-    pydantic_object = DBResponse
 
     def validate(
         self, invoke_params: dict, response: ValidatedResponse
@@ -66,6 +65,7 @@ class DatabaseGenerationBlock(AIBlock):
         blocks this is much more complex. If validation failes it triggers a retry.
         """
         validation_errors = []
+        logger.warning(f"Validating response:\n{response.response}")
         try:
             schema_blocks = response.response.split("```prisma")
             schema_blocks.pop(0)
@@ -77,12 +77,12 @@ class DatabaseGenerationBlock(AIBlock):
 
         text_schema = schema_blocks[0].split("```")[0]
 
-        # parse the prisma schema back into the tables and enum definitions
-        # and compare them to the original
         unparsed = text_schema
         try:
             unparsed = exec_external_on_contents(
-                ["prisma", "format", "--schema"], text_schema
+                ["prisma", "format", "--schema"],
+                text_schema,
+                output_type=OutputType.STD_ERR,
             )
         except ValidationError as e:
             validation_errors.append(str(e))

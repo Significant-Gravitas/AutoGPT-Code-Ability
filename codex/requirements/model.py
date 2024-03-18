@@ -282,7 +282,7 @@ class DatabaseEnums(BaseModel):
     definition: str
 
     def __str__(self):
-        return f"**{self.name}**\n\n**Description**: {self.description}\n\n**Values**:\n{', '.join(self.values)}\n"
+        return f"**Enum: {self.name}**\n\n**Values**:\n{', '.join(self.values)}\n"
 
 
 class DatabaseTable(BaseModel):
@@ -291,7 +291,7 @@ class DatabaseTable(BaseModel):
     definition: str  # prisma model for a table
 
     def __str__(self):
-        return f"**{self.name}**\n\n**Description**: {self.description}\n\n**Definition**:\n```\n{self.definition}\n```\n"
+        return f"**Table: {self.name}**\n\n\n\n**Definition**:\n```\n{self.definition}\n```\n"
 
 
 class DatabaseSchema(BaseModel):
@@ -302,7 +302,8 @@ class DatabaseSchema(BaseModel):
 
     def __str__(self):
         tables_str = "\n".join(str(table) for table in self.tables)
-        return f"## {self.name}\n**Description**: {self.description}\n**Tables**:\n{tables_str}\n"
+        enum_str = "\n".join(str(enum) for enum in self.enums)
+        return f"## {self.name}\n**Description**: {self.description}\n**Tables**:\n{tables_str}\n**Enums**:\n{enum_str}\n"
 
 
 class APIEndpointWrapper(BaseModel):

@@ -4,8 +4,9 @@ Repond with an explination of what the database schema needs to cover along with
 
 Code block should be in Prisma schema language.
 
-```prisma
+NO NOT INLCUDE THE datasource or generator blocks.
 
+```prisma
 
 ```
 
@@ -13,27 +14,6 @@ Code block should be in Prisma schema language.
 An example of a good response:
 
 ```prisma
-// datasource db defines the database connection settings.
-// It is configured for PostgreSQL and uses an environment variable for the connection URL.
-// The 'extensions' feature enables the use of PostgreSQL-specific data types.
-datasource db {
-  provider   = "postgresql"
-  url        = env("DATABASE_URL")
-  extensions = [vector]
-}
-
-// generator db configures Prisma Client settings.
-// It is set up to use Prisma Client Python with asyncio interface and specific features.
-generator db {
-  provider             = "prisma-client-py"
-  interface            = "asyncio"
-  recursive_type_depth = 5
-  previewFeatures      = ["postgresqlExtensions"]
-}
-
-// ---------------------------------------------------------------------- //
-// ------------------------- Common Models ------------------------------ //
-// ---------------------------------------------------------------------- //
 
 model User {
   id              String    @id @default(dbgenerated("gen_random_uuid()"))
@@ -78,9 +58,6 @@ model Application {
   ResumePoint     ResumePoint[]
 }
 
-// ------------------------- Interview Models ---------------------------- //
-// Interview models for the interview process
-// ------------------------------------------------------------------------ //
 
 model Interview {
   id            String        @id @default(dbgenerated("gen_random_uuid()"))
@@ -109,10 +86,6 @@ model Question {
   Interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
   interviewId String
 }
-
-// ------------------------- Requirements Models ------------------------------ //
-// ApplicationRequirements represents the requirements for a specific application.  
-// ------------------------- -------------------------------------------------- //
 
 model Specification {
   id        String   @id @default(dbgenerated("gen_random_uuid()"))
@@ -180,8 +153,6 @@ model ObjectType {
 
   Fields ObjectField[] @relation("ObjectTypeFields")
 
-  // One problem I have with generating the serve code is not knowing what imports are needed for the type annotations
-  // Best Idea I can think of is to include the import statement required for the type
   importStatements String[]
 
   DatabaseTable   DatabaseTable? @relation(fields: [databaseTableId], references: [id], onDelete: Cascade)
@@ -242,9 +213,7 @@ model DatabaseTable {
   ObjectType        ObjectType[]
 }
 
-// ------------------------- Developer Models ---------------------------- //
-// Database models for the developer
-// ------------------------------------------------------------------------ //
+
 enum FunctionState {
   DEFINITION
   WRITTEN
@@ -295,8 +264,6 @@ model Package {
   CompiledRoutes CompiledRoute[]
 }
 
-// ------------------------- Delivery Models ----------------------------- //
-
 // CompiledRoute represents a version of a route that has been processed or compiled.
 // It links to its source code graph and associated functions and applications.
 model CompiledRoute {
@@ -342,10 +309,6 @@ model CompletedApp {
   ResumePoint     ResumePoint[]
 }
 
-// ---------------------------------------------------------------------- //
-// ------------------------- Deployment Model --------------------------- //
-// ---------------------------------------------------------------------- //
-
 model Deployment {
   id        String   @id @default(dbgenerated("gen_random_uuid()"))
   createdAt DateTime @default(now())
@@ -364,8 +327,6 @@ model Deployment {
   completedAppId String?
   ResumePoint    ResumePoint[]
 }
-
-// ------------------------- LLM Models ----------------------------- //
 
 model LLMCallTemplate {
   id               String           @id @default(dbgenerated("gen_random_uuid()"))
@@ -423,6 +384,4 @@ model ResumePoint {
   Deployment      Deployment?    @relation(fields: [deploymentId], references: [id])
   deploymentId    String?
 }
-
-
 ```
