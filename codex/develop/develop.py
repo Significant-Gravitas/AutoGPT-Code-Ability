@@ -1,4 +1,6 @@
 import ast
+import collections
+import datetime
 import logging
 import re
 import typing
@@ -367,8 +369,15 @@ def static_code_analysis(func: GeneratedFunctionResponse):
         raise e
 
 
-TYPES_PYTHON_TYPING = set(typing.__all__)
-TYPES_PRISMA_ERRORS = set(prisma.errors.__all__)
+AUTO_IMPORT_TYPES: dict[str, str] = {"prisma": "import prisma"}
+for t in typing.__all__:
+    AUTO_IMPORT_TYPES[t] = f"from typing import {t}"
+for t in prisma.errors.__all__:
+    AUTO_IMPORT_TYPES[t] = f"from prisma.errors import {t}"
+for t in datetime.__all__:
+    AUTO_IMPORT_TYPES[t] = f"from datetime import {t}"
+for t in collections.__all__:
+    AUTO_IMPORT_TYPES[t] = f"from collections import {t}"
 
 
 def fix_missing_imports(errors: list[str], func: GeneratedFunctionResponse) -> bool:
@@ -398,15 +407,10 @@ def fix_missing_imports(errors: list[str], func: GeneratedFunctionResponse) -> b
             continue
 
         missing_type = match.group(1)
-        if missing_type in TYPES_PYTHON_TYPING:
-            missing_imports.append(f"from typing import {missing_type}")
-        elif missing_type in TYPES_PRISMA_ERRORS:
-            missing_imports.append(f"import prisma.errors.{missing_type}")
-        elif missing_type == "prisma":
-            missing_imports.append("import prisma")
-        elif missing_type in schema_imports:
-            # TODO: This is a stop-gap fix until AGPT-546 is resolved.
+        if missing_type in schema_imports:
             missing_imports.append(schema_imports[missing_type])
+        elif missing_type in AUTO_IMPORT_TYPES:
+            missing_imports.append(AUTO_IMPORT_TYPES[missing_type])
 
     if not missing_imports:
         return False
