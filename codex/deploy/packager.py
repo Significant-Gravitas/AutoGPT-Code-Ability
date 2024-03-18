@@ -27,22 +27,23 @@ WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update \\
-    && apt-get install -y build-essential curl ffmpeg \\
+    && apt-get install -y build-essential curl \\
     && apt-get clean \\
     && rm -rf /var/lib/apt/lists/*
-    
-# Copy only requirements to cache them in Docker layer
+
 WORKDIR /app
 
-COPY . /app
-
-# Project initialization:
+# Install dependencies
+COPY requirements.txt /app
 RUN pip install -r requirements.txt
 
+# Generate Prisma client
 RUN prisma generate
 
-COPY . /app
-# Set a default value (this can be overridden)
+# Add application source
+COPY project/ /app/project/
+
+# Set a default port (this can be overridden)
 ENV PORT=8000
 
 # This will be the command to run the FastAPI server using uvicorn
@@ -213,9 +214,10 @@ services:
             context: .
             dockerfile: Dockerfile
         environment:
-            - PORT=8080
+            DATABASE_URL: ${DATABASE_URL}
+            PORT: 8080
         ports:
-        - "8080:8080"        
+        - "8080:8080"
 """
 
     return docker_compose
