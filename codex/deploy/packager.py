@@ -259,6 +259,12 @@ def git_init(app_dir: str):
         subprocess.run(args=["git", "commit", "-m", "Initial commit"], cwd=app_dir, check=True)
 
         logger.info("Git repository initialized and all files committed")
+        
+        # Unset the local Git configuration
+        subprocess.run(["git", "config", "--unset", "--local", "user.name"], cwd=app_dir, check=True)
+        subprocess.run(["git", "config", "--unset", "--local", "user.email"], cwd=app_dir, check=True)
+
+        logger.info("Local Git user configuration unset")
 
     except subprocess.CalledProcessError as e:
         logger.exception("Failed to initialize Git repository or commit files")
