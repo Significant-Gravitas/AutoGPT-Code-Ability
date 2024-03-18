@@ -25,3 +25,12 @@ repos:
         args: [ --fix ]
       # Run the formatter.
       - id: ruff-format
+  
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest
+        language: system
+        entry: poetry run pytest . --without-integration
+        pass_filenames: false
+        always_run: true
