@@ -226,9 +226,6 @@ async def get_object_field_deps(
             f"Skipping field {field.name} as it's a primitive type or already processed"
         )
         return []
-    if not types:
-        logging.exception(f"Field type is not defined for {field.name}")
-        raise AssertionError(f"Field type is not defined for {field.name}")
 
     logger.debug(f"Processing field {field.name} of type {field.typeName}")
     object_type_ids.update([t.id for t in types])
