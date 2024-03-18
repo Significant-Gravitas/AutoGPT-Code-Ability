@@ -282,8 +282,8 @@ async def create_zip_file(application: Application) -> bytes:
             # Make a requirements file
             pipreqs.init(
                 {
-                    "<path>": app_dir,
-                    "--savepath": os.path.join(app_dir, "requirements.txt"),
+                    "<path>": package_dir,
+                    "--savepath": os.path.join(package_dir, "requirements.txt"),
                     "--print": False,
                     "--use-local": None,
                     "--force": True,
@@ -319,19 +319,19 @@ async def create_zip_file(application: Application) -> bytes:
                     prisma_file.write(prisma_content)
 
             # Make a .env.example file
-            dotenv_example_file_path = os.path.join(app_dir, ".env.example")
+            dotenv_example_file_path = os.path.join(package_dir, ".env.example")
             dotenv_example = generate_dotenv_example_file(application)
             with open(dotenv_example_file_path, mode="w") as dotenv_example_file:
                 dotenv_example_file.write(dotenv_example)
 
             # Make a .gitignore file
-            gitignore_file_path = os.path.join(app_dir, ".gitignore")
+            gitignore_file_path = os.path.join(package_dir, ".gitignore")
             gitignore = generate_gitignore_file()
             with open(gitignore_file_path, mode="w") as gitignore_file:
                 gitignore_file.write(gitignore)
 
             # Make a docker-compose.yml file
-            docker_compose_file_path = os.path.join(app_dir, "docker-compose.yml")
+            docker_compose_file_path = os.path.join(package_dir, "docker-compose.yml")
             docker_compose = generate_docker_compose_file(application)
             with open(docker_compose_file_path, mode="w") as docker_compose_file:
                 docker_compose_file.write(docker_compose)
