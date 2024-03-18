@@ -26,9 +26,9 @@ ENV PYTHONUNBUFFERED 1
 WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update \
-    && apt-get install -y build-essential curl ffmpeg \
-    && apt-get clean \
+RUN apt-get update \\
+    && apt-get install -y build-essential curl ffmpeg \\
+    && apt-get clean \\
     && rm -rf /var/lib/apt/lists/*
     
 # Copy only requirements to cache them in Docker layer
