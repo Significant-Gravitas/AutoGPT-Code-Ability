@@ -474,8 +474,14 @@ class DevelopAIBlock(AIBlock):
             # logger.warning(f"RAW RESPONSE:\n\n{text}")
             requirement_blocks = text.split("```requirements")
             requirement_blocks.pop(0)
-            if len(requirement_blocks) != 1:
+            if len(requirement_blocks) < 1:
                 packages = []
+            elif len(requirement_blocks) > 1:
+                packages = []
+                error = (
+                    f"There are {len(requirement_blocks)} requirements blocks in the response. "
+                    + "There should be exactly 1"
+                )
             else:
                 packages: List[Package] = parse_requirements(
                     requirement_blocks[0].split("```")[0]

@@ -2,7 +2,7 @@ from shutil import which
 
 import pytest
 
-from codex.common.exec_external_tool import exec_external_on_contents
+from codex.common.exec_external_tool import OutputType, exec_external_on_contents
 
 
 def test_exec_external():
@@ -69,7 +69,7 @@ def test_exec_external_with_prisma():
     if which("prisma") is None:
         pytest.skip("Prisma not installed")
     # Test case 6: Command execution with prisma
-    command_arguments = ["prisma", "format", "--schema"]
+    command_arguments = ["prisma", "validate", "--schema"]
     file_contents = (
         "model User {\n  id Int @id @default(autoincrement())\n  name String\n}"
     )
@@ -77,5 +77,7 @@ def test_exec_external_with_prisma():
         "model User {\n  id Int @id @default(autoincrement())\n  name String\n}"
     )
 
-    result = exec_external_on_contents(command_arguments, file_contents)
+    result = exec_external_on_contents(
+        command_arguments, file_contents, output_type=OutputType.STD_ERR
+    )
     assert result == expected_output
