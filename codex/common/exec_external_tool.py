@@ -34,6 +34,7 @@ def exec_external_on_contents(
     errors = ""
     if len(command_arguments) == 0:
         raise AssertionError("No command arguments provided")
+
     # Run ruff to validate the code
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
         temp_file_path = temp_file.name
@@ -51,9 +52,9 @@ def exec_external_on_contents(
             )
             logger.debug(f"Output: {result.stdout}")
             if temp_file_path in result.stdout:
-                stderr = result.stdout.replace(temp_file.name, "generated_file")
-                logger.debug(f"Errors: {stderr}")
-                errors = stderr
+                stdout = result.stdout  # .replace(temp_file.name, "/generated_file")
+                logger.debug(f"Errors: {result.stderr}")
+                errors = stdout + "\n" + result.stderr
             with open(temp_file_path, "r") as f:
                 file_contents = f.read()
         finally:
@@ -61,6 +62,6 @@ def exec_external_on_contents(
             os.remove(temp_file_path)
 
     if errors:
-        raise ValidationError(f"Errors with code generation: {errors}")
+        raise ValidationError(f"Errors with generation: {errors}")
 
     return file_contents
