@@ -32,5 +32,5 @@ repos:
         name: pytest
         language: system
         entry: poetry run pytest . --without-integration
-        pass_filenames: false
-        always_run: true
+        pass_filenames: true
+        files: '\.py$'
