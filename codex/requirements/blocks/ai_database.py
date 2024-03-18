@@ -67,11 +67,11 @@ class DatabaseGenerationBlock(AIBlock):
         """
         validation_errors = []
         try:
-            schema_blocks = response.response.split("```python")
+            schema_blocks = response.response.split("```prisma")
             schema_blocks.pop(0)
             if len(schema_blocks) != 1:
                 if len(schema_blocks) == 0:
-                    raise ValidationError("No code blocks found in the response")
+                    raise ValidationError("No ```prisma blocks found in the response")
         except Exception as e:
             raise ValidationError(f"Error parsing the response: {e}")
 
