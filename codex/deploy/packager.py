@@ -14,6 +14,42 @@ from codex.deploy.model import Application
 logger = logging.getLogger(__name__)
 
 
+DOCKERFILE = """
+# Use an official Python runtime as a parent image
+FROM python:3.11-slim-buster as autogpt_project
+
+# Set environment varibles
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# Set work directory in the container
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update \\
+    && apt-get install -y build-essential curl ffmpeg \\
+    && apt-get clean \\
+    && rm -rf /var/lib/apt/lists/*
+    
+# Copy only requirements to cache them in Docker layer
+WORKDIR /app
+
+COPY . /app
+
+# Project initialization:
+RUN pip install -r requirements.txt
+
+RUN prisma generate
+
+COPY . /app
+# Set a default value (this can be overridden)
+ENV PORT=8000
+
+# This will be the command to run the FastAPI server using uvicorn
+CMD uvicorn project.server:app --port $PORT
+"""
+
+
 def generate_requirements_txt(
     packages: List[Package], pipreq_pacakages: List[str]
 ) -> str:
@@ -172,6 +208,14 @@ services:
             POSTGRES_DB: ${DB_NAME}
         ports:
         - "5432:5432"
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        environment:
+            - PORT=8080
+        ports:
+        - "8080:8080"        
 """
 
     return docker_compose
@@ -262,6 +306,10 @@ async def create_zip_file(application: Application) -> bytes:
                 readme_file.write("---\n\n")
                 readme_file.write(f"# {application.completed_app.name}\n\n")
                 readme_file.write(application.completed_app.description)
+
+            dockerfile_path = os.path.join(package_dir, "Dockerfile")
+            with open(dockerfile_path, "w") as dockerfile:
+                dockerfile.write(DOCKERFILE)
 
             # Make a __init__.py file
             init_file_path = os.path.join(app_dir, "__init__.py")
