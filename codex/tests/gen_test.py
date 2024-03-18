@@ -8,6 +8,7 @@ from codex.common.ai_model import OpenAIChatClient
 from codex.common.logging_config import setup_logging
 from codex.common.test_const import Identifiers, app_id_11, user_id_1
 from codex.develop import agent
+from codex.develop.database import get_compiled_code
 from codex.requirements.database import get_latest_specification, get_specification
 
 load_dotenv()
@@ -23,7 +24,7 @@ async def generate_function(
     app_id=app_id_11,
     cloud_id="",
     spec_id="",
-):
+) -> list[str] | None:
     global is_connected
 
     if not is_connected:
@@ -39,11 +40,13 @@ async def generate_function(
         spec = await get_latest_specification(ids.user_id, ids.app_id)
     func = await agent.develop_application(ids=ids, spec=spec)
 
+    code = await get_compiled_code(func.id) if func else None
+
     if is_connected:
         await db_client.disconnect()
         is_connected = False
 
-    return func
+    return code
 
 
 @pytest.mark.asyncio
@@ -104,6 +107,16 @@ async def test_with_llm_function_generation():
     ai_block.MOCK_RESPONSE = COMPLEX_RESPONSE
     func = await generate_function()
     assert func is not None
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration_test
+async def test_class_with_optional_field():
+    ai_block.MOCK_RESPONSE = CLASS_WITH_OPTIONAL_FIELD_RESPONSE
+    func = await generate_function()
+    assert func is not None
+    assert "class SomeClass" in func[0]
+    assert "field1: Optional[int] = None" in func[0]
 
 
 COMPLEX_RESPONSE = """
@@ -242,5 +255,22 @@ SIMPLE_RESPONSE = """
 ```python
 def make_turn(game_id: str, row: int, col: int) -> GameStateResponse:
     return GameStateResponse()
+```
+"""
+
+CLASS_WITH_OPTIONAL_FIELD_RESPONSE = """
+```python
+class SomeClass:
+    field1: int | None # Optional field should be prefilled with None default value.
+    field2: Optional[Dict[str, int]] # Optional & Dict without import should work.
+
+    def get_state(self) -> GameStateResponse:
+        return GameStateResponse()
+
+def some_method(input: SomeClass) -> GameStateResponse:
+    return input.get_state()
+
+def make_turn(game_id: str, row: int, col: int) -> GameStateResponse:
+    return some_method(SomeClass())
 ```
 """

@@ -83,6 +83,8 @@ def unwrap_object_type(type: str) -> Tuple[str, List[str]]:
     # Unwrap primitive union types
     union_split = split_outer_level(type, "|")
     if len(union_split) > 1:
+        if len(union_split) == 2 and "None" in union_split:
+            return "Optional", [v for v in union_split if v != "None"]
         return "Union", union_split
 
     # Unwrap primitive dict/list/tuple types
@@ -236,11 +238,15 @@ async def create_object_type(
                 related_type, available_objects
             )
 
+        field.type = normalize_type(field.type)
+        if field.value is None and field.type.startswith("Optional"):
+            field.value = "None"
+
         field_inputs.append(
             {
                 "name": field.name,
                 "description": field.description,
-                "typeName": normalize_type(field.type),
+                "typeName": field.type,
                 "value": field.value,
                 "RelatedTypes": {
                     "connect": [
