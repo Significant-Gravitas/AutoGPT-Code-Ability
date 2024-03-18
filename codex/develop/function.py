@@ -15,7 +15,7 @@ async def construct_function(
 ) -> FunctionCreateInput:
     input = FunctionCreateInput(
         functionName=function.name,
-        template=function.function_template,
+        template=function.function_template or "",
         description=function.function_desc,
         state=FunctionState.WRITTEN
         if function.is_implemented
@@ -59,10 +59,6 @@ async def construct_function(
 
 
 def generate_object_template(obj: ObjectType) -> str:
-    # If the object already has code, use it.
-    if obj.code:
-        return obj.code
-
     # Auto-generate a template for the object, this will not capture any class functions.
     fields = f"\n{' ' * 8}".join(
         [
@@ -79,11 +75,21 @@ def generate_object_template(obj: ObjectType) -> str:
     elif obj.isPydantic:
         parent_class = "BaseModel"
 
+    doc_string = (
+        f"""\"\"\"
+        {obj.description}
+        \"\"\""""
+        if obj.description
+        else ""
+    )
+
+    method_body = ("\n" + " " * 8).join(obj.code.split("\n")) + "\n" if obj.code else ""
+
     template = f"""
     class {obj.name}({parent_class}):
-        \"\"\"
-        {obj.description}
-        \"\"\"
-        {"pass" if not fields else fields}
+        {doc_string if doc_string else ""}
+        {fields if fields else ""}
+        {method_body if method_body else ""}
+        {"pass" if not fields and not method_body else ""}
     """
     return "\n".join([line[4:] for line in template.split("\n")]).strip()
