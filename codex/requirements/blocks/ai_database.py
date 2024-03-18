@@ -10,7 +10,13 @@ from codex.common.ai_model import OpenAIChatClient
 from codex.common.exec_external_tool import exec_external_on_contents
 from codex.common.logging_config import setup_logging
 from codex.common.parse_prisma import parse_prisma_schema
-from codex.requirements.model import DatabaseEnums, DatabaseTable, DBResponse
+from codex.requirements.model import (
+    DatabaseEnums,
+    DatabaseSchema,
+    DatabaseTable,
+    DBResponse,
+    PreAnswer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -61,52 +67,68 @@ class DatabaseGenerationBlock(AIBlock):
         """
         validation_errors = []
         try:
-            model = DBResponse.model_validate_json(response.response, strict=False)
+            schema_blocks = response.response.split("```python")
+            schema_blocks.pop(0)
+            if len(schema_blocks) != 1:
+                if len(schema_blocks) == 0:
+                    raise ValidationError("No code blocks found in the response")
         except Exception as e:
             raise ValidationError(f"Error parsing the response: {e}")
 
-        text_schema = PRISMA_FILE_HEADER
-        text_schema += "\n\n".join(
-            [enum.definition for enum in model.database_schema.enums]
-        )
-        text_schema += "\n\n"
-        text_schema += "\n\n".join(
-            [table.definition for table in model.database_schema.tables]
-        )
+        text_schema = schema_blocks[0].split("```")[0]
 
         # parse the prisma schema back into the tables and enum definitions
         # and compare them to the original
         unparsed = text_schema
         try:
             unparsed = exec_external_on_contents(
-                ["prisma", "validate", "--schema"], text_schema
+                ["prisma", "format", "--schema"], text_schema
             )
         except ValidationError as e:
             validation_errors.append(str(e))
 
         parsed_prisma = parse_prisma_schema(unparsed)
-        for enum in model.database_schema.enums:
-            if enum.name not in parsed_prisma.enums:
-                validation_errors.append(
-                    f"Enum {enum.name} not found in parsed prisma schema"
-                )
-            # replace the definition with the parsed definition
-            enum.definition = parsed_prisma.enums[enum.name].definition
-        for table in model.database_schema.tables:
-            if table.name not in parsed_prisma.models:
-                validation_errors.append(
-                    f"Table {table.name} not found in parsed prisma schema"
-                )
-            if not table.name:
-                validation_errors.append("Tables all require a name")
-            else:
-                # replace the definition with the parsed definition
-                table.definition = parsed_prisma.models[table.name].definition
 
         if validation_errors:
             raise ValidationError("\n".join(validation_errors))
 
-        response.response = model
+        enums_objs = []
+        for name, details in parsed_prisma.enums.items():
+            enums_objs.append(
+                DatabaseEnums(
+                    name=name,
+                    values=details.values,
+                    description="",
+                    definition=details.definition,
+                )
+            )
+
+        table_objs = []
+        for name, details in parsed_prisma.models.items():
+            table_objs.append(
+                DatabaseTable(
+                    name=name,
+                    definition=details.definition,
+                    description="",
+                )
+            )
+
+        response.response = DBResponse(
+            think="",
+            anti_think="",
+            plan="",
+            refine="",
+            pre_answer=PreAnswer(tables=[], enums=[]),
+            pre_answer_issues="",
+            full_schema="",
+            database_schema=DatabaseSchema(
+                name="Database Schema",
+                description="The schema for the applications database",
+                enums=enums_objs,
+                tables=table_objs,
+            ),
+            conclusions="",
+        )
 
         return response
 

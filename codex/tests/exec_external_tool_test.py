@@ -69,7 +69,7 @@ def test_exec_external_with_prisma():
     if which("prisma") is None:
         pytest.skip("Prisma not installed")
     # Test case 6: Command execution with prisma
-    command_arguments = ["prisma", "format"]
+    command_arguments = ["prisma", "format", "--schema"]
     file_contents = (
         "model User {\n  id Int @id @default(autoincrement())\n  name String\n}"
     )
