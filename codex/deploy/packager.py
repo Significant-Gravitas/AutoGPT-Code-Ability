@@ -437,17 +437,9 @@ author: AutoGPT Codex
 
 1. Unpack the ZIP file containing this package
 
-2. Customize the `POSTGRESS_USER`, `POSTGRESS_PASSWORD`, and `POSTGRESS_DB`
-   in `docker-compose.yml` however you like
+2. Create a copy of `.env.example` named `.env`. Adjust the values in it as you see fit.
 
-3. Create a file named `.env` alongside this `README.md` with the following in it:
-
-        DATABASE_URL="postgresql://{{USER}}:{{PASSWORD}}@localhost:5432/{{DB_NAME}}"
-
-    *Replace `{{USER}}`, `{{PASSWORD}}`, `{{DB_NAME}}` with the credentials in
-    `docker-compose.yml` from the previous step.*
-
-4. Open a terminal in the folder containing this README and run the following commands:
+3. Open a terminal in the folder containing this README and run the following commands:
 
     1. `cd project` - go into the `project` folder
 
@@ -461,7 +453,7 @@ author: AutoGPT Codex
 
     6. `cd ..` - move out of the `project` folder
 
-5. Run `uvicorn project.server:app --reload` to start the app
+4. Run `uvicorn project.server:app --reload` to start the app
 """.lstrip()
 
     return content
