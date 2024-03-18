@@ -424,7 +424,7 @@ def generate_readme(application: Application) -> str:
     content += f"""
 ---
 date: {datetime.now().isoformat()}
-author: AutoGPT Codex
+author: AutoGPT
 ---
 
 # {application.completed_app.name}
