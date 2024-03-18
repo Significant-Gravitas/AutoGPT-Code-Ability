@@ -230,6 +230,40 @@ generator db {
 
     return prisma_file
 
+def git_init(app_dir: str):
+    """
+    Initializes a Git repository in the specified directory and commits all files.
+
+    Args:
+        app_dir (str): The directory path where the Git repository should be initialized.
+
+    Raises:
+        subprocess.CalledProcessError: If there is an error while initializing the Git repository or committing files.
+
+    """
+    try:
+        # Initialize Git repository
+        subprocess.run(args=["git", "init"], cwd=app_dir, check=True)
+
+        GIT_USER_NAME: str = os.environ.get("GIT_USER_NAME", default="AutoGPT")
+        GIT_USER_EMAIL: str = os.environ.get("GIT_USER_EMAIL", default="code@agpt.com")
+
+        # Configure Git user for the commit
+        subprocess.run(args=["git", "config", "user.name", f"{GIT_USER_NAME}"], cwd=app_dir, check=True)
+        subprocess.run(args=["git", "config", "user.email", f"{GIT_USER_EMAIL}"], cwd=app_dir, check=True)
+
+        # Add all files to the staging area
+        subprocess.run(args=["git", "add", "."], cwd=app_dir, check=True)
+
+        # Commit the changes
+        subprocess.run(args=["git", "commit", "-m", "Initial commit"], cwd=app_dir, check=True)
+
+        logger.info("Git repository initialized and all files committed")
+
+    except subprocess.CalledProcessError as e:
+        logger.exception("Failed to initialize Git repository or commit files")
+        raise e
+
 
 async def create_zip_file(application: Application) -> bytes:
     """
@@ -337,42 +371,8 @@ async def create_zip_file(application: Application) -> bytes:
             with open(docker_compose_file_path, mode="w") as docker_compose_file:
                 docker_compose_file.write(docker_compose)
 
-            try:
-                # Initialize Git repository
-                subprocess.run(args=["git", "init"], cwd=app_dir, check=True)
-
-                GIT_USER_NAME: str = os.environ.get("GIT_USER_NAME", default="AutoGPT")
-                GIT_USER_EMAIL: str = os.environ.get(
-                    "GIT_USER_EMAIL", default="code@agpt.com"
-                )
-
-                # Configure Git user for the commit
-                subprocess.run(
-                    args=["git", "config", "user.name", f"{GIT_USER_NAME}"],
-                    cwd=app_dir,
-                    check=True,
-                )
-                subprocess.run(
-                    args=["git", "config", "user.email", f"{GIT_USER_EMAIL}"],
-                    cwd=app_dir,
-                    check=True,
-                )
-
-                # Add all files to the staging area
-                subprocess.run(args=["git", "add", "."], cwd=app_dir, check=True)
-
-                # Commit the changes
-                subprocess.run(
-                    args=["git", "commit", "-m", "Initial commit"],
-                    cwd=app_dir,
-                    check=True,
-                )
-
-                logger.info("Git repository initialized and all files committed")
-
-            except subprocess.CalledProcessError as e:
-                logger.exception("Failed to initialize Git repository or commit files")
-                raise e
+            # Initialize a Git repository and commit everything
+            git_init(app_dir)
 
             logger.info("Created server code")
             # Create a zip file of the directory
