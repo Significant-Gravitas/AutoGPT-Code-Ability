@@ -222,7 +222,7 @@ async def get_object_field_deps(
     if not types:
         # If the field is a primitive type or we have already processed this object,
         # we don't need to do anything
-        logger.info(
+        logger.debug(
             f"Skipping field {field.name} as it's a primitive type or already processed"
         )
         return []
