@@ -247,12 +247,12 @@ async def create_zip_file(application: Application) -> bytes:
         raise ValueError("Application must have at least one compiled route")
 
     try:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            app_dir = os.path.join(temp_dir, "project")
+        with tempfile.TemporaryDirectory() as package_dir:
+            app_dir = os.path.join(package_dir, "project")
             os.makedirs(app_dir, exist_ok=True)
 
             # Make a readme file
-            readme_file_path = os.path.join(app_dir, "README.md")
+            readme_file_path = os.path.join(package_dir, "README.md")
             with open(readme_file_path, "w") as readme_file:
                 readme_file.write("---\n")
                 current_date = datetime.datetime.now()
@@ -282,8 +282,8 @@ async def create_zip_file(application: Application) -> bytes:
             # Make a requirements file
             pipreqs.init(
                 {
-                    "<path>": app_dir,
-                    "--savepath": os.path.join(app_dir, "requirements.txt"),
+                    "<path>": package_dir,
+                    "--savepath": os.path.join(package_dir, "requirements.txt"),
                     "--print": False,
                     "--use-local": None,
                     "--force": True,
@@ -295,7 +295,7 @@ async def create_zip_file(application: Application) -> bytes:
                 }
             )
 
-            requirements_file_path = os.path.join(app_dir, "requirements.txt")
+            requirements_file_path = os.path.join(package_dir, "requirements.txt")
             pipreq_pacakages = []
             with open(file=requirements_file_path, mode="r") as requirements_file:
                 pipreq_pacakages = requirements_file.readlines()
@@ -312,26 +312,26 @@ async def create_zip_file(application: Application) -> bytes:
                 requirements_file.write(packages)
 
             # Make a prisma schema file
-            prism_schema_file_path = os.path.join(app_dir, "schema.prisma")
+            prism_schema_file_path = os.path.join(package_dir, "schema.prisma")
             prisma_content = await create_prisma_schema_file(application)
             if prisma_content:
                 with open(prism_schema_file_path, mode="w") as prisma_file:
                     prisma_file.write(prisma_content)
 
             # Make a .env.example file
-            dotenv_example_file_path = os.path.join(app_dir, ".env.example")
+            dotenv_example_file_path = os.path.join(package_dir, ".env.example")
             dotenv_example = generate_dotenv_example_file(application)
             with open(dotenv_example_file_path, mode="w") as dotenv_example_file:
                 dotenv_example_file.write(dotenv_example)
 
             # Make a .gitignore file
-            gitignore_file_path = os.path.join(app_dir, ".gitignore")
+            gitignore_file_path = os.path.join(package_dir, ".gitignore")
             gitignore = generate_gitignore_file()
             with open(gitignore_file_path, mode="w") as gitignore_file:
                 gitignore_file.write(gitignore)
 
             # Make a docker-compose.yml file
-            docker_compose_file_path = os.path.join(app_dir, "docker-compose.yml")
+            docker_compose_file_path = os.path.join(package_dir, "docker-compose.yml")
             docker_compose = generate_docker_compose_file(application)
             with open(docker_compose_file_path, mode="w") as docker_compose_file:
                 docker_compose_file.write(docker_compose)
@@ -340,12 +340,12 @@ async def create_zip_file(application: Application) -> bytes:
             # Create a zip file of the directory
             zip_file_path = os.path.join(app_dir, "server.zip")
             with zipfile.ZipFile(zip_file_path, "w") as zipf:
-                for root, dirs, files in os.walk(temp_dir):
+                for root, dirs, files in os.walk(package_dir):
                     for file in files:
                         if file == "server.zip":
                             continue
                         file_path = os.path.join(root, file)
-                        zipf.write(file_path, os.path.relpath(file_path, temp_dir))
+                        zipf.write(file_path, os.path.relpath(file_path, package_dir))
 
             logger.info("Created zip file")
             # Read and return the bytes of the zip file
