@@ -45,9 +45,6 @@ COPY . /app
 # Set a default value (this can be overridden)
 ENV PORT=8000
 
-# Just declare the variable, the value will be set when running the container
-ENV OPENAI_API_KEY=""
-
 # This will be the command to run the FastAPI server using uvicorn
 CMD uvicorn project.server:app --port $PORT
 """
