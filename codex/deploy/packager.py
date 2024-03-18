@@ -248,9 +248,9 @@ def git_init(app_dir: str):
         GIT_USER_NAME: str = os.environ.get("GIT_USER_NAME", default="AutoGPT")
         GIT_USER_EMAIL: str = os.environ.get("GIT_USER_EMAIL", default="code@agpt.com")
 
-        # Configure Git user for the commit
-        subprocess.run(args=["git", "config", "user.name", f"{GIT_USER_NAME}"], cwd=app_dir, check=True)
-        subprocess.run(args=["git", "config", "user.email", f"{GIT_USER_EMAIL}"], cwd=app_dir, check=True)
+        # Configure Git user only locally in the newly initialised repository
+        subprocess.run(["git", "config", "--local", "user.name", GIT_USER_NAME], cwd=app_dir, check=True)
+        subprocess.run(["git", "config", "--local", "user.email", GIT_USER_EMAIL], cwd=app_dir, check=True)
 
         # Add all files to the staging area
         subprocess.run(args=["git", "add", "."], cwd=app_dir, check=True)
