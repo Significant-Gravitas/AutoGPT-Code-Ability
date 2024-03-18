@@ -76,8 +76,10 @@ class DatabaseGenerationBlock(AIBlock):
             raise ValidationError(f"Error parsing the response: {e}")
 
         text_schema = schema_blocks[0].split("```")[0]
-
-        unparsed = text_schema
+        if "datasource db {" not in text_schema:
+            unparsed = PRISMA_FILE_HEADER + text_schema
+        else:
+            unparsed = text_schema
         try:
             unparsed = exec_external_on_contents(
                 ["prisma", "format", "--schema"],
