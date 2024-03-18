@@ -73,6 +73,7 @@ class GeneratedFunctionResponse(BaseModel):
 
     functions: Dict[str, FunctionDef]
     objects: Dict[str, ObjectDef]
+    db_schema: str
 
 
 class ApplicationGraphs(BaseModel):

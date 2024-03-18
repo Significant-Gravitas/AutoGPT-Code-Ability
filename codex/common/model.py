@@ -83,6 +83,8 @@ def unwrap_object_type(type: str) -> Tuple[str, List[str]]:
     # Unwrap primitive union types
     union_split = split_outer_level(type, "|")
     if len(union_split) > 1:
+        if len(union_split) == 2 and "None" in union_split:
+            return "Optional", [v for v in union_split if v != "None"]
         return "Union", union_split
 
     # Unwrap primitive dict/list/tuple types
@@ -166,7 +168,7 @@ def extract_field_type(field_type: str | None) -> set[str]:
     return result
 
 
-def normalize_type(type: str) -> str:
+def normalize_type(type: str, renamed_types: dict[str, str] = {}) -> str:
     """
     Normalize the type to a standard format.
     e.g. list[str] -> List[str], dict[str, int | float] -> Dict[str, Union[int, float]]
@@ -177,10 +179,14 @@ def normalize_type(type: str) -> str:
         str: The normalized type.
     """
     parent_type, children = unwrap_object_type(type)
+
+    if parent_type in renamed_types:
+        parent_type = renamed_types[parent_type]
+
     if len(children) == 0:
         return parent_type
 
-    return f"{parent_type}[{', '.join([normalize_type(c) for c in children])}]"
+    return f"{parent_type}[{', '.join([normalize_type(c, renamed_types) for c in children])}]"
 
 
 def get_related_types(
@@ -236,11 +242,15 @@ async def create_object_type(
                 related_type, available_objects
             )
 
+        field.type = normalize_type(field.type)
+        if field.value is None and field.type.startswith("Optional"):
+            field.value = "None"
+
         field_inputs.append(
             {
                 "name": field.name,
                 "description": field.description,
-                "typeName": normalize_type(field.type),
+                "typeName": field.type,
                 "value": field.value,
                 "RelatedTypes": {
                     "connect": [
@@ -267,7 +277,7 @@ async def create_object_type(
             "isPydantic": object.is_pydantic,
             "isEnum": object.is_enum,
         },
-        **INCLUDE_FIELD,
+        **INCLUDE_FIELD,  # type: ignore
     )
     available_objects[object.name] = created_object_type
 
@@ -293,7 +303,7 @@ async def create_object_type(
             updated_object_field = await ObjectField.prisma().update(
                 where={"id": field.id},
                 data={"RelatedTypes": {"connect": [{"id": t.id} for t in reltypes]}},
-                **INCLUDE_TYPE,
+                **INCLUDE_TYPE,  # type: ignore
             )
             if updated_object_field:
                 field.RelatedTypes = updated_object_field.RelatedTypes

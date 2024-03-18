@@ -1,8 +1,12 @@
 import ast
+import collections
+import datetime
 import logging
 import re
+import typing
 from typing import Iterable, List
 
+import prisma
 from prisma.enums import DevelopmentPhase, FunctionState
 from prisma.models import Function
 from prisma.types import (
@@ -24,8 +28,8 @@ from codex.common.model import (
     ObjectFieldModel,
     ObjectTypeModel,
     create_object_type,
-    get_typing_imports,
     is_type_equal,
+    normalize_type,
 )
 from codex.develop.compile import ComplicationFailure
 from codex.develop.function import construct_function, generate_object_template
@@ -104,15 +108,13 @@ class FunctionVisitor(ast.NodeVisitor):
         self.visit_FunctionDef(node)  # type: ignore
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
-        if node.name in ["__init__", "__repr__"]:
-            self.generic_visit(node)
-            return
-
         args = []
         for arg in node.args.args:
             arg_type = ast.unparse(arg.annotation) if arg.annotation else "object"
-            args.append((arg.arg, arg_type))
-        return_type = ast.unparse(node.returns) if node.returns else None
+            args.append((arg.arg, normalize_type(arg_type)))
+        return_type = (
+            normalize_type(ast.unparse(node.returns)) if node.returns else None
+        )
 
         # Raise validation error on nested functions
         if any(isinstance(v, ast.FunctionDef) for v in node.body):
@@ -136,7 +138,7 @@ class FunctionVisitor(ast.NodeVisitor):
 
         # Construct function template
         original_body = node.body.copy()
-        node.body = template_body
+        node.body = template_body  # type: ignore
         function_template = ast.unparse(node)
         node.body = original_body
 
@@ -184,11 +186,11 @@ class FunctionVisitor(ast.NodeVisitor):
             )
 
         fields = []
+        methods = []
         for v in node.body:
             if isinstance(v, ast.AnnAssign):
                 field = ObjectFieldModel(
                     name=ast.unparse(v.target),
-                    description=ast.unparse(v.annotation),
                     type=ast.unparse(v.annotation),
                     value=ast.unparse(v.value) if v.value else None,
                 )
@@ -199,17 +201,17 @@ class FunctionVisitor(ast.NodeVisitor):
                     )
                 field = ObjectFieldModel(
                     name=ast.unparse(v.targets[0]),
-                    description=ast.unparse(v.targets[0]),
                     type=type(ast.unparse(v.value)).__name__,
                     value=ast.unparse(v.value) if v.value else None,
                 )
             else:
+                methods.append(ast.unparse(v))
                 continue
             fields.append(field)
 
         self.objects[node.name] = ObjectTypeModel(
             name=node.name,
-            code=ast.unparse(node),
+            code="\n".join(methods),
             description=doc_string,
             Fields=fields,
             is_pydantic=is_pydantic,
@@ -223,8 +225,6 @@ class FunctionVisitor(ast.NodeVisitor):
         #         f"Class {node.name} is not implemented. "
         #         f"Please complete the implementation of this class!"
         #     )
-
-        self.generic_visit(node)
 
     def visit(self, node):
         if (
@@ -266,7 +266,15 @@ def validate_matching_function(existing_func: Function, requested_func: Function
         raise ValidationError("Signature validation errors:\n  " + "\n  ".join(errors))
 
 
-def static_code_analysis(func: GeneratedFunctionResponse) -> str:
+def static_code_analysis(func: GeneratedFunctionResponse):
+    """
+    Runs static code analysis on the function code and returns the fixed code.
+    Args:
+        func (GeneratedFunctionResponse): The function to run static code analysis on.
+        The attributes of this object will be mutated.
+    Raises:
+        ValidationError: If the function code has static code analysis errors.
+    """
     imports = func.imports.copy()
     imports.append("from enum import Enum")
     # logger.info(f"Imports: {imports}")
@@ -337,23 +345,78 @@ def static_code_analysis(func: GeneratedFunctionResponse) -> str:
         + func.functionCode
     )
 
-    # logger.info(code)
+    try:
+        # E402 module level import not at top of file
+        # F841 local variable is assigned to but never used
+        func.functionCode = exec_external_on_contents(
+            command_arguments=[
+                "ruff",
+                "check",
+                "--fix",
+                "--ignore",
+                "F841",
+                "--ignore",
+                "E402",
+            ],
+            file_contents=code,
+            suffix=".py",
+        ).split(separator, maxsplit=1)[1]
+    except ValidationError as e:
+        validation_errors = str(e).split("\n")
+        if fix_missing_imports(validation_errors, func):
+            # Try to fix the missing import and try again.
+            return static_code_analysis(func)
+        raise e
 
-    # E402 module level import not at top of file
-    # F841 local variable is assigned to but never used
-    return exec_external_on_contents(
-        command_arguments=[
-            "ruff",
-            "check",
-            "--fix",
-            "--ignore",
-            "F841",
-            "--ignore",
-            "E402",
-        ],
-        file_contents=code,
-        suffix=".py",
-    ).split(separator, maxsplit=1)[1]
+
+AUTO_IMPORT_TYPES: dict[str, str] = {"prisma": "import prisma"}
+for t in typing.__all__:
+    AUTO_IMPORT_TYPES[t] = f"from typing import {t}"
+for t in prisma.errors.__all__:
+    AUTO_IMPORT_TYPES[t] = f"from prisma.errors import {t}"
+for t in datetime.__all__:
+    AUTO_IMPORT_TYPES[t] = f"from datetime import {t}"
+for t in collections.__all__:
+    AUTO_IMPORT_TYPES[t] = f"from collections import {t}"
+
+
+def fix_missing_imports(errors: list[str], func: GeneratedFunctionResponse) -> bool:
+    """
+    Fixes missing import errors in the function code.
+    Args:
+        errors (list[str]): The errors from the static code analysis.
+        func (GeneratedFunctionResponse): The function to fix the errors in.
+    Returns:
+        bool: True if there are imports being added, False for otherwise
+    """
+
+    # parse "model X {" and "enum X {" from func.db_schema
+    schema_imports = {}
+    for entity in ["model", "enum"]:
+        pattern = f"{entity} ([a-zA-Z0-9_]+) {{"
+        matches = re.findall(pattern, func.db_schema)
+        for match in matches:
+            schema_imports[match] = f"from prisma.{entity}s import {match}"
+
+    missing_imports = []
+    for error in errors:
+        # Format: 'Undefined name `X`', parse X and see if X inside
+        pattern = r"Undefined name `(.+?)`"
+        match = re.search(pattern, error)
+        if not match:
+            continue
+
+        missing_type = match.group(1)
+        if missing_type in schema_imports:
+            missing_imports.append(schema_imports[missing_type])
+        elif missing_type in AUTO_IMPORT_TYPES:
+            missing_imports.append(AUTO_IMPORT_TYPES[missing_type])
+
+    if not missing_imports:
+        return False
+
+    func.imports = sorted(set(func.imports + list(missing_imports)))
+    return True
 
 
 def validate_normalize_prisma_code(
@@ -442,17 +505,15 @@ user = await prisma.models.User.prisma().create(
                     f"prisma.{entity}s.{name} is not available in the prisma schema. Only use models/enums available in the database schema."
                 )
 
-    # Just always add these as there are loads of edge cases where they dont get added
-    # We do set on the imports anyway so it will remove duplicates
-    imports.append("import prisma.models")
-    imports.append("import prisma.errors")
-    imports.append("import prisma")
+    # Make sure `import prisma` is added when `prisma.` usage is found in the code
+    if "prisma." in code:
+        imports.append("import prisma")
 
     # Sometimes it does this, it's not a valid import
     if "from pydantic import Optional" in imports:
         imports.remove("from pydantic import Optional")
-    imports = list(set([i.strip() for i in imports]))
 
+    imports = sorted({i.strip() for i in imports})
     if validation_errors:
         raise ValidationError(validation_errors)
 
@@ -474,8 +535,14 @@ class DevelopAIBlock(AIBlock):
             # logger.warning(f"RAW RESPONSE:\n\n{text}")
             requirement_blocks = text.split("```requirements")
             requirement_blocks.pop(0)
-            if len(requirement_blocks) != 1:
+            if len(requirement_blocks) < 1:
                 packages = []
+            elif len(requirement_blocks) > 1:
+                packages = []
+                error = (
+                    f"There are {len(requirement_blocks)} requirements blocks in the response. "
+                    + "There should be exactly 1"
+                )
             else:
                 packages: List[Package] = parse_requirements(
                     requirement_blocks[0].split("```")[0]
@@ -531,18 +598,12 @@ class DevelopAIBlock(AIBlock):
 
             functions = visitor.functions.copy()
             del functions[func_name]
-
-            expected_types = []
-            if expected_func.FunctionArgs:
-                expected_types.extend([v.typeName for v in expected_func.FunctionArgs])
-            if expected_func.FunctionReturn:
-                expected_types.append(expected_func.FunctionReturn.typeName)
-            imports = set(visitor.imports + get_typing_imports(expected_types))
+            imports = visitor.imports.copy()
+            db_schema = invoke_params.get("database_schema", "")
 
             try:
-                db_schema = invoke_params.get("database_schema", "")
                 imports, function_code = validate_normalize_prisma_code(
-                    db_schema, sorted(imports), function_code
+                    db_schema, imports, function_code
                 )
             except ValidationError as errors:
                 if isinstance(errors, Iterable):
@@ -582,9 +643,10 @@ class DevelopAIBlock(AIBlock):
                 template=requested_func.function_template or "",
                 functionCode=function_code,
                 functions=functions,
+                db_schema=db_schema,
             )
             try:
-                result.functionCode = static_code_analysis(result)
+                static_code_analysis(result)
             except ValidationError as e:
                 validation_errors.append(str(e))
 
@@ -658,7 +720,7 @@ class DevelopAIBlock(AIBlock):
             rawCode=generated_response.rawCode,
             importStatements=generated_response.imports,
             functionCode=generated_response.functionCode,
-            ChildFunctions={"create": function_defs},
+            ChildFunctions={"create": function_defs},  # type: ignore
         )
 
         if not generated_response.function_id:
@@ -670,7 +732,7 @@ class DevelopAIBlock(AIBlock):
             include={
                 **INCLUDE_FUNC["include"],
                 "ParentFunction": INCLUDE_FUNC,
-                "ChildFunctions": INCLUDE_FUNC,
+                "ChildFunctions": INCLUDE_FUNC,  # type: ignore
             },
         )
         if not func:

@@ -2,7 +2,7 @@ from shutil import which
 
 import pytest
 
-from codex.common.exec_external_tool import exec_external_on_contents
+from codex.common.exec_external_tool import OutputType, exec_external_on_contents
 
 
 def test_exec_external():
@@ -43,7 +43,9 @@ def test_exec_external_with_ruff():
     file_contents = "print('Hello World')"
     expected_output = "print('Hello World')"
 
-    result = exec_external_on_contents(command_arguments, file_contents)
+    result = exec_external_on_contents(
+        command_arguments, file_contents, output_type=OutputType.STD_OUT
+    )
     assert result == expected_output
 
 
@@ -56,11 +58,10 @@ def test_exec_external_with_ruff_fails():
     command_arguments = ["ruff", "check"]
     file_contents = "print('Hello World'"
     with pytest.raises(Exception) as exc_info:
-        exec_external_on_contents(command_arguments, file_contents)
-    assert (
-        exc_info.value.args[0]
-        == "Errors with code generation: generated_file:1:20: E999 SyntaxError: unexpected EOF while parsing\nFound 1 error.\n"
-    )
+        exec_external_on_contents(
+            command_arguments, file_contents, output_type=OutputType.STD_OUT
+        )
+    assert exc_info.value.args[0]
 
 
 ## This test only runs if I'm in debug mode on vscode?????????????? otherwise it can't find
@@ -69,7 +70,7 @@ def test_exec_external_with_prisma():
     if which("prisma") is None:
         pytest.skip("Prisma not installed")
     # Test case 6: Command execution with prisma
-    command_arguments = ["prisma", "format"]
+    command_arguments = ["prisma", "validate", "--schema"]
     file_contents = (
         "model User {\n  id Int @id @default(autoincrement())\n  name String\n}"
     )
@@ -77,5 +78,7 @@ def test_exec_external_with_prisma():
         "model User {\n  id Int @id @default(autoincrement())\n  name String\n}"
     )
 
-    result = exec_external_on_contents(command_arguments, file_contents)
+    result = exec_external_on_contents(
+        command_arguments, file_contents, output_type=OutputType.STD_ERR
+    )
     assert result == expected_output

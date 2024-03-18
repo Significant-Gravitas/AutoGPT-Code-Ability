@@ -72,15 +72,15 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
             "description": route.description,
         }
         if route.request_model:
-            create_route["RequestObject"] = {
+            create_route["RequestObject"] = {  # type: ignore
                 "connect": {"id": created_objects[route.request_model.name].id}
             }
         if route.response_model:
-            create_route["ResponseObject"] = {
+            create_route["ResponseObject"] = {  # type: ignore
                 "connect": {"id": created_objects[route.response_model.name].id}
             }
         if create_db:
-            create_route["DatabaseSchema"] = {"create": create_db}
+            create_route["DatabaseSchema"] = {"create": create_db}  # type: ignore
         routes.append(create_route)
 
     create_spec = SpecificationCreateInput(
@@ -93,7 +93,7 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
 
     new_spec = await Specification.prisma().create(
         data=create_spec,
-        include={"ApiRouteSpecs": INCLUDE_API_ROUTE},
+        include={"ApiRouteSpecs": INCLUDE_API_ROUTE},  # type: ignore
     )
     return new_spec
 
@@ -105,7 +105,7 @@ async def get_specification(user_id: str, app_id: str, spec_id: str) -> Specific
             "userId": user_id,
             "applicationId": app_id,
         },
-        include={"ApiRouteSpecs": INCLUDE_API_ROUTE},
+        include={"ApiRouteSpecs": INCLUDE_API_ROUTE},  # type: ignore
     )
 
     return specification
@@ -128,7 +128,7 @@ async def get_latest_specification(user_id: str, app_id: str) -> Specification:
             "applicationId": app_id,
             "deleted": False,
         },
-        include={"ApiRouteSpecs": INCLUDE_API_ROUTE},
+        include={"ApiRouteSpecs": INCLUDE_API_ROUTE},  # type: ignore
         order={"createdAt": "desc"},
     )
     if not specification:
@@ -154,7 +154,7 @@ async def list_specifications(
     if total_items > 0:
         specs = await Specification.prisma().find_many(
             where={"userId": user_id, "applicationId": app_id, "deleted": False},
-            include={"ApiRouteSpecs": INCLUDE_API_ROUTE},
+            include={"ApiRouteSpecs": INCLUDE_API_ROUTE},  # type: ignore
             skip=skip,
             take=page_size,
         )

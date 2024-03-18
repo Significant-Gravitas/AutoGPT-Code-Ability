@@ -244,15 +244,16 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
         logger.info("DB Started")
         # Database Design
         database_block = DatabaseGenerationBlock()
+
+        db_invoke_params = {
+            "product_spec": running_state_obj.__str__(),
+            "needed_auth_roles": running_state_obj.refined_requirement_q_a.authorization_roles,
+            "modules": ", ".join(module.name for module in running_state_obj.modules),
+        }
+
         db_response: DBResponse = await database_block.invoke(
             ids=ids,
-            invoke_params={
-                "product_spec": running_state_obj.__str__(),
-                "needed_auth_roles": running_state_obj.refined_requirement_q_a.authorization_roles,
-                "modules": ", ".join(
-                    module.name for module in running_state_obj.modules
-                ),
-            },
+            invoke_params=db_invoke_params,
         )
 
         running_state_obj.database = db_response.database_schema
@@ -419,7 +420,7 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
 
 
 if __name__ == "__main__":
-    from codex.common.test_const import identifier_1, interview_id_1
+    from codex.common.test_const import interview_id_1
 
     ids = identifier_1
     db_client = prisma.Prisma(auto_register=True)

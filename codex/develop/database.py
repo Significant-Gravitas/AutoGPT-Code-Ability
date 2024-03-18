@@ -1,6 +1,6 @@
 from typing import List, Tuple
 
-from prisma.models import CompletedApp
+from prisma.models import CompiledRoute, CompletedApp
 
 from codex.api_model import Pagination
 
@@ -54,3 +54,10 @@ async def list_deliverables(
         page_size=page_size,
     )
     return completed_apps_data, pagination
+
+
+async def get_compiled_code(deliverable_id: str) -> list[str]:
+    routes = await CompiledRoute.prisma().find_many(
+        where={"completedAppId": deliverable_id}
+    )
+    return [route.compiledCode for route in routes]
