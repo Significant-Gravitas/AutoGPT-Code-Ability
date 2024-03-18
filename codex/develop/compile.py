@@ -90,8 +90,7 @@ def get_arg_type(module_name: str, arg: ObjectField) -> str:
     for t in arg.RelatedTypes:
         if t.isPydantic or t.isEnum:
             ret_type = ret_type.replace(t.name, f"{module_name}.{t.name}")
-        else:
-            logger.error(f"Arg type: {t.name} is not pydantic or enum")
+            break
 
     return ret_type
 
