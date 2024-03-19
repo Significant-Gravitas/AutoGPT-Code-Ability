@@ -1,6 +1,7 @@
 import pytest
 from dotenv import load_dotenv
 
+
 from codex.api_model import ApplicationCreate
 from codex.app import db_client
 from codex.common import ai_block
@@ -17,6 +18,9 @@ from codex.requirements.model import (
     AccessLevel,
     APIRouteRequirement,
     ApplicationRequirements,
+    DatabaseSchema,
+    DatabaseTable,
+    DatabaseEnums,
 )
 
 load_dotenv()
@@ -73,6 +77,40 @@ async def generate_function(
                             ObjectFieldModel(name="turn", type="str"),
                             ObjectFieldModel(name="state", type="str"),
                             ObjectFieldModel(name="board", type="str"),
+                        ],
+                    ),
+                    database_schema=DatabaseSchema(
+                        name="TicTacToe DB",
+                        description="Database for TicTacToe Game",
+                        tables=[
+                            DatabaseTable(
+                                name="Game",
+                                description="Game state and board",
+                                definition="""
+                                model Game {
+                                    id String @id @default(uuid())
+                                    gameId String
+                                    turn String
+                                    state String
+                                    board String
+                                }
+                                """,
+                            )
+                        ],
+                        enums=[
+                            DatabaseEnums(
+                                name="GameState",
+                                description="The current state of the game.",
+                                values=["Win", "Loss", "Draw", "In Progress"],
+                                definition="""
+                                enum GameState {
+                                    Win
+                                    Loss
+                                    Draw
+                                    InProgress
+                                }
+                                """,
+                            ),
                         ],
                     ),
                 ),
@@ -158,6 +196,18 @@ async def test_class_with_optional_field():
     assert func is not None
     assert "class SomeClass" in func[0]
     assert "field1: Optional[int] = None" in func[0]
+
+
+# TODO: continue this test when pyright is enabled.
+# @pytest.mark.asyncio
+# @pytest.mark.integration_test
+# async def test_class_with_db_query():
+#     ai_block.MOCK_RESPONSE = DB_QUERY_RESPONSE
+#     func = await generate_function()
+#     assert func is not None
+#     assert "prisma.models.Game" in func[0]
+#     assert "async def get_game_state" in func[0]
+#     assert "async def make_turn" in func[0]
 
 
 COMPLEX_RESPONSE = """
@@ -313,5 +363,17 @@ def some_method(input: SomeClass) -> GameStateResponse:
 
 def make_turn(game_id: str, row: int, col: int) -> GameStateResponse:
     return some_method(SomeClass())
+```
+"""
+
+DB_QUERY_RESPONSE = """
+```python
+def get_game_state(game_id: str) -> GameStateResponse:
+    game = Game.get(id=game_id)
+    return GameStateResponse(gameId=game.id, turn=game.turn, state=game.state, board=game.board)
+
+
+def make_turn(game_id: str, row: int, col: int) -> GameStateResponse:
+    return get_game_state(game_id)
 ```
 """

@@ -1,6 +1,6 @@
 import ast
 
-from codex.develop.develop import FunctionVisitor
+from codex.develop.function_visitor import FunctionVisitor
 
 SAMPLE_CODE = """
 from pydantic import BaseModel

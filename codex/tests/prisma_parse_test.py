@@ -1,6 +1,9 @@
 import pytest
 
+from codex.common.ai_block import ValidationError
 from codex.common.parse_prisma import parse_prisma_schema
+from codex.develop.code_validation import validate_normalize_prisma
+from codex.develop.model import GeneratedFunctionResponse
 
 
 @pytest.mark.unit
@@ -419,9 +422,6 @@ generator client {
 
 
 def test_prisma_code_validation():
-    from codex.common.ai_block import ValidationError
-    from codex.develop.develop import validate_normalize_prisma_code
-
     # Models & enum should be replaced with fully qualified name
     db_schema = """
         model User {}
@@ -437,28 +437,51 @@ def test_prisma_code_validation():
         "from prisma.enums import UserRole",
         "import pydantic",
     ]
-    code = (
-        "result = "
-        "(User.select().where(UserPostDB.id == 1), "
-        "UserRole.Tutor, "
-        "enums.RoleType.Admin)"
+    code = """
+        def test():
+            return (
+                User.select().where(UserPostDB.id == 1),
+                UserRole.Tutor,
+                enums.RoleType.Admin
+            )
+    """
+
+    func = GeneratedFunctionResponse(
+        function_name="test",
+        available_objects={},
+        available_functions={},
+        template="",
+        rawCode=code,
+        packages=[],
+        imports=imports,
+        functionCode=code,
+        functions={},
+        objects={},
+        db_schema=db_schema,
+        compiled_route_id="",
     )
 
-    imports, code = validate_normalize_prisma_code(db_schema, imports, code)
-
-    assert set(imports) == set(
+    errors = validate_normalize_prisma(func)
+    assert errors == []
+    assert set(func.imports) == set(
         [
             "import pydantic",
             "import prisma",
         ]
     )
-    assert code == (
-        "result = "
-        "(prisma.models.User.select().where(prisma.models.UserPost.id == 1), "
-        "prisma.enums.UserRole.Tutor, "
-        "prisma.enums.RoleType.Admin)"
+    assert (
+        func.functionCode
+        == """
+        def test():
+            return (
+                prisma.models.User.select().where(prisma.models.UserPost.id == 1),
+                prisma.enums.UserRole.Tutor,
+                prisma.enums.RoleType.Admin
+            )
+    """
     )
-
     # catch validation error without using db_schema
-    with pytest.raises(ValidationError):
-        validate_normalize_prisma_code("", imports, code)
+    with pytest.raises(ValidationError) as e:
+        func.db_schema = ""
+        validate_normalize_prisma(func)
+        assert "not available in the prisma schema" in str(e.value)
