@@ -444,7 +444,7 @@ author: AutoGPT
 
 1. Unpack the ZIP file containing this package
 
-2. Create a copy of `.env.example` named `.env`. Adjust the values in it as you see fit.
+2. Adjust the values in `.env` as you see fit.
 
 3. Open a terminal in the folder containing this README and run the following commands:
 
