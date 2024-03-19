@@ -222,7 +222,11 @@ def __execute_pyright(func: GeneratedFunctionResponse, code: str) -> str:
                 raise errors
 
 
-AUTO_IMPORT_TYPES: dict[str, str] = {"prisma": "import prisma"}
+AUTO_IMPORT_TYPES: dict[str, str] = {
+    "prisma": "import prisma",
+    "BaseModel": "from pydantic import BaseModel",
+    "Enum": "from enum import Enum",
+}
 for t in typing.__all__:
     AUTO_IMPORT_TYPES[t] = f"from typing import {t}"
 for t in prisma.errors.__all__:

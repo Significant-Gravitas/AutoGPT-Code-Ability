@@ -113,7 +113,7 @@ class DevelopAIBlock(AIBlock):
             response.response = function_response
 
         except ValidationError as e:
-            if isinstance(e.args[0], Iterable):
+            if isinstance(e.args[0], List):
                 validation_errors.extend(e.args[0])
             else:
                 validation_errors.append(str(e))
