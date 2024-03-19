@@ -2,6 +2,7 @@ import datetime
 import logging
 import os
 import random
+import shutil
 import subprocess
 import tempfile
 import zipfile
@@ -17,38 +18,37 @@ logger = logging.getLogger(__name__)
 
 DOCKERFILE = """
 # Use an official Python runtime as a parent image
-FROM python:3.11-slim-buster as autogpt_project
+FROM python:3.11-slim-buster
 
-# Set environment varibles
+# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
+ENV PORT=8080
+ENV DB_HOST=db
+ENV DB_PORT=5432
 
 # Set work directory in the container
 WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update \\
-    && apt-get install -y build-essential curl \\
-    && apt-get clean \\
+RUN apt-get update \
+    && apt-get install -y build-essential curl ffmpeg \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
+# Copy the wait-for-it script and make it executable
+COPY wait-for-it.sh /wait-for-it.sh
+RUN chmod +x /wait-for-it.sh
 
-# Install dependencies
-COPY requirements.txt /app
+# Copy project files (requirements and actual code)
+COPY . /app
+
+# Project initialization:
 RUN pip install -r requirements.txt
-
-# Generate Prisma client
 RUN prisma generate
 
-# Add application source
-COPY project/ /app/project/
-
-# Set a default port (this can be overridden)
-ENV PORT=8000
-
-# This will be the command to run the FastAPI server using uvicorn
-CMD uvicorn project.server:app --port $PORT
+# Use the shell form of CMD to use environment variables at runtime
+CMD bash /wait-for-it.sh ${DB_HOST}:${DB_PORT} -- uvicorn project.server:app --host 0.0.0.0 --port $PORT
 """
 
 
@@ -215,10 +215,13 @@ services:
             context: .
             dockerfile: Dockerfile
         environment:
-            DATABASE_URL: ${DATABASE_URL}
-            PORT: 8080
+            - PORT=8080
+            - DB_HOST=db # Default host value, can be overridden
+            - DB_PORT=5432 # Default port value, can be overridden
         ports:
         - "8080:8080"
+        depends_on:
+            - db
 """
 
     return docker_compose
@@ -450,6 +453,11 @@ async def create_zip_file(application: Application) -> bytes:
             docker_compose = generate_docker_compose_file(application)
             with open(docker_compose_file_path, mode="w") as docker_compose_file:
                 docker_compose_file.write(docker_compose)
+
+            # Copy wait-for-it.sh to package_dir
+            wait_for_it_src = os.path.join(os.path.dirname(__file__), "wait-for-it.sh")
+            wait_for_it_dest = os.path.join(package_dir, "wait-for-it.sh")
+            shutil.copy(wait_for_it_src, wait_for_it_dest)
 
             # Initialize a Git repository and commit everything
             git_init(app_dir)
