@@ -6,7 +6,7 @@ from prisma.enums import FunctionState
 from prisma.models import ObjectType
 from prisma.types import FunctionCreateInput, ObjectFieldCreateInput
 
-from codex.common.model import get_related_types, normalize_type
+from codex.common.model import ObjectTypeModel, get_related_types, normalize_type
 from codex.develop.model import FunctionDef
 
 
@@ -61,11 +61,11 @@ async def construct_function(
     return input
 
 
-def generate_object_template(obj: ObjectType) -> str:
+def generate_object_code(obj: ObjectTypeModel) -> str:
     # Auto-generate a template for the object, this will not capture any class functions.
     fields = f"\n{' ' * 8}".join(
         [
-            f"{field.name}: {field.typeName} "
+            f"{field.name}: {field.type} "
             f"{('= '+field.value) if field.value else ''} "
             f"{('# '+field.description) if field.description else ''}"
             for field in obj.Fields or []
@@ -73,9 +73,9 @@ def generate_object_template(obj: ObjectType) -> str:
     )
 
     parent_class = ""
-    if obj.isEnum:
+    if obj.is_enum:
         parent_class = "Enum"
-    elif obj.isPydantic:
+    elif obj.is_pydantic:
         parent_class = "BaseModel"
 
     doc_string = (
@@ -96,3 +96,7 @@ def generate_object_template(obj: ObjectType) -> str:
         {"pass" if not fields and not method_body else ""}
     """
     return "\n".join([line[4:] for line in template.split("\n")]).strip()
+
+
+def generate_object_template(obj: ObjectType) -> str:
+    return generate_object_code(ObjectTypeModel(db_obj=obj))
