@@ -455,7 +455,7 @@ async def create_zip_file(application: Application) -> bytes:
             shutil.copy(wait_for_it_src, wait_for_it_dest)
 
             # Initialize a Git repository and commit everything
-            git_init(app_dir)
+            git_init(app_dir=package_dir)
 
             logger.info("Created server code")
             # Create a zip file of the directory
