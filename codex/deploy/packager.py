@@ -23,7 +23,7 @@ FROM python:3.11-slim-buster
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
-ENV PORT=8000
+ENV PORT=8080
 ENV DB_HOST=db
 ENV DB_PORT=5432
 
@@ -48,7 +48,7 @@ RUN pip install -r requirements.txt
 RUN prisma generate
 
 # Use the shell form of CMD to use environment variables at runtime
-CMD ./wait-for-it.sh ${DB_HOST}:${DB_PORT} -- uvicorn project.server:app --host 0.0.0.0 --port $PORT
+CMD bash /wait-for-it.sh ${DB_HOST}:${DB_PORT} -- uvicorn project.server:app --host 0.0.0.0 --port $PORT
 """
 
 
