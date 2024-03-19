@@ -292,7 +292,7 @@ async def create_object_type(
             }
         )
 
-    typing_imports = get_typing_imports([f.type for f in fields])
+    typing_imports = []  # get_typing_imports([f.type for f in fields])
     if object.is_pydantic:
         typing_imports.append("from pydantic import BaseModel")
     if object.is_enum:
