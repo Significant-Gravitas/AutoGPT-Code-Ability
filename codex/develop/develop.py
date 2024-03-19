@@ -32,7 +32,11 @@ from codex.common.model import (
     normalize_type,
 )
 from codex.develop.compile import ComplicationFailure
-from codex.develop.function import construct_function, generate_object_template
+from codex.develop.function import (
+    construct_function,
+    generate_object_template,
+    generate_object_code,
+)
 from codex.develop.model import FunctionDef, GeneratedFunctionResponse, Package
 
 logger = logging.getLogger(__name__)
@@ -276,8 +280,7 @@ def static_code_analysis(func: GeneratedFunctionResponse):
         ValidationError: If the function code has static code analysis errors.
     """
     imports = func.imports.copy()
-    imports.append("from enum import Enum")
-    # logger.info(f"Imports: {imports}")
+
     for obj in func.available_objects.values():
         imports.extend(obj.importStatements)
 
@@ -311,9 +314,9 @@ def static_code_analysis(func: GeneratedFunctionResponse):
             for obj in func.available_objects.values()
         ]
         + [
-            append_no_qa(obj.code)
+            append_no_qa(generate_object_code(obj))
             for obj in func.objects.values()
-            if obj.code and obj.name not in func.available_objects
+            if obj.name not in func.available_objects
         ]
     )
 
@@ -366,7 +369,17 @@ def static_code_analysis(func: GeneratedFunctionResponse):
         if fix_missing_imports(validation_errors, func):
             # Try to fix the missing import and try again.
             return static_code_analysis(func)
-        raise e
+
+        # Append problematic line to the error message
+        split_pattern = r"(.+):(\d+):(\d+): (.+)"
+        for i in range(len(validation_errors)):
+            error_split = re.match(split_pattern, validation_errors[i])
+            if not error_split:
+                continue
+            _, line, _, error = error_split.groups()
+            validation_errors[i] = f"{error} -> '{code.splitlines()[int(line) - 1]}'"
+
+        raise ValidationError("\n".join(validation_errors))
 
 
 AUTO_IMPORT_TYPES: dict[str, str] = {"prisma": "import prisma"}

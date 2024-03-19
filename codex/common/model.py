@@ -23,6 +23,21 @@ class ObjectTypeModel(BaseModel):
     )
     is_enum: bool = Field(description="Whether the object is an enum", default=False)
 
+    def __init__(self, db_obj: ObjectType | None = None, **data):
+        if not db_obj:
+            super().__init__(**data)
+            return
+
+        super().__init__(
+            name=db_obj.name,
+            code=db_obj.code,
+            description=db_obj.description,
+            is_pydantic=db_obj.isPydantic,
+            is_enum=db_obj.isEnum,
+            Fields=[ObjectFieldModel(db_obj=f) for f in db_obj.Fields or []],
+            **data,
+        )
+
 
 class ObjectFieldModel(BaseModel):
     name: str = Field(description="The name of the field")
@@ -36,6 +51,22 @@ class ObjectFieldModel(BaseModel):
     related_types: Optional[List[ObjectTypeModel]] = Field(
         description="The related types of the field", default=[]
     )
+
+    def __init__(self, db_obj: ObjectField | None = None, **data):
+        if not db_obj:
+            super().__init__(**data)
+            return
+
+        super().__init__(
+            name=db_obj.name,
+            description=db_obj.description,
+            type=db_obj.typeName,
+            value=db_obj.value,
+            related_types=[
+                ObjectTypeModel(db_obj=t) for t in db_obj.RelatedTypes or []
+            ],
+            **data,
+        )
 
 
 PYTHON_TYPES = set(__all__)
@@ -261,7 +292,7 @@ async def create_object_type(
             }
         )
 
-    typing_imports = get_typing_imports([f.type for f in fields])
+    typing_imports = []  # get_typing_imports([f.type for f in fields])
     if object.is_pydantic:
         typing_imports.append("from pydantic import BaseModel")
     if object.is_enum:
