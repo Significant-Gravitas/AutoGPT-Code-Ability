@@ -3,9 +3,9 @@ import collections
 import datetime
 import json
 import logging
+import os
 import re
 import subprocess
-import tempfile
 import typing
 
 import prisma
@@ -157,7 +157,7 @@ def static_code_analysis(func: GeneratedFunctionResponse) -> list[str]:
     """
     validation_errors = []
     validation_errors += __execute_ruff(func)
-    # validation_errors += __execute_pyright(func, func.rawCode)
+    validation_errors += __execute_pyright(func)
 
     return validation_errors
 
@@ -218,56 +218,96 @@ def __execute_ruff(func: GeneratedFunctionResponse) -> list[str]:
         return validation_errors
 
 
-def __execute_pyright(func: GeneratedFunctionResponse, code: str) -> list[str]:
-    with tempfile.TemporaryDirectory() as temp_dir:
-        with open(f"{temp_dir}/schema.prisma", "w") as p:
-            with open(f"{temp_dir}/code.py", "w") as f:
-                # write the code to code.py
-                f.write(code)
-                f.flush()
+TEMP_DIR = os.path.abspath("./../../static_code_analysis")
+os.makedirs(TEMP_DIR, exist_ok=True)
 
-                def execute_command(command: list[str]) -> str:
-                    try:
-                        result = subprocess.run(
-                            command, check=True, cwd=temp_dir, capture_output=True
-                        )
-                        return result.stdout.decode("utf-8")
-                    except subprocess.CalledProcessError as e:
-                        return e.stdout.decode("utf-8")
 
-                # Initiate virtual environment
-                execute_command(["python", "-m", "venv"])
+def execute_command(
+    command: list[str], cwd=TEMP_DIR, python_path=f"{TEMP_DIR}/venv/bin"
+) -> str:
+    """
+    Execute a command in the shell
+    Args:
+        command (list[str]): The command to execute
+        cwd (str): The current working directory
+        python_path (str): The python executable path
+    Returns:
+        str: The output of the command
+    """
+    try:
+        # Set the python path by replacing the env 'PATH' with the python path
+        venv = os.environ.copy()
+        if python_path:
+            original_python_path = venv["PATH"].split(":")[1:]
+            venv["PATH"] = f"{python_path}:{':'.join(original_python_path)}"
+        r = subprocess.run(command, cwd=cwd, shell=False, env=venv, capture_output=True)
+        return (r.stdout or r.stderr or b"").decode("utf-8")
+    except subprocess.CalledProcessError as e:
+        return (e.stderr or e.stdout or b"").decode("utf-8")
 
-                # Activate the virtual environment
-                result = execute_command(["source", "venv/bin/activate"])
-                logger.warning(f"venv activate response: {result}")
 
-                # run pipreqs save it to the requirements.txt
-                result = execute_command(["pipreqs", "--force"])
-                logger.warning(f"pipreqs response: {result}")
+def setup_if_required():
+    if os.path.exists(f"{TEMP_DIR}/venv"):
+        return
 
-                # run pip install -r requirements.txt
-                result = execute_command(["pip", "install", "-r", "requirements.txt"])
-                logger.warning(f"pip response: {result}")
+    # Create a virtual environment
+    output = execute_command(["python", "-m", "venv", "venv"], python_path=None)
+    print(output)
+    # Install dependencies
+    output = execute_command(["pip", "install", "prisma", "pyright", "pipreqs"])
+    print(output)
 
-                # run prisma generate
-                if func.db_schema:
-                    p.write(PRISMA_FILE_HEADER + "\n" + func.db_schema)
-                    p.flush()
-                    result = execute_command(["prisma", "generate"])
-                    logger.warning(f"prisma generate response: {result}")
 
-                # execute pyright
-                result = execute_command(
-                    ["pyright", "--outputjson", "--exclude", "reportRedeclaration"]
-                )
-                logger.warning(f"pyright response: {result}")
+def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
+    separator = "#------Code-Start------#"
+    code = "\n".join(func.imports + [separator, func.rawCode])
+    validation_errors = []
 
-                if not result:
-                    return []
+    with open(f"{TEMP_DIR}/schema.prisma", "w") as p:
+        with open(f"{TEMP_DIR}/code.py", "w") as f:
+            # write the code to code.py
+            f.write(code)
+            f.flush()
 
-                errors = json.loads(result)
-                raise errors
+            setup_if_required()
+
+            # run pipreqs save it to the requirements.txt
+            execute_command(["pipreqs", "--force"])
+
+            # run pip install -r requirements.txt
+            execute_command(["pip", "install", "-r", "requirements.txt"])
+
+            # run prisma generate
+            if func.db_schema:
+                p.write(PRISMA_FILE_HEADER + "\n" + func.db_schema)
+                p.flush()
+                execute_command(["prisma", "generate"])
+
+            # execute pyright
+            result = execute_command(["pyright", "--outputjson"])
+            if not result:
+                return []
+
+            validation_errors = [
+                f"{e['message']} -> '{'\n'.join(code.splitlines()[
+                    e["range"]["start"]["line"]:e["range"]["end"]["line"]+1
+                ])}'"
+                for e in json.loads(result)["generalDiagnostics"]
+                if e.get("severity") == "error"
+                if e.get("rule") not in [
+                    "reportRedeclaration",
+                    "reportOptionalMemberAccess", # TODO: allow this
+                    "reportArgumentType", # This breaks prisma query with dict
+                ]
+            ]
+
+            # read code from code.py. split the code into imports and raw code
+            code = open(f"{TEMP_DIR}/code.py").read()
+            split = code.split(separator)
+            func.imports = split[0].splitlines()
+            func.rawCode = split[1].strip()
+
+            return validation_errors
 
 
 AUTO_IMPORT_TYPES: dict[str, str] = {

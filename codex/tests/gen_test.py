@@ -1,6 +1,8 @@
 import pytest
 from dotenv import load_dotenv
 
+load_dotenv()
+
 from codex.api_model import ApplicationCreate
 from codex.app import db_client
 from codex.common import ai_block
@@ -314,7 +316,7 @@ WITH_NESTED_FUNCTION_RESPONSE = """
 def make_turn(game_id: str, row: int, col: int) -> GameStateResponse:
     def nested_function():
         pass
-    return GameStateResponse()
+    return GameStateResponse(board="X", gameId="1", state="InProgress", turn="X")
 ```
 """
 
@@ -327,7 +329,7 @@ def dependency_function():
     return
 
 def make_turn(game_id: str, row: int, col: int) -> GameStateResponse:
-    return GameStateResponse()
+    return GameStateResponse(board="X", gameId="1", state="InProgress", turn="X")
 ```
 """
 
@@ -341,7 +343,7 @@ def make_turn(game_id: str, row: int, col: int) -> GameStateResponse:
 WITH_MISMATCHING_ARGUMENTS_RESPONSE = """
 ```python
 def make_turn(turn: int, row: int, col: int) -> GameStateResponse:
-    return GameStateResponse()
+    return GameStateResponse(board="X", gameId="1", state="InProgress", turn="X")
 ```
 """
 
@@ -355,7 +357,7 @@ def make_turn(game_id: str, row: int, col: int) -> int:
 SIMPLE_RESPONSE = """
 ```python
 def make_turn(game_id: str, row: int, col: int) -> GameStateResponse:
-    return GameStateResponse()
+    return GameStateResponse(board="X", gameId="1", state="InProgress", turn="X")
 ```
 """
 
@@ -366,7 +368,7 @@ class SomeClass:
     field2: Optional[Dict[str, int]] # Optional & Dict without import should work.
 
     def get_state(self) -> GameStateResponse:
-        return GameStateResponse()
+        return GameStateResponse(board="X", gameId="1", state="InProgress", turn="X")
 
 def some_method(input: SomeClass) -> GameStateResponse:
     return input.get_state()
@@ -379,12 +381,12 @@ def make_turn(game_id: str, row: int, col: int) -> GameStateResponse:
 DB_QUERY_RESPONSE = """
 ```python
 def get_game_state(game_id: str) -> GameStateResponse:
-    game = Game.get(id=game_id, state=GameState.InProgress)
+    game = await Game.prisma().find_first(where={"id": game_id, "gameState": str(GameState.InProgress)})
     return GameStateResponse(gameId=game.id, turn=game.turn, state=game.state, board=game.board)
 
 
 def make_turn(game_id: str, row: int, col: int) -> GameStateResponse:
-    return get_game_state(game_id)
+    return await get_game_state(game_id)
 ```
 """
 
