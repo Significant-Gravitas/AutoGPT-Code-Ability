@@ -464,3 +464,31 @@ Prisma is an open-source database toolkit that simplifies database access and ma
 
 This cheat sheet covers the basics of setting up Prisma in a Python project and performing essential database operations. Remember that using Prisma with Python is less straightforward than with JavaScript/TypeScript, and it may require additional setup and handling. For more detailed information, refer to the [Prisma Documentation](https://www.prisma.io/docs/).
 
+## Deploying a new Environment
+
+So you want to deploy Codex to a new environment? Here's a quick guide to get you started.
+
+1. make a trigger in Google Cloud build
+    1. make a new cloudbuild.\<env>.yaml file
+    1. link it to a trigger in your environment
+        1. you may need to add a link to GitHub
+1. Make a bucket for your service
+1. Login to gcloud via cli on your machine `gcloud auth login`
+1. push a docker container for codex base. Tag it latest `docker buildx build --platform linux/amd64 -t gcr.io/agpt-prod/mvp/codex_base:latest . --target=codex_base --push`
+1. push a docker container for codex db. Tag it latest `docker buildx build --platform linux/amd64 -t gcr.io/agpt-prod/mvp/codex_db:latest . --target=codex_db --push`
+1. Push a docker container for codex as a whole. Tag it latest `docker buildx build --platform linux/amd64 -t gcr.io/agpt-prod/mvp/codex:latest . --target=codex --push`
+
+> the reason we push these is we have a caching mechnism in the dockerfile that will make the build faster. If the tags and images aren't accessible, the cache will fail and the build will crash.
+
+7. Push the cloudbuild.\<env>.yaml file to the repo
+1. Let cloudbuild run the trigger. It'll fail because the cloud run service doesn't exist yet.
+1. Setup the DB if it doesn't exist
+    1. You'll want to make a new cloud sql instance, postgres flavor
+1. Setup the cloud run service
+    1. You'll need to do this one on your own kid.
+    1. Call it `codegen` or rename the service in the cloudbuild.\<env>.yaml file
+    1. attach your sql instance to the service
+    1. set your environment variables, you need to find the ones the system uses.
+        1. Stuff like DATABASE_URL
+        1. stuff like ENV to prod
+1. setup the migration job to run against the db
