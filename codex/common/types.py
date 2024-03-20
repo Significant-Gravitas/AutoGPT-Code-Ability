@@ -25,6 +25,8 @@ def unwrap_object_type(type: str) -> Tuple[str, List[str]]:
         [str]: The children types.
     """
     type = type.replace(" ", "")
+    if not type:
+        return "", []
 
     def split_outer_level(type: str, separator: str) -> List[str]:
         brace_count = 0

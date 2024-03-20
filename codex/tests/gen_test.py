@@ -149,7 +149,7 @@ async def test_unimplemented_function():
     ai_block.MOCK_RESPONSE = WITH_UNIMPLEMENTED_FUNCTION_RESPONSE
     with pytest.raises(LLMFailure) as e:
         await generate_function()
-        assert "unimplemented" in str(e.value)
+    assert "not implemented" in str(e.value)
 
 
 @pytest.mark.asyncio
@@ -158,7 +158,7 @@ async def test_mismatching_arguments():
     ai_block.MOCK_RESPONSE = WITH_MISMATCHING_ARGUMENTS_RESPONSE
     with pytest.raises(LLMFailure) as e:
         await generate_function()
-        assert "arguments" in str(e.value)
+    assert "arguments" in str(e.value)
 
 
 @pytest.mark.asyncio
@@ -167,7 +167,7 @@ async def test_mismatching_return_type():
     ai_block.MOCK_RESPONSE = WITH_MISMATCHING_RETURN_TYPE_RESPONSE
     with pytest.raises(LLMFailure) as e:
         await generate_function()
-        assert "return type" in str(e.value)
+    assert "return type" in str(e.value)
 
 
 @pytest.mark.asyncio
@@ -176,7 +176,7 @@ async def test_nested_function():
     ai_block.MOCK_RESPONSE = WITH_NESTED_FUNCTION_RESPONSE
     with pytest.raises(LLMFailure) as e:
         await generate_function()
-        assert "nested" in str(e.value)
+    assert "Nested" in str(e.value)
 
 
 @pytest.mark.asyncio
@@ -208,6 +208,16 @@ async def test_class_with_db_query():
     assert "prisma.enums.GameState" in func[0]
     assert "def get_game_state" in func[0]
     assert "def make_turn" in func[0]
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration_test
+async def test_with_undefined_entity():
+    ai_block.MOCK_RESPONSE = UNDEFINED_ENTITY_RESPONSE
+    with pytest.raises(LLMFailure) as e:
+        await generate_function()
+    assert "Undefined" in str(e.value)
+    assert "UnknownEntity.get_game_state" in str(e.value)
 
 
 COMPLEX_RESPONSE = """
@@ -375,5 +385,12 @@ def get_game_state(game_id: str) -> GameStateResponse:
 
 def make_turn(game_id: str, row: int, col: int) -> GameStateResponse:
     return get_game_state(game_id)
+```
+"""
+
+UNDEFINED_ENTITY_RESPONSE = """
+```python
+def make_turn(game_id: str, row: int, col: int) -> GameStateResponse:
+    return UnknownEntity.get_game_state(game_id)
 ```
 """
