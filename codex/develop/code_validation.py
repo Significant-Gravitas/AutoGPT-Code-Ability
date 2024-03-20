@@ -294,10 +294,11 @@ def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
                 ])}'"
                 for e in json.loads(result)["generalDiagnostics"]
                 if e.get("severity") == "error"
-                if e.get("rule") not in [
+                if e.get("rule")
+                not in [
                     "reportRedeclaration",
-                    "reportOptionalMemberAccess", # TODO: allow this
-                    "reportArgumentType", # This breaks prisma query with dict
+                    "reportOptionalMemberAccess",  # TODO: allow this
+                    "reportArgumentType",  # This breaks prisma query with dict
                 ]
             ]
 

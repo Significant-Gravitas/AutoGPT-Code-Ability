@@ -1,8 +1,6 @@
 import pytest
 from dotenv import load_dotenv
 
-load_dotenv()
-
 from codex.api_model import ApplicationCreate
 from codex.app import db_client
 from codex.common import ai_block
