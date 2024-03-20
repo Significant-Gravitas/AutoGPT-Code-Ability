@@ -32,7 +32,7 @@ class CodeValidator:
             "available_objects"
         ]
 
-    def validate_code(self, code: str) -> GeneratedFunctionResponse:
+    def validate_code(self, code: str, call_cnt: int = 0) -> GeneratedFunctionResponse:
         """
         Validate the code snippet for any error
         Args:
@@ -117,9 +117,9 @@ class CodeValidator:
         validation_errors.extend(static_code_analysis(result))
         new_compiled_code = result.get_compiled_code()
 
-        # Auto-fixer works, retry validation
-        if old_compiled_code != new_compiled_code:
-            return self.validate_code(new_compiled_code)
+        # Auto-fixer works, retry validation (limit to 5 times, to avoid infinite loop)
+        if old_compiled_code != new_compiled_code and call_cnt < 5:
+            return self.validate_code(new_compiled_code, call_cnt + 1)
 
         if validation_errors:
             raise ValidationError(validation_errors)
