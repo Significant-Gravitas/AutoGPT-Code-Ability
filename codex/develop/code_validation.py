@@ -218,25 +218,6 @@ def __execute_ruff(func: GeneratedFunctionResponse) -> list[str]:
         return validation_errors
 
 
-# Temporary folder which acts as a python environment
-# This folder will act as virtual environment for the static code analysis
-TEMP_DIR = tempfile.TemporaryDirectory()
-
-
-def execute_command(command: list[str]) -> str:
-    try:
-        result = subprocess.run(
-            command, check=True, cwd=TEMP_DIR.name, capture_output=True
-        )
-        return result.stdout.decode("utf-8")
-    except subprocess.CalledProcessError as e:
-        return e.stdout.decode("utf-8")
-
-
-# Initiate virtual environment
-execute_command(["python", "-m", "venv"])
-
-
 def __execute_pyright(func: GeneratedFunctionResponse, code: str) -> list[str]:
     with tempfile.TemporaryDirectory() as temp_dir:
         with open(f"{temp_dir}/schema.prisma", "w") as p:
@@ -244,6 +225,18 @@ def __execute_pyright(func: GeneratedFunctionResponse, code: str) -> list[str]:
                 # write the code to code.py
                 f.write(code)
                 f.flush()
+
+                def execute_command(command: list[str]) -> str:
+                    try:
+                        result = subprocess.run(
+                            command, check=True, cwd=temp_dir, capture_output=True
+                        )
+                        return result.stdout.decode("utf-8")
+                    except subprocess.CalledProcessError as e:
+                        return e.stdout.decode("utf-8")
+
+                # Initiate virtual environment
+                execute_command(["python", "-m", "venv"])
 
                 # Activate the virtual environment
                 result = execute_command(["source", "venv/bin/activate"])
