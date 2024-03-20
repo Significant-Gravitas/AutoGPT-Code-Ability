@@ -341,6 +341,7 @@ def create_server_route_code(compiled_route: CompiledRoute) -> str:
         [
             f"{arg.name}: {add_full_import_parth_to_custom_types(module_name, arg)}"
             for arg in args
+            if arg.name
         ]
     )
     route_function_def += ")"

@@ -110,13 +110,16 @@ class CodeValidator:
             compiled_route_id="",
             packages=[],
         )
+        old_compiled_code = result.regenerate_compiled_code()
         validation_errors.extend(validate_normalize_prisma(result))
         validation_errors.extend(static_code_analysis(result))
+        new_compiled_code = result.get_compiled_code()
 
         # Auto-fixer works, retry validation
-        if code != result.rawCode:
-            return self.validate_code(result.rawCode)
-        elif validation_errors:
+        if old_compiled_code != new_compiled_code:
+            return self.validate_code(new_compiled_code)
+
+        if validation_errors:
             raise ValidationError(validation_errors)
 
         return result
@@ -131,19 +134,48 @@ def static_code_analysis(func: GeneratedFunctionResponse) -> list[str]:
     fix any issues.
     Args:
         func (GeneratedFunctionResponse):
-            The function to run static code analysis on. `func.rawCode` will be mutated.
+            The function to run static code analysis on. `func` will be mutated.
     Returns:
         list[str]: The list of validation errors
     """
     validation_errors = []
+    validation_errors += __execute_ruff(func)
+    # validation_errors += __execute_pyright(func, func.rawCode)
+
+    return validation_errors
+
+
+def __execute_ruff(func: GeneratedFunctionResponse) -> list[str]:
+    separator = "#------Code-Start------#"
+    code = "\n".join(func.imports + [separator, func.rawCode])
 
     try:
-        func.rawCode = __execute_ruff(func, func.rawCode)
-        # func.rawCode = __execute_pyright(func, func.rawCode)
+        # E402 module level import not at top of file
+        # F841 local variable is assigned to but never used
+        code = exec_external_on_contents(
+            command_arguments=[
+                "ruff",
+                "check",
+                "--fix",
+                "--ignore",
+                "F841",
+                "--ignore",
+                "E402",
+            ],
+            file_contents=code,
+            suffix=".py",
+            raise_file_contents_on_error=True,
+        )
+
+        split = code.split(separator)
+        func.imports = split[0].splitlines()
+        func.rawCode = split[1].strip()
+        return []
+
     except ValidationError as e:
         if len(e.args) > 1:
             # Ruff failed, but the code is reformatted
-            func.rawCode = e.args[1]
+            code = e.args[1]
             e = e.args[0]
 
         validation_errors = [
@@ -152,6 +184,7 @@ def static_code_analysis(func: GeneratedFunctionResponse) -> list[str]:
             if v.strip()
             if re.match(r"Found \d+ errors?\.", v) is None
         ]
+
         __fix_missing_imports(validation_errors, func)
 
         # Append problematic line to the error message
@@ -161,30 +194,10 @@ def static_code_analysis(func: GeneratedFunctionResponse) -> list[str]:
             if not error_split:
                 continue
             _, line, _, error = error_split.groups()
-            problematic_line = func.rawCode.splitlines()[int(line) - 1]
+            problematic_line = code.splitlines()[int(line) - 1]
             validation_errors[i] = f"{error} -> '{problematic_line}'"
 
-    return validation_errors
-
-
-def __execute_ruff(func: GeneratedFunctionResponse, code: str) -> str:
-    # E402 module level import not at top of file
-    # F841 local variable is assigned to but never used
-    return exec_external_on_contents(
-        command_arguments=[
-            "ruff",
-            "check",
-            "--fix",
-            "--ignore",
-            "F841",
-            "--ignore",
-            "E402",
-        ],
-        file_contents=code,
-        suffix=".py",
-        raise_file_contents_on_error=True,
-    )
-
+        return validation_errors
 
 def __execute_pyright(func: GeneratedFunctionResponse, code: str) -> str:
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -252,7 +265,7 @@ def __fix_missing_imports(errors: list[str], func: GeneratedFunctionResponse):
     # parse "model X {" and "enum X {" from func.db_schema
     schema_imports = {}
     for entity in ["model", "enum"]:
-        pattern = f"{entity}\s+([a-zA-Z0-9_]+)\s+{{"
+        pattern = f"{entity}\\s+([a-zA-Z0-9_]+)\\s+{{"
         matches = re.findall(pattern, func.db_schema)
         for match in matches:
             schema_imports[match] = f"from prisma.{entity}s import {match}"
@@ -271,7 +284,6 @@ def __fix_missing_imports(errors: list[str], func: GeneratedFunctionResponse):
             missing_imports.append(AUTO_IMPORT_TYPES[missing_type])
 
     func.imports = sorted(set(func.imports + list(missing_imports)))
-    func.rawCode = func.generate_raw_code()
 
 
 def validate_normalize_prisma(func: GeneratedFunctionResponse) -> list[str]:
@@ -279,31 +291,15 @@ def validate_normalize_prisma(func: GeneratedFunctionResponse) -> list[str]:
     Validate and normalize the prisma code in the function
     Args:
         func (GeneratedFunctionResponse):
-            The function to validate and normalize. `func.rawCode` will be mutated.
+            The function to validate and normalize.
+            compiled code, e.g: `func.rawCode` and `func.imports` will be mutated.
     Returns:
         list[str]: The list validation errors
     """
     validation_errors = []
-    imports = func.imports.copy()
+    imports = func.imports
+    code = func.rawCode
 
-    for function in func.functions.values():
-        imports, function.function_code = __validate_normalize_prisma(
-            validation_errors, func.db_schema, imports, function.function_code
-        )
-
-    imports, func.functionCode = __validate_normalize_prisma(
-        validation_errors, func.db_schema, imports, func.functionCode
-    )
-
-    func.imports = imports
-    func.rawCode = func.generate_raw_code()
-
-    return validation_errors
-
-
-def __validate_normalize_prisma(
-    validation_errors: list[str], db_schema: str, imports: list[str], code: str
-) -> tuple[list[str], str]:
     if (".connect()" in code) or ("async with Prisma() as db:" in code):
         validation_errors.append(
             """
@@ -352,11 +348,11 @@ user = await prisma.models.User.prisma().create(
     for entity in ["model", "enum"]:
         new_imports = []
         for import_statement in imports:
-            if f"from prisma.{entity}s import" in import_statement:
+            if f"from prisma.{entity}s import " in import_statement:
                 name, alias = parse_import_alias(import_statement)
                 code = rename_code_variable(code, alias, f"prisma.{entity}s.{name}")
                 continue
-            if f"from prisma import {entity}s" in import_statement:
+            if f"from prisma import {entity}s." in import_statement:
                 name, alias = parse_import_alias(import_statement)
                 code = rename_code_variable(code, alias, f"prisma.{name}")
                 continue
@@ -369,10 +365,22 @@ user = await prisma.models.User.prisma().create(
             names.append(match)
 
         for name in names:
-            if f"{entity} {name} " not in db_schema:
-                validation_errors.append(
-                    f"prisma.{entity}s.{name} is not available in the prisma schema. Only use models/enums available in the database schema."
-                )
+            if f"{entity} {name} " in func.db_schema:
+                continue
+
+            # Sometimes, an enum is imported as a model and vice versa
+
+            if entity == "model" and f"enum {name} " in func.db_schema:
+                code = rename_code_variable(code, f"prisma.models.{name}", f"prisma.enums.{name}")
+                continue
+
+            if entity == "enum" and f"model {name} " in func.db_schema:
+                code = rename_code_variable(code, f"prisma.enums.{name}", f"prisma.models.{name}")
+                continue
+
+            validation_errors.append(
+                f"prisma.{entity}s.{name} is not available in the prisma schema. Only use models/enums available in the database schema."
+            )
 
     # Make sure `import prisma` is added when `prisma.` usage is found in the code
     if "prisma." in code:
@@ -383,7 +391,7 @@ user = await prisma.models.User.prisma().create(
         imports.remove("from pydantic import Optional")
 
     imports = sorted({i.strip() for i in imports})
-    if validation_errors:
-        raise ValidationError(validation_errors)
 
-    return imports, code
+    func.imports, func.rawCode = imports, code
+
+    return validation_errors

@@ -58,7 +58,7 @@ class FunctionVisitor(ast.NodeVisitor):
             and isinstance(node.body[0], ast.Expr)
             and isinstance(node.body[0].value, (ast.Str, ast.Constant))
         ):
-            doc_string = ast.unparse(node.body[0])
+            doc_string = ast.unparse(node.body[0]).strip()
             template_body = [node.body[0], ast.Pass()]
             is_implemented = not isinstance(node.body[1], ast.Pass)
         else:
@@ -107,7 +107,7 @@ class FunctionVisitor(ast.NodeVisitor):
         is_implemented = not any(isinstance(v, ast.Pass) for v in node.body)
         doc_string = ""
         if node.body and isinstance(node.body[0], ast.Expr):
-            doc_string = ast.unparse(node.body[0])
+            doc_string = ast.unparse(node.body[0]).strip()
 
         if node.name in PYTHON_TYPES:
             self.errors.append(

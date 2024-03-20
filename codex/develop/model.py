@@ -34,14 +34,22 @@ class GeneratedFunctionResponse(BaseModel):
     objects: Dict[str, ObjectDef]
     db_schema: str
 
-    def generate_raw_code(self) -> str:
+    def get_compiled_code(self) -> str:
+        return "\n".join(self.imports) + "\n\n" + self.rawCode.strip()
+
+    def regenerate_compiled_code(self) -> str:
+        """
+        Regenerate imports & raw code using the available objects and functions.
+        """
         imports = self.imports.copy()
         for obj in self.available_objects.values():
             imports.extend(obj.importStatements)
-        imports_code = "\n".join(sorted(set([i.strip() for i in imports])))
+        self.imports = sorted(set(imports))
 
         def __generate_stub(name, is_enum):
-            if is_enum:
+            if not name:
+                return ""
+            elif is_enum:
                 return f"class {name}(Enum):\n    pass"
             else:
                 return f"class {name}(BaseModel):\n    pass"
@@ -77,28 +85,28 @@ class GeneratedFunctionResponse(BaseModel):
 
         functions_code = "\n\n".join(
             [
-                f.template
+                f.template.strip()
                 for f in self.available_functions.values()
                 if f.functionName != self.function_name
             ]
             + [
-                f.function_code
+                f.function_code.strip()
                 for f in self.functions.values()
                 if f.name not in self.available_functions
             ]
         )
 
-        return (
-            imports_code
+        self.rawCode = (
+            template_code.strip()
             + "\n\n"
-            + template_code
+            + objects_code.strip()
             + "\n\n"
-            + objects_code
+            + functions_code.strip()
             + "\n\n"
-            + functions_code
-            + "\n\n"
-            + self.functionCode
+            + self.functionCode.strip()
         )
+
+        return self.get_compiled_code()
 
 
 class ApplicationGraphs(BaseModel):
