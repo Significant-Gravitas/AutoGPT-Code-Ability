@@ -10,14 +10,14 @@ steps:
 
   - name: 'gcr.io/cloud-builders/docker'
     args: ['pull', 'gcr.io/$PROJECT_ID/mvp/codex_db:latest']
-    id: 'pul-image-codex-db'
+    id: 'pull-image-codex-db'
     volumes:
       - name: 'autogpt-docker-layers-prod'
         path: '/var/lib/docker'
 
   - name: 'gcr.io/cloud-builders/docker'
     args: ['pull', 'gcr.io/$PROJECT_ID/mvp/codex:latest']
-    id: 'pul-image-codex'
+    id: 'pull-image-codex'
     volumes:
       - name: 'autogpt-docker-layers-prod'
         path: '/var/lib/docker'
@@ -92,7 +92,7 @@ steps:
   # Deploy Debug Tool Image to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
-    args: ['run', 'deploy', 'codegen', '--image', 'gcr.io/$PROJECT_ID/mvp/codex:$COMMIT_SHA', '--region', 'us-central1', '--platform', 'managed', '--service-account','638488734936-compute@prodeloper.gserviceaccount.com']
+    args: ['run', 'deploy', 'codegen', '--image', 'gcr.io/$PROJECT_ID/mvp/codex:$COMMIT_SHA', '--region', 'us-central1', '--platform', 'managed', '--service-account','1021527134101-compute@developer.gserviceaccount.com']
     id: 'deploy-codex'
     volumes:
       - name: 'autogpt-docker-layers-prod'
