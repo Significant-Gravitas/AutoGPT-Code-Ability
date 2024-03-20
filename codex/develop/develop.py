@@ -1,5 +1,5 @@
 import logging
-from typing import Iterable, List
+from typing import List
 
 from prisma.enums import DevelopmentPhase, FunctionState
 from prisma.models import Function

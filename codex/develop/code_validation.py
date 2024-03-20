@@ -141,7 +141,17 @@ def static_code_analysis(func: GeneratedFunctionResponse) -> list[str]:
         func.rawCode = __execute_ruff(func, func.rawCode)
         # func.rawCode = __execute_pyright(func, func.rawCode)
     except ValidationError as e:
-        validation_errors = [v for v in str(e).split("\n") if v.strip()]
+        if len(e.args) > 1:
+            # Ruff failed, but the code is reformatted
+            func.rawCode = e.args[1]
+            e = e.args[0]
+
+        validation_errors = [
+            v
+            for v in str(e).split("\n")
+            if v.strip()
+            if re.match(r"Found \d+ errors?\.", v) is None
+        ]
         __fix_missing_imports(validation_errors, func)
 
         # Append problematic line to the error message
@@ -172,6 +182,7 @@ def __execute_ruff(func: GeneratedFunctionResponse, code: str) -> str:
         ],
         file_contents=code,
         suffix=".py",
+        raise_file_contents_on_error=True,
     )
 
 
@@ -241,7 +252,7 @@ def __fix_missing_imports(errors: list[str], func: GeneratedFunctionResponse):
     # parse "model X {" and "enum X {" from func.db_schema
     schema_imports = {}
     for entity in ["model", "enum"]:
-        pattern = f"{entity} ([a-zA-Z0-9_]+) {{"
+        pattern = f"{entity}\s+([a-zA-Z0-9_]+)\s+{{"
         matches = re.findall(pattern, func.db_schema)
         for match in matches:
             schema_imports[match] = f"from prisma.{entity}s import {match}"

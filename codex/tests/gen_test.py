@@ -1,7 +1,6 @@
 import pytest
 from dotenv import load_dotenv
 
-
 from codex.api_model import ApplicationCreate
 from codex.app import db_client
 from codex.common import ai_block
@@ -18,9 +17,9 @@ from codex.requirements.model import (
     AccessLevel,
     APIRouteRequirement,
     ApplicationRequirements,
+    DatabaseEnums,
     DatabaseSchema,
     DatabaseTable,
-    DatabaseEnums,
 )
 
 load_dotenv()
@@ -199,15 +198,16 @@ async def test_class_with_optional_field():
 
 
 # TODO: continue this test when pyright is enabled.
-# @pytest.mark.asyncio
-# @pytest.mark.integration_test
-# async def test_class_with_db_query():
-#     ai_block.MOCK_RESPONSE = DB_QUERY_RESPONSE
-#     func = await generate_function()
-#     assert func is not None
-#     assert "prisma.models.Game" in func[0]
-#     assert "async def get_game_state" in func[0]
-#     assert "async def make_turn" in func[0]
+@pytest.mark.asyncio
+@pytest.mark.integration_test
+async def test_class_with_db_query():
+    ai_block.MOCK_RESPONSE = DB_QUERY_RESPONSE
+    func = await generate_function()
+    assert func is not None
+    assert "prisma.models.Game" in func[0]
+    assert "prisma.enums.GameState" in func[0]
+    assert "def get_game_state" in func[0]
+    assert "def make_turn" in func[0]
 
 
 COMPLEX_RESPONSE = """
@@ -369,7 +369,7 @@ def make_turn(game_id: str, row: int, col: int) -> GameStateResponse:
 DB_QUERY_RESPONSE = """
 ```python
 def get_game_state(game_id: str) -> GameStateResponse:
-    game = Game.get(id=game_id)
+    game = Game.get(id=game_id, state=GameState.InProgress)
     return GameStateResponse(gameId=game.id, turn=game.turn, state=game.state, board=game.board)
 
 
