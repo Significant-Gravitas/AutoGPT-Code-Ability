@@ -10,6 +10,21 @@ from codex.develop.function import normalize_type
 
 
 class FunctionVisitor(ast.NodeVisitor):
+    """
+    Visits a Python AST and extracts function definitions and Pydantic class definitions
+
+    To use this class, create an instance and call the visit method with the AST as the argument.
+    The extracted function definitions and Pydantic class definitions
+    can be accessed from the functions and objects attributes respectively.
+
+    Example:
+    ```
+    visitor = FunctionVisitor()
+    visitor.visit(ast.parse("def foo(x: int) -> int: return x"))
+    print(visitor.functions)
+    ```
+    """
+
     def __init__(self):
         self.functions: dict[str, FunctionDef] = {}
         self.objects: dict[str, ObjectTypeModel] = {}

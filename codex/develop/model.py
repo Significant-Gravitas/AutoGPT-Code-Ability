@@ -67,6 +67,10 @@ class GeneratedFunctionResponse(BaseModel):
         )
 
         def __append_no_qa(code_block: str) -> str:
+            """
+            Append `# noqa` to the first line of the code block.
+            This is to suppress flake8 warnings for redefined names.
+            """
             lines = code_block.split("\n")
             lines[0] = lines[0] + " # noqa"
             return "\n".join(lines)

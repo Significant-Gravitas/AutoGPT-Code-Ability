@@ -67,7 +67,7 @@ async def construct_function(
 
 def generate_object_code(obj: ObjectTypeModel) -> str:
     if not obj.name:
-        return "" # Avoid generating an empty object
+        return ""  # Avoid generating an empty object
 
     # Auto-generate a template for the object, this will not capture any class functions.
     fields = f"\n{' ' * 8}".join(

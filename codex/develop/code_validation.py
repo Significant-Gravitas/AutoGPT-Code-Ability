@@ -110,6 +110,8 @@ class CodeValidator:
             compiled_route_id="",
             packages=[],
         )
+
+        # Execute static validators and fixers.
         old_compiled_code = result.regenerate_compiled_code()
         validation_errors.extend(validate_normalize_prisma(result))
         validation_errors.extend(static_code_analysis(result))
@@ -150,6 +152,7 @@ def __execute_ruff(func: GeneratedFunctionResponse) -> list[str]:
     code = "\n".join(func.imports + [separator, func.rawCode])
 
     try:
+        # Currently Disabled Rule List
         # E402 module level import not at top of file
         # F841 local variable is assigned to but never used
         code = exec_external_on_contents(
@@ -198,6 +201,7 @@ def __execute_ruff(func: GeneratedFunctionResponse) -> list[str]:
             validation_errors[i] = f"{error} -> '{problematic_line}'"
 
         return validation_errors
+
 
 def __execute_pyright(func: GeneratedFunctionResponse, code: str) -> str:
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -371,11 +375,15 @@ user = await prisma.models.User.prisma().create(
             # Sometimes, an enum is imported as a model and vice versa
 
             if entity == "model" and f"enum {name} " in func.db_schema:
-                code = rename_code_variable(code, f"prisma.models.{name}", f"prisma.enums.{name}")
+                code = rename_code_variable(
+                    code, f"prisma.models.{name}", f"prisma.enums.{name}"
+                )
                 continue
 
             if entity == "enum" and f"model {name} " in func.db_schema:
-                code = rename_code_variable(code, f"prisma.enums.{name}", f"prisma.models.{name}")
+                code = rename_code_variable(
+                    code, f"prisma.enums.{name}", f"prisma.models.{name}"
+                )
                 continue
 
             validation_errors.append(
