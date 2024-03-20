@@ -426,6 +426,13 @@ Prisma is an open-source database toolkit that simplifies database access and ma
   prisma migrate deploy
   ```
 
+#### Marking a migration as locally resolved (useful for hot fixes)
+
+```bash
+prisma migrate resolve --applied "<migration-name>"
+```
+
+
 ### 4. Generating Prisma Client
 
 - Generate Prisma Client to interact with your database:
