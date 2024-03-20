@@ -101,6 +101,28 @@ steps:
       - name: "autogpt-docker-layers-prod"
         path: "/var/lib/docker"
 
+  # Deploy DB Job to Cloud Run
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: gcloud
+    args:
+      [
+        "run",
+        "jobs",
+        "deploy",
+        "database-migration-codex",
+        "--image",
+        "gcr.io/$PROJECT_ID/mvp/codex_db:latest",
+        "--region",
+        "us-central1",
+        "--service-account",
+        "1021527134101-compute@developer.gserviceaccount.com",
+        "--wait",
+        "--args=prisma,migrate,deploy",
+      ]
+    id: "run-migration-bot"
+    waitFor:
+      - push-latest-codex-db
+
   # Deploy Debug Tool Image to Cloud Run
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
     entrypoint: gcloud
