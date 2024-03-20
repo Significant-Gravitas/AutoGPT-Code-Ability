@@ -15,6 +15,7 @@ from codex.common.ai_block import ValidationError
 from codex.common.constants import PRISMA_FILE_HEADER
 from codex.common.exec_external_tool import exec_external_on_contents
 from codex.develop.compile import ComplicationFailure
+from codex.develop.function import generate_object_code
 from codex.develop.function_visitor import FunctionVisitor
 from codex.develop.model import GeneratedFunctionResponse
 
@@ -55,7 +56,13 @@ class CodeValidator:
         # Eliminate duplicate visitor.functions and visitor.objects, prefer the last one
         visitor.imports = list(set(visitor.imports))
         visitor.functions = list({f.name: f for f in visitor.functions}.values())
-        visitor.objects = list({o.name: o for o in visitor.objects}.values())
+        visitor.objects = list(
+            {
+                o.name: o
+                for o in visitor.objects
+                if o.name not in self.available_objects
+            }.values()
+        )
 
         # Add implemented functions into the main function, only link the stub functions
         deps_funcs = [f for f in visitor.functions if f.is_implemented]
@@ -69,9 +76,9 @@ class CodeValidator:
                 f" Please complete the implementation of this function!"
             )
         requested_func.function_code = (
-            "\n".join(visitor.globals)
-            + "\n\n"
-            + "\n\n".join([f.function_code for f in deps_funcs])
+            "".join([generate_object_code(obj) + "\n\n" for obj in visitor.objects])
+            + "\n".join(visitor.globals)
+            + "".join(["\n\n" + fun.function_code for fun in deps_funcs])
         )
 
         # Validate that the main function is matching the expected signature.
@@ -109,7 +116,7 @@ class CodeValidator:
             available_functions=self.available_functions,
             rawCode=code,
             imports=visitor.imports.copy(),
-            objects=visitor.objects,
+            objects=[],  # Bundle objects from the visitor to the function code
             template=requested_func.function_template or "",
             functionCode=requested_func.function_code,
             functions=stub_funcs,
@@ -211,7 +218,26 @@ def __execute_ruff(func: GeneratedFunctionResponse) -> list[str]:
         return validation_errors
 
 
-def __execute_pyright(func: GeneratedFunctionResponse, code: str) -> str:
+# Temporary folder which acts as a python environment
+# This folder will act as virtual environment for the static code analysis
+TEMP_DIR = tempfile.TemporaryDirectory()
+
+
+def execute_command(command: list[str]) -> str:
+    try:
+        result = subprocess.run(
+            command, check=True, cwd=TEMP_DIR.name, capture_output=True
+        )
+        return result.stdout.decode("utf-8")
+    except subprocess.CalledProcessError as e:
+        return e.stdout.decode("utf-8")
+
+
+# Initiate virtual environment
+execute_command(["python", "-m", "venv"])
+
+
+def __execute_pyright(func: GeneratedFunctionResponse, code: str) -> list[str]:
     with tempfile.TemporaryDirectory() as temp_dir:
         with open(f"{temp_dir}/schema.prisma", "w") as p:
             with open(f"{temp_dir}/code.py", "w") as f:
@@ -219,40 +245,33 @@ def __execute_pyright(func: GeneratedFunctionResponse, code: str) -> str:
                 f.write(code)
                 f.flush()
 
-                def execute_command(command: list[str]) -> str:
-                    try:
-                        result = subprocess.run(
-                            command, check=True, cwd=temp_dir, capture_output=True
-                        )
-                        return result.stdout.decode("utf-8")
-                    except subprocess.CalledProcessError as e:
-                        return e.stdout.decode("utf-8")
-
-                # TODO: start new python environment
+                # Activate the virtual environment
+                result = execute_command(["source", "venv/bin/activate"])
+                logger.warning(f"venv activate response: {result}")
 
                 # run pipreqs save it to the requirements.txt
                 result = execute_command(["pipreqs", "--force"])
-                logger.debug(f"pipreqs response: {result}")
+                logger.warning(f"pipreqs response: {result}")
 
                 # run pip install -r requirements.txt
                 result = execute_command(["pip", "install", "-r", "requirements.txt"])
-                logger.debug(f"pip response: {result}")
+                logger.warning(f"pip response: {result}")
 
                 # run prisma generate
                 if func.db_schema:
                     p.write(PRISMA_FILE_HEADER + "\n" + func.db_schema)
                     p.flush()
                     result = execute_command(["prisma", "generate"])
-                    logger.debug(f"prisma generate response: {result}")
+                    logger.warning(f"prisma generate response: {result}")
 
                 # execute pyright
                 result = execute_command(
                     ["pyright", "--outputjson", "--exclude", "reportRedeclaration"]
                 )
-                logger.debug(f"pyright response: {result}")
+                logger.warning(f"pyright response: {result}")
 
                 if not result:
-                    return code
+                    return []
 
                 errors = json.loads(result)
                 raise errors

@@ -142,9 +142,11 @@ class FunctionVisitor(ast.NodeVisitor):
             if isinstance(v, ast.AnnAssign):
                 field = ObjectFieldModel(
                     name=ast.unparse(v.target),
-                    type=ast.unparse(v.annotation),
+                    type=normalize_type(ast.unparse(v.annotation)),
                     value=ast.unparse(v.value) if v.value else None,
                 )
+                if field.value is None and field.type.startswith("Optional"):
+                    field.value = "None"
             elif isinstance(v, ast.Assign):
                 if len(v.targets) > 1:
                     self.errors.append(
