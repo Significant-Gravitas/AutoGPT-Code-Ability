@@ -352,7 +352,7 @@ user = await prisma.models.User.prisma().create(
                 name, alias = parse_import_alias(import_statement)
                 code = rename_code_variable(code, alias, f"prisma.{entity}s.{name}")
                 continue
-            if f"from prisma import {entity}s." in import_statement:
+            if f"from prisma import {entity}s" in import_statement:
                 name, alias = parse_import_alias(import_statement)
                 code = rename_code_variable(code, alias, f"prisma.{name}")
                 continue

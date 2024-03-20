@@ -1,6 +1,5 @@
 import pytest
 
-from codex.common.ai_block import ValidationError
 from codex.common.parse_prisma import parse_prisma_schema
 from codex.develop.code_validation import validate_normalize_prisma
 from codex.develop.model import GeneratedFunctionResponse
@@ -430,6 +429,7 @@ def test_prisma_code_validation():
         enum RoleType {}
     """
     imports = [
+        "from prisma import models",
         "from prisma import enums",
         "from prisma.models import User",
         "from prisma.models import UserPost as UserPostDB",
@@ -441,7 +441,7 @@ def test_prisma_code_validation():
         def test():
             return (
                 User.select().where(UserPostDB.id == 1),
-                UserRole.Tutor,
+                models.UserRole.Tutor,
                 enums.RoleType.Admin
             )
     """
@@ -470,7 +470,7 @@ def test_prisma_code_validation():
         ]
     )
     assert (
-        func.functionCode
+        func.rawCode
         == """
         def test():
             return (
@@ -481,7 +481,6 @@ def test_prisma_code_validation():
     """
     )
     # catch validation error without using db_schema
-    with pytest.raises(ValidationError) as e:
-        func.db_schema = ""
-        validate_normalize_prisma(func)
-        assert "not available in the prisma schema" in str(e.value)
+    func.db_schema = ""
+    errors = validate_normalize_prisma(func)[0]
+    assert "not available in the prisma schema" in errors
