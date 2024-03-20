@@ -467,6 +467,8 @@ def test_prisma_code_validation():
         [
             "import pydantic",
             "import prisma",
+            "import prisma.enums",
+            "import prisma.models",
         ]
     )
     assert (

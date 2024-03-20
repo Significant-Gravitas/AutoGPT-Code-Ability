@@ -413,6 +413,10 @@ user = await prisma.models.User.prisma().create(
     # Make sure `import prisma` is added when `prisma.` usage is found in the code
     if "prisma." in code:
         imports.append("import prisma")
+    if "prisma.enums" in code:
+        imports.append("import prisma.enums")
+    if "prisma.models" in code:
+        imports.append("import prisma.models")
 
     # Sometimes it does this, it's not a valid import
     if "from pydantic import Optional" in imports:

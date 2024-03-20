@@ -87,6 +87,10 @@ class FunctionVisitor(ast.NodeVisitor):
         function_template = ast.unparse(node)
         node.body = original_body
 
+        function_code = ast.unparse(node)
+        if "await" in function_code and "async def" not in function_code:
+            function_code = function_code.replace("def", "async def")
+
         self.functions.append(
             FunctionDef(
                 name=node.name,
@@ -97,7 +101,7 @@ class FunctionVisitor(ast.NodeVisitor):
                 is_implemented=is_implemented,
                 function_desc=doc_string,  # TODO: Exclude Args and Returns from doc_string,
                 function_template=function_template,
-                function_code=ast.unparse(node),
+                function_code=function_code,
             )
         )
         self.generic_visit(node)
