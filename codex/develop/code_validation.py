@@ -52,17 +52,26 @@ class CodeValidator:
         except Exception as e:
             raise ValidationError(f"Error parsing code: {e}")
 
-        functions = visitor.functions.copy()
+        # Eliminate duplicate visitor.functions and visitor.objects, prefer the last one
+        visitor.imports = list(set(visitor.imports))
+        visitor.functions = list({f.name: f for f in visitor.functions}.values())
+        visitor.objects = list({o.name: o for o in visitor.objects}.values())
+
+        # Add implemented functions into the main function, only link the stub functions
+        deps_funcs = [f for f in visitor.functions if f.is_implemented]
+        stub_funcs = [f for f in visitor.functions if not f.is_implemented]
 
         # Validate that the main function is implemented.
-        requested_func = functions.get(self.func_name)
+        requested_func = next((f for f in deps_funcs if f.name == self.func_name), None)
         if not requested_func or not requested_func.is_implemented:
             raise ValidationError(
                 f"Main Function body {self.func_name} is not implemented."
                 f" Please complete the implementation of this function!"
             )
         requested_func.function_code = (
-            "\n".join(visitor.globals) + "\n\n" + requested_func.function_code
+            "\n".join(visitor.globals)
+            + "\n\n"
+            + "\n\n".join([f.function_code for f in deps_funcs])
         )
 
         # Validate that the main function is matching the expected signature.
@@ -78,12 +87,12 @@ class CodeValidator:
         already_declared_entities = set(
             [
                 obj.name
-                for obj in visitor.objects.values()
+                for obj in visitor.objects
                 if obj.name in self.available_objects.keys()
             ]
             + [
                 func.name
-                for func in functions.values()
+                for func in visitor.functions
                 if func.name in self.available_functions.keys()
             ]
         )
@@ -92,7 +101,6 @@ class CodeValidator:
                 "These class/function names has already been declared in the code, "
                 "no need to declare them again: " + ", ".join(already_declared_entities)
             )
-        del functions[self.func_name]
 
         result = GeneratedFunctionResponse(
             function_id=expected_func.id,
@@ -104,7 +112,7 @@ class CodeValidator:
             objects=visitor.objects,
             template=requested_func.function_template or "",
             functionCode=requested_func.function_code,
-            functions=functions,
+            functions=stub_funcs,
             db_schema=self.db_schema,
             # These two values should be filled by the agent
             compiled_route_id="",

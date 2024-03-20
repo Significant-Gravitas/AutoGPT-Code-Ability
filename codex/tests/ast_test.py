@@ -131,6 +131,7 @@ def test_function_visitor():
 
     visitor = FunctionVisitor()
     visitor.visit(tree)
+    functions = {f.name: f for f in visitor.functions}
 
     # Check that all Pydantic classes are identified
     assert "SomeClass" not in get_pydantic_classes(visitor)
@@ -138,11 +139,11 @@ def test_function_visitor():
 
     # Check that all functions are identified
     assert len(get_pydantic_classes(visitor)) == 4
-    assert len(visitor.functions) == 3
+    assert len(functions) == 3
 
-    assert visitor.functions["create_schedule"].is_implemented
-    assert not visitor.functions["is_within_working_hours"].is_implemented
-    assert not visitor.functions["calculate_travel_time"].is_implemented
+    assert functions["create_schedule"].is_implemented
+    assert not functions["is_within_working_hours"].is_implemented
+    assert not functions["calculate_travel_time"].is_implemented
 
 
 CLASS_AND_ENUM_SAMPLE_CODE = """
@@ -165,33 +166,34 @@ def test_function_visitor_with_enum():
 
     visitor = FunctionVisitor()
     visitor.visit(tree)
+    objects = {f.name: f for f in visitor.objects}
 
     # Check that all Pydantic classes are identified
-    assert "Location" in visitor.objects
-    assert "Role" in visitor.objects
+    assert "Location" in objects
+    assert "Role" in objects
 
-    # Check that all functions are identified
+    # Check that all objects are identified
     assert len(get_pydantic_classes(visitor)) == 1
     assert len(visitor.functions) == 0
 
-    assert visitor.objects["Location"].is_pydantic
-    assert visitor.objects["Role"].is_enum
+    assert objects["Location"].is_pydantic
+    assert objects["Role"].is_enum
 
-    assert visitor.objects["Location"].Fields[0].name == "name"  # type: ignore
-    assert visitor.objects["Location"].Fields[0].type == "str"  # type: ignore
-    assert visitor.objects["Location"].Fields[0].value is None  # type: ignore
-    assert visitor.objects["Location"].Fields[1].name == "latitude"  # type: ignore
-    assert visitor.objects["Location"].Fields[1].type == "float"  # type: ignore
-    assert visitor.objects["Location"].Fields[1].value == "0.0"  # type: ignore
-    assert visitor.objects["Location"].Fields[2].name == "longitude"  # type: ignore
-    assert visitor.objects["Location"].Fields[2].type == "float"  # type: ignore
-    assert visitor.objects["Location"].Fields[2].value == "0.0"  # type: ignore
-    assert visitor.objects["Role"].Fields[0].name == "USER"  # type: ignore
-    assert visitor.objects["Role"].Fields[0].type == "str"  # type: ignore
-    assert visitor.objects["Role"].Fields[0].value == "'USER'"  # type: ignore
-    assert visitor.objects["Role"].Fields[1].name == "ADMIN"  # type: ignore
-    assert visitor.objects["Role"].Fields[1].type == "str"  # type: ignore
-    assert visitor.objects["Role"].Fields[1].value == "'ADMIN'"  # type: ignore
+    assert objects["Location"].Fields[0].name == "name"  # type: ignore
+    assert objects["Location"].Fields[0].type == "str"  # type: ignore
+    assert objects["Location"].Fields[0].value is None  # type: ignore
+    assert objects["Location"].Fields[1].name == "latitude"  # type: ignore
+    assert objects["Location"].Fields[1].type == "float"  # type: ignore
+    assert objects["Location"].Fields[1].value == "0.0"  # type: ignore
+    assert objects["Location"].Fields[2].name == "longitude"  # type: ignore
+    assert objects["Location"].Fields[2].type == "float"  # type: ignore
+    assert objects["Location"].Fields[2].value == "0.0"  # type: ignore
+    assert objects["Role"].Fields[0].name == "USER"  # type: ignore
+    assert objects["Role"].Fields[0].type == "str"  # type: ignore
+    assert objects["Role"].Fields[0].value == "'USER'"  # type: ignore
+    assert objects["Role"].Fields[1].name == "ADMIN"  # type: ignore
+    assert objects["Role"].Fields[1].type == "str"  # type: ignore
+    assert objects["Role"].Fields[1].value == "'ADMIN'"  # type: ignore
 
 
 # Visiting a simple function definition with no arguments or return type
@@ -204,12 +206,13 @@ def test_simple_function_definition():
 
     # Visit the AST
     visitor.visit(code)
+    functions = {f.name: f for f in visitor.functions}
 
     # Assert that the function was added to the functions dictionary
-    assert "my_function" in visitor.functions
+    assert "my_function" in functions
 
     # Assert the properties of the FunctionDef object
-    function_def = visitor.functions["my_function"]
+    function_def = functions["my_function"]
     assert function_def.name == "my_function"
     assert function_def.arg_types == []
     assert function_def.return_type is None
@@ -227,12 +230,13 @@ def test_function_with_default_arguments():
 
     # Visit the AST
     visitor.visit(code)
+    functions = {f.name: f for f in visitor.functions}
 
     # Assert that the function was added to the functions dictionary
-    assert "my_function" in visitor.functions
+    assert "my_function" in functions
 
     # Assert the properties of the FunctionDef object
-    function_def = visitor.functions["my_function"]
+    function_def = functions["my_function"]
     assert function_def.name == "my_function"
     assert function_def.arg_types == [
         ("arg1", "object"),
@@ -260,12 +264,13 @@ def test_visiting_function_with_decorator():
 
     # Visit the AST
     visitor.visit(code)
+    functions = {f.name: f for f in visitor.functions}
 
     # Assert that the function was added to the functions dictionary
-    assert "my_function" in visitor.functions
+    assert "my_function" in functions
 
     # Assert the properties of the FunctionDef object
-    function_def = visitor.functions["my_function"]
+    function_def = functions["my_function"]
     assert function_def.name == "my_function"
     assert function_def.arg_types == []
     assert function_def.return_type is None
@@ -351,12 +356,13 @@ def test_visiting_function_with_non_string_annotations():
 
     # Visit the AST
     visitor.visit(code)
+    functions = {f.name: f for f in visitor.functions}
 
     # Assert that the function was added to the functions dictionary
-    assert "my_function" in visitor.functions
+    assert "my_function" in functions
 
     # Assert the properties of the FunctionDef object
-    function_def = visitor.functions["my_function"]
+    function_def = functions["my_function"]
     assert function_def.name == "my_function"
     assert function_def.arg_types == [("arg1", "int"), ("arg2", "List[str]")]
     assert function_def.return_type == "Dict[str, int]"
@@ -380,12 +386,13 @@ def test_visiting_function_with_non_string_return_annotation():
 
     # Visit the AST
     visitor.visit(code)
+    functions = {f.name: f for f in visitor.functions}
 
     # Assert that the function was added to the functions dictionary
-    assert "my_function" in visitor.functions
+    assert "my_function" in functions
 
     # Assert the properties of the FunctionDef object
-    function_def = visitor.functions["my_function"]
+    function_def = functions["my_function"]
     assert function_def.name == "my_function"
     assert function_def.arg_types == []
     assert function_def.return_type == "int"
@@ -418,12 +425,13 @@ def test_visiting_function_with_non_list_body():
 
     # Visit the AST
     visitor.visit(code)
+    functions = {f.name: f for f in visitor.functions}
 
     # Assert that the function was added to the functions dictionary
-    assert "my_function" in visitor.functions
+    assert "my_function" in functions
 
     # Assert the properties of the FunctionDef object
-    function_def = visitor.functions["my_function"]
+    function_def = functions["my_function"]
     assert function_def.name == "my_function"
     assert function_def.arg_types == []
     assert function_def.return_type is None
@@ -442,12 +450,13 @@ def test_visiting_function_with_pass_body():
 
     # Visit the AST
     visitor.visit(code)
+    functions = {f.name: f for f in visitor.functions}
 
     # Assert that the function was added to the functions dictionary
-    assert "my_function" in visitor.functions
+    assert "my_function" in functions
 
     # Assert the properties of the FunctionDef object
-    function_def = visitor.functions["my_function"]
+    function_def = functions["my_function"]
     assert function_def.name == "my_function"
     assert function_def.arg_types == []
     assert function_def.return_type is None
@@ -455,4 +464,4 @@ def test_visiting_function_with_pass_body():
 
 
 def get_pydantic_classes(visitor):
-    return [name for name, c in visitor.objects.items() if c.is_pydantic]
+    return [c.name for c in visitor.objects if c.is_pydantic]

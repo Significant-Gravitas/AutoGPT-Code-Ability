@@ -148,14 +148,14 @@ class DevelopAIBlock(AIBlock):
         """
         generated_response: GeneratedFunctionResponse = validated_response.response
 
-        for obj in generated_response.objects.values():
+        for obj in generated_response.objects:
             generated_response.available_objects = await create_object_type(
                 obj, generated_response.available_objects
             )
 
         function_defs: list[FunctionCreateInput] = []
         if generated_response.functions:
-            for function in generated_response.functions.values():
+            for function in generated_response.functions:
                 # Skip if the function is already available
                 available_functions = generated_response.available_functions
                 if function.name in available_functions:

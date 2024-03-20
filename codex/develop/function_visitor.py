@@ -26,8 +26,8 @@ class FunctionVisitor(ast.NodeVisitor):
     """
 
     def __init__(self):
-        self.functions: dict[str, FunctionDef] = {}
-        self.objects: dict[str, ObjectTypeModel] = {}
+        self.functions: list[FunctionDef] = []
+        self.objects: list[ObjectTypeModel] = []
         self.imports: list[str] = []
         self.globals: list[str] = []
         self.errors: list[str] = []
@@ -71,9 +71,9 @@ class FunctionVisitor(ast.NodeVisitor):
         if (
             node.body
             and isinstance(node.body[0], ast.Expr)
-            and isinstance(node.body[0].value, (ast.Str, ast.Constant))
+            and isinstance(node.body[0].value, ast.Constant)
         ):
-            doc_string = ast.unparse(node.body[0]).strip()
+            doc_string = node.body[0].value.s.strip()
             template_body = [node.body[0], ast.Pass()]
             is_implemented = not isinstance(node.body[1], ast.Pass)
         else:
@@ -87,16 +87,18 @@ class FunctionVisitor(ast.NodeVisitor):
         function_template = ast.unparse(node)
         node.body = original_body
 
-        self.functions[node.name] = FunctionDef(
-            name=node.name,
-            arg_types=args,
-            arg_descs={},  # TODO: Extract out Args and Returns from doc_string
-            return_type=return_type,
-            return_desc="",  # TODO: Extract out Args and Returns from doc_string
-            is_implemented=is_implemented,
-            function_desc=doc_string,  # TODO: Exclude Args and Returns from doc_string,
-            function_template=function_template,
-            function_code=ast.unparse(node),
+        self.functions.append(
+            FunctionDef(
+                name=node.name,
+                arg_types=args,
+                arg_descs={},  # TODO: Extract out Args and Returns from doc_string
+                return_type=return_type,
+                return_desc="",  # TODO: Extract out Args and Returns from doc_string
+                is_implemented=is_implemented,
+                function_desc=doc_string,  # TODO: Exclude Args and Returns from doc_string,
+                function_template=function_template,
+                function_code=ast.unparse(node),
+            )
         )
         self.generic_visit(node)
 
@@ -121,8 +123,12 @@ class FunctionVisitor(ast.NodeVisitor):
         )
         is_implemented = not any(isinstance(v, ast.Pass) for v in node.body)
         doc_string = ""
-        if node.body and isinstance(node.body[0], ast.Expr):
-            doc_string = ast.unparse(node.body[0]).strip()
+        if (
+            node.body
+            and isinstance(node.body[0], ast.Expr)
+            and isinstance(node.body[0].value, ast.Constant)
+        ):
+            doc_string = node.body[0].value.s.strip()
 
         if node.name in PYTHON_TYPES:
             self.errors.append(
@@ -149,19 +155,24 @@ class FunctionVisitor(ast.NodeVisitor):
                     type=type(ast.unparse(v.value)).__name__,
                     value=ast.unparse(v.value) if v.value else None,
                 )
+            elif isinstance(v, ast.Expr) and isinstance(v.value, ast.Constant):
+                # skip comments and docstrings
+                continue
             else:
                 methods.append(ast.unparse(v))
                 continue
             fields.append(field)
 
-        self.objects[node.name] = ObjectTypeModel(
-            name=node.name,
-            code="\n".join(methods),
-            description=doc_string,
-            Fields=fields,
-            is_pydantic=is_pydantic,
-            is_enum=is_enum,
-            is_implemented=is_implemented,
+        self.objects.append(
+            ObjectTypeModel(
+                name=node.name,
+                code="\n".join(methods),
+                description=doc_string,
+                Fields=fields,
+                is_pydantic=is_pydantic,
+                is_enum=is_enum,
+                is_implemented=is_implemented,
+            )
         )
 
         """Some class are simply used as a type and doesn't have any new fields"""

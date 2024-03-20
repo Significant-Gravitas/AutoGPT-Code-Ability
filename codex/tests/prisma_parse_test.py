@@ -455,8 +455,8 @@ def test_prisma_code_validation():
         packages=[],
         imports=imports,
         functionCode=code,
-        functions={},
-        objects={},
+        functions=[],
+        objects=[],
         db_schema=db_schema,
         compiled_route_id="",
     )

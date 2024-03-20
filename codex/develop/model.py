@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import List
 
 from prisma.models import Function, ObjectType
 from prisma.models import Function as FunctionDBModel
@@ -30,8 +30,8 @@ class GeneratedFunctionResponse(BaseModel):
     imports: List[str]
     functionCode: str
 
-    functions: Dict[str, FunctionDef]
-    objects: Dict[str, ObjectDef]
+    functions: List[FunctionDef]
+    objects: List[ObjectDef]
     db_schema: str
 
     def get_compiled_code(self) -> str:
@@ -61,7 +61,7 @@ class GeneratedFunctionResponse(BaseModel):
             ]
             + [
                 __generate_stub(obj.name, obj.is_enum)
-                for obj in self.objects.values()
+                for obj in self.objects
                 if obj.name not in self.available_objects
             ]
         )
@@ -82,7 +82,7 @@ class GeneratedFunctionResponse(BaseModel):
             ]
             + [
                 __append_no_qa(generate_object_code(obj))
-                for obj in self.objects.values()
+                for obj in self.objects
                 if obj.name not in self.available_objects
             ]
         )
@@ -95,7 +95,7 @@ class GeneratedFunctionResponse(BaseModel):
             ]
             + [
                 f.function_code.strip()
-                for f in self.functions.values()
+                for f in self.functions
                 if f.name not in self.available_functions
             ]
         )
