@@ -5,15 +5,20 @@ import json
 import logging
 import os
 import re
-import subprocess
 import typing
+import uuid
 
 import prisma
 from prisma.models import Function, ObjectType
 
 from codex.common.ai_block import ValidationError
 from codex.common.constants import PRISMA_FILE_HEADER
-from codex.common.exec_external_tool import exec_external_on_contents
+from codex.common.exec_external_tool import (
+    TEMP_DIR,
+    exec_external_on_contents,
+    execute_command,
+    setup_if_required,
+)
 from codex.develop.compile import ComplicationFailure
 from codex.develop.function import generate_object_code
 from codex.develop.function_visitor import FunctionVisitor
@@ -57,7 +62,12 @@ class CodeValidator:
             visitor.visit(tree)
             validation_errors.extend(visitor.errors)
         except Exception as e:
-            raise ValidationError(f"Error parsing code: {e}")
+            # parse line number, format: line \d+
+            error = str(e)
+            line = re.search(r"line (\d+)", error)
+            if line:
+                error = f"{error} -> '{parse_line_code(code, int(line.group(1)))}'"
+            raise ValidationError(f"Error parsing code: {error}")
 
         # Eliminate duplicate visitor.functions and visitor.objects, prefer the last one
         visitor.imports = list(set(visitor.imports))
@@ -149,6 +159,24 @@ class CodeValidator:
         return result
 
 
+def parse_line_code(code: str, line_from: int, line_to: int | None = None) -> str:
+    """
+    Parse the code from the given line number range
+    Args:
+        code (str): The code to parse
+        line_from (int): The starting line number
+        line_to (int): The ending line number, if not provided, it will be line_from + 1
+    Returns:
+        str: The extracted code from the given line number range
+    """
+    lines = code.split("\n")
+    if not line_to:
+        line_to = line_from + 1
+    if line_from > len(lines):
+        return ""
+    return "\n".join(lines[line_from - 1 : line_to - 1])
+
+
 # ======= Static Code Validation Helper Functions =======#
 
 
@@ -219,109 +247,75 @@ def __execute_ruff(func: GeneratedFunctionResponse) -> list[str]:
             if not error_split:
                 continue
             _, line, _, error = error_split.groups()
-            problematic_line = code.splitlines()[int(line) - 1]
+            problematic_line = parse_line_code(code, int(line))
             validation_errors[i] = f"{error} -> '{problematic_line}'"
 
         return validation_errors
 
 
-TEMP_DIR = os.path.abspath("./../static_code_analysis")
-os.makedirs(TEMP_DIR, exist_ok=True)
-
-
-def execute_command(
-    command: list[str], cwd=TEMP_DIR, python_path: str | None = f"{TEMP_DIR}/venv/bin"
-) -> str:
-    """
-    Execute a command in the shell
-    Args:
-        command (list[str]): The command to execute
-        cwd (str): The current working directory
-        python_path (str): The python executable path
-    Returns:
-        str: The output of the command
-    """
-    try:
-        # Set the python path by replacing the env 'PATH' with the python path
-        venv = os.environ.copy()
-        if python_path:
-            original_python_path = venv["PATH"].split(":")[1:]
-            venv["PATH"] = f"{python_path}:{':'.join(original_python_path)}"
-        r = subprocess.run(command, cwd=cwd, shell=False, env=venv, capture_output=True)
-        return (r.stdout or r.stderr or b"").decode("utf-8")
-    except subprocess.CalledProcessError as e:
-        return (e.stderr or e.stdout or b"").decode("utf-8")
-
-
-def setup_if_required():
-    if os.path.exists(f"{TEMP_DIR}/venv"):
-        return
-
-    # Create a virtual environment
-    output = execute_command(["python", "-m", "venv", "venv"], python_path=None)
-    print(output)
-    # Install dependencies
-    output = execute_command(["pip", "install", "prisma", "pyright", "pipreqs"])
-    print(output)
-
-
 def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
     separator = "#------Code-Start------#"
     code = "\n".join(func.imports + [separator, func.rawCode])
-    validation_errors = []
 
-    with open(f"{TEMP_DIR}/schema.prisma", "w") as p:
-        with open(f"{TEMP_DIR}/code.py", "w") as f:
-            with open(f"{TEMP_DIR}/requirements.txt", "w") as r:
-                # write the requirements to requirements.txt
-                r.write("\n".join([str(p) for p in func.packages]))
-                r.flush()
+    # Create temporary directory under the TEMP_DIR with random name
+    temp_dir = os.path.join(TEMP_DIR, str(object=uuid.uuid4()))
+    os.makedirs(temp_dir, exist_ok=True)
 
-                # write the code to code.py
-                f.write(code)
-                f.flush()
+    def __execute_pyright_commands(code: str) -> list[str]:
+        setup_if_required()
 
-                setup_if_required()
+        # run pip install -r requirements.txt
+        execute_command(["pip", "install", "-r", "requirements.txt"], temp_dir)
 
-                # run pipreqs save it to the requirements.txt
-                # execute_command(["pipreqs", "--force"])
+        # run prisma generate
+        if func.db_schema:
+            p.write(PRISMA_FILE_HEADER + "\n" + func.db_schema)
+            p.flush()
+            execute_command(["prisma", "generate"], temp_dir)
 
-                # run pip install -r requirements.txt
-                execute_command(["pip", "install", "-r", "requirements.txt"])
+        # execute pyright
+        result = execute_command(["pyright", "--outputjson"], temp_dir)
+        if not result:
+            return []
 
-                # run prisma generate
-                if func.db_schema:
-                    p.write(PRISMA_FILE_HEADER + "\n" + func.db_schema)
-                    p.flush()
-                    execute_command(["prisma", "generate"])
+        validation_errors = [
+            f"{e['message']}. {e.get('rule', '')} -> '{'\n'.join(code.splitlines()[
+            e["range"]["start"]["line"]:e["range"]["end"]["line"]+1
+        ])}'"
+            for e in json.loads(result)["generalDiagnostics"]
+            if e.get("severity") == "error"
+            if e.get("rule")
+            not in [
+                "reportRedeclaration",
+                "reportArgumentType",  # This breaks prisma query with dict
+                "reportReturnType",  # This breaks returning Option without fallback
+            ]
+            and not e.get("rule").startswith("reportOptional")
+        ]
 
-                # execute pyright
-                result = execute_command(["pyright", "--outputjson"])
-                if not result:
-                    return []
+        # read code from code.py. split the code into imports and raw code
+        code = open(f"{temp_dir}/code.py").read()
+        split = code.split(separator)
+        func.imports = split[0].splitlines()
+        func.rawCode = split[1].strip()
 
-                validation_errors = [
-                    f"{e['message']}. {e.get('rule', '')} -> '{'\n'.join(code.splitlines()[
-                    e["range"]["start"]["line"]:e["range"]["end"]["line"]+1
-                ])}'"
-                    for e in json.loads(result)["generalDiagnostics"]
-                    if e.get("severity") == "error"
-                    if e.get("rule")
-                    not in [
-                        "reportRedeclaration",
-                        "reportArgumentType",  # This breaks prisma query with dict
-                        "reportReturnType",  # This breaks returning Option without fallback
-                    ]
-                    and not e.get("rule").startswith("reportOptional")
-                ]
+        return validation_errors
 
-                # read code from code.py. split the code into imports and raw code
-                code = open(f"{TEMP_DIR}/code.py").read()
-                split = code.split(separator)
-                func.imports = split[0].splitlines()
-                func.rawCode = split[1].strip()
+    try:
+        with open(f"{temp_dir}/schema.prisma", "w") as p:
+            with open(f"{temp_dir}/code.py", "w") as f:
+                with open(f"{temp_dir}/requirements.txt", "w") as r:
+                    # write the requirements to requirements.txt
+                    r.write("\n".join([str(p) for p in func.packages]))
+                    r.flush()
 
-                return validation_errors
+                    # write the code to code.py
+                    f.write(code)
+                    f.flush()
+
+                    return __execute_pyright_commands(code)
+    finally:
+        execute_command(["rm", "-rf", temp_dir])
 
 
 AUTO_IMPORT_TYPES: dict[str, str] = {

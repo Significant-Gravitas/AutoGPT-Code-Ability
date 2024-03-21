@@ -85,3 +85,47 @@ def exec_external_on_contents(
         raise ValidationError(f"Errors with generation: {errors}", file_contents)
 
     raise ValidationError(f"Errors with generation: {errors}")
+
+
+TEMP_DIR = os.path.abspath("./../static_code_analysis")
+
+
+def setup_if_required():
+    if not os.path.exists(TEMP_DIR):
+        os.makedirs(TEMP_DIR, exist_ok=True)
+
+    if os.path.exists(f"{TEMP_DIR}/venv"):
+        return
+
+    # Create a virtual environment
+    output = execute_command(["python", "-m", "venv", "venv"], python_path=None)
+    print(output)
+    # Install dependencies
+    output = execute_command(["pip", "install", "prisma", "pyright"])
+    print(output)
+
+
+def execute_command(
+    command: list[str], cwd=TEMP_DIR, python_path: str | None = f"{TEMP_DIR}/venv/bin"
+) -> str:
+    """
+    Execute a command in the shell
+    Args:
+        command (list[str]): The command to execute
+        cwd (str): The current working directory
+        python_path (str): The python executable path
+    Returns:
+        str: The output of the command
+    """
+    try:
+        # Set the python path by replacing the env 'PATH' with the python path
+        venv = os.environ.copy()
+        if python_path:
+            original_python_path = venv["PATH"].split(":")[1:]
+            venv["PATH"] = f"{python_path}:{':'.join(original_python_path)}"
+        r = subprocess.run(
+            command, cwd=cwd, shell=False, env=venv, capture_output=True, check=True
+        )
+        return (r.stdout or r.stderr or b"").decode("utf-8")
+    except subprocess.CalledProcessError as e:
+        return (e.stderr or e.stdout or b"").decode("utf-8")
