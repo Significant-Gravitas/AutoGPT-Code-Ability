@@ -62,7 +62,7 @@ class CodeValidator:
             visitor.visit(tree)
             validation_errors.extend(visitor.errors)
         except Exception as e:
-            # parse line number, format: line \d+
+            # parse invalid code line and add it to the error message
             error = str(e)
             line = re.search(r"line (\d+)", error)
             if line:
@@ -269,8 +269,6 @@ def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
 
         # run prisma generate
         if func.db_schema:
-            p.write(PRISMA_FILE_HEADER + "\n" + func.db_schema)
-            p.flush()
             execute_command(["prisma", "generate"], temp_dir)
 
         # execute pyright
@@ -312,6 +310,10 @@ def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
                     # write the code to code.py
                     f.write(code)
                     f.flush()
+
+                    # write the prisma schema to schema.prisma
+                    p.write(PRISMA_FILE_HEADER + "\n" + func.db_schema)
+                    p.flush()
 
                     return __execute_pyright_commands(code)
     finally:
