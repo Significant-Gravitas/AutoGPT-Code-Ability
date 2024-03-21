@@ -220,7 +220,7 @@ services:
             # Override DATABASE_URL from .env with host and port (db:5432) of DB service
             DATABASE_URL: "postgresql://${DB_USER}:${DB_PASS}@db:5432/${DB_NAME}"
         ports:
-        - "8080:8000"
+        - "${PORT:-8080}:8000"
         depends_on:
             db:
                 condition: service_healthy
