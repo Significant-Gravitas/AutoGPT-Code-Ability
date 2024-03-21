@@ -1,7 +1,6 @@
 import logging
 import os
 import random
-import shutil
 import subprocess
 import tempfile
 import zipfile
@@ -24,33 +23,30 @@ FROM python:3.11-slim-buster
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
-ENV PORT=8080
-ENV DB_HOST=db
-ENV DB_PORT=5432
-
-# Set work directory in the container
-WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update \
-    && apt-get install -y build-essential curl ffmpeg \
-    && apt-get clean \
+RUN apt-get update \\
+    && apt-get install -y build-essential curl \\
+    && apt-get clean \\
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the wait-for-it script and make it executable
-COPY wait-for-it.sh /wait-for-it.sh
-RUN chmod +x /wait-for-it.sh
+WORKDIR /app
 
-# Copy project files (requirements and actual code)
-COPY . /app
-
-# Project initialization:
+# Install dependencies
+COPY requirements.txt /app/
 RUN pip install -r requirements.txt
+
+# Generate Prisma client
+COPY schema.prisma /app/
 RUN prisma generate
 
-# Use the shell form of CMD to use environment variables at runtime
-CMD bash /wait-for-it.sh ${DB_HOST}:${DB_PORT} -- uvicorn project.server:app --host 0.0.0.0 --port $PORT
-"""
+# Copy project code
+COPY project/ /app/project/
+
+# Serve the application on port 8000
+CMD uvicorn project.server:app --host 0.0.0.0 --port 8000
+EXPOSE 8000
+""".lstrip()
 
 
 def generate_requirements_txt(
@@ -210,22 +206,24 @@ services:
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASS}
             POSTGRES_DB: ${DB_NAME}
-        ports:
-        - "5432:5432"
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
     app:
         build:
             context: .
             dockerfile: Dockerfile
         environment:
-            - PORT=8080
-            - DB_HOST=db # Default host value, can be overridden
-            - DB_PORT=5432 # Default port value, can be overridden
+            # Override DATABASE_URL from .env with host and port (db:5432) of DB service
+            DATABASE_URL: "postgresql://${DB_USER}:${DB_PASS}@db:5432/${DB_NAME}"
         ports:
-        - "8080:8080"
-
+        - "${PORT:-8080}:8000"
         depends_on:
-            - db
-"""
+            db:
+                condition: service_healthy
+""".lstrip()
 
     return docker_compose
 
@@ -431,11 +429,6 @@ async def create_zip_file(application: Application) -> bytes:
             docker_compose = generate_docker_compose_file(application)
             with open(docker_compose_file_path, mode="w") as docker_compose_file:
                 docker_compose_file.write(docker_compose)
-
-            # Copy wait-for-it.sh to package_dir
-            wait_for_it_src = os.path.join(os.path.dirname(__file__), "wait-for-it.sh")
-            wait_for_it_dest = os.path.join(package_dir, "wait-for-it.sh")
-            shutil.copy(wait_for_it_src, wait_for_it_dest)
 
             # Initialize a Git repository and commit everything
             git_init(app_dir=package_dir)
