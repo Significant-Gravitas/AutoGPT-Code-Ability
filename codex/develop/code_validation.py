@@ -288,7 +288,9 @@ def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
                 "reportArgumentType",  # This breaks prisma query with dict
                 "reportReturnType",  # This breaks returning Option without fallback
             ]
-            and not e.get("rule").startswith("reportOptional")
+            and not e.get("rule").startswith(
+                "reportOptional"
+            )  # TODO: improve prompt so we can enable these.
         ]
 
         # read code from code.py. split the code into imports and raw code
