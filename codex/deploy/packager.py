@@ -205,8 +205,6 @@ services:
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASS}
             POSTGRES_DB: ${DB_NAME}
-        # ports:
-        # - "5432:5432"
         healthcheck:
             test: ["CMD-SHELL", "pg_isready"]
             interval: 10s
