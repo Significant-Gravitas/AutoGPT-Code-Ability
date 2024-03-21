@@ -122,7 +122,9 @@ def example(port: int):
 def analytics():
     import codex.analytics
 
-    asyncio.get_event_loop().run_until_complete(codex.analytics.load_data())
+    asyncio.get_event_loop().run_until_complete(
+        codex.analytics.get_template_performance()
+    )
 
 
 async def get_resume_points(prisma_client):

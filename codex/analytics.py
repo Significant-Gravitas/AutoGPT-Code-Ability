@@ -3,7 +3,7 @@ import pandas as pd
 import prisma
 
 
-async def load_data():
+async def get_template_performance():
     db = prisma.Prisma(auto_register=True)
 
     await db.connect()
