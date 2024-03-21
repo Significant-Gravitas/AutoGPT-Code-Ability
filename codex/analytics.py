@@ -3,7 +3,13 @@ import pandas as pd
 import prisma
 
 
-async def get_template_performance():
+async def get_template_performance() -> pd.DataFrame:
+    """
+    Retrieves template performance data from the database and performs aggregation and analysis.
+
+    Returns:
+        pandas.DataFrame: The updated DataFrame containing template performance data.
+    """
     db = prisma.Prisma(auto_register=True)
 
     await db.connect()

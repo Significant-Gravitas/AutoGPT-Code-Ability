@@ -120,6 +120,9 @@ def example(port: int):
 
 @cli.command()
 def analytics():
+    """
+    Run analytics to get template performance.
+    """
     import codex.analytics
 
     asyncio.get_event_loop().run_until_complete(
