@@ -85,6 +85,9 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
         user_id=ids.user_id, app_id=ids.app_id, interview_id=ids.interview_id or ""
     )
 
+    # set interview id
+    ids.interview_id = interview.id
+
     if not interview:
         raise ValueError("Interview not found")
 

@@ -18,9 +18,7 @@ from codex.common.ai_block import (
 from codex.common.database import INCLUDE_FUNC
 from codex.common.model import create_object_type
 from codex.develop.code_validation import CodeValidator
-from codex.develop.function import (
-    construct_function,
-)
+from codex.develop.function import construct_function
 from codex.develop.model import GeneratedFunctionResponse, Package
 
 logger = logging.getLogger(__name__)

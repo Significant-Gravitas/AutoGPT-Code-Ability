@@ -1,7 +1,8 @@
 from typing import List
 
-from prisma.models import Function, ObjectType
+from prisma.models import Function
 from prisma.models import Function as FunctionDBModel
+from prisma.models import ObjectType
 from pydantic import BaseModel
 
 from codex.common.model import FunctionDef
