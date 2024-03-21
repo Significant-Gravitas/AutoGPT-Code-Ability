@@ -326,9 +326,7 @@ def create_server_route_code(compiled_route: CompiledRoute) -> str:
 
     http_verb = str(route_spec.method)
     route_decorator = f"@app.{http_verb.lower()}('{route_spec.path}'"
-    if is_file_response:
-        route_decorator += ", response_class=StreamingResponse"
-    else:
+    if not is_file_response:
         route_decorator += f", response_model={module_name}.{route_response_annotation}"
 
     route_decorator += ")\n"
