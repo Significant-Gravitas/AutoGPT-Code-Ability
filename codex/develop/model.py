@@ -14,6 +14,12 @@ class Package(BaseModel):
     version: str | None = None
     specifier: str | None = None
 
+    def __str__(self):
+        if self.version:
+            return f"{self.package_name}{self.specifier}{self.version}"
+        else:
+            return self.package_name
+
 
 class GeneratedFunctionResponse(BaseModel):
     function_id: str | None = None

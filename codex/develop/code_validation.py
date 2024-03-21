@@ -17,7 +17,7 @@ from codex.common.exec_external_tool import exec_external_on_contents
 from codex.develop.compile import ComplicationFailure
 from codex.develop.function import generate_object_code
 from codex.develop.function_visitor import FunctionVisitor
-from codex.develop.model import GeneratedFunctionResponse
+from codex.develop.model import GeneratedFunctionResponse, Package
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,13 @@ class CodeValidator:
             "available_objects"
         ]
 
-    def validate_code(self, code: str, call_cnt: int = 0) -> GeneratedFunctionResponse:
+    def validate_code(
+        self,
+        compiled_route_id: str,
+        packages: list[Package],
+        code: str,
+        call_cnt: int = 0,
+    ) -> GeneratedFunctionResponse:
         """
         Validate the code snippet for any error
         Args:
@@ -121,9 +127,8 @@ class CodeValidator:
             functionCode=requested_func.function_code,
             functions=stub_funcs,
             db_schema=self.db_schema,
-            # These two values should be filled by the agent
-            compiled_route_id="",
-            packages=[],
+            packages=packages,
+            compiled_route_id=compiled_route_id,
         )
 
         # Execute static validators and fixers.
@@ -134,7 +139,9 @@ class CodeValidator:
 
         # Auto-fixer works, retry validation (limit to 5 times, to avoid infinite loop)
         if old_compiled_code != new_compiled_code and call_cnt < 5:
-            return self.validate_code(new_compiled_code, call_cnt + 1)
+            return self.validate_code(
+                compiled_route_id, packages, new_compiled_code, call_cnt + 1
+            )
 
         if validation_errors:
             raise ValidationError(validation_errors)
@@ -218,12 +225,12 @@ def __execute_ruff(func: GeneratedFunctionResponse) -> list[str]:
         return validation_errors
 
 
-TEMP_DIR = os.path.abspath("./../../static_code_analysis")
+TEMP_DIR = os.path.abspath("./../static_code_analysis")
 os.makedirs(TEMP_DIR, exist_ok=True)
 
 
 def execute_command(
-    command: list[str], cwd=TEMP_DIR, python_path=f"{TEMP_DIR}/venv/bin"
+    command: list[str], cwd=TEMP_DIR, python_path: str | None = f"{TEMP_DIR}/venv/bin"
 ) -> str:
     """
     Execute a command in the shell
@@ -265,50 +272,56 @@ def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
 
     with open(f"{TEMP_DIR}/schema.prisma", "w") as p:
         with open(f"{TEMP_DIR}/code.py", "w") as f:
-            # write the code to code.py
-            f.write(code)
-            f.flush()
+            with open(f"{TEMP_DIR}/requirements.txt", "w") as r:
+                # write the requirements to requirements.txt
+                r.write("\n".join([str(p) for p in func.packages]))
+                r.flush()
 
-            setup_if_required()
+                # write the code to code.py
+                f.write(code)
+                f.flush()
 
-            # run pipreqs save it to the requirements.txt
-            execute_command(["pipreqs", "--force"])
+                setup_if_required()
 
-            # run pip install -r requirements.txt
-            execute_command(["pip", "install", "-r", "requirements.txt"])
+                # run pipreqs save it to the requirements.txt
+                # execute_command(["pipreqs", "--force"])
 
-            # run prisma generate
-            if func.db_schema:
-                p.write(PRISMA_FILE_HEADER + "\n" + func.db_schema)
-                p.flush()
-                execute_command(["prisma", "generate"])
+                # run pip install -r requirements.txt
+                execute_command(["pip", "install", "-r", "requirements.txt"])
 
-            # execute pyright
-            result = execute_command(["pyright", "--outputjson"])
-            if not result:
-                return []
+                # run prisma generate
+                if func.db_schema:
+                    p.write(PRISMA_FILE_HEADER + "\n" + func.db_schema)
+                    p.flush()
+                    execute_command(["prisma", "generate"])
 
-            validation_errors = [
-                f"{e['message']} -> '{'\n'.join(code.splitlines()[
+                # execute pyright
+                result = execute_command(["pyright", "--outputjson"])
+                if not result:
+                    return []
+
+                validation_errors = [
+                    f"{e['message']}. {e.get('rule', '')} -> '{'\n'.join(code.splitlines()[
                     e["range"]["start"]["line"]:e["range"]["end"]["line"]+1
                 ])}'"
-                for e in json.loads(result)["generalDiagnostics"]
-                if e.get("severity") == "error"
-                if e.get("rule")
-                not in [
-                    "reportRedeclaration",
-                    "reportOptionalMemberAccess",  # TODO: allow this
-                    "reportArgumentType",  # This breaks prisma query with dict
+                    for e in json.loads(result)["generalDiagnostics"]
+                    if e.get("severity") == "error"
+                    if e.get("rule")
+                    not in [
+                        "reportRedeclaration",
+                        "reportArgumentType",  # This breaks prisma query with dict
+                        "reportReturnType",  # This breaks returning Option without fallback
+                    ]
+                    and not e.get("rule").startswith("reportOptional")
                 ]
-            ]
 
-            # read code from code.py. split the code into imports and raw code
-            code = open(f"{TEMP_DIR}/code.py").read()
-            split = code.split(separator)
-            func.imports = split[0].splitlines()
-            func.rawCode = split[1].strip()
+                # read code from code.py. split the code into imports and raw code
+                code = open(f"{TEMP_DIR}/code.py").read()
+                split = code.split(separator)
+                func.imports = split[0].splitlines()
+                func.rawCode = split[1].strip()
 
-            return validation_errors
+                return validation_errors
 
 
 AUTO_IMPORT_TYPES: dict[str, str] = {
