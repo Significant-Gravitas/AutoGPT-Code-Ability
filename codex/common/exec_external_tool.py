@@ -20,6 +20,7 @@ def exec_external_on_contents(
     file_contents,
     suffix: str = ".py",
     output_type: OutputType = OutputType.BOTH,
+    raise_file_contents_on_error: bool = False,
 ) -> str:
     """
     Execute an external tool with the provided command arguments and file contents
@@ -77,7 +78,10 @@ def exec_external_on_contents(
             # Ensure the temporary file is deleted
             os.remove(temp_file_path)
 
-    if errors:
-        raise ValidationError(f"Errors with generation: {errors}")
+    if not errors:
+        return file_contents
 
-    return file_contents
+    if raise_file_contents_on_error:
+        raise ValidationError(f"Errors with generation: {errors}", file_contents)
+
+    raise ValidationError(f"Errors with generation: {errors}")

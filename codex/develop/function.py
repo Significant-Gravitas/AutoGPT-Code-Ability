@@ -6,8 +6,12 @@ from prisma.enums import FunctionState
 from prisma.models import ObjectType
 from prisma.types import FunctionCreateInput, ObjectFieldCreateInput
 
-from codex.common.model import ObjectTypeModel, get_related_types, normalize_type
-from codex.develop.model import FunctionDef
+from codex.common.model import (
+    FunctionDef,
+    ObjectTypeModel,
+    get_related_types,
+    normalize_type,
+)
 
 
 async def construct_function(
@@ -62,6 +66,9 @@ async def construct_function(
 
 
 def generate_object_code(obj: ObjectTypeModel) -> str:
+    if not obj.name:
+        return ""  # Avoid generating an empty object
+
     # Auto-generate a template for the object, this will not capture any class functions.
     fields = f"\n{' ' * 8}".join(
         [

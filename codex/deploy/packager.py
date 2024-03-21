@@ -11,6 +11,7 @@ from typing import List
 from pipreqs import pipreqs
 from prisma.models import DatabaseTable, Package
 
+from codex.common.constants import PRISMA_FILE_HEADER
 from codex.deploy.model import Application
 
 logger = logging.getLogger(__name__)
@@ -253,25 +254,7 @@ async def create_prisma_schema_file(application: Application) -> str:
         where={"databaseSchemaId": db_schema_id}
     )
 
-    prisma_file = """
-// datasource db defines the database connection settings.
-// It is configured for PostgreSQL and uses an environment variable for the connection URL.
-// The 'extensions' feature enables the use of PostgreSQL-specific data types.
-datasource db {
-  provider   = "postgresql"
-  url        = env("DATABASE_URL")
-}
-
-// generator db configures Prisma Client settings.
-// It is set up to use Prisma Client Python with asyncio interface and specific features.
-generator db {
-  provider             = "prisma-client-py"
-  interface            = "asyncio"
-  recursive_type_depth = 5
-  previewFeatures      = ["postgresqlExtensions"]
-}
-
-""".lstrip()
+    prisma_file = f"{PRISMA_FILE_HEADER}".lstrip()
     if not tables:
         return ""
 

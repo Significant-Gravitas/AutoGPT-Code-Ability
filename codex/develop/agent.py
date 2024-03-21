@@ -14,6 +14,7 @@ from prisma.types import CompiledRouteCreateInput
 
 from codex.api_model import Identifiers
 from codex.common.database import INCLUDE_API_ROUTE, INCLUDE_FUNC
+from codex.common.model import FunctionDef
 from codex.develop.compile import (
     compile_route,
     create_app,
@@ -22,7 +23,6 @@ from codex.develop.compile import (
 )
 from codex.develop.develop import DevelopAIBlock
 from codex.develop.function import construct_function, generate_object_template
-from codex.develop.model import FunctionDef
 
 RECURSION_DEPTH_LIMIT = int(os.environ.get("RECURSION_DEPTH_LIMIT", 2))
 
