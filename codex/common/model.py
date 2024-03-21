@@ -95,8 +95,10 @@ class FunctionDef(BaseModel):
             ]
         )
 
+        def_str = "async def" if "await " in f.function_code else "def"
+
         template = f"""
-        def {f.name}({args_str}) -> {f.return_type}:
+        {def_str} {f.name}({args_str}) -> {f.return_type}:
             \"\"\"
             {f.function_desc}
 

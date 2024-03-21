@@ -186,6 +186,7 @@ class DevelopAIBlock(AIBlock):
             rawCode=generated_response.rawCode,
             importStatements=generated_response.imports,
             functionCode=generated_response.functionCode,
+            template=generated_response.template,
             ChildFunctions={"create": function_defs},  # type: ignore
         )
 

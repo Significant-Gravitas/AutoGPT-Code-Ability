@@ -89,7 +89,8 @@ class FunctionVisitor(ast.NodeVisitor):
 
         function_code = ast.unparse(node)
         if "await" in function_code and "async def" not in function_code:
-            function_code = function_code.replace("def", "async def")
+            function_code = function_code.replace("def ", "async def ")
+            function_template = function_template.replace("def ", "async def ")
 
         self.functions.append(
             FunctionDef(
