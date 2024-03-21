@@ -91,11 +91,13 @@ class AIBlock:
             db_client (Prisma): The Prisma Database client
         """
         self.oai_client: AsyncOpenAI = OpenAIChatClient.get_instance().openai
-        self.template_base_path = os.path.join(
-            os.path.dirname(__file__),
-            f"../{self.template_base_path}/{self.model}",
-        )
-        self.templates_dir = pathlib.Path(self.template_base_path).resolve(strict=True)
+        self.template_base_path_with_model = pathlib.Path(
+            os.path.join(
+                os.path.dirname(__file__),
+                f"../{self.template_base_path}/{self.model}",
+            )
+        ).resolve(strict=True)
+        self.templates_dir = self.template_base_path_with_model
         self.call_template_id = None
         self.load_pydantic_format_instructions()
 
@@ -130,7 +132,7 @@ class AIBlock:
         if self.langauge:
             lang_str = f"{self.langauge}."
 
-        prompts = {"systemPrompt": "", "userPrompt": "", "retryPrompt": ""}
+        prompts = {"system": "", "user": "", "retry": ""}
 
         for key in ["system", "user", "retry"]:
             # Pattern to match the files
@@ -139,13 +141,16 @@ class AIBlock:
             )
 
             files = glob.glob(pattern)
-            prompt_contents = ""
-
             for file_path in files:
                 # Reading and appending file name and contents
+
+                relative_file_path = os.path.relpath(
+                    file_path, self.template_base_path_with_model
+                )
                 with open(file_path, "r") as file:
                     contents = file.read()
-                    prompt_contents += f"\n{file_path}:\n{contents}\n"
+
+                    prompts[key] += f"\n{relative_file_path}:\n{contents}\n"
 
         all_prompts_combined = "".join(prompts.values())
         self.template_hash = hashlib.md5(all_prompts_combined.encode()).hexdigest()
@@ -166,9 +171,9 @@ class AIBlock:
                 data={
                     "templateName": self.prompt_template_name,
                     "fileHash": self.template_hash,
-                    "systemPrompt": prompts["systemPrompt"],
-                    "userPrompt": prompts["userPrompt"],
-                    "retryPrompt": prompts["retryPrompt"],
+                    "systemPrompt": prompts["system"],
+                    "userPrompt": prompts["user"],
+                    "retryPrompt": prompts["retry"],
                     "developmentPhase": self.developement_phase,
                 }
             )
@@ -197,6 +202,7 @@ class AIBlock:
             attempt=attempt,
             prompt=prompt,
             response=response.message,
+            LLMCallTemplate={"connect": {"id": self.call_template_id}},
         )
 
         if ids.user_id:
