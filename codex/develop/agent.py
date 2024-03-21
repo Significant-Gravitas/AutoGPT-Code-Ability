@@ -82,7 +82,6 @@ async def process_api_route(api_route, ids, spec, app):
 
     # Set all the ids for logging
     ids.spec_id = spec.id
-    ids.api_route_id = api_route.id
     ids.compiled_route_id = compiled_route.id
     ids.function_id = compiled_route.RootFunction.id
 

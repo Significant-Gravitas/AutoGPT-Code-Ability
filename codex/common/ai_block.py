@@ -327,7 +327,7 @@ class AIBlock:
         if not self.call_template_id:
             await self.store_call_template()
         presponse = None
-        retry_attempt = 1
+        retry_attempt = 0
         first_llm_call_id = None
         try:
             if self.is_json_response:
@@ -360,6 +360,9 @@ class AIBlock:
                     Json(request_params["messages"]),
                 )
             ).id
+
+            # Increment it here so the first retry is 1
+            retry_attempt += 1
 
             validated_response = self.validate(invoke_params, presponse)
         except ValidationError as validation_error:

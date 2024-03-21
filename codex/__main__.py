@@ -118,6 +118,13 @@ def example(port: int):
     asyncio.get_event_loop().run_until_complete(prisma_client.disconnect())
 
 
+@cli.command()
+def analytics():
+    import codex.analytics
+
+    asyncio.get_event_loop().run_until_complete(codex.analytics.load_data())
+
+
 async def get_resume_points(prisma_client):
     import datetime
 
