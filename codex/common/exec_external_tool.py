@@ -91,25 +91,33 @@ TEMP_DIR = os.path.abspath("./../static_code_analysis")
 DEFAULT_DEPS = ["prisma", "pyright", "pydantic"]
 
 
-def setup_if_required():
-    if not os.path.exists(TEMP_DIR):
-        os.makedirs(TEMP_DIR, exist_ok=True)
+def setup_if_required(cwd: str) -> str:
+    """
+    Setup the virtual environment if it does not exist
+    This setup is executed expectedly once per application run
+    """
+    if not os.path.exists(cwd):
+        os.makedirs(cwd, exist_ok=True)
 
-    if os.path.exists(f"{TEMP_DIR}/venv"):
-        return
+    path = f"{cwd}/venv/bin"
+    if os.path.exists(path):
+        return path
 
     # Create a virtual environment
-    output = execute_command(["python", "-m", "venv", "venv"], python_path=None)
-    print(output)
+    output = execute_command(["python", "-m", "venv", "venv"], cwd, None)
+    logger.debug(output)
+
     # Install dependencies
-    output = execute_command(["pip", "install"] + DEFAULT_DEPS)
-    print(output)
+    output = execute_command(["pip", "install"] + DEFAULT_DEPS, cwd, path)
+    logger.debug(output)
+
+    return path
 
 
 def execute_command(
     command: list[str],
-    cwd=TEMP_DIR,
-    python_path: str | None = f"{TEMP_DIR}/venv/bin",
+    cwd: str,
+    python_path: str | None,
     raise_on_error: bool = True,
 ) -> str:
     """
@@ -123,7 +131,7 @@ def execute_command(
         str: The output of the command
     """
     try:
-        # Set the python path by replacing the env 'PATH' with the python path
+        # Set the python path by replacing the env 'PATH' with the provided python path
         venv = os.environ.copy()
         if python_path:
             original_python_path = venv["PATH"].split(":")[1:]
@@ -134,6 +142,6 @@ def execute_command(
         return (r.stdout or r.stderr or b"").decode("utf-8")
     except subprocess.CalledProcessError as e:
         if raise_on_error:
-            raise ValidationError((e.stdout or e.stderr).decode("utf-8")) from e
+            raise ValidationError((e.stderr or e.stdout).decode("utf-8")) from e
         else:
             return e.output.decode("utf-8")

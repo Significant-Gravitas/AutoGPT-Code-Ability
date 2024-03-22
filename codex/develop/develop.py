@@ -108,11 +108,12 @@ class DevelopAIBlock(AIBlock):
                 )
             code = code_blocks[0].split("```")[0]
             response.response = CodeValidator(
+                compiled_route_id=invoke_params["compiled_route_id"],
                 database_schema=invoke_params["database_schema"],
                 function_name=invoke_params["function_name"],
                 available_objects=invoke_params["available_objects"],
                 available_functions=invoke_params["available_functions"],
-            ).validate_code(invoke_params["compiled_route_id"], packages, code)
+            ).validate_code(packages, code)
 
         except ValidationError as e:
             if isinstance(e.args[0], List):

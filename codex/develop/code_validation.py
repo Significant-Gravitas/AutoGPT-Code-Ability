@@ -6,7 +6,6 @@ import logging
 import os
 import re
 import typing
-import uuid
 
 import black
 import isort
@@ -33,28 +32,41 @@ logger = logging.getLogger(__name__)
 class CodeValidator:
     def __init__(
         self,
+        compiled_route_id: str,
         database_schema: str,
         function_name: str | None = None,
         available_functions: dict[str, Function] | None = None,
         available_objects: dict[str, ObjectType] | None = None,
     ):
+        self.compiled_route_id: str = compiled_route_id
         self.db_schema: str = database_schema
         self.func_name: str = function_name or ""
         self.available_functions: dict[str, Function] = available_functions or {}
         self.available_objects: dict[str, ObjectType] = available_objects or {}
 
     def reformat_code(
-        self, compiled_route_id: str, code: str, packages: list[Package]
+        self,
+        code: str,
+        packages: list[Package],
     ) -> str:
+        """
+        Reformat the code snippet
+        Args:
+            code (str): The code snippet to reformat
+            packages (list[Package]): The list of packages to validate
+        Returns:
+            str: The reformatted code snippet
+        """
         try:
             code = self.validate_code(
-                compiled_route_id=compiled_route_id,
                 raw_code=code,
                 packages=packages,
             ).get_compiled_code()
         except Exception as e:
             # We move on with unfixed code if there's an error
-            logger.exception(f"Error fixing code for route #{compiled_route_id}: {e}")
+            logger.exception(
+                f"Error fixing code for route #{self.compiled_route_id}: {e}"
+            )
 
         # Run the formatters
         try:
@@ -63,14 +75,13 @@ class CodeValidator:
         except Exception as e:
             # We move on with unformatted code if there's an error
             logger.exception(
-                f"Error formatting code: {e} for route #{compiled_route_id}"
+                f"Error formatting code: {e} for route #{self.compiled_route_id}"
             )
 
         return code
 
     def validate_code(
         self,
-        compiled_route_id: str,
         packages: list[Package],
         raw_code: str,
         call_cnt: int = 0,
@@ -78,7 +89,8 @@ class CodeValidator:
         """
         Validate the code snippet for any error
         Args:
-            code (str): The code snippet to validate
+            packages (list[Package]): The list of packages to validate
+            raw_code (str): The code snippet to validate
         Returns:
             GeneratedFunctionResponse: The response of the validation
         Raise:
@@ -164,7 +176,7 @@ class CodeValidator:
             functions=stub_funcs,
             db_schema=self.db_schema,
             packages=packages,
-            compiled_route_id=compiled_route_id,
+            compiled_route_id=self.compiled_route_id,
         )
 
         # Execute static validators and fixers.
@@ -175,9 +187,7 @@ class CodeValidator:
 
         # Auto-fixer works, retry validation (limit to 5 times, to avoid infinite loop)
         if old_compiled_code != new_compiled_code and call_cnt < 5:
-            return self.validate_code(
-                compiled_route_id, packages, new_compiled_code, call_cnt + 1
-            )
+            return self.validate_code(packages, new_compiled_code, call_cnt + 1)
 
         if validation_errors:
             raise ValidationError(validation_errors)
@@ -316,25 +326,25 @@ def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
     validation_errors = []
 
     # Create temporary directory under the TEMP_DIR with random name
-    temp_dir = os.path.join(TEMP_DIR, str(object=uuid.uuid4()))
-    os.makedirs(temp_dir, exist_ok=True)
+    temp_dir = os.path.join(TEMP_DIR, func.compiled_route_id)
+    py_path = setup_if_required(temp_dir)
 
     def __execute_pyright_commands(code: str) -> list[str]:
-        setup_if_required()
-
         try:
-            execute_command(["pip", "install", "-r", "requirements.txt"], temp_dir)
+            execute_command(
+                ["pip", "install", "-r", "requirements.txt"], temp_dir, py_path
+            )
         except ValidationError as e:
             # Unknown deps should be reported as validation errors
             validation_errors.append(str(e))
 
         # run prisma generate
         if func.db_schema:
-            execute_command(["prisma", "generate"], temp_dir)
+            execute_command(["prisma", "generate"], temp_dir, py_path)
 
         # execute pyright
         result = execute_command(
-            ["pyright", "--outputjson"], temp_dir, raise_on_error=False
+            ["pyright", "--outputjson"], temp_dir, py_path, raise_on_error=False
         )
         if not result:
             return []
@@ -385,7 +395,7 @@ def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
 
                     return __execute_pyright_commands(code)
     finally:
-        execute_command(["rm", "-rf", temp_dir])
+        execute_command(["rm", "-rf", temp_dir], TEMP_DIR, None)
 
 
 AUTO_IMPORT_TYPES: dict[str, str] = {

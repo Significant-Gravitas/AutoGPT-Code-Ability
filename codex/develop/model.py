@@ -102,7 +102,7 @@ class GeneratedFunctionResponse(BaseModel):
             + [
                 f.function_template.strip()
                 for f in self.functions
-                if f.name not in self.available_functions
+                if f.name not in self.available_functions and f.function_template
             ]
         )
 

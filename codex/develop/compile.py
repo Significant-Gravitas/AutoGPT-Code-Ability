@@ -75,12 +75,12 @@ async def compile_route(
 
     # Run the auto-fixers
     formatted_code = CodeValidator(
+        compiled_route_id=compiled_route_id,
         function_name=route_root_func.functionName,
         database_schema=database_schema,
         available_functions={route_root_func.functionName: route_root_func},
         available_objects={},
     ).reformat_code(
-        compiled_route_id,
         code,
         list(unique_packages.values()),
     )
@@ -559,8 +559,10 @@ app = FastAPI(title="{name}", lifespan=lifespan, description='''{desc}''')
     )
 
     # Update the application with the server code
-    formatted_code = CodeValidator(db_schema).reformat_code(
+    formatted_code = CodeValidator(
+        database_schema=db_schema,
         compiled_route_id=f"CompletedAppID-{completed_app.id}",
+    ).reformat_code(
         code=server_code,
         packages=[
             PackageModel(
