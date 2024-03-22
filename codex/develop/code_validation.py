@@ -14,6 +14,7 @@ from prisma.models import Function, ObjectType
 from codex.common.ai_block import ValidationError
 from codex.common.constants import PRISMA_FILE_HEADER
 from codex.common.exec_external_tool import (
+    DEFAULT_DEPS,
     TEMP_DIR,
     exec_external_on_contents,
     execute_command,
@@ -304,7 +305,7 @@ def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
         return validation_errors
 
     packages = "\n".join(
-        [str(p) for p in func.packages if p.package_name not in ["prisma", "pyright"]]
+        [str(p) for p in func.packages if p.package_name not in DEFAULT_DEPS]
     )
     try:
         with open(f"{temp_dir}/schema.prisma", "w") as p:

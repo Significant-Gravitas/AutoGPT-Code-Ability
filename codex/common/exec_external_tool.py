@@ -88,6 +88,7 @@ def exec_external_on_contents(
 
 
 TEMP_DIR = os.path.abspath("./../static_code_analysis")
+DEFAULT_DEPS = ["prisma", "pyright", "pydantic"]
 
 
 def setup_if_required():
@@ -101,7 +102,7 @@ def setup_if_required():
     output = execute_command(["python", "-m", "venv", "venv"], python_path=None)
     print(output)
     # Install dependencies
-    output = execute_command(["pip", "install", "prisma", "pyright"])
+    output = execute_command(["pip", "install"] + DEFAULT_DEPS)
     print(output)
 
 
