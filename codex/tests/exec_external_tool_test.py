@@ -21,7 +21,7 @@ async def test_exec_external_no_command():
     file_contents = "print('Hello World')"
 
     with pytest.raises(AssertionError):
-        exec_external_on_contents(command_arguments, file_contents)
+        await exec_external_on_contents(command_arguments, file_contents)
 
 
 async def test_exec_external_invalid_command():
@@ -30,7 +30,7 @@ async def test_exec_external_invalid_command():
     file_contents = "print('Hello World')"
 
     with pytest.raises(Exception):
-        exec_external_on_contents(command_arguments, file_contents)
+        await exec_external_on_contents(command_arguments, file_contents)
 
 
 # This test only runs if I'm in debug mode on vscode?????????????? otherwise it can't find
@@ -58,7 +58,7 @@ async def test_exec_external_with_ruff_fails():
     command_arguments = ["ruff", "check"]
     file_contents = "print('Hello World'"
     with pytest.raises(Exception) as exc_info:
-        exec_external_on_contents(
+        await exec_external_on_contents(
             command_arguments, file_contents, output_type=OutputType.STD_OUT
         )
     assert exc_info.value.args[0]
