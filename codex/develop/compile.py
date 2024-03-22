@@ -4,8 +4,6 @@ import re
 from datetime import datetime
 from typing import List, Set
 
-import black
-import isort
 from prisma.models import (
     CompiledRoute,
     CompletedApp,
@@ -18,11 +16,17 @@ from prisma.models import (
 from prisma.types import CompiledRouteUpdateInput, CompletedAppCreateInput
 from pydantic import BaseModel
 
-import codex.common.model
 from codex.api_model import Identifiers
 from codex.common.database import INCLUDE_FIELD, INCLUDE_FUNC
+from codex.common.types import normalize_type
 from codex.deploy.model import Application
-from codex.develop.function import generate_object_template
+from codex.develop.code_validation import CodeValidator
+from codex.develop.database import get_compiled_route
+from codex.develop.function import (
+    generate_object_template,
+    get_database_schema,
+)
+from codex.develop.model import Package as PackageModel
 
 logger = logging.getLogger(__name__)
 
@@ -52,21 +56,34 @@ async def compile_route(
     """
     compiled_function = await recursive_compile_route(route_root_func, set())
 
-    unique_packages = list(set([package.id for package in compiled_function.packages]))
+    unique_packages = {
+        package.id: PackageModel(
+            package_name=package.packageName,
+            version=package.version,
+            specifier=package.specifier,
+        )
+        for package in compiled_function.packages
+    }
     code = "\n".join(compiled_function.imports)
     code += "\n\n"
     code += "\n\n".join(compiled_function.pydantic_models)
     code += "\n\n"
     code += compiled_function.code
 
-    # Run the formatting engines
-    formatted_code = code
-    try:
-        formatted_code = isort.code(formatted_code)
-        formatted_code = black.format_str(formatted_code, mode=black.FileMode())
-    except Exception as e:
-        # We move on with unformatted code if there's an error
-        logger.exception(f"Error formatting code: {e} for route #{compiled_route_id}")
+    compiled_route = await get_compiled_route(compiled_route_id)
+    database_schema = get_database_schema(compiled_route)
+
+    # Run the auto-fixers
+    formatted_code = CodeValidator(
+        function_name=route_root_func.functionName,
+        database_schema=database_schema,
+        available_functions={route_root_func.functionName: route_root_func},
+        available_objects={},
+    ).reformat_code(
+        compiled_route_id,
+        code,
+        list(unique_packages.values()),
+    )
 
     data = CompiledRouteUpdateInput(
         Packages={"connect": [{"id": package_id} for package_id in unique_packages]},
@@ -107,7 +124,7 @@ def add_full_import_parth_to_custom_types(module_name: str, arg: ObjectField) ->
         if t.isPydantic or t.isEnum:
             renamed_types[t.name] = f"{module_name}.{t.name}"
 
-    ret_type = codex.common.model.normalize_type(ret_type, renamed_types)
+    ret_type = normalize_type(ret_type, renamed_types)
 
     return ret_type
 
@@ -365,12 +382,14 @@ def create_server_route_code(compiled_route: CompiledRoute) -> str:
         route_function_def += f" -> {response_model}:"
         return_response = "return res"
 
+    await_str = "await " if "async def" in main_function.template else ""
+
     function_body = f"""
     \"\"\"
     {route_spec.description}
     \"\"\"
     try:
-        res = await {module_name}.{main_function.functionName}({", ".join([arg.name for arg in args])})
+        res = {await_str}{module_name}.{main_function.functionName}({", ".join([arg.name for arg in args])})
         {return_response}
     except Exception as e:
         logger.exception("Error processing request")
@@ -511,7 +530,8 @@ app = FastAPI(title="{name}", lifespan=lifespan, description='''{desc}''')
             createdAt=datetime.now(),
         ),
     ]
-    for i, compiled_route in enumerate(completed_app.CompiledRoutes):
+
+    for compiled_route in completed_app.CompiledRoutes:
         if compiled_route.ApiRouteSpec is None:
             raise ValueError(f"Compiled route {compiled_route.id} has no APIRouteSpec")
 
@@ -534,9 +554,23 @@ app = FastAPI(title="{name}", lifespan=lifespan, description='''{desc}''')
     server_code += "\n\n"
     server_code += "\n\n".join(service_routes_code)
 
+    db_schema = "\n\n".join(
+        [get_database_schema(r) for r in completed_app.CompiledRoutes]
+    )
+
     # Update the application with the server code
-    sorted_content = isort.code(server_code)
-    formatted_code = black.format_str(sorted_content, mode=black.FileMode())
+    formatted_code = CodeValidator(db_schema).reformat_code(
+        compiled_route_id=f"CompletedAppID-{completed_app.id}",
+        code=server_code,
+        packages=[
+            PackageModel(
+                package_name=package.packageName,
+                version=package.version,
+                specifier=package.specifier,
+            )
+            for package in packages
+        ],
+    )
 
     return Application(
         name=name,

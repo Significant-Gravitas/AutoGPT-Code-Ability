@@ -2,8 +2,10 @@
 Function Helper Functions
 """
 
+import logging
+
 from prisma.enums import FunctionState
-from prisma.models import ObjectType
+from prisma.models import CompiledRoute, ObjectType
 from prisma.types import FunctionCreateInput, ObjectFieldCreateInput
 
 from codex.common.model import (
@@ -12,6 +14,8 @@ from codex.common.model import (
     get_related_types,
     normalize_type,
 )
+
+logger = logging.getLogger(__name__)
 
 
 async def construct_function(
@@ -107,3 +111,19 @@ def generate_object_code(obj: ObjectTypeModel) -> str:
 
 def generate_object_template(obj: ObjectType) -> str:
     return generate_object_code(ObjectTypeModel(db_obj=obj))
+
+
+def get_database_schema(compiled_route: CompiledRoute) -> str:
+    return (
+        "\n\n".join(
+            [
+                t.definition
+                for t in compiled_route.ApiRouteSpec.DatabaseSchema.DatabaseTables
+            ]
+        )
+        if compiled_route
+        and compiled_route.ApiRouteSpec
+        and compiled_route.ApiRouteSpec.DatabaseSchema
+        and compiled_route.ApiRouteSpec.DatabaseSchema.DatabaseTables
+        else ""
+    )

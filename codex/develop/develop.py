@@ -107,9 +107,12 @@ class DevelopAIBlock(AIBlock):
                     + "There should be exactly 1"
                 )
             code = code_blocks[0].split("```")[0]
-            response.response = CodeValidator(invoke_params).validate_code(
-                invoke_params["compiled_route_id"], packages, code
-            )
+            response.response = CodeValidator(
+                database_schema=invoke_params["database_schema"],
+                function_name=invoke_params["function_name"],
+                available_objects=invoke_params["available_objects"],
+                available_functions=invoke_params["available_functions"],
+            ).validate_code(invoke_params["compiled_route_id"], packages, code)
 
         except ValidationError as e:
             if isinstance(e.args[0], List):

@@ -99,7 +99,7 @@ def setup_if_required():
         return
 
     # Create a virtual environment
-    output = execute_command(["python", "-m", "vvenv", "venv"], python_path=None)
+    output = execute_command(["python", "-m", "venv", "venv"], python_path=None)
     print(output)
     # Install dependencies
     output = execute_command(["pip", "install"] + DEFAULT_DEPS)
@@ -118,6 +118,7 @@ def execute_command(
         command (list[str]): The command to execute
         cwd (str): The current working directory
         python_path (str): The python executable path
+        raise_on_error (bool): Whether to raise an error if the command fails
     Returns:
         str: The output of the command
     """
