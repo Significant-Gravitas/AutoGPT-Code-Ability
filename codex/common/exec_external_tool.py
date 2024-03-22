@@ -85,3 +85,76 @@ def exec_external_on_contents(
         raise ValidationError(f"Errors with generation: {errors}", file_contents)
 
     raise ValidationError(f"Errors with generation: {errors}")
+
+
+PROJECT_TEMP_DIR = os.path.join(tempfile.gettempdir(), "codex-static-code-analysis")
+DEFAULT_DEPS = ["prisma", "pyright", "pydantic", "virtualenv-clone"]
+
+
+def setup_if_required(cwd: str, copy_from_parent: bool = False) -> str:
+    """
+    Setup the virtual environment if it does not exist
+    This setup is executed expectedly once per application run
+    Args:
+        cwd (str): The current working directory
+        copy_from_parent (bool): Whether to copy the virtual environment from the parent directory
+    Returns:
+        str: The path to the virtual environment
+    """
+    if not os.path.exists(cwd):
+        os.makedirs(cwd, exist_ok=True)
+
+    path = f"{cwd}/venv/bin"
+    if os.path.exists(path):
+        return path
+
+    parent_dir = os.path.abspath(f"{cwd}/../")
+    if copy_from_parent and os.path.exists(f"{parent_dir}/venv"):
+        parent_path = setup_if_required(parent_dir)
+        execute_command(
+            ["virtualenv-clone", f"{parent_dir}/venv", f"{cwd}/venv"], cwd, parent_path
+        )
+        return path
+
+    # Create a virtual environment
+    output = execute_command(["python", "-m", "venv", "venv"], cwd, None)
+    logger.debug(output)
+
+    # Install dependencies
+    output = execute_command(["pip", "install"] + DEFAULT_DEPS, cwd, path)
+    logger.debug(output)
+
+    return path
+
+
+def execute_command(
+    command: list[str],
+    cwd: str,
+    python_path: str | None,
+    raise_on_error: bool = True,
+) -> str:
+    """
+    Execute a command in the shell
+    Args:
+        command (list[str]): The command to execute
+        cwd (str): The current working directory
+        python_path (str): The python executable path
+        raise_on_error (bool): Whether to raise an error if the command fails
+    Returns:
+        str: The output of the command
+    """
+    try:
+        # Set the python path by replacing the env 'PATH' with the provided python path
+        venv = os.environ.copy()
+        if python_path:
+            original_python_path = venv["PATH"].split(":")[1:]
+            venv["PATH"] = f"{python_path}:{':'.join(original_python_path)}"
+        r = subprocess.run(
+            command, cwd=cwd, shell=False, env=venv, capture_output=True, check=True
+        )
+        return (r.stdout or r.stderr or b"").decode("utf-8")
+    except subprocess.CalledProcessError as e:
+        if raise_on_error:
+            raise ValidationError((e.stderr or e.stdout).decode("utf-8")) from e
+        else:
+            return e.output.decode("utf-8")

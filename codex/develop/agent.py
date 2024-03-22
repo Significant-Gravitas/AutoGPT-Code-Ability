@@ -13,7 +13,7 @@ from prisma.models import (
 from prisma.types import CompiledRouteCreateInput
 
 from codex.api_model import Identifiers
-from codex.common.database import INCLUDE_API_ROUTE, INCLUDE_FUNC
+from codex.common.database import INCLUDE_FUNC
 from codex.common.model import FunctionDef
 from codex.develop.compile import (
     compile_route,
@@ -21,8 +21,13 @@ from codex.develop.compile import (
     get_object_field_deps,
     get_object_type_deps,
 )
+from codex.develop.database import get_compiled_route
 from codex.develop.develop import DevelopAIBlock
-from codex.develop.function import construct_function, generate_object_template
+from codex.develop.function import (
+    construct_function,
+    generate_object_template,
+    get_database_schema,
+)
 
 RECURSION_DEPTH_LIMIT = int(os.environ.get("RECURSION_DEPTH_LIMIT", 2))
 
@@ -155,15 +160,7 @@ async def develop_route(
     if depth > RECURSION_DEPTH_LIMIT:
         raise ValueError("Recursion depth exceeded")
 
-    compiled_route = await CompiledRoute.prisma().find_unique_or_raise(
-        where={"id": compiled_route_id},
-        include={
-            "RootFunction": INCLUDE_FUNC,  # type: ignore
-            "Functions": INCLUDE_FUNC,  # type: ignore
-            "ApiRouteSpec": INCLUDE_API_ROUTE,  # type: ignore
-        },
-    )
-
+    compiled_route = await get_compiled_route(compiled_route_id)
     functions = []
     generated_func: dict[str, Function] = {}
     generated_objs: dict[str, ObjectType] = {}
@@ -192,19 +189,7 @@ async def develop_route(
         if func.functionName != function.functionName
     ] + [generate_object_template(f) for f in generated_objs.values()]
 
-    database_schema = (
-        "\n\n".join(
-            [
-                t.definition
-                for t in compiled_route.ApiRouteSpec.DatabaseSchema.DatabaseTables
-            ]
-        )
-        if compiled_route
-        and compiled_route.ApiRouteSpec
-        and compiled_route.ApiRouteSpec.DatabaseSchema
-        and compiled_route.ApiRouteSpec.DatabaseSchema.DatabaseTables
-        else ""
-    )
+    database_schema = get_database_schema(compiled_route)
 
     dev_invoke_params = {
         "database_schema": database_schema,

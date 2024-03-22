@@ -3,41 +3,94 @@ import collections
 import datetime
 import json
 import logging
+import os
 import re
-import subprocess
-import tempfile
 import typing
 
+import black
+import isort
 import prisma
 from prisma.models import Function, ObjectType
 
 from codex.common.ai_block import ValidationError
 from codex.common.constants import PRISMA_FILE_HEADER
-from codex.common.exec_external_tool import exec_external_on_contents
-from codex.develop.compile import ComplicationFailure
+from codex.common.exec_external_tool import (
+    DEFAULT_DEPS,
+    PROJECT_TEMP_DIR,
+    exec_external_on_contents,
+    execute_command,
+    setup_if_required,
+)
+from codex.common.model import FunctionDef
 from codex.develop.function import generate_object_code
 from codex.develop.function_visitor import FunctionVisitor
-from codex.develop.model import GeneratedFunctionResponse
+from codex.develop.model import GeneratedFunctionResponse, Package
 
 logger = logging.getLogger(__name__)
 
 
 class CodeValidator:
-    def __init__(self, invoke_params: dict):
-        self.db_schema: str = invoke_params["database_schema"]
-        self.func_name: str = invoke_params["function_name"]
-        self.available_functions: dict[str, Function] = invoke_params[
-            "available_functions"
-        ]
-        self.available_objects: dict[str, ObjectType] = invoke_params[
-            "available_objects"
-        ]
+    def __init__(
+        self,
+        compiled_route_id: str,
+        database_schema: str,
+        function_name: str | None = None,
+        available_functions: dict[str, Function] | None = None,
+        available_objects: dict[str, ObjectType] | None = None,
+    ):
+        self.compiled_route_id: str = compiled_route_id
+        self.db_schema: str = database_schema
+        self.func_name: str = function_name or ""
+        self.available_functions: dict[str, Function] = available_functions or {}
+        self.available_objects: dict[str, ObjectType] = available_objects or {}
 
-    def validate_code(self, code: str, call_cnt: int = 0) -> GeneratedFunctionResponse:
+    def reformat_code(
+        self,
+        code: str,
+        packages: list[Package],
+    ) -> str:
+        """
+        Reformat the code snippet
+        Args:
+            code (str): The code snippet to reformat
+            packages (list[Package]): The list of packages to validate
+        Returns:
+            str: The reformatted code snippet
+        """
+        try:
+            code = self.validate_code(
+                raw_code=code,
+                packages=packages,
+            ).get_compiled_code()
+        except Exception as e:
+            # We move on with unfixed code if there's an error
+            logger.exception(
+                f"Error fixing code for route #{self.compiled_route_id}: {e}"
+            )
+
+        # Run the formatters
+        try:
+            code = isort.code(code)
+            code = black.format_str(code, mode=black.FileMode())
+        except Exception as e:
+            # We move on with unformatted code if there's an error
+            logger.exception(
+                f"Error formatting code: {e} for route #{self.compiled_route_id}"
+            )
+
+        return code
+
+    def validate_code(
+        self,
+        packages: list[Package],
+        raw_code: str,
+        call_cnt: int = 0,
+    ) -> GeneratedFunctionResponse:
         """
         Validate the code snippet for any error
         Args:
-            code (str): The code snippet to validate
+            packages (list[Package]): The list of packages to validate
+            raw_code (str): The code snippet to validate
         Returns:
             GeneratedFunctionResponse: The response of the validation
         Raise:
@@ -46,12 +99,17 @@ class CodeValidator:
         validation_errors = []
 
         try:
-            tree = ast.parse(code)
+            tree = ast.parse(raw_code)
             visitor = FunctionVisitor()
             visitor.visit(tree)
             validation_errors.extend(visitor.errors)
         except Exception as e:
-            raise ValidationError(f"Error parsing code: {e}")
+            # parse invalid code line and add it to the error message
+            error = str(e)
+            line = re.search(r"line (\d+)", error)
+            if line:
+                error = f"{error} -> '{parse_line_code(raw_code, int(line.group(1)))}'"
+            raise ValidationError(f"Error parsing code: {error}")
 
         # Eliminate duplicate visitor.functions and visitor.objects, prefer the last one
         visitor.imports = list(set(visitor.imports))
@@ -68,27 +126,23 @@ class CodeValidator:
         deps_funcs = [f for f in visitor.functions if f.is_implemented]
         stub_funcs = [f for f in visitor.functions if not f.is_implemented]
 
-        # Validate that the main function is implemented.
-        requested_func = next((f for f in deps_funcs if f.name == self.func_name), None)
-        if not requested_func or not requested_func.is_implemented:
-            raise ValidationError(
-                f"Main Function body {self.func_name} is not implemented."
-                f" Please complete the implementation of this function!"
-            )
-        requested_func.function_code = (
+        function_code = (
             "".join([generate_object_code(obj) + "\n\n" for obj in visitor.objects])
             + "\n".join(visitor.globals)
             + "".join(["\n\n" + fun.function_code for fun in deps_funcs])
         )
 
-        # Validate that the main function is matching the expected signature.
-        expected_func: Function | None = self.available_functions.get(self.func_name)
-        if not expected_func:
-            raise ComplicationFailure(f"Function {self.func_name} does not exist on DB")
-        try:
-            requested_func.validate_matching_function(expected_func)
-        except Exception as e:
-            validation_errors.append(str(e))
+        # No need to validate main function if it's not provided (compiling a server code)
+        if self.func_name:
+            func_id, main_func = self.__validate_main_function(
+                deps_funcs=deps_funcs,
+                function_code=function_code,
+                validation_errors=validation_errors,
+            )
+            function_template = main_func.function_template
+        else:
+            func_id = None
+            function_template = None
 
         # Validate that code is not re-declaring any existing entities.
         already_declared_entities = set(
@@ -110,20 +164,19 @@ class CodeValidator:
             )
 
         result = GeneratedFunctionResponse(
-            function_id=expected_func.id,
-            function_name=expected_func.functionName,
+            function_id=func_id,
+            function_name=self.func_name,
             available_objects=self.available_objects,
             available_functions=self.available_functions,
-            rawCode=code,
+            rawCode=function_code,
             imports=visitor.imports.copy(),
             objects=[],  # Bundle objects from the visitor to the function code
-            template=requested_func.function_template or "",
-            functionCode=requested_func.function_code,
+            template=function_template or "",
+            functionCode=function_code,
             functions=stub_funcs,
             db_schema=self.db_schema,
-            # These two values should be filled by the agent
-            compiled_route_id="",
-            packages=[],
+            packages=packages,
+            compiled_route_id=self.compiled_route_id,
         )
 
         # Execute static validators and fixers.
@@ -134,12 +187,61 @@ class CodeValidator:
 
         # Auto-fixer works, retry validation (limit to 5 times, to avoid infinite loop)
         if old_compiled_code != new_compiled_code and call_cnt < 5:
-            return self.validate_code(new_compiled_code, call_cnt + 1)
+            return self.validate_code(packages, new_compiled_code, call_cnt + 1)
 
         if validation_errors:
             raise ValidationError(validation_errors)
 
         return result
+
+    def __validate_main_function(
+        self,
+        deps_funcs: list[FunctionDef],
+        function_code: str,
+        validation_errors: list[str],
+    ) -> tuple[str, FunctionDef]:
+        """
+        Validate the main function body and signature
+        Returns:
+            tuple[str, FunctionDef]: The function ID and the function object
+        """
+        # Validate that the main function is implemented.
+        func_obj = next((f for f in deps_funcs if f.name == self.func_name), None)
+        if not func_obj or not func_obj.is_implemented:
+            raise ValidationError(
+                f"Main Function body {self.func_name} is not implemented."
+                f" Please complete the implementation of this function!"
+            )
+        func_obj.function_code = function_code
+
+        # Validate that the main function is matching the expected signature.
+        func_db: Function | None = self.available_functions.get(self.func_name)
+        if not func_db:
+            raise AssertionError(f"Function {self.func_name} does not exist on DB")
+        try:
+            func_obj.validate_matching_function(func_db)
+        except Exception as e:
+            validation_errors.append(str(e))
+
+        return func_db.id, func_obj
+
+
+def parse_line_code(code: str, line_from: int, line_to: int | None = None) -> str:
+    """
+    Parse the code from the given line number range
+    Args:
+        code (str): The code to parse
+        line_from (int): The starting line number
+        line_to (int): The ending line number, if not provided, it will be line_from + 1
+    Returns:
+        str: The extracted code from the given line number range
+    """
+    lines = code.split("\n")
+    if not line_to:
+        line_to = line_from + 1
+    if line_from > len(lines):
+        return ""
+    return "\n".join(lines[line_from - 1 : line_to - 1])
 
 
 # ======= Static Code Validation Helper Functions =======#
@@ -157,7 +259,7 @@ def static_code_analysis(func: GeneratedFunctionResponse) -> list[str]:
     """
     validation_errors = []
     validation_errors += __execute_ruff(func)
-    # validation_errors += __execute_pyright(func, func.rawCode)
+    validation_errors += __execute_pyright(func)
 
     return validation_errors
 
@@ -212,62 +314,90 @@ def __execute_ruff(func: GeneratedFunctionResponse) -> list[str]:
             if not error_split:
                 continue
             _, line, _, error = error_split.groups()
-            problematic_line = code.splitlines()[int(line) - 1]
+            problematic_line = parse_line_code(code, int(line))
             validation_errors[i] = f"{error} -> '{problematic_line}'"
 
         return validation_errors
 
 
-def __execute_pyright(func: GeneratedFunctionResponse, code: str) -> list[str]:
-    with tempfile.TemporaryDirectory() as temp_dir:
-        with open(f"{temp_dir}/schema.prisma", "w") as p:
-            with open(f"{temp_dir}/code.py", "w") as f:
+def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
+    separator = "#------Code-Start------#"
+    code = "\n".join(func.imports + [separator, func.rawCode])
+    validation_errors = []
+
+    # Create temporary directory under the TEMP_DIR with random name
+    temp_dir = os.path.join(PROJECT_TEMP_DIR, func.compiled_route_id)
+    py_path = setup_if_required(temp_dir, copy_from_parent=True)
+
+    def __execute_pyright_commands(code: str) -> list[str]:
+        try:
+            execute_command(
+                ["pip", "install", "-r", "requirements.txt"], temp_dir, py_path
+            )
+        except ValidationError as e:
+            # Unknown deps should be reported as validation errors
+            validation_errors.append(str(e))
+
+        # run prisma generate
+        if func.db_schema:
+            execute_command(["prisma", "generate"], temp_dir, py_path)
+
+        # execute pyright
+        result = execute_command(
+            ["pyright", "--outputjson"], temp_dir, py_path, raise_on_error=False
+        )
+        if not result:
+            return []
+
+        for e in json.loads(result)["generalDiagnostics"]:
+            rule = e.get("rule", "")
+            severity = e.get("severity", "")
+            if (
+                severity != "error"
+                or rule
+                in [
+                    "reportRedeclaration",
+                    "reportArgumentType",  # This breaks prisma query with dict
+                    "reportReturnType",  # This breaks returning Option without fallback
+                ]
+                or rule.startswith("reportOptional")  # TODO: improve prompt & enable
+            ):
+                continue
+
+            code_lines = code.splitlines()
+            error_message = f"{e['message']}. {e.get('rule', '')}"
+            error_line = "\n".join(
+                code_lines[e["range"]["start"]["line"] : e["range"]["end"]["line"] + 1]
+            )
+            validation_errors.append(f"{error_message} -> '{error_line}'")
+
+        # read code from code.py. split the code into imports and raw code
+        code = open(f"{temp_dir}/code.py").read()
+        split = code.split(separator)
+        func.imports = split[0].splitlines()
+        func.rawCode = split[1].strip()
+
+        return validation_errors
+
+    packages = "\n".join(
+        [str(p) for p in func.packages if p.package_name not in DEFAULT_DEPS]
+    )
+    with open(f"{temp_dir}/schema.prisma", "w") as p:
+        with open(f"{temp_dir}/code.py", "w") as f:
+            with open(f"{temp_dir}/requirements.txt", "w") as r:
+                # write the requirements to requirements.txt
+                r.write(packages)
+                r.flush()
+
                 # write the code to code.py
                 f.write(code)
                 f.flush()
 
-                def execute_command(command: list[str]) -> str:
-                    try:
-                        result = subprocess.run(
-                            command, check=True, cwd=temp_dir, capture_output=True
-                        )
-                        return result.stdout.decode("utf-8")
-                    except subprocess.CalledProcessError as e:
-                        return e.stdout.decode("utf-8")
+                # write the prisma schema to schema.prisma
+                p.write(PRISMA_FILE_HEADER + "\n" + func.db_schema)
+                p.flush()
 
-                # Initiate virtual environment
-                execute_command(["python", "-m", "venv"])
-
-                # Activate the virtual environment
-                result = execute_command(["source", "venv/bin/activate"])
-                logger.warning(f"venv activate response: {result}")
-
-                # run pipreqs save it to the requirements.txt
-                result = execute_command(["pipreqs", "--force"])
-                logger.warning(f"pipreqs response: {result}")
-
-                # run pip install -r requirements.txt
-                result = execute_command(["pip", "install", "-r", "requirements.txt"])
-                logger.warning(f"pip response: {result}")
-
-                # run prisma generate
-                if func.db_schema:
-                    p.write(PRISMA_FILE_HEADER + "\n" + func.db_schema)
-                    p.flush()
-                    result = execute_command(["prisma", "generate"])
-                    logger.warning(f"prisma generate response: {result}")
-
-                # execute pyright
-                result = execute_command(
-                    ["pyright", "--outputjson", "--exclude", "reportRedeclaration"]
-                )
-                logger.warning(f"pyright response: {result}")
-
-                if not result:
-                    return []
-
-                errors = json.loads(result)
-                raise errors
+                return __execute_pyright_commands(code)
 
 
 AUTO_IMPORT_TYPES: dict[str, str] = {
@@ -355,7 +485,10 @@ user = await prisma.models.User.prisma().create(
 
     def rename_code_variable(code: str, old_name: str, new_name: str) -> str:
         pattern = r"(?<!\.)\b{}\b".format(re.escape(old_name))
-        return re.sub(pattern, new_name, code)
+        renamed_code = re.sub(pattern, new_name, code)
+        # Avoid renaming class names
+        renamed_code = renamed_code.replace(f"class {new_name}", f"class {old_name}")
+        return renamed_code
 
     def parse_import_alias(stmt: str) -> tuple[str, str]:
         if "import " not in stmt:
