@@ -16,7 +16,7 @@ from codex.common.ai_block import ValidationError
 from codex.common.constants import PRISMA_FILE_HEADER
 from codex.common.exec_external_tool import (
     DEFAULT_DEPS,
-    TEMP_DIR,
+    PROJECT_TEMP_DIR,
     exec_external_on_contents,
     execute_command,
     setup_if_required,
@@ -326,8 +326,8 @@ def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
     validation_errors = []
 
     # Create temporary directory under the TEMP_DIR with random name
-    temp_dir = os.path.join(TEMP_DIR, func.compiled_route_id)
-    py_path = setup_if_required(temp_dir)
+    temp_dir = os.path.join(PROJECT_TEMP_DIR, func.compiled_route_id)
+    py_path = setup_if_required(temp_dir, copy_from_parent=True)
 
     def __execute_pyright_commands(code: str) -> list[str]:
         try:
@@ -349,22 +349,27 @@ def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
         if not result:
             return []
 
-        validation_errors.extend(
-            [
-                f"{e['message']}. {e.get('rule', '')} -> '{'\n'.join(code.splitlines()[e["range"]["start"]["line"]:e["range"]["end"]["line"]+1])}'"
-                for e in json.loads(result)["generalDiagnostics"]
-                if e.get("severity") == "error"
-                if e.get("rule", "")
-                not in [
+        for e in json.loads(result)["generalDiagnostics"]:
+            rule = e.get("rule", "")
+            severity = e.get("severity", "")
+            if (
+                severity != "error"
+                or rule
+                in [
                     "reportRedeclaration",
                     "reportArgumentType",  # This breaks prisma query with dict
                     "reportReturnType",  # This breaks returning Option without fallback
                 ]
-                and not e.get("rule", "").startswith(
-                    "reportOptional"
-                )  # TODO: improve prompt so we can enable these.
-            ]
-        )
+                or rule.startswith("reportOptional")  # TODO: improve prompt & enable
+            ):
+                continue
+
+            code_lines = code.splitlines()
+            error_message = f"{e['message']}. {e.get('rule', '')}"
+            error_line = "\n".join(
+                code_lines[e["range"]["start"]["line"] : e["range"]["end"]["line"] + 1]
+            )
+            validation_errors.append(f"{error_message} -> '{error_line}'")
 
         # read code from code.py. split the code into imports and raw code
         code = open(f"{temp_dir}/code.py").read()
@@ -377,25 +382,22 @@ def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
     packages = "\n".join(
         [str(p) for p in func.packages if p.package_name not in DEFAULT_DEPS]
     )
-    try:
-        with open(f"{temp_dir}/schema.prisma", "w") as p:
-            with open(f"{temp_dir}/code.py", "w") as f:
-                with open(f"{temp_dir}/requirements.txt", "w") as r:
-                    # write the requirements to requirements.txt
-                    r.write(packages)
-                    r.flush()
+    with open(f"{temp_dir}/schema.prisma", "w") as p:
+        with open(f"{temp_dir}/code.py", "w") as f:
+            with open(f"{temp_dir}/requirements.txt", "w") as r:
+                # write the requirements to requirements.txt
+                r.write(packages)
+                r.flush()
 
-                    # write the code to code.py
-                    f.write(code)
-                    f.flush()
+                # write the code to code.py
+                f.write(code)
+                f.flush()
 
-                    # write the prisma schema to schema.prisma
-                    p.write(PRISMA_FILE_HEADER + "\n" + func.db_schema)
-                    p.flush()
+                # write the prisma schema to schema.prisma
+                p.write(PRISMA_FILE_HEADER + "\n" + func.db_schema)
+                p.flush()
 
-                    return __execute_pyright_commands(code)
-    finally:
-        execute_command(["rm", "-rf", temp_dir], TEMP_DIR, None)
+                return __execute_pyright_commands(code)
 
 
 AUTO_IMPORT_TYPES: dict[str, str] = {
@@ -483,7 +485,10 @@ user = await prisma.models.User.prisma().create(
 
     def rename_code_variable(code: str, old_name: str, new_name: str) -> str:
         pattern = r"(?<!\.)\b{}\b".format(re.escape(old_name))
-        return re.sub(pattern, new_name, code)
+        renamed_code = re.sub(pattern, new_name, code)
+        # Avoid renaming class names
+        renamed_code = renamed_code.replace(f"class {new_name}", f"class {old_name}")
+        return renamed_code
 
     def parse_import_alias(stmt: str) -> tuple[str, str]:
         if "import " not in stmt:

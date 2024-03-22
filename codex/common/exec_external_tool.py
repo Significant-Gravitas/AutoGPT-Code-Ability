@@ -87,20 +87,33 @@ def exec_external_on_contents(
     raise ValidationError(f"Errors with generation: {errors}")
 
 
-TEMP_DIR = os.path.abspath("./../static_code_analysis")
-DEFAULT_DEPS = ["prisma", "pyright", "pydantic"]
+PROJECT_TEMP_DIR = os.path.join(tempfile.gettempdir(), "codex-static-code-analysis")
+DEFAULT_DEPS = ["prisma", "pyright", "pydantic", "virtualenv-clone"]
 
 
-def setup_if_required(cwd: str) -> str:
+def setup_if_required(cwd: str, copy_from_parent: bool = False) -> str:
     """
     Setup the virtual environment if it does not exist
     This setup is executed expectedly once per application run
+    Args:
+        cwd (str): The current working directory
+        copy_from_parent (bool): Whether to copy the virtual environment from the parent directory
+    Returns:
+        str: The path to the virtual environment
     """
     if not os.path.exists(cwd):
         os.makedirs(cwd, exist_ok=True)
 
     path = f"{cwd}/venv/bin"
     if os.path.exists(path):
+        return path
+
+    parent_dir = os.path.abspath(f"{cwd}/../")
+    if copy_from_parent and os.path.exists(f"{parent_dir}/venv"):
+        parent_path = setup_if_required(parent_dir)
+        execute_command(
+            ["virtualenv-clone", f"{parent_dir}/venv", f"{cwd}/venv"], cwd, parent_path
+        )
         return path
 
     # Create a virtual environment
