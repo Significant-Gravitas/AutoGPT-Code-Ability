@@ -363,6 +363,7 @@ model LLMCallTemplate {
   createdAt        DateTime         @default(now())
   developmentPhase DevelopmentPhase
   templateName     String
+  model            String
   fileHash         String
   systemPrompt     String
   userPrompt       String

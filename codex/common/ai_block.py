@@ -171,6 +171,7 @@ class AIBlock:
                 data={
                     "templateName": self.prompt_template_name,
                     "fileHash": self.template_hash,
+                    "model": self.model,
                     "systemPrompt": prompts["system"],
                     "userPrompt": prompts["user"],
                     "retryPrompt": prompts["retry"],
