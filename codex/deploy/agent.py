@@ -15,7 +15,7 @@ async def create_deployment(ids: Identifiers, completedApp: CompletedApp) -> Dep
     if not ids.user_id:
         raise ValueError("User ID is required to create a deployment")
 
-    app = create_server_code(completedApp)
+    app = await create_server_code(completedApp)
 
     zip_file = await create_zip_file(app)
     file_name = completedApp.name.replace(" ", "_")

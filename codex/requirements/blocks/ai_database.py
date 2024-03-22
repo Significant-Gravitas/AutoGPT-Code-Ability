@@ -56,7 +56,7 @@ class DatabaseGenerationBlock(AIBlock):
     is_json_response = False
     # If we are using is_json_response, what is the response model
 
-    def validate(
+    async def validate(
         self, invoke_params: dict, response: ValidatedResponse
     ) -> ValidatedResponse:
         """
