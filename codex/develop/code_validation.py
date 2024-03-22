@@ -285,13 +285,13 @@ def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
         ])}'"
             for e in json.loads(result)["generalDiagnostics"]
             if e.get("severity") == "error"
-            if e.get("rule")
+            if e.get("rule", "")
             not in [
                 "reportRedeclaration",
                 "reportArgumentType",  # This breaks prisma query with dict
                 "reportReturnType",  # This breaks returning Option without fallback
             ]
-            and not e.get("rule").startswith(
+            and not e.get("rule", "").startswith(
                 "reportOptional"
             )  # TODO: improve prompt so we can enable these.
         ]

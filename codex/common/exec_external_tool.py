@@ -99,7 +99,7 @@ def setup_if_required():
         return
 
     # Create a virtual environment
-    output = execute_command(["python", "-m", "venv", "venv"], python_path=None)
+    output = execute_command(["python", "-m", "vvenv", "venv"], python_path=None)
     print(output)
     # Install dependencies
     output = execute_command(["pip", "install"] + DEFAULT_DEPS)
