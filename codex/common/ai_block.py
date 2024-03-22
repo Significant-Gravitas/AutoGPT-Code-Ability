@@ -205,50 +205,21 @@ class AIBlock:
             LLMCallTemplate={"connect": {"id": self.call_template_id}},
         )
 
-        if ids.user_id:
-            data.update(
-                {"User": {"connect": {"id": ids.user_id}}},
-            )
-
-        if ids.app_id:
-            data.update(
-                {"Application": {"connect": {"id": ids.app_id}}},
-            )
-
-        if ids.interview_id:
-            data.update(
-                {"Interview": {"connect": {"id": ids.interview_id}}},
-            )
-
-        if ids.spec_id:
-            data.update(
-                {"Specification": {"connect": {"id": ids.spec_id}}},
-            )
-
-        if ids.compiled_route_id:
-            data.update(
-                {"CompiledRoute": {"connect": {"id": ids.compiled_route_id}}},
-            )
-
-        if ids.function_id:
-            data.update(
-                {"Function": {"connect": {"id": ids.function_id}}},
-            )
-
-        if ids.completed_app_id:
-            data.update(
-                {"CompletedApp": {"connect": {"id": ids.completed_app_id}}},
-            )
-
-        if ids.deployment_id:
-            data.update(
-                {"Deployment": {"connect": {"id": ids.deployment_id}}},
-            )
-
-        if first_call_id:
-            data.update(
-                {"FirstCall": {"connect": {"id": first_call_id}}},
-            )
+        data.update(
+            {
+                table: {"connect": {"id": id}}
+                for table, id in [
+                    ("User", ids.user_id),
+                    ("Application", ids.app_id),
+                    ("CompiledRoute", ids.compiled_route_id),
+                    ("Function", ids.function_id),
+                    ("CompletedApp", ids.completed_app_id),
+                    ("Deployment", ids.deployment_id),
+                    ("FirstCall", first_call_id),
+                ]
+                if id
+            }
+        )
 
         call_attempt = await LLMCallAttempt.prisma().create(data=data)
         return call_attempt
