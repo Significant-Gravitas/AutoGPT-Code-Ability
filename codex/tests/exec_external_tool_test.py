@@ -5,6 +5,7 @@ import pytest
 from codex.common.exec_external_tool import OutputType, exec_external_on_contents
 
 
+@pytest.mark.asyncio
 async def test_exec_external():
     # Test case 1: Valid command arguments and file contents
     command_arguments = ["cat"]
@@ -15,6 +16,7 @@ async def test_exec_external():
     assert result == expected_output
 
 
+@pytest.mark.asyncio
 async def test_exec_external_no_command():
     # Test case 2: Empty command arguments
     command_arguments = []
@@ -24,6 +26,7 @@ async def test_exec_external_no_command():
         await exec_external_on_contents(command_arguments, file_contents)
 
 
+@pytest.mark.asyncio
 async def test_exec_external_invalid_command():
     # Test case 3: Command execution error
     command_arguments = ["invalid_command"]
@@ -35,6 +38,7 @@ async def test_exec_external_invalid_command():
 
 # This test only runs if I'm in debug mode on vscode?????????????? otherwise it can't find
 # the ruff command
+@pytest.mark.asyncio
 async def test_exec_external_with_ruff():
     if which("ruff") is None:
         pytest.skip("Ruff not installed")
@@ -51,6 +55,7 @@ async def test_exec_external_with_ruff():
 
 # This test only runs if I'm in debug mode on vscode?????????????? otherwise it can't find
 # the ruff command
+@pytest.mark.asyncio
 async def test_exec_external_with_ruff_fails():
     if which("ruff") is None:
         pytest.skip("Ruff not installed")
@@ -66,6 +71,7 @@ async def test_exec_external_with_ruff_fails():
 
 ## This test only runs if I'm in debug mode on vscode?????????????? otherwise it can't find
 # the prisma command
+@pytest.mark.asyncio
 async def test_exec_external_with_prisma():
     if which("prisma") is None:
         pytest.skip("Prisma not installed")
