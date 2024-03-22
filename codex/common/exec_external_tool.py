@@ -106,7 +106,10 @@ def setup_if_required():
 
 
 def execute_command(
-    command: list[str], cwd=TEMP_DIR, python_path: str | None = f"{TEMP_DIR}/venv/bin"
+    command: list[str],
+    cwd=TEMP_DIR,
+    python_path: str | None = f"{TEMP_DIR}/venv/bin",
+    raise_on_error: bool = True,
 ) -> str:
     """
     Execute a command in the shell
@@ -128,4 +131,7 @@ def execute_command(
         )
         return (r.stdout or r.stderr or b"").decode("utf-8")
     except subprocess.CalledProcessError as e:
-        return (e.stderr or e.stdout or b"").decode("utf-8")
+        if raise_on_error:
+            raise ValidationError((e.stdout or e.stderr).decode("utf-8")) from e
+        else:
+            return e.output.decode("utf-8")

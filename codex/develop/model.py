@@ -52,6 +52,15 @@ class GeneratedFunctionResponse(BaseModel):
             imports.extend(obj.importStatements)
         self.imports = sorted(set(imports))
 
+        def __append_comment(code_block: str, comment="noqa") -> str:
+            """
+            Append `# noqa` to the first line of the code block.
+            This is to suppress flake8 warnings for redefined names.
+            """
+            lines = code_block.split("\n")
+            lines[0] = lines[0] + " # " + comment
+            return "\n".join(lines)
+
         def __generate_stub(name, is_enum):
             if not name:
                 return ""
@@ -60,7 +69,7 @@ class GeneratedFunctionResponse(BaseModel):
             else:
                 return f"class {name}(BaseModel):\n    pass"
 
-        template_code = "\n\n".join(
+        object_stubs_code = "\n\n".join(
             [
                 __generate_stub(obj.name, obj.isEnum)
                 for obj in self.available_objects.values()
@@ -71,15 +80,6 @@ class GeneratedFunctionResponse(BaseModel):
                 if obj.name not in self.available_objects
             ]
         )
-
-        def __append_comment(code_block: str, comment="noqa") -> str:
-            """
-            Append `# noqa` to the first line of the code block.
-            This is to suppress flake8 warnings for redefined names.
-            """
-            lines = code_block.split("\n")
-            lines[0] = lines[0] + " # " + comment
-            return "\n".join(lines)
 
         objects_code = "\n\n".join(
             [
@@ -100,14 +100,14 @@ class GeneratedFunctionResponse(BaseModel):
                 if f.functionName != self.function_name
             ]
             + [
-                f.function_code.strip()
+                f.function_template.strip()
                 for f in self.functions
                 if f.name not in self.available_functions
             ]
         )
 
         self.rawCode = (
-            template_code.strip()
+            object_stubs_code.strip()
             + "\n\n"
             + objects_code.strip()
             + "\n\n"

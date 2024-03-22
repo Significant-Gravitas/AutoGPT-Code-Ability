@@ -272,7 +272,9 @@ def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
             execute_command(["prisma", "generate"], temp_dir)
 
         # execute pyright
-        result = execute_command(["pyright", "--outputjson"], temp_dir)
+        result = execute_command(
+            ["pyright", "--outputjson"], temp_dir, raise_on_error=False
+        )
         if not result:
             return []
 
@@ -301,12 +303,15 @@ def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
 
         return validation_errors
 
+    packages = "\n".join(
+        [str(p) for p in func.packages if p.package_name not in ["prisma", "pyright"]]
+    )
     try:
         with open(f"{temp_dir}/schema.prisma", "w") as p:
             with open(f"{temp_dir}/code.py", "w") as f:
                 with open(f"{temp_dir}/requirements.txt", "w") as r:
                     # write the requirements to requirements.txt
-                    r.write("\n".join([str(p) for p in func.packages]))
+                    r.write(packages)
                     r.flush()
 
                     # write the code to code.py

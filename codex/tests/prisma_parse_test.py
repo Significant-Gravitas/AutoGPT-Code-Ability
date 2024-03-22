@@ -463,14 +463,12 @@ def test_prisma_code_validation():
 
     errors = validate_normalize_prisma(func)
     assert errors == []
-    assert set(func.imports) == set(
-        [
-            "import pydantic",
-            "import prisma",
-            "import prisma.enums",
-            "import prisma.models",
-        ]
-    )
+    assert set(func.imports) == {
+        "import pydantic",
+        "import prisma",
+        "import prisma.enums",
+        "import prisma.models",
+    }
     assert (
         func.rawCode
         == """
