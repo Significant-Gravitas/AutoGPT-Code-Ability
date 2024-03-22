@@ -81,7 +81,7 @@ class DatabaseGenerationBlock(AIBlock):
         else:
             unparsed = text_schema
         try:
-            unparsed = exec_external_on_contents(
+            unparsed = await exec_external_on_contents(
                 ["prisma", "format", "--schema"],
                 text_schema,
                 output_type=OutputType.STD_ERR,
