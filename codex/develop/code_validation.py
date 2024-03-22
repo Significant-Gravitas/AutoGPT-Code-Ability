@@ -349,12 +349,20 @@ def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
         if not result:
             return []
 
+        def format_error(e, code):
+            code_snippet = "\n".join(
+                code.splitlines()[
+                    e["range"]["start"]["line"] : e["range"]["end"]["line"] + 1
+                ]
+            )
+            return f"{e['message']}. {e.get('rule', '')} -> '{code_snippet}'"
+
         validation_errors.extend(
             [
-                f"{e['message']}. {e.get('rule', '')} -> '{'\n'.join(code.splitlines()[e["range"]["start"]["line"]:e["range"]["end"]["line"]+1])}'"
+                format_error(e, code)
                 for e in json.loads(result)["generalDiagnostics"]
                 if e.get("severity") == "error"
-                if e.get("rule", "")
+                and e.get("rule", "")
                 not in [
                     "reportRedeclaration",
                     "reportArgumentType",  # This breaks prisma query with dict
