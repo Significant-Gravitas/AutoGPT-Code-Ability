@@ -80,6 +80,11 @@ async def process_api_route(api_route, ids, spec, app):
     if not compiled_route.RootFunction:
         raise ValueError("Root function not created")
 
+    # Set all the ids for logging
+    ids.spec_id = spec.id
+    ids.compiled_route_id = compiled_route.id
+    ids.function_id = compiled_route.RootFunction.id
+
     route_root_func = await develop_route(
         ids=ids,
         compiled_route_id=compiled_route.id,
@@ -142,6 +147,11 @@ async def develop_route(
         f"Developing for compiled route: "
         f"{compiled_route_id} - Func: {function.functionName}, depth: {depth}"
     )
+
+    # Set the function id for logging
+    ids.function_id = function.id
+    ids.compiled_route_id = compiled_route_id
+
     if depth > RECURSION_DEPTH_LIMIT:
         raise ValueError("Recursion depth exceeded")
 

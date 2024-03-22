@@ -1,9 +1,11 @@
+import glob
 import hashlib
 import logging
 import os
 import pathlib
 from typing import Any, Callable, Optional, Type
 
+import prisma
 from jinja2 import Environment, FileSystemLoader
 from openai import AsyncOpenAI
 from openai.types import CompletionUsage
@@ -89,11 +91,13 @@ class AIBlock:
             db_client (Prisma): The Prisma Database client
         """
         self.oai_client: AsyncOpenAI = OpenAIChatClient.get_instance().openai
-        self.template_base_path = os.path.join(
-            os.path.dirname(__file__),
-            f"../{self.template_base_path}/{self.model}",
-        )
-        self.templates_dir = pathlib.Path(self.template_base_path).resolve(strict=True)
+        self.template_base_path_with_model = pathlib.Path(
+            os.path.join(
+                os.path.dirname(__file__),
+                f"../{self.template_base_path}/{self.model}",
+            )
+        ).resolve(strict=True)
+        self.templates_dir = self.template_base_path_with_model
         self.call_template_id = None
         self.load_pydantic_format_instructions()
 
@@ -118,32 +122,38 @@ class AIBlock:
                 raise PromptTemplateInvocationError(f"Error loading template: {e}")
 
     async def store_call_template(self):
-        template_str = ""
+        """
+        Stores the call template in the database.
+
+        Returns:
+            call_template (LLMCallTemplate): The stored call template object.
+        """
         lang_str = ""
         if self.langauge:
             lang_str = f"{self.langauge}."
-        with open(
-            f"{self.templates_dir}/{self.prompt_template_name}/{lang_str}system.j2",
-            "r",
-        ) as f:
-            system_prompt = f.read()
-            template_str += system_prompt
 
-        with open(
-            f"{self.templates_dir}/{self.prompt_template_name}/{lang_str}user.j2",
-            "r",
-        ) as f:
-            user_prompt = f.read()
-            template_str += user_prompt
+        prompts = {"system": "", "user": "", "retry": ""}
 
-        with open(
-            f"{self.templates_dir}/{self.prompt_template_name}/{lang_str}retry.j2",
-            "r",
-        ) as f:
-            retry_prompt = f.read()
-            template_str += retry_prompt
+        for key in ["system", "user", "retry"]:
+            # Pattern to match the files
+            pattern = (
+                f"{self.templates_dir}/{self.prompt_template_name}/{lang_str}{key}*.j2"
+            )
 
-        self.template_hash = hashlib.md5(template_str.encode()).hexdigest()
+            files = glob.glob(pattern)
+            for file_path in files:
+                # Reading and appending file name and contents
+
+                relative_file_path = os.path.relpath(
+                    file_path, self.template_base_path_with_model
+                )
+                with open(file_path, "r") as file:
+                    contents = file.read()
+
+                    prompts[key] += f"\n{relative_file_path}:\n{contents}\n"
+
+        all_prompts_combined = "".join(prompts.values())
+        self.template_hash = hashlib.md5(all_prompts_combined.encode()).hexdigest()
 
         # Check if an entry with the same fileHash already exists
         existing_template = await LLMCallTemplate.prisma().find_first(
@@ -161,9 +171,10 @@ class AIBlock:
                 data={
                     "templateName": self.prompt_template_name,
                     "fileHash": self.template_hash,
-                    "systemPrompt": system_prompt,
-                    "userPrompt": user_prompt,
-                    "retryPrompt": retry_prompt,
+                    "model": self.model,
+                    "systemPrompt": prompts["system"],
+                    "userPrompt": prompts["user"],
+                    "retryPrompt": prompts["retry"],
                     "developmentPhase": self.developement_phase,
                 }
             )
@@ -175,31 +186,43 @@ class AIBlock:
 
     async def store_call_attempt(
         self,
-        user_id: str,
-        app_id: str,
+        ids: Identifiers,
         response: ValidatedResponse,
         attempt: int,
         prompt: Json,
-        prev_call_id: str | None = None,
+        first_call_id: str | None = None,
     ):
         if not self.call_template_id:
             raise AssertionError("Call template ID not set")
 
-        call_attempt = await LLMCallAttempt.prisma().create(
-            data={
-                "User": {"connect": {"id": user_id}},
-                "Application": {"connect": {"id": app_id}},
-                "LLMCallTemplate": {"connect": {"id": self.call_template_id}},
-                "completionTokens": response.usage_statistics.completion_tokens,
-                "promptTokens": response.usage_statistics.prompt_tokens,
-                "totalTokens": response.usage_statistics.total_tokens,
-                "attempt": attempt,
-                "prompt": prompt,
-                "response": response.message,
-                "model": self.model,
-                # "prevCallId": prev_call_id,
+        data = prisma.types.LLMCallAttemptCreateInput(
+            model=self.model,
+            completionTokens=response.usage_statistics.completion_tokens,
+            promptTokens=response.usage_statistics.prompt_tokens,
+            totalTokens=response.usage_statistics.total_tokens,
+            attempt=attempt,
+            prompt=prompt,
+            response=response.message,
+            LLMCallTemplate={"connect": {"id": self.call_template_id}},
+        )
+
+        data.update(
+            {
+                table: {"connect": {"id": id}}
+                for table, id in [
+                    ("User", ids.user_id),
+                    ("Application", ids.app_id),
+                    ("CompiledRoute", ids.compiled_route_id),
+                    ("Function", ids.function_id),
+                    ("CompletedApp", ids.completed_app_id),
+                    ("Deployment", ids.deployment_id),
+                    ("FirstCall", first_call_id),
+                ]
+                if id
             }
         )
+
+        call_attempt = await LLMCallAttempt.prisma().create(data=data)
         return call_attempt
 
     def load_template(self, template: str, invoke_params: dict) -> str:
@@ -276,8 +299,8 @@ class AIBlock:
         if not self.call_template_id:
             await self.store_call_template()
         presponse = None
-        retries = 0
-        last_llm_call_id = None
+        retry_attempt = 0
+        first_llm_call_id = None
         try:
             if self.is_json_response:
                 invoke_params["format_instructions"] = self.get_format_instructions()
@@ -301,25 +324,26 @@ class AIBlock:
         try:
             presponse = await self.call_llm(request_params)
 
-            last_llm_call_id = (
+            first_llm_call_id = (
                 await self.store_call_attempt(
-                    ids.user_id,
-                    ids.app_id,
+                    ids,
                     presponse,
-                    retries,
+                    retry_attempt,
                     Json(request_params["messages"]),
-                    last_llm_call_id,
                 )
             ).id
+
+            # Increment it here so the first retry is 1
+            retry_attempt += 1
 
             validated_response = self.validate(invoke_params, presponse)
         except ValidationError as validation_error:
             logger.error(
-                f"Failed initial generation attempt: {validation_error}, LLM Call ID: {last_llm_call_id}"
+                f"Failed initial generation attempt: {validation_error}, LLM Call ID: {first_llm_call_id}"
             )
             error_message = validation_error
-            while retries < max_retries:
-                retries += 1
+            while retry_attempt <= max_retries:
+                retry_attempt += 1
                 try:
                     if presponse:
                         invoke_params["generation"] = presponse.message
@@ -336,23 +360,20 @@ class AIBlock:
                     if not request_params["messages"]:
                         raise AssertionError("Messages not set")
 
-                    last_llm_call_id = (
-                        await self.store_call_attempt(
-                            ids.user_id,
-                            ids.app_id,
-                            presponse,
-                            retries,
-                            Json(request_params["messages"]),
-                            last_llm_call_id,
-                        )
-                    ).id
+                    await self.store_call_attempt(
+                        ids,
+                        presponse,
+                        retry_attempt,
+                        Json(request_params["messages"]),
+                        first_llm_call_id,
+                    )
                     validated_response = self.validate(invoke_params, presponse)
                     break
                 except ValidationError as retry_error:
                     logger.error(
-                        f"{retries}/{max_retries}"
+                        f"{retry_attempt}/{max_retries}"
                         f" Failed validating response: {retry_error}"
-                        f" LLM Call ID: {last_llm_call_id}"
+                        f" LLM Call ID: {first_llm_call_id} - retry attempt #{retry_attempt}"
                     )
                     error_message = retry_error
                     continue

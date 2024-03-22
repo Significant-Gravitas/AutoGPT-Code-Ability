@@ -84,7 +84,7 @@ async def start_interview(
         )
 
     except Exception as e:
-        logger.error(f"Error creating a new Interview: {e}")
+        logger.exception(f"Error creating a new Interview: {e}")
         return Response(
             content=json.dumps({"error": f"Error creating a new Interview: {str(e)}"}),
             status_code=500,
