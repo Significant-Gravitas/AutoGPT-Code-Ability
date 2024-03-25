@@ -44,7 +44,7 @@ class CodeValidator:
         self.available_functions: dict[str, Function] = available_functions or {}
         self.available_objects: dict[str, ObjectType] = available_objects or {}
 
-    def reformat_code(
+    async def reformat_code(
         self,
         code: str,
         packages: list[Package],
@@ -58,9 +58,11 @@ class CodeValidator:
             str: The reformatted code snippet
         """
         try:
-            code = self.validate_code(
-                raw_code=code,
-                packages=packages,
+            code = (
+                await self.validate_code(
+                    raw_code=code,
+                    packages=packages,
+                )
             ).get_compiled_code()
         except Exception as e:
             # We move on with unfixed code if there's an error
@@ -80,7 +82,7 @@ class CodeValidator:
 
         return code
 
-    def validate_code(
+    async def validate_code(
         self,
         packages: list[Package],
         raw_code: str,
@@ -182,12 +184,12 @@ class CodeValidator:
         # Execute static validators and fixers.
         old_compiled_code = result.regenerate_compiled_code()
         validation_errors.extend(validate_normalize_prisma(result))
-        validation_errors.extend(static_code_analysis(result))
+        validation_errors.extend(await static_code_analysis(result))
         new_compiled_code = result.get_compiled_code()
 
         # Auto-fixer works, retry validation (limit to 5 times, to avoid infinite loop)
         if old_compiled_code != new_compiled_code and call_cnt < 5:
-            return self.validate_code(packages, new_compiled_code, call_cnt + 1)
+            return await self.validate_code(packages, new_compiled_code, call_cnt + 1)
 
         if validation_errors:
             raise ValidationError(validation_errors)
@@ -247,7 +249,7 @@ def parse_line_code(code: str, line_from: int, line_to: int | None = None) -> st
 # ======= Static Code Validation Helper Functions =======#
 
 
-def static_code_analysis(func: GeneratedFunctionResponse) -> list[str]:
+async def static_code_analysis(func: GeneratedFunctionResponse) -> list[str]:
     """
     Run static code analysis on the function code and mutate the function code to
     fix any issues.
@@ -258,13 +260,13 @@ def static_code_analysis(func: GeneratedFunctionResponse) -> list[str]:
         list[str]: The list of validation errors
     """
     validation_errors = []
-    validation_errors += __execute_ruff(func)
-    validation_errors += __execute_pyright(func)
+    validation_errors += await __execute_ruff(func)
+    validation_errors += await __execute_pyright(func)
 
     return validation_errors
 
 
-def __execute_ruff(func: GeneratedFunctionResponse) -> list[str]:
+async def __execute_ruff(func: GeneratedFunctionResponse) -> list[str]:
     separator = "#------Code-Start------#"
     code = "\n".join(func.imports + [separator, func.rawCode])
 
@@ -272,7 +274,7 @@ def __execute_ruff(func: GeneratedFunctionResponse) -> list[str]:
         # Currently Disabled Rule List
         # E402 module level import not at top of file
         # F841 local variable is assigned to but never used
-        code = exec_external_on_contents(
+        code = await exec_external_on_contents(
             command_arguments=[
                 "ruff",
                 "check",
@@ -320,18 +322,18 @@ def __execute_ruff(func: GeneratedFunctionResponse) -> list[str]:
         return validation_errors
 
 
-def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
+async def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
     separator = "#------Code-Start------#"
     code = "\n".join(func.imports + [separator, func.rawCode])
     validation_errors = []
 
     # Create temporary directory under the TEMP_DIR with random name
     temp_dir = os.path.join(PROJECT_TEMP_DIR, func.compiled_route_id)
-    py_path = setup_if_required(temp_dir, copy_from_parent=True)
+    py_path = await setup_if_required(temp_dir, copy_from_parent=True)
 
-    def __execute_pyright_commands(code: str) -> list[str]:
+    async def __execute_pyright_commands(code: str) -> list[str]:
         try:
-            execute_command(
+            await execute_command(
                 ["pip", "install", "-r", "requirements.txt"], temp_dir, py_path
             )
         except ValidationError as e:
@@ -340,10 +342,10 @@ def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
 
         # run prisma generate
         if func.db_schema:
-            execute_command(["prisma", "generate"], temp_dir, py_path)
+            await execute_command(["prisma", "generate"], temp_dir, py_path)
 
         # execute pyright
-        result = execute_command(
+        result = await execute_command(
             ["pyright", "--outputjson"], temp_dir, py_path, raise_on_error=False
         )
         if not result:
@@ -397,7 +399,7 @@ def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
                 p.write(PRISMA_FILE_HEADER + "\n" + func.db_schema)
                 p.flush()
 
-                return __execute_pyright_commands(code)
+                return await __execute_pyright_commands(code)
 
 
 AUTO_IMPORT_TYPES: dict[str, str] = {

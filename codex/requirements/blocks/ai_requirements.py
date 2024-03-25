@@ -32,7 +32,7 @@ class BaseRequirementsBlock(AIBlock):
     # If we are using is_json_response, what is the response model
     pydantic_object = RequirementsResponse
 
-    def validate(
+    async def validate(
         self, invoke_params: dict, response: ValidatedResponse
     ) -> ValidatedResponse:
         """
@@ -84,7 +84,7 @@ class FuncNonFuncRequirementsBlock(AIBlock):
     # If we are using is_json_response, what is the response model
     pydantic_object = RequirementsGenResponse
 
-    def validate(
+    async def validate(
         self, invoke_params: dict, response: ValidatedResponse
     ) -> ValidatedResponse:
         """
