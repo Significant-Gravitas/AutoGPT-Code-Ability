@@ -1,11 +1,10 @@
 import pytest
 from dotenv import load_dotenv
 
+from codex.develop.code_validation import CodeValidator
 from codex.develop.model import Package
 
 load_dotenv()
-
-from codex.develop.code_validation import CodeValidator
 
 SERVER_CODE_SAMPLE = """
 import io
