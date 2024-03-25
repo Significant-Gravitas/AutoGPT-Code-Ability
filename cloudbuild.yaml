@@ -1,101 +1,142 @@
-logsBucket: 'gs://agpt-cloud-build-logs-dev'
+logsBucket: "gs://agpt-cloud-build-logs-$PROJECT_ID"
 steps:
-
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['pull', 'gcr.io/$PROJECT_ID/mvp/codex_base:latest']
-    id: 'pull-image-codex-base'
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["pull", "gcr.io/$PROJECT_ID/mvp/codex_base:latest"]
+    id: "pull-image-codex-base"
     volumes:
-      - name: 'autogpt-docker-layers-dev'
-        path: '/var/lib/docker'
+      - name: "autogpt-docker-layers"
+        path: "/var/lib/docker"
 
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['pull', 'gcr.io/$PROJECT_ID/mvp/codex_db:latest']
-    id: 'pul-image-codex-db'
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["pull", "gcr.io/$PROJECT_ID/mvp/codex_db:latest"]
+    id: "pull-image-codex-db"
     volumes:
-      - name: 'autogpt-docker-layers-dev'
-        path: '/var/lib/docker'
+      - name: "autogpt-docker-layers"
+        path: "/var/lib/docker"
 
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['pull', 'gcr.io/$PROJECT_ID/mvp/codex:latest']
-    id: 'pul-image-codex'
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["pull", "gcr.io/$PROJECT_ID/mvp/codex:latest"]
+    id: "pull-image-codex"
     volumes:
-      - name: 'autogpt-docker-layers-dev'
-        path: '/var/lib/docker'
+      - name: "autogpt-docker-layers"
+        path: "/var/lib/docker"
 
   # Build Base Image
-  - name: 'gcr.io/cloud-builders/docker'
-    args: [
-      'build',
-      '-t', 'gcr.io/$PROJECT_ID/mvp/codex_base:latest',
-      '--target', 'codex_base',
-      '--cache-from', 'gcr.io/$PROJECT_ID/mvp/codex_base:latest',
-      '.'
-    ]
-    id: 'build-codex-base'
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "gcr.io/$PROJECT_ID/mvp/codex_base:latest",
+        "--target",
+        "codex_base",
+        "--cache-from",
+        "gcr.io/$PROJECT_ID/mvp/codex_base:latest",
+        ".",
+      ]
+    id: "build-codex-base"
     volumes:
-      - name: 'autogpt-docker-layers-dev'
-        path: '/var/lib/docker'
+      - name: "autogpt-docker-layers"
+        path: "/var/lib/docker"
 
   # Push Latest Base Image
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/mvp/codex_base:latest']
-    id: 'push-latest-codex-base'
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["push", "gcr.io/$PROJECT_ID/mvp/codex_base:latest"]
+    id: "push-latest-codex-base"
     volumes:
-      - name: 'autogpt-docker-layers-dev'
-        path: '/var/lib/docker'
+      - name: "autogpt-docker-layers"
+        path: "/var/lib/docker"
 
   # Build Database client Image
-  - name: 'gcr.io/cloud-builders/docker'
-    args: [
-      'build',
-      '-t', 'gcr.io/$PROJECT_ID/mvp/codex_db:latest',
-      '--target', 'codex_db',
-      '--cache-from', 'gcr.io/$PROJECT_ID/mvp/codex_db:latest',
-      '.'
-    ]
-    id: 'build-codex-db'
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "gcr.io/$PROJECT_ID/mvp/codex_db:latest",
+        "--target",
+        "codex_db",
+        "--cache-from",
+        "gcr.io/$PROJECT_ID/mvp/codex_db:latest",
+        ".",
+      ]
+    id: "build-codex-db"
     volumes:
-      - name: 'autogpt-docker-layers-dev'
-        path: '/var/lib/docker'
+      - name: "autogpt-docker-layers"
+        path: "/var/lib/docker"
 
   # Push Latest Database Client Image
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/mvp/codex_db:latest']
-    id: 'push-latest-codex-db'
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["push", "gcr.io/$PROJECT_ID/mvp/codex_db:latest"]
+    id: "push-latest-codex-db"
     volumes:
-      - name: 'autogpt-docker-layers-dev'
-        path: '/var/lib/docker'
-
+      - name: "autogpt-docker-layers"
+        path: "/var/lib/docker"
 
   # Build Codex Image
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', 
-    '-t', 'gcr.io/$PROJECT_ID/mvp/codex:$COMMIT_SHA', 
-    '-t', 'gcr.io/$PROJECT_ID/mvp/codex:latest', 
-    '--target', 'codex', 
-    '--cache-from', 'gcr.io/$PROJECT_ID/mvp/codex:latest',
-    '.'
-    ]
-    id: 'build-codex'
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "gcr.io/$PROJECT_ID/mvp/codex:$COMMIT_SHA",
+        "-t",
+        "gcr.io/$PROJECT_ID/mvp/codex:latest",
+        "--target",
+        "codex",
+        "--cache-from",
+        "gcr.io/$PROJECT_ID/mvp/codex:latest",
+        ".",
+      ]
+    id: "build-codex"
     volumes:
-      - name: 'autogpt-docker-layers-dev'
-        path: '/var/lib/docker'
+      - name: "autogpt-docker-layers"
+        path: "/var/lib/docker"
 
   # Push Codex Image
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', '--all-tags', 'gcr.io/$PROJECT_ID/mvp/codex']
-    id: 'push-codex'
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["push", "--all-tags", "gcr.io/$PROJECT_ID/mvp/codex"]
+    id: "push-codex"
     volumes:
-      - name: 'autogpt-docker-layers-dev'
-        path: '/var/lib/docker'
+      - name: "autogpt-docker-layers"
+        path: "/var/lib/docker"
+
+  # Deploy DB Job to Cloud Run
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: gcloud
+    args:
+      [
+        "run",
+        "jobs",
+        "deploy",
+        "database-migration-codex",
+        "--image",
+        "gcr.io/$PROJECT_ID/mvp/codex_db:latest",
+        "--region",
+        "us-central1",
+        "--wait",
+        "--args=prisma,migrate,deploy",
+      ]
+    id: "run-migration-bot"
+    waitFor:
+      - push-latest-codex-db
 
   # Deploy Debug Tool Image to Cloud Run
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
     entrypoint: gcloud
-    args: ['run', 'deploy', 'codegen', '--image', 'gcr.io/$PROJECT_ID/mvp/codex:$COMMIT_SHA', '--region', 'us-central1', '--platform', 'managed', '--service-account','638488734936-compute@developer.gserviceaccount.com']
-    id: 'deploy-codex'
+    args:
+      [
+        "run",
+        "deploy",
+        "codegen",
+        "--image",
+        "gcr.io/$PROJECT_ID/mvp/codex:$COMMIT_SHA",
+        "--region",
+        "us-central1",
+        "--platform",
+        "managed",
+      ]
+    id: "deploy-codex"
     volumes:
-      - name: 'autogpt-docker-layers-dev'
-        path: '/var/lib/docker'
-
-
+      - name: "autogpt-docker-layers"
+        path: "/var/lib/docker"
