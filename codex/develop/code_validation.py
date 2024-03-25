@@ -362,7 +362,7 @@ async def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
                 in [
                     "reportRedeclaration",
                     "reportArgumentType",  # This breaks prisma query with dict
-                    # "reportReturnType",  # This breaks returning Option without fallback
+                    "reportReturnType",  # This breaks returning Option without fallback
                 ]
                 or rule.startswith("reportOptional")  # TODO: improve prompt & enable
             ):
