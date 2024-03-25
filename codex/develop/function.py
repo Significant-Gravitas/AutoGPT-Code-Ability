@@ -2,12 +2,20 @@
 Function Helper Functions
 """
 
+import logging
+
 from prisma.enums import FunctionState
-from prisma.models import ObjectType
+from prisma.models import CompiledRoute, ObjectType
 from prisma.types import FunctionCreateInput, ObjectFieldCreateInput
 
-from codex.common.model import get_related_types, normalize_type
-from codex.develop.model import FunctionDef
+from codex.common.model import (
+    FunctionDef,
+    ObjectTypeModel,
+    get_related_types,
+    normalize_type,
+)
+
+logger = logging.getLogger(__name__)
 
 
 async def construct_function(
@@ -61,11 +69,14 @@ async def construct_function(
     return input
 
 
-def generate_object_template(obj: ObjectType) -> str:
+def generate_object_code(obj: ObjectTypeModel) -> str:
+    if not obj.name:
+        return ""  # Avoid generating an empty object
+
     # Auto-generate a template for the object, this will not capture any class functions.
     fields = f"\n{' ' * 8}".join(
         [
-            f"{field.name}: {field.typeName} "
+            f"{field.name}: {field.type} "
             f"{('= '+field.value) if field.value else ''} "
             f"{('# '+field.description) if field.description else ''}"
             for field in obj.Fields or []
@@ -73,9 +84,9 @@ def generate_object_template(obj: ObjectType) -> str:
     )
 
     parent_class = ""
-    if obj.isEnum:
+    if obj.is_enum:
         parent_class = "Enum"
-    elif obj.isPydantic:
+    elif obj.is_pydantic:
         parent_class = "BaseModel"
 
     doc_string = (
@@ -96,3 +107,23 @@ def generate_object_template(obj: ObjectType) -> str:
         {"pass" if not fields and not method_body else ""}
     """
     return "\n".join([line[4:] for line in template.split("\n")]).strip()
+
+
+def generate_object_template(obj: ObjectType) -> str:
+    return generate_object_code(ObjectTypeModel(db_obj=obj))
+
+
+def get_database_schema(compiled_route: CompiledRoute) -> str:
+    return (
+        "\n\n".join(
+            [
+                t.definition
+                for t in compiled_route.ApiRouteSpec.DatabaseSchema.DatabaseTables
+            ]
+        )
+        if compiled_route
+        and compiled_route.ApiRouteSpec
+        and compiled_route.ApiRouteSpec.DatabaseSchema
+        and compiled_route.ApiRouteSpec.DatabaseSchema.DatabaseTables
+        else ""
+    )

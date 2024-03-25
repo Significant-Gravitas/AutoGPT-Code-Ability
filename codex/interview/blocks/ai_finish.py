@@ -32,7 +32,7 @@ class FinishBlock(AIBlock):
     # If we are using is_json_response, what is the response model
     pydantic_object = InterviewMessageWithResponseOptionalId
 
-    def validate(
+    async def validate(
         self, invoke_params: dict, response: ValidatedResponse
     ) -> ValidatedResponse:
         """

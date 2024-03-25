@@ -3,6 +3,7 @@ from typing import List, Tuple
 from prisma.models import CompiledRoute, CompletedApp
 
 from codex.api_model import Pagination
+from codex.common.database import INCLUDE_API_ROUTE, INCLUDE_FUNC
 
 
 async def get_deliverable(
@@ -61,3 +62,14 @@ async def get_compiled_code(deliverable_id: str) -> list[str]:
         where={"completedAppId": deliverable_id}
     )
     return [route.compiledCode for route in routes]
+
+
+async def get_compiled_route(compiled_route_id: str) -> CompiledRoute:
+    return await CompiledRoute.prisma().find_unique_or_raise(
+        where={"id": compiled_route_id},
+        include={
+            "RootFunction": INCLUDE_FUNC,  # type: ignore
+            "Functions": INCLUDE_FUNC,  # type: ignore
+            "ApiRouteSpec": INCLUDE_API_ROUTE,  # type: ignore
+        },
+    )

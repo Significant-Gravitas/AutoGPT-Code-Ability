@@ -13,16 +13,21 @@ from prisma.models import (
 from prisma.types import CompiledRouteCreateInput
 
 from codex.api_model import Identifiers
-from codex.common.database import INCLUDE_API_ROUTE, INCLUDE_FUNC
+from codex.common.database import INCLUDE_FUNC
+from codex.common.model import FunctionDef
 from codex.develop.compile import (
     compile_route,
     create_app,
     get_object_field_deps,
     get_object_type_deps,
 )
+from codex.develop.database import get_compiled_route
 from codex.develop.develop import DevelopAIBlock
-from codex.develop.function import construct_function, generate_object_template
-from codex.develop.model import FunctionDef
+from codex.develop.function import (
+    construct_function,
+    generate_object_template,
+    get_database_schema,
+)
 
 RECURSION_DEPTH_LIMIT = int(os.environ.get("RECURSION_DEPTH_LIMIT", 2))
 
@@ -79,6 +84,11 @@ async def process_api_route(api_route, ids, spec, app):
     )
     if not compiled_route.RootFunction:
         raise ValueError("Root function not created")
+
+    # Set all the ids for logging
+    ids.spec_id = spec.id
+    ids.compiled_route_id = compiled_route.id
+    ids.function_id = compiled_route.RootFunction.id
 
     route_root_func = await develop_route(
         ids=ids,
@@ -142,18 +152,15 @@ async def develop_route(
         f"Developing for compiled route: "
         f"{compiled_route_id} - Func: {function.functionName}, depth: {depth}"
     )
+
+    # Set the function id for logging
+    ids.function_id = function.id
+    ids.compiled_route_id = compiled_route_id
+
     if depth > RECURSION_DEPTH_LIMIT:
         raise ValueError("Recursion depth exceeded")
 
-    compiled_route = await CompiledRoute.prisma().find_unique_or_raise(
-        where={"id": compiled_route_id},
-        include={
-            "RootFunction": INCLUDE_FUNC,  # type: ignore
-            "Functions": INCLUDE_FUNC,  # type: ignore
-            "ApiRouteSpec": INCLUDE_API_ROUTE,  # type: ignore
-        },
-    )
-
+    compiled_route = await get_compiled_route(compiled_route_id)
     functions = []
     generated_func: dict[str, Function] = {}
     generated_objs: dict[str, ObjectType] = {}
@@ -182,19 +189,7 @@ async def develop_route(
         if func.functionName != function.functionName
     ] + [generate_object_template(f) for f in generated_objs.values()]
 
-    database_schema = (
-        "\n\n".join(
-            [
-                t.definition
-                for t in compiled_route.ApiRouteSpec.DatabaseSchema.DatabaseTables
-            ]
-        )
-        if compiled_route
-        and compiled_route.ApiRouteSpec
-        and compiled_route.ApiRouteSpec.DatabaseSchema
-        and compiled_route.ApiRouteSpec.DatabaseSchema.DatabaseTables
-        else ""
-    )
+    database_schema = get_database_schema(compiled_route)
 
     dev_invoke_params = {
         "database_schema": database_schema,

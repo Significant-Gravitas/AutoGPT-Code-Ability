@@ -1,8 +1,10 @@
+import asyncio
 import enum
 import logging
 import os
 import subprocess
 import tempfile
+from asyncio.subprocess import Process
 
 from codex.common.ai_block import ValidationError
 
@@ -15,11 +17,12 @@ class OutputType(enum.Enum):
     BOTH = "both"
 
 
-def exec_external_on_contents(
+async def exec_external_on_contents(
     command_arguments: list[str],
     file_contents,
     suffix: str = ".py",
     output_type: OutputType = OutputType.BOTH,
+    raise_file_contents_on_error: bool = False,
 ) -> str:
     """
     Execute an external tool with the provided command arguments and file contents
@@ -55,21 +58,23 @@ def exec_external_on_contents(
 
         # Run Ruff on the temporary file
         try:
-            result = subprocess.run(
-                args=command_arguments,
-                capture_output=True,
-                text=True,
+            r: Process = await asyncio.create_subprocess_exec(
+                *command_arguments,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
             )
-            logger.debug(f"Output: {result.stdout}")
-            if temp_file_path in result.stdout:
-                stdout = result.stdout  # .replace(temp_file.name, "/generated_file")
-                logger.debug(f"Errors: {result.stderr}")
+            result = await r.communicate()
+            stdout, stderr = result[0].decode("utf-8"), result[1].decode("utf-8")
+            logger.debug(f"Output: {stdout}")
+            if temp_file_path in stdout:
+                stdout = stdout  # .replace(temp_file.name, "/generated_file")
+                logger.debug(f"Errors: {stderr}")
                 if output_type == OutputType.STD_OUT:
                     errors = stdout
                 elif output_type == OutputType.STD_ERR:
-                    errors = result.stderr
+                    errors = stderr
                 else:
-                    errors = stdout + "\n" + result.stderr
+                    errors = stdout + "\n" + stderr
 
             with open(temp_file_path, "r") as f:
                 file_contents = f.read()
@@ -77,7 +82,88 @@ def exec_external_on_contents(
             # Ensure the temporary file is deleted
             os.remove(temp_file_path)
 
-    if errors:
-        raise ValidationError(f"Errors with generation: {errors}")
+    if not errors:
+        return file_contents
 
-    return file_contents
+    if raise_file_contents_on_error:
+        raise ValidationError(f"Errors with generation: {errors}", file_contents)
+
+    raise ValidationError(f"Errors with generation: {errors}")
+
+
+PROJECT_TEMP_DIR = os.path.join(tempfile.gettempdir(), "codex-static-code-analysis")
+DEFAULT_DEPS = ["prisma", "pyright", "pydantic", "virtualenv-clone"]
+
+
+async def setup_if_required(cwd: str, copy_from_parent: bool = False) -> str:
+    """
+    Setup the virtual environment if it does not exist
+    This setup is executed expectedly once per application run
+    Args:
+        cwd (str): The current working directory
+        copy_from_parent (bool): Whether to copy the virtual environment from the parent directory
+    Returns:
+        str: The path to the virtual environment
+    """
+    if not os.path.exists(cwd):
+        os.makedirs(cwd, exist_ok=True)
+
+    path = f"{cwd}/venv/bin"
+    if os.path.exists(path):
+        return path
+
+    parent_dir = os.path.abspath(f"{cwd}/../")
+    if copy_from_parent and os.path.exists(f"{parent_dir}/venv"):
+        parent_path = await setup_if_required(parent_dir)
+        await execute_command(
+            ["virtualenv-clone", f"{parent_dir}/venv", f"{cwd}/venv"], cwd, parent_path
+        )
+        return path
+
+    # Create a virtual environment
+    output = await execute_command(["python", "-m", "venv", "venv"], cwd, None)
+    logger.debug(output)
+
+    # Install dependencies
+    output = await execute_command(["pip", "install"] + DEFAULT_DEPS, cwd, path)
+    logger.debug(output)
+
+    return path
+
+
+async def execute_command(
+    command: list[str],
+    cwd: str | None,
+    python_path: str | None,
+    raise_on_error: bool = True,
+) -> str:
+    """
+    Execute a command in the shell
+    Args:
+        command (list[str]): The command to execute
+        cwd (str): The current working directory
+        python_path (str): The python executable path
+        raise_on_error (bool): Whether to raise an error if the command fails
+    Returns:
+        str: The output of the command
+    """
+    try:
+        # Set the python path by replacing the env 'PATH' with the provided python path
+        venv = os.environ.copy()
+        if python_path:
+            original_python_path = venv["PATH"].split(":")[1:]
+            venv["PATH"] = f"{python_path}:{':'.join(original_python_path)}"
+        r = await asyncio.create_subprocess_exec(
+            *command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=cwd,
+            env=venv,
+        )
+        stdout, stderr = await r.communicate()
+        return (stdout or stderr).decode("utf-8")
+    except subprocess.CalledProcessError as e:
+        if raise_on_error:
+            raise ValidationError((e.stderr or e.stdout).decode("utf-8")) from e
+        else:
+            return e.output.decode("utf-8")

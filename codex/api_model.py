@@ -17,9 +17,10 @@ class Identifiers(BaseModel):
     app_id: str | None = None
     interview_id: str | None = None
     spec_id: str | None = None
+    compiled_route_id: str | None = None
+    function_id: str | None = None
     completed_app_id: str | None = None
     deployment_id: str | None = None
-    function_def_id: str | None = None
 
 
 class Pagination(BaseModel):

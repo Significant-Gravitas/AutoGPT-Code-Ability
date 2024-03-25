@@ -68,19 +68,20 @@ model Application {
 // ------------------------------------------------------------------------ //
 
 model Interview {
-  id            String        @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  deleted       Boolean       @default(false)
-  finished      Boolean       @default(false)
-  name          String
-  task          String
-  User          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId        String
-  Questions     Question[]
-  application   Application   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  applicationId String
-  ResumePoint   ResumePoint[]
+  id             String           @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  deleted        Boolean          @default(false)
+  finished       Boolean          @default(false)
+  name           String
+  task           String
+  User           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  Questions      Question[]
+  application    Application      @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId  String
+  ResumePoint    ResumePoint[]
+  LLMCallAttempt LLMCallAttempt[]
 }
 
 model Question {
@@ -107,13 +108,14 @@ model Specification {
   name      String
   context   String
 
-  ApiRouteSpecs APIRouteSpec[]
-  CompletedApps CompletedApp[]
-  User          User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId        String?
-  Application   Application?   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  applicationId String?
-  ResumePoint   ResumePoint[]
+  ApiRouteSpecs  APIRouteSpec[]
+  CompletedApps  CompletedApp[]
+  User           User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String?
+  Application    Application?     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId  String?
+  ResumePoint    ResumePoint[]
+  LLMCallAttempt LLMCallAttempt[]
 }
 
 enum AccessLevel {
@@ -267,7 +269,8 @@ model Function {
   compiledRouteId  String?
 
   // Reverse relations
-  ReferredFunctionRootCompiledRoute CompiledRoute? @relation("RootFunction")
+  ReferredFunctionRootCompiledRoute CompiledRoute?   @relation("RootFunction")
+  LLMCallAttempt                    LLMCallAttempt[]
 }
 
 model Package {
@@ -302,8 +305,9 @@ model CompiledRoute {
   RootFunction   Function   @relation("RootFunction", fields: [rootFunctionId], references: [id], onDelete: Cascade)
   rootFunctionId String     @unique
 
-  ApiRouteSpec   APIRouteSpec? @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
+  ApiRouteSpec   APIRouteSpec?    @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
   apiRouteSpecId String?
+  LLMCallAttempt LLMCallAttempt[]
 }
 
 // Application represents the main software application entity.
@@ -316,15 +320,16 @@ model CompletedApp {
   name        String
   description String
 
-  User            User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  User            User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId          String?
   CompiledRoutes  CompiledRoute[]
   Deployments     Deployment[]
-  Specification   Specification?  @relation(fields: [specificationId], references: [id], onDelete: Cascade)
+  Specification   Specification?   @relation(fields: [specificationId], references: [id], onDelete: Cascade)
   specificationId String?
-  Application     Application?    @relation(fields: [applicationId], references: [id])
+  Application     Application?     @relation(fields: [applicationId], references: [id])
   applicationId   String?
   ResumePoint     ResumePoint[]
+  LLMCallAttempt  LLMCallAttempt[]
 }
 
 // ---------------------------------------------------------------------- //
@@ -341,13 +346,14 @@ model Deployment {
   path      String?
   fileBytes Bytes?
 
-  User           User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  User           User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId         String?
-  Application    Application?  @relation(fields: [applicationId], references: [id])
+  Application    Application?     @relation(fields: [applicationId], references: [id])
   applicationId  String?
-  CompletedApp   CompletedApp? @relation(fields: [completedAppId], references: [id], onDelete: Cascade)
+  CompletedApp   CompletedApp?    @relation(fields: [completedAppId], references: [id], onDelete: Cascade)
   completedAppId String?
   ResumePoint    ResumePoint[]
+  LLMCallAttempt LLMCallAttempt[]
 }
 
 // ------------------------- LLM Models ----------------------------- //
@@ -357,6 +363,7 @@ model LLMCallTemplate {
   createdAt        DateTime         @default(now())
   developmentPhase DevelopmentPhase
   templateName     String
+  model            String
   fileHash         String
   systemPrompt     String
   userPrompt       String
@@ -378,14 +385,32 @@ model LLMCallAttempt {
   completionTokens Int
   promptTokens     Int
   totalTokens      Int
-  attempt          Int
-  prompt           Json
-  response         String
 
-  User              User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId            String?
-  Application       Application?     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  applicationId     String?
+  FirstCall   LLMCallAttempt?  @relation("FirstCall", fields: [firstCallId], references: [id], onDelete: Cascade)
+  firstCallId String?
+  RetryCalls  LLMCallAttempt[] @relation("FirstCall")
+
+  attempt  Int
+  prompt   Json
+  response String
+
+  User            User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String?
+  Application     Application?   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId   String?
+  Interview       Interview?     @relation(fields: [interviewId], references: [id])
+  interviewId     String?
+  Specification   Specification? @relation(fields: [specificationId], references: [id])
+  specificationId String?
+  CompiledRoute   CompiledRoute? @relation(fields: [compiledRouteId], references: [id])
+  compiledRouteId String?
+  Function        Function?      @relation(fields: [functionId], references: [id])
+  functionId      String?
+  CompletedApp    CompletedApp?  @relation(fields: [completedAppId], references: [id])
+  completedAppId  String?
+  Deployment      Deployment?    @relation(fields: [deploymentId], references: [id])
+  deploymentId    String?
+
   LLMCallTemplate   LLMCallTemplate? @relation(fields: [llmCallTemplateId], references: [id], onDelete: Cascade)
   llmCallTemplateId String?
 }

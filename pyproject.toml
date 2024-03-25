@@ -30,6 +30,7 @@ aiohttp = "^3.9.3"
 pytest-asyncio = "^0.23.5"
 sentry-sdk = {extras = ["fast-api"], version = "^1.40.6"}
 pipreqs = "^0.5.0"
+pyright = "^1.1.354"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.3"
@@ -37,6 +38,8 @@ pre-commit = "^3.6.0"
 ruff = "^0.1.11"
 pytest-cov = "^4.1.0"
 pytest-integration = "^0.2.3"
+pandas = "^2.2.1"
+numpy = "^1.26.4"
 
 [tool.black]
 line-length = 79
