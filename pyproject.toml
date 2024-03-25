@@ -29,7 +29,6 @@ python-dotenv = "^1.0.1"
 aiohttp = "^3.9.3"
 pytest-asyncio = "^0.23.5"
 sentry-sdk = {extras = ["fast-api"], version = "^1.40.6"}
-pipreqs = "^0.5.0"
 pyright = "^1.1.354"
 
 [tool.poetry.group.dev.dependencies]
