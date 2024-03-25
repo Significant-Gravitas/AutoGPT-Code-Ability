@@ -571,7 +571,6 @@ app = FastAPI(title="{name}", lifespan=lifespan, description='''{desc}''')
     #     ],
     # )
 
-
     return Application(
         name=name,
         description=desc,
