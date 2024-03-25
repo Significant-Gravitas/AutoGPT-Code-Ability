@@ -22,7 +22,10 @@ from codex.common.types import normalize_type
 from codex.deploy.model import Application
 from codex.develop.code_validation import CodeValidator
 from codex.develop.database import get_compiled_route
-from codex.develop.function import generate_object_template, get_database_schema
+from codex.develop.function import (
+    generate_object_template,
+    get_database_schema,
+)
 from codex.develop.model import Package as PackageModel
 
 logger = logging.getLogger(__name__)
@@ -71,7 +74,7 @@ async def compile_route(
     database_schema = get_database_schema(compiled_route)
 
     # Run the auto-fixers
-    formatted_code = await CodeValidator(
+    formatted_code = CodeValidator(
         compiled_route_id=compiled_route_id,
         function_name=route_root_func.functionName,
         database_schema=database_schema,
@@ -455,7 +458,7 @@ async def create_app(
     return app
 
 
-async def create_server_code(completed_app: CompletedApp) -> Application:
+def create_server_code(completed_app: CompletedApp) -> Application:
     """
     Args:
         application (Application): _description_
@@ -470,17 +473,16 @@ async def create_server_code(completed_app: CompletedApp) -> Application:
         "from fastapi import FastAPI",
         "from fastapi.responses import Response, StreamingResponse",
         "from fastapi.encoders import jsonable_encoder",
+        "from prisma import Prisma",
         "from contextlib import asynccontextmanager",
         "import logging",
         "import prisma",
-        "from prisma.enums import *",
         "import io",
         "from typing import *",
-        "from datetime import datetime",
     ]
     server_code_header = f"""logger = logging.getLogger(__name__)
 
-db_client = prisma.Prisma(auto_register=True)
+db_client = Prisma(auto_register=True)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -550,31 +552,30 @@ app = FastAPI(title="{name}", lifespan=lifespan, description='''{desc}''')
     server_code += "\n\n"
     server_code += "\n\n".join(service_routes_code)
 
-    # db_schema = "\n\n".join(
-    #     [get_database_schema(r) for r in completed_app.CompiledRoutes]
-    # )
+    db_schema = "\n\n".join(
+        [get_database_schema(r) for r in completed_app.CompiledRoutes]
+    )
 
-    # TODO: Uncomment this when we have a better fix for primsa.enum import issue
     # Update the application with the server code
-    # formatted_code = CodeValidator(
-    #     database_schema=db_schema,
-    #     compiled_route_id=f"CompletedAppID-{completed_app.id}",
-    # ).reformat_code(
-    #     code=server_code,
-    #     packages=[
-    #         PackageModel(
-    #             package_name=package.packageName,
-    #             version=package.version,
-    #             specifier=package.specifier,
-    #         )
-    #         for package in packages
-    #     ],
-    # )
+    formatted_code = CodeValidator(
+        database_schema=db_schema,
+        compiled_route_id=f"CompletedAppID-{completed_app.id}",
+    ).reformat_code(
+        code=server_code,
+        packages=[
+            PackageModel(
+                package_name=package.packageName,
+                version=package.version,
+                specifier=package.specifier,
+            )
+            for package in packages
+        ],
+    )
 
     return Application(
         name=name,
         description=desc,
-        server_code=server_code,
+        server_code=formatted_code,
         completed_app=completed_app,
         packages=packages,
     )
