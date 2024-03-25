@@ -71,7 +71,7 @@ class DevelopAIBlock(AIBlock):
     model = "gpt-4-0125-preview"
     langauge = "python"
 
-    def validate(
+    async def validate(
         self, invoke_params: dict, response: ValidatedResponse
     ) -> ValidatedResponse:
         validation_errors = []
@@ -105,7 +105,7 @@ class DevelopAIBlock(AIBlock):
                     + "There should be exactly 1"
                 )
             code = code_blocks[0].split("```")[0]
-            response.response = CodeValidator(
+            response.response = await CodeValidator(
                 compiled_route_id=invoke_params["compiled_route_id"],
                 database_schema=invoke_params["database_schema"],
                 function_name=invoke_params["function_name"],

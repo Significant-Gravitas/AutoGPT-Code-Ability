@@ -267,7 +267,7 @@ class AIBlock:
             message=message.content,
         )
 
-    def validate(
+    async def validate(
         self, invoke_params: dict, response: ValidatedResponse
     ) -> ValidatedResponse:
         """
@@ -336,7 +336,7 @@ class AIBlock:
             # Increment it here so the first retry is 1
             retry_attempt += 1
 
-            validated_response = self.validate(invoke_params, presponse)
+            validated_response = await self.validate(invoke_params, presponse)
         except ValidationError as validation_error:
             logger.error(
                 f"Failed initial generation attempt: {validation_error}, LLM Call ID: {first_llm_call_id}"
@@ -367,7 +367,7 @@ class AIBlock:
                         Json(request_params["messages"]),
                         first_llm_call_id,
                     )
-                    validated_response = self.validate(invoke_params, presponse)
+                    validated_response = await self.validate(invoke_params, presponse)
                     break
                 except ValidationError as retry_error:
                     logger.error(

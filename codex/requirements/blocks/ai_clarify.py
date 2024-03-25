@@ -27,7 +27,7 @@ class FrontendClarificationBlock(AIBlock):
     # If we are using is_json_response, what is the response model
     pydantic_object = Clarification
 
-    def validate(
+    async def validate(
         self, invoke_params: dict, response: ValidatedResponse
     ) -> ValidatedResponse:
         """
@@ -69,7 +69,7 @@ class UserPersonaClarificationBlock(AIBlock):
     # If we are using is_json_response, what is the response model
     pydantic_object = Clarification
 
-    def validate(
+    async def validate(
         self, invoke_params: dict, response: ValidatedResponse
     ) -> ValidatedResponse:
         """
@@ -111,7 +111,7 @@ class UserSkillClarificationBlock(AIBlock):
     # If we are using is_json_response, what is the response model
     pydantic_object = Clarification
 
-    def validate(
+    async def validate(
         self, invoke_params: dict, response: ValidatedResponse
     ) -> ValidatedResponse:
         """
@@ -153,7 +153,7 @@ class QuestionAndAnswerClarificationBlock(AIBlock):
     # If we are using is_json_response, what is the response model
     pydantic_object = QandAResponses
 
-    def validate(
+    async def validate(
         self, invoke_params: dict, response: ValidatedResponse
     ) -> ValidatedResponse:
         """

@@ -56,7 +56,7 @@ class DatabaseGenerationBlock(AIBlock):
     is_json_response = False
     # If we are using is_json_response, what is the response model
 
-    def validate(
+    async def validate(
         self, invoke_params: dict, response: ValidatedResponse
     ) -> ValidatedResponse:
         """
@@ -81,7 +81,7 @@ class DatabaseGenerationBlock(AIBlock):
         else:
             unparsed = text_schema
         try:
-            unparsed = exec_external_on_contents(
+            unparsed = await exec_external_on_contents(
                 ["prisma", "format", "--schema"],
                 text_schema,
                 output_type=OutputType.STD_ERR,
