@@ -62,13 +62,12 @@ class CodeValidator:
                 await self.validate_code(
                     raw_code=code,
                     packages=packages,
+                    suppress_errors=True,
                 )
             ).get_compiled_code()
-        except Exception as e:
+        except ValidationError as e:
             # We move on with unfixed code if there's an error
-            logger.exception(
-                f"Error fixing code for route #{self.compiled_route_id}: {e}"
-            )
+            logger.debug(f"Error fixing code for route #{self.compiled_route_id}: {e}")
 
         # Run the formatters
         try:
@@ -87,6 +86,7 @@ class CodeValidator:
         packages: list[Package],
         raw_code: str,
         call_cnt: int = 0,
+        suppress_errors: bool = False,
     ) -> GeneratedFunctionResponse:
         """
         Validate the code snippet for any error
@@ -128,11 +128,23 @@ class CodeValidator:
         deps_funcs = [f for f in visitor.functions if f.is_implemented]
         stub_funcs = [f for f in visitor.functions if not f.is_implemented]
 
-        function_code = (
-            "".join([generate_object_code(obj) + "\n\n" for obj in visitor.objects])
-            + "\n".join(visitor.globals)
-            + "".join(["\n\n" + fun.function_code for fun in deps_funcs])
+        objects_block = zip(
+            ["\n\n" + generate_object_code(obj) for obj in visitor.objects],
+            visitor.objectsIdx,
         )
+        functions_block = zip(
+            ["\n\n" + fun.function_code for fun in deps_funcs], visitor.functionsIdx
+        )
+        globals_block = zip(
+            ["\n\n" + glob for glob in visitor.globals], visitor.globalsIdx
+        )
+        function_code = "".join(
+            code
+            for code, _ in sorted(
+                list(objects_block) + list(functions_block) + list(globals_block),
+                key=lambda x: x[1],
+            )
+        ).strip()
 
         # No need to validate main function if it's not provided (compiling a server code)
         if self.func_name:
@@ -189,9 +201,11 @@ class CodeValidator:
 
         # Auto-fixer works, retry validation (limit to 5 times, to avoid infinite loop)
         if old_compiled_code != new_compiled_code and call_cnt < 5:
-            return await self.validate_code(packages, new_compiled_code, call_cnt + 1)
+            return await self.validate_code(
+                packages, new_compiled_code, call_cnt + 1, suppress_errors
+            )
 
-        if validation_errors:
+        if validation_errors and not suppress_errors:
             raise ValidationError(validation_errors)
 
         return result
@@ -552,6 +566,8 @@ user = await prisma.models.User.prisma().create(
         imports.append("import prisma.enums")
     if "prisma.models" in code:
         imports.append("import prisma.models")
+    if "prisma.errors" in code:
+        imports.append("import prisma.errors")
 
     # Sometimes it does this, it's not a valid import
     if "from pydantic import Optional" in imports:

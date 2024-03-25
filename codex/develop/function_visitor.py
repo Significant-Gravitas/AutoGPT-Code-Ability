@@ -27,9 +27,12 @@ class FunctionVisitor(ast.NodeVisitor):
 
     def __init__(self):
         self.functions: list[FunctionDef] = []
+        self.functionsIdx: list[int] = []
         self.objects: list[ObjectTypeModel] = []
-        self.imports: list[str] = []
+        self.objectsIdx: list[int] = []
         self.globals: list[str] = []
+        self.globalsIdx: list[int] = []
+        self.imports: list[str] = []
         self.errors: list[str] = []
 
     def visit_Import(self, node):
@@ -105,6 +108,7 @@ class FunctionVisitor(ast.NodeVisitor):
                 function_code=function_code,
             )
         )
+        self.functionsIdx.append(node.lineno)
         self.generic_visit(node)
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
@@ -181,6 +185,7 @@ class FunctionVisitor(ast.NodeVisitor):
                 is_implemented=is_implemented,
             )
         )
+        self.objectsIdx.append(node.lineno)
 
         """Some class are simply used as a type and doesn't have any new fields"""
         # if not is_implemented:
@@ -196,4 +201,5 @@ class FunctionVisitor(ast.NodeVisitor):
             or isinstance(node, ast.AugAssign)
         ) and node.col_offset == 0:
             self.globals.append(ast.unparse(node))
+            self.globalsIdx.append(node.lineno)
         super().visit(node)
