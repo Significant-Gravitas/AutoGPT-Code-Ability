@@ -379,16 +379,16 @@ enum DevelopmentPhase {
 }
 
 model LLMCallAttempt {
-  id               String           @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt        DateTime         @default(now())
+  id               String   @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt        DateTime @default(now())
   model            String
   completionTokens Int
   promptTokens     Int
   totalTokens      Int
-  
-  FirstCall        LLMCallAttempt?  @relation("FirstCall", fields: [firstCallId], references: [id], onDelete: Cascade)
-  firstCallId      String?
-  RetryCalls       LLMCallAttempt[] @relation("FirstCall")
+
+  FirstCall   LLMCallAttempt?  @relation("FirstCall", fields: [firstCallId], references: [id], onDelete: Cascade)
+  firstCallId String?
+  RetryCalls  LLMCallAttempt[] @relation("FirstCall")
 
   attempt  Int
   prompt   Json

@@ -478,7 +478,6 @@ async def create_server_code(completed_app: CompletedApp) -> Application:
         "import logging",
         "import prisma",
         "import io",
-        "from typing import *",
     ]
     server_code_header = f"""logger = logging.getLogger(__name__)
 

@@ -62,13 +62,12 @@ class CodeValidator:
                 await self.validate_code(
                     raw_code=code,
                     packages=packages,
+                    suppress_errors=True,
                 )
             ).get_compiled_code()
-        except Exception as e:
+        except ValidationError as e:
             # We move on with unfixed code if there's an error
-            logger.exception(
-                f"Error fixing code for route #{self.compiled_route_id}: {e}"
-            )
+            logger.debug(f"Error fixing code for route #{self.compiled_route_id}: {e}")
 
         # Run the formatters
         try:
@@ -87,6 +86,7 @@ class CodeValidator:
         packages: list[Package],
         raw_code: str,
         call_cnt: int = 0,
+        suppress_errors: bool = False,
     ) -> GeneratedFunctionResponse:
         """
         Validate the code snippet for any error
@@ -189,9 +189,11 @@ class CodeValidator:
 
         # Auto-fixer works, retry validation (limit to 5 times, to avoid infinite loop)
         if old_compiled_code != new_compiled_code and call_cnt < 5:
-            return await self.validate_code(packages, new_compiled_code, call_cnt + 1)
+            return await self.validate_code(
+                packages, new_compiled_code, call_cnt + 1, suppress_errors
+            )
 
-        if validation_errors:
+        if validation_errors and not suppress_errors:
             raise ValidationError(validation_errors)
 
         return result
@@ -360,11 +362,35 @@ async def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
                 in [
                     "reportRedeclaration",
                     "reportArgumentType",  # This breaks prisma query with dict
-                    "reportReturnType",  # This breaks returning Option without fallback
+                    # "reportReturnType",  # This breaks returning Option without fallback
                 ]
                 or rule.startswith("reportOptional")  # TODO: improve prompt & enable
             ):
                 continue
+
+            # Add available field on unknown field error
+            # Format: Cannot access member \"field_name\" for type \"ClasName\"
+            pattern = r"Cannot access member .+? for type \"(.+?)\""
+            match = re.search(pattern, e["message"])
+            if match:
+                class_name = match.group(1)
+                fieldstr = ""
+
+                if class_name in func.available_objects:
+                    fields = func.available_objects[class_name].Fields or []
+                    fieldstr = ", ".join([f.name for f in fields])
+                elif f"model {class_name} " in func.db_schema:
+                    pattern = f"model {class_name} {{\n(.*?)}}"
+                    match = re.search(pattern, func.db_schema, re.DOTALL)
+                    if not match:
+                        continue
+                    fields = re.sub(r"\s+", " ", match.group(1)).strip().split(" ")[0]
+                    fieldstr = ", ".join(fields)
+
+                if fieldstr:
+                    e["message"] += f". Available fields for {class_name}: {fieldstr}"
+                else:
+                    e["message"] += f". {class_name} does not have any fields."
 
             code_lines = code.splitlines()
             error_message = f"{e['message']}. {e.get('rule', '')}"
@@ -552,6 +578,8 @@ user = await prisma.models.User.prisma().create(
         imports.append("import prisma.enums")
     if "prisma.models" in code:
         imports.append("import prisma.models")
+    if "prisma.errors" in code:
+        imports.append("import prisma.errors")
 
     # Sometimes it does this, it's not a valid import
     if "from pydantic import Optional" in imports:

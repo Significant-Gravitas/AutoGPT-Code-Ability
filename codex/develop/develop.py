@@ -128,7 +128,8 @@ class DevelopAIBlock(AIBlock):
         if validation_errors:
             # Important: ValidationErrors are used in the retry prompt
             errors = [f"\n  - {e}" for e in validation_errors]
-            raise ValidationError(f"Error validating response:{''.join(errors)}")
+            func_name = invoke_params.get("function_name", "")
+            raise ValidationError(f"Error developing {func_name}. {''.join(errors)}")
 
         return response
 
