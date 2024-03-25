@@ -74,7 +74,7 @@ async def compile_route(
     database_schema = get_database_schema(compiled_route)
 
     # Run the auto-fixers
-    formatted_code = CodeValidator(
+    formatted_code = await CodeValidator(
         compiled_route_id=compiled_route_id,
         function_name=route_root_func.functionName,
         database_schema=database_schema,
@@ -458,7 +458,7 @@ async def create_app(
     return app
 
 
-def create_server_code(completed_app: CompletedApp) -> Application:
+async def create_server_code(completed_app: CompletedApp) -> Application:
     """
     Args:
         application (Application): _description_
@@ -557,7 +557,7 @@ app = FastAPI(title="{name}", lifespan=lifespan, description='''{desc}''')
     )
 
     # Update the application with the server code
-    formatted_code = CodeValidator(
+    formatted_code = await CodeValidator(
         database_schema=db_schema,
         compiled_route_id=f"CompletedAppID-{completed_app.id}",
     ).reformat_code(
