@@ -22,10 +22,7 @@ from codex.common.types import normalize_type
 from codex.deploy.model import Application
 from codex.develop.code_validation import CodeValidator
 from codex.develop.database import get_compiled_route
-from codex.develop.function import (
-    generate_object_template,
-    get_database_schema,
-)
+from codex.develop.function import generate_object_template, get_database_schema
 from codex.develop.model import Package as PackageModel
 
 logger = logging.getLogger(__name__)
@@ -475,6 +472,7 @@ def create_server_code(completed_app: CompletedApp) -> Application:
         "from fastapi.encoders import jsonable_encoder",
         "from prisma import Prisma",
         "from contextlib import asynccontextmanager",
+        "from datetime import datetime",
         "import logging",
         "import prisma",
         "import io",
