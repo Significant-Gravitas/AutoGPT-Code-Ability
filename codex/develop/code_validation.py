@@ -128,11 +128,23 @@ class CodeValidator:
         deps_funcs = [f for f in visitor.functions if f.is_implemented]
         stub_funcs = [f for f in visitor.functions if not f.is_implemented]
 
-        function_code = (
-            "".join([generate_object_code(obj) + "\n\n" for obj in visitor.objects])
-            + "\n".join(visitor.globals)
-            + "".join(["\n\n" + fun.function_code for fun in deps_funcs])
+        objects_block = zip(
+            ["\n\n" + generate_object_code(obj) for obj in visitor.objects],
+            visitor.objectsIdx,
         )
+        functions_block = zip(
+            ["\n\n" + fun.function_code for fun in deps_funcs], visitor.functionsIdx
+        )
+        globals_block = zip(
+            ["\n\n" + glob for glob in visitor.globals], visitor.globalsIdx
+        )
+        function_code = "".join(
+            code
+            for code, _ in sorted(
+                list(objects_block) + list(functions_block) + list(globals_block),
+                key=lambda x: x[1],
+            )
+        ).strip()
 
         # No need to validate main function if it's not provided (compiling a server code)
         if self.func_name:
