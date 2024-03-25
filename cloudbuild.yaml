@@ -1,24 +1,24 @@
-logsBucket: "gs://agpt-cloud-build-logs-dev"
+logsBucket: "gs://agpt-cloud-build-logs-$PROJECT_ID"
 steps:
   - name: "gcr.io/cloud-builders/docker"
     args: ["pull", "gcr.io/$PROJECT_ID/mvp/codex_base:latest"]
     id: "pull-image-codex-base"
     volumes:
-      - name: "autogpt-docker-layers-dev"
+      - name: "autogpt-docker-layers"
         path: "/var/lib/docker"
 
   - name: "gcr.io/cloud-builders/docker"
     args: ["pull", "gcr.io/$PROJECT_ID/mvp/codex_db:latest"]
-    id: "pul-image-codex-db"
+    id: "pull-image-codex-db"
     volumes:
-      - name: "autogpt-docker-layers-dev"
+      - name: "autogpt-docker-layers"
         path: "/var/lib/docker"
 
   - name: "gcr.io/cloud-builders/docker"
     args: ["pull", "gcr.io/$PROJECT_ID/mvp/codex:latest"]
-    id: "pul-image-codex"
+    id: "pull-image-codex"
     volumes:
-      - name: "autogpt-docker-layers-dev"
+      - name: "autogpt-docker-layers"
         path: "/var/lib/docker"
 
   # Build Base Image
@@ -36,7 +36,7 @@ steps:
       ]
     id: "build-codex-base"
     volumes:
-      - name: "autogpt-docker-layers-dev"
+      - name: "autogpt-docker-layers"
         path: "/var/lib/docker"
 
   # Push Latest Base Image
@@ -44,7 +44,7 @@ steps:
     args: ["push", "gcr.io/$PROJECT_ID/mvp/codex_base:latest"]
     id: "push-latest-codex-base"
     volumes:
-      - name: "autogpt-docker-layers-dev"
+      - name: "autogpt-docker-layers"
         path: "/var/lib/docker"
 
   # Build Database client Image
@@ -62,7 +62,7 @@ steps:
       ]
     id: "build-codex-db"
     volumes:
-      - name: "autogpt-docker-layers-dev"
+      - name: "autogpt-docker-layers"
         path: "/var/lib/docker"
 
   # Push Latest Database Client Image
@@ -70,7 +70,7 @@ steps:
     args: ["push", "gcr.io/$PROJECT_ID/mvp/codex_db:latest"]
     id: "push-latest-codex-db"
     volumes:
-      - name: "autogpt-docker-layers-dev"
+      - name: "autogpt-docker-layers"
         path: "/var/lib/docker"
 
   # Build Codex Image
@@ -90,7 +90,7 @@ steps:
       ]
     id: "build-codex"
     volumes:
-      - name: "autogpt-docker-layers-dev"
+      - name: "autogpt-docker-layers"
         path: "/var/lib/docker"
 
   # Push Codex Image
@@ -98,8 +98,28 @@ steps:
     args: ["push", "--all-tags", "gcr.io/$PROJECT_ID/mvp/codex"]
     id: "push-codex"
     volumes:
-      - name: "autogpt-docker-layers-dev"
+      - name: "autogpt-docker-layers"
         path: "/var/lib/docker"
+
+  # Deploy DB Job to Cloud Run
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: gcloud
+    args:
+      [
+        "run",
+        "jobs",
+        "deploy",
+        "database-migration-codex",
+        "--image",
+        "gcr.io/$PROJECT_ID/mvp/codex_db:latest",
+        "--region",
+        "us-central1",
+        "--wait",
+        "--args=prisma,migrate,deploy",
+      ]
+    id: "run-migration-bot"
+    waitFor:
+      - push-latest-codex-db
 
   # Deploy Debug Tool Image to Cloud Run
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
@@ -115,10 +135,8 @@ steps:
         "us-central1",
         "--platform",
         "managed",
-        "--service-account",
-        "638488734936-compute@developer.gserviceaccount.com",
       ]
     id: "deploy-codex"
     volumes:
-      - name: "autogpt-docker-layers-dev"
+      - name: "autogpt-docker-layers"
         path: "/var/lib/docker"
