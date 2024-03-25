@@ -1,3 +1,4 @@
+import click
 import numpy as np
 import pandas as pd
 import prisma
@@ -99,3 +100,76 @@ async def get_template_performance() -> pd.DataFrame:
     await db.disconnect()
 
     return result
+
+
+async def get_costs():
+    db = prisma.Prisma(auto_register=True)
+    await db.connect()
+
+    templates = await prisma.models.LLMCallTemplate.prisma().find_many()
+    template_data = pd.DataFrame([d.model_dump() for d in templates])
+
+    calls = await prisma.models.LLMCallAttempt.prisma().find_many()
+    calls_data = pd.DataFrame([d.model_dump() for d in calls])
+
+    # Merge calls with templates
+    result = calls_data.merge(
+        template_data, how="inner", left_on="llmCallTemplateId", right_on="id"
+    )
+    retries_result = result[result["attempt"] > 0]
+
+    # Calculate total cost
+    per_app = result.groupby(["applicationId", "developmentPhase"])[
+        ["completionTokens", "promptTokens"]
+    ].sum()
+    # Adjusted section for calculating total cost
+    per_app = per_app.assign(
+        completionCost=per_app["completionTokens"] * 30 / 1_000_000,
+        promptCost=per_app["promptTokens"] * 10 / 1_000_000,
+    )
+    per_app["total_cost"] = per_app["completionCost"] + per_app["promptCost"]
+
+    per_app = per_app.reset_index()
+    median_costs_by_phase = per_app.groupby("developmentPhase")["total_cost"].median()
+    dev_cost = median_costs_by_phase.get(
+        "DEVELOPMENT", 0
+    )  # Default to 0 if not present
+    req_cost = median_costs_by_phase.get("REQUIREMENTS", 0)
+    per_app_cost = (
+        per_app[["applicationId", "total_cost"]]
+        .groupby("applicationId")
+        .sum()
+        .median()
+        .get("total_cost", 0)
+    )
+
+    # # Calculate retries cost
+    retries_result = (
+        retries_result[["applicationId", "completionTokens", "promptTokens"]]
+        .groupby(["applicationId"])
+        .sum()
+    )
+    retries_cost = retries_result.assign(
+        completionCost=retries_result["completionTokens"] * 30 / 1_000_000,
+        promptCost=retries_result["promptTokens"] * 10 / 1_000_000,
+    )
+    retries_cost["total_cost"] = (
+        retries_cost["completionCost"] + retries_cost["promptCost"]
+    )
+
+    retries_cost = retries_cost["total_cost"].median()
+
+    retries_percentage = (retries_cost / per_app_cost) * 100
+
+    await db.disconnect()
+
+    output_message = f"""
+Median cost per app: {click.style(f'${per_app_cost:.2f}', fg='green', bold=True)}
+
+Median Requirements phase cost: {click.style(f'${req_cost:.2f}', fg='blue', bold=True)}
+Median Development phase cost: {click.style(f'${dev_cost:.2f}', fg='blue', bold=True)}
+
+Median Cost due to retries: {click.style(f'${retries_cost:.2f}', fg='red', bold=True)} = {click.style(f'{retries_percentage:.0f}%', fg='red', bold=True)} of cost is due to needing to retry
+"""
+
+    click.echo(output_message)
