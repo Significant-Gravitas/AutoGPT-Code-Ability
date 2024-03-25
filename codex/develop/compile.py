@@ -470,17 +470,17 @@ def create_server_code(completed_app: CompletedApp) -> Application:
         "from fastapi import FastAPI",
         "from fastapi.responses import Response, StreamingResponse",
         "from fastapi.encoders import jsonable_encoder",
-        "from prisma import Prisma",
         "from contextlib import asynccontextmanager",
-        "from datetime import datetime",
         "import logging",
         "import prisma",
+        "from prisma.enums import *",
         "import io",
         "from typing import *",
+        "from datetime import datetime",
     ]
     server_code_header = f"""logger = logging.getLogger(__name__)
 
-db_client = Prisma(auto_register=True)
+db_client = prisma.Prisma(auto_register=True)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -550,30 +550,31 @@ app = FastAPI(title="{name}", lifespan=lifespan, description='''{desc}''')
     server_code += "\n\n"
     server_code += "\n\n".join(service_routes_code)
 
-    db_schema = "\n\n".join(
-        [get_database_schema(r) for r in completed_app.CompiledRoutes]
-    )
+    # db_schema = "\n\n".join(
+    #     [get_database_schema(r) for r in completed_app.CompiledRoutes]
+    # )
 
+    # TODO: Uncomment this when we have a better fix for primsa.enum import issue
     # Update the application with the server code
-    formatted_code = CodeValidator(
-        database_schema=db_schema,
-        compiled_route_id=f"CompletedAppID-{completed_app.id}",
-    ).reformat_code(
-        code=server_code,
-        packages=[
-            PackageModel(
-                package_name=package.packageName,
-                version=package.version,
-                specifier=package.specifier,
-            )
-            for package in packages
-        ],
-    )
+    # formatted_code = CodeValidator(
+    #     database_schema=db_schema,
+    #     compiled_route_id=f"CompletedAppID-{completed_app.id}",
+    # ).reformat_code(
+    #     code=server_code,
+    #     packages=[
+    #         PackageModel(
+    #             package_name=package.packageName,
+    #             version=package.version,
+    #             specifier=package.specifier,
+    #         )
+    #         for package in packages
+    #     ],
+    # )
 
     return Application(
         name=name,
         description=desc,
-        server_code=formatted_code,
+        server_code=server_code,
         completed_app=completed_app,
         packages=packages,
     )
