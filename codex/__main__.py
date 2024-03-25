@@ -130,6 +130,13 @@ def analytics():
     )
 
 
+@cli.command()
+def costs():
+    import codex.analytics
+
+    asyncio.get_event_loop().run_until_complete(codex.analytics.get_costs())
+
+
 async def get_resume_points(prisma_client):
     import datetime
 
