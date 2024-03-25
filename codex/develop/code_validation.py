@@ -368,30 +368,6 @@ async def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
             ):
                 continue
 
-            # Add available field on unknown field error
-            # Format: Cannot access member \"field_name\" for type \"ClasName\"
-            pattern = r"Cannot access member .+? for type \"(.+?)\""
-            match = re.search(pattern, e["message"])
-            if match:
-                class_name = match.group(1)
-                fieldstr = ""
-
-                if class_name in func.available_objects:
-                    fields = func.available_objects[class_name].Fields or []
-                    fieldstr = ", ".join([f.name for f in fields])
-                elif f"model {class_name} " in func.db_schema:
-                    pattern = f"model {class_name} {{\n(.*?)}}"
-                    match = re.search(pattern, func.db_schema, re.DOTALL)
-                    if not match:
-                        continue
-                    fields = re.sub(r"\s+", " ", match.group(1)).strip().split(" ")[0]
-                    fieldstr = ", ".join(fields)
-
-                if fieldstr:
-                    e["message"] += f". Available fields for {class_name}: {fieldstr}"
-                else:
-                    e["message"] += f". {class_name} does not have any fields."
-
             code_lines = code.splitlines()
             error_message = f"{e['message']}. {e.get('rule', '')}"
             error_line = "\n".join(
