@@ -5,6 +5,7 @@ import os
 import click
 from dotenv import load_dotenv
 
+import codex.debug
 from codex.common.logging_config import setup_logging
 
 logger = logging.getLogger(__name__)
@@ -13,6 +14,9 @@ logger = logging.getLogger(__name__)
 @click.group()
 def cli():
     pass
+
+
+cli.add_command(cmd=codex.debug.debug)  # type: ignore
 
 
 @cli.command()
