@@ -1,8 +1,10 @@
 import asyncio
-import click
 import enum
+
+import click
 import prisma
 import pydantic
+
 
 @click.group()
 def debug():
@@ -11,10 +13,12 @@ def debug():
     """
     pass
 
+
 class DebugObjects(enum.Enum):
     """
     Possible objects to debug.
     """
+
     APP = "App"
     INTERVIEW = "Interview"
     SPEC_SUMMARY = "Spec Summary"
@@ -25,21 +29,15 @@ class DebugObjects(enum.Enum):
     COMPLETED_APP = "Completed App"
     DEPLOYMENT = "Deployment"
 
+
 class WhatToDebug(pydantic.BaseModel):
     """
     What to debug.
     """
-    object: DebugObjects | None = None
-    app_id: str
-    interview_id: str | None = None
-    spec_id: str | None = None
-    route_spec_id: str | None = None
-    database_schema_id: str | None = None
-    function_id: str | None = None
-    compiled_route_id: str | None = None
-    completed_app_id: str | None = None
-    deployment_id: str | None = None
-    
+
+    object: DebugObjects
+    app: prisma.models.ResumePoint
+
 
 async def get_resume_points(prisma_client):
     import datetime
@@ -99,13 +97,14 @@ async def get_resume_points(prisma_client):
         print(formatted_row)
     return resume_points
 
+
 def what_to_debug():
     """
     Works out what the user would like to debug.
     """
     click.echo("What app would you like to debug?")
     click.echo("Here are the latest apps and where they got up to.")
-    
+
     prisma_client = prisma.Prisma(auto_register=True)
     click.echo("")
     resume_points = asyncio.get_event_loop().run_until_complete(
@@ -113,23 +112,69 @@ def what_to_debug():
     )
     click.echo("\n")
     case = int(input("Select index of the app you want to debug: "))
-    app = resume_points[case - 1] # type: ignore
+    app = resume_points[case - 1]
+    assert app is not None, "App is None"
     click.echo("Great, now what are you intestested in debugging?")
     click.echo("Here are the different objects you can inspect:")
     for i, object in enumerate(DebugObjects):
         click.echo(f"{i + 1}. {object.value}")
-        
-    case = int(input("Select index of the object you want to debug: "))
-    click.echo(f"Okay, lets see what is going on with {app.name}'s {list(DebugObjects)[case -1].value}")
-        
-    
 
-        
-    
+    case = int(input("Select index of the object you want to debug: "))
+    click.echo(
+        f"Okay, lets see what is going on with {app.name}'s {list(DebugObjects)[case -1].value}"
+    )
+
+    return WhatToDebug(object=list(DebugObjects)[case - 1], app=app)
+
+
+def print_app(app: prisma.models.Application, resume_point: prisma.models.ResumePoint):
+    """
+    Print the app.
+    """
+    click.echo(f"Name: {app.name}")
+    click.echo(f"Description: {app.description}")
+    click.echo(f"Created At: {app.createdAt.isoformat().split('.')[0]}")
+    click.echo("-" * 40)
+    click.echo("✓ Interview" if resume_point.interviewId else "X Interview")
+    click.echo("✓ Specification" if resume_point.specificationId else "X Specification")
+    click.echo("✓ Compiled App" if resume_point.completedAppId else "X Compiled App")
+    click.echo("✓ Deployment" if resume_point.deploymentId else "X Deployment")
+    click.echo("-" * 40)
+
+
+async def explore_database(this: WhatToDebug):
+    prisma_client = prisma.Prisma()
+    await prisma_client.connect()
+    match this.object:
+        case DebugObjects.APP:
+            app = await prisma.models.Application.prisma().find_unique(
+                where={"id": this.app.applicationId}
+            )
+            print_app(app, this.app)
+        case DebugObjects.INTERVIEW:
+            pass
+        case DebugObjects.SPEC_SUMMARY:
+            pass
+        case DebugObjects.API_ROUTE_SPEC:
+            pass
+        case DebugObjects.DATABASE_SCHEMA:
+            pass
+        case DebugObjects.FUNCTION:
+            pass
+        case DebugObjects.COMPILED_ROUTE:
+            pass
+        case DebugObjects.COMPLETED_APP:
+            pass
+        case DebugObjects.DEPLOYMENT:
+            pass
+        case _:
+            pass
+    await prisma_client.disconnect()
+
 
 @debug.command()
 @click.option("--port", "-p", default=8000, help="The port to debug.")
-def llmcalls( port: int):
+def llmcalls(port: int):
     """
     Debug the LLM calls.
     """
@@ -142,5 +187,7 @@ def object(port: int):
     """
     Debug the database objects.
     """
-    what_to_debug()
+    this = what_to_debug()
+    asyncio.get_event_loop().run_until_complete(explore_database(this))
+
     pass
