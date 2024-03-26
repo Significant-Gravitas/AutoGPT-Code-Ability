@@ -1,9 +1,8 @@
 import asyncio
-import enum
-
 import click
+import enum
 import prisma
-
+import pydantic
 
 @click.group()
 def debug():
@@ -12,22 +11,35 @@ def debug():
     """
     pass
 
-
-class PossibleObjects(enum.Enum):
+class DebugObjects(enum.Enum):
     """
     Possible objects to debug.
     """
+    APP = "App"
+    INTERVIEW = "Interview"
+    SPEC_SUMMARY = "Spec Summary"
+    API_ROUTE_SPEC = "API Route Spec"
+    DATABASE_SCHEMA = "Database Schema"
+    FUNCTION = "Function"
+    COMPILED_ROUTE = "Compiled Route"
+    COMPLETED_APP = "Completed App"
+    DEPLOYMENT = "Deployment"
 
-    APP = "app"
-    INTERVIEW = "interview"
-    SPEC_SUMMARY = "spec_summary"
-    API_ROUTE_SPEC = "api_route_spec"
-    DATABASE_SCHEMA = "database_schema"
-    FUNCTION = "function"
-    COMPILED_ROUTE = "compiled_route"
-    COMLPLETED_APP = "completed_app"
-    DEPLOYMENT = "deployment"
-
+class WhatToDebug(pydantic.BaseModel):
+    """
+    What to debug.
+    """
+    object: DebugObjects | None = None
+    app_id: str
+    interview_id: str | None = None
+    spec_id: str | None = None
+    route_spec_id: str | None = None
+    database_schema_id: str | None = None
+    function_id: str | None = None
+    compiled_route_id: str | None = None
+    completed_app_id: str | None = None
+    deployment_id: str | None = None
+    
 
 async def get_resume_points(prisma_client):
     import datetime
@@ -51,7 +63,7 @@ async def get_resume_points(prisma_client):
     )
 
     print(
-        "\033[92m Todays\033[0m and\033[93m yesterdays\033[0m days resume points are colored:\n"
+        "\033[92m Todays\033[0m and\033[93m yesterdays\033[0m days apps are colored:\n"
     )
     print(
         f"{'':<3} | {'updatedAt':<20} | {'name':<30} | {'Interview':<10} | {'Specification':<15} | {'CompiledAApp':<12} | {'Deployment':<10}"
@@ -87,32 +99,48 @@ async def get_resume_points(prisma_client):
         print(formatted_row)
     return resume_points
 
+def what_to_debug():
+    """
+    Works out what the user would like to debug.
+    """
+    click.echo("What app would you like to debug?")
+    click.echo("Here are the latest apps and where they got up to.")
+    
+    prisma_client = prisma.Prisma(auto_register=True)
+    click.echo("")
+    resume_points = asyncio.get_event_loop().run_until_complete(
+        get_resume_points(prisma_client)
+    )
+    click.echo("\n")
+    case = int(input("Select index of the app you want to debug: "))
+    app = resume_points[case - 1] # type: ignore
+    click.echo("Great, now what are you intestested in debugging?")
+    click.echo("Here are the different objects you can inspect:")
+    for i, object in enumerate(DebugObjects):
+        click.echo(f"{i + 1}. {object.value}")
+        
+    case = int(input("Select index of the object you want to debug: "))
+    click.echo(f"Okay, lets see what is going on with {app.name}'s {list(DebugObjects)[case -1].value}")
+        
+    
+
+        
+    
 
 @debug.command()
-@click.option("--app-id", "-a", default=None, help="The app id to debug.")
 @click.option("--port", "-p", default=8000, help="The port to debug.")
-def llmcalls(app_id: str, port: int):
+def llmcalls( port: int):
     """
     Debug the LLM calls.
     """
-    if not app_id:
-        prisma_client = prisma.Prisma(auto_register=True)
-        print("")
-        asyncio.get_event_loop().run_until_complete(get_resume_points(prisma_client))
-        print("\n")
     pass
 
 
 @debug.command()
-@click.option("--app-id", "-a", default=None, help="The app id to debug.")
 @click.option("--port", "-p", default=8000, help="The port to debug.")
-def object(app_id: str, port: int):
+def object(port: int):
     """
     Debug the database objects.
     """
-    if not app_id:
-        prisma_client = prisma.Prisma(auto_register=True)
-        print("")
-        asyncio.get_event_loop().run_until_complete(get_resume_points(prisma_client))
-        print("\n")
+    what_to_debug()
     pass
