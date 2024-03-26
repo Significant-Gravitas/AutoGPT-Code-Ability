@@ -49,12 +49,25 @@ EXPOSE 8000
 
 
 def generate_requirements_txt(packages: List[Package]) -> str:
-    requirements = set()
+    requirements: dict[str, Package] = {}
 
+    # Resolve multiplicate requirements to highest specified version
     for package in packages:
-        requirements.add(package.packageName.replace("\n", "").strip())
+        name = package.packageName.strip()
+        if name not in requirements or package.version > requirements[name].version:
+            requirements[name] = package
 
-    return "\n".join(sorted(requirements))
+    return "\n".join(
+        fmt_package_requirement(p) for _, p in sorted(requirements.items())
+    )
+
+
+def fmt_package_requirement(p: Package) -> str:
+    """Format a `Package` as a requirement string like `fastapi>=0.98.0`"""
+    if p.version:
+        return f"{p.packageName.strip()}{p.specifier}{p.version}"
+    else:
+        return p.packageName.strip()
 
 
 def generate_dotenv_example_file(application: Application) -> str:
