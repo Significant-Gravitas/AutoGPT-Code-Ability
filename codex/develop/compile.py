@@ -154,6 +154,7 @@ async def recursive_compile_route(
             **INCLUDE_FUNC["include"],
             "ParentFunction": INCLUDE_FUNC,
             "ChildFunctions": INCLUDE_FUNC,
+            "Packages": True,
         },  # type: ignore
     )
     logger.info(f"⚙️ Compiling function: {function.functionName}")

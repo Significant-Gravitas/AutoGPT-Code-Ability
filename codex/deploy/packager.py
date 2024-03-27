@@ -7,7 +7,7 @@ import zipfile
 from datetime import datetime
 from typing import List
 
-from pipreqs import pipreqs
+from packaging import version
 from prisma.models import DatabaseTable, Package
 
 from codex.common.constants import PRISMA_FILE_HEADER
@@ -49,18 +49,28 @@ EXPOSE 8000
 """.lstrip()
 
 
-def generate_requirements_txt(
-    packages: List[Package], pipreq_pacakages: List[str]
-) -> str:
-    requirements = set()
+def generate_requirements_txt(packages: List[Package]) -> str:
+    requirements: dict[str, Package] = {}
 
+    # Resolve multiplicate requirements to highest specified version
     for package in packages:
-        requirements.add(package.packageName.replace("\n", "").strip())
+        name = package.packageName.strip()
+        if name not in requirements or version.parse(package.version) > version.parse(
+            requirements[name].version
+        ):
+            requirements[name] = package
 
-    for package in pipreq_pacakages:
-        requirements.add(package.replace("\n", "").strip())
+    return "\n".join(
+        fmt_package_requirement(p) for _, p in sorted(requirements.items())
+    )
 
-    return "\n".join(sorted(requirements))
+
+def fmt_package_requirement(p: Package) -> str:
+    """Format a `Package` as a requirement string like `fastapi>=0.98.0`"""
+    if p.version:
+        return f"{p.packageName.strip()}{p.specifier}{p.version}"
+    else:
+        return p.packageName.strip()
 
 
 def generate_dotenv_example_file(application: Application) -> str:
@@ -369,36 +379,13 @@ async def create_zip_file(application: Application) -> bytes:
                     service_file.write(compiled_route.compiledCode)
 
             # Make a requirements file
-            pipreqs.init(
-                {
-                    "<path>": package_dir,
-                    "--savepath": os.path.join(package_dir, "requirements.txt"),
-                    "--print": False,
-                    "--use-local": None,
-                    "--force": True,
-                    "--proxy": None,
-                    "--pypi-server": None,
-                    "--diff": None,
-                    "--clean": None,
-                    "--mode": "no-pin",
-                }
-            )
-
             requirements_file_path = os.path.join(package_dir, "requirements.txt")
-            pipreq_pacakages = []
-            with open(file=requirements_file_path, mode="r") as requirements_file:
-                pipreq_pacakages = requirements_file.readlines()
-
-            packages = ""
+            requirements_txt = ""
             if application.packages:
-                packages = generate_requirements_txt(
-                    application.packages, pipreq_pacakages
-                )
-
-            os.remove(requirements_file_path)
-
+                requirements_txt = generate_requirements_txt(application.packages)
+                requirements_txt += "\n"
             with open(requirements_file_path, mode="w") as requirements_file:
-                requirements_file.write(packages)
+                requirements_file.write(requirements_txt)
 
             # Make a prisma schema file
             prism_schema_file_path = os.path.join(package_dir, "schema.prisma")
