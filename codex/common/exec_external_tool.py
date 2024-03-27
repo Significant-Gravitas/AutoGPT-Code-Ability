@@ -150,8 +150,8 @@ async def execute_command(
     # Set the python path by replacing the env 'PATH' with the provided python path
     venv = os.environ.copy()
     if python_path:
-        original_python_path = venv["PATH"].split(":")[1:]
-        venv["PATH"] = f"{python_path}:{':'.join(original_python_path)}"
+        # PATH prioritize first occurrence of python_path, so we need to prepend.
+        venv["PATH"] = f"{python_path}:{venv["PATH"]}"
     r = await asyncio.create_subprocess_exec(
         *command,
         stdout=subprocess.PIPE,

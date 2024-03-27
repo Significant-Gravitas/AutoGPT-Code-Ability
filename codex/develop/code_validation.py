@@ -365,7 +365,13 @@ async def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
         if not result:
             return []
 
-        for e in json.loads(result)["generalDiagnostics"]:
+        try:
+            json_response = json.loads(result)["generalDiagnostics"]
+        except Exception as e:
+            logger.error(f"Error parsing pyright output, error: {e} output: {result}")
+            raise e
+
+        for e in json_response:
             rule = e.get("rule", "")
             severity = e.get("severity", "")
             if (
