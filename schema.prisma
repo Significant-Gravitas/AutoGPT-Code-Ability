@@ -82,6 +82,7 @@ model Interview {
   applicationId  String
   ResumePoint    ResumePoint[]
   LLMCallAttempt LLMCallAttempt[]
+  Specification  Specification[]
 }
 
 model Question {
@@ -108,10 +109,12 @@ model Specification {
   name      String
   context   String
 
-  ApiRouteSpecs  APIRouteSpec[]
-  CompletedApps  CompletedApp[]
-  User           User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId         String?
+  ApiRouteSpecs APIRouteSpec[]
+  CompletedApps CompletedApp[]
+  User          User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String?
+  Interview     Interview?     @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  interviewId   String?
   Application    Application?     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   applicationId  String?
   ResumePoint    ResumePoint[]
