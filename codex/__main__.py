@@ -44,11 +44,11 @@ def populate_db(database):
 @click.option(
     "--port",
     "-p",
-    default=8000,
+    default=8080,
     help="Port number of the Codex server",
     type=int,
 )
-def benchmark(port: int = 8000):
+def benchmark(port: int = 8080):
     """Run the benchmark tests"""
     import prisma
 
@@ -56,7 +56,7 @@ def benchmark(port: int = 8000):
     import codex.runner
     from codex.requirements.model import ExampleTask
 
-    base_url = f"http://127.0.0.1:{port}/api/v1"
+    base_url = f"http://0.0.0.0:{port}/api/v1"
     prisma_client = prisma.Prisma(auto_register=True)
     tasks = list(ExampleTask)
 
