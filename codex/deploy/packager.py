@@ -7,6 +7,7 @@ import zipfile
 from datetime import datetime
 from typing import List
 
+from packaging import version
 from prisma.models import DatabaseTable, Package
 
 from codex.common.constants import PRISMA_FILE_HEADER
@@ -54,7 +55,9 @@ def generate_requirements_txt(packages: List[Package]) -> str:
     # Resolve multiplicate requirements to highest specified version
     for package in packages:
         name = package.packageName.strip()
-        if name not in requirements or package.version > requirements[name].version:
+        if name not in requirements or version.parse(package.version) > version.parse(
+            requirements[name].version
+        ):
             requirements[name] = package
 
     return "\n".join(
