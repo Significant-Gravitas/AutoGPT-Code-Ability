@@ -6,7 +6,7 @@
 
 The Codex System is an innovative coding agent designed to streamline the software development process. It consists of four key sub-agents, each specialized in a different aspect of software development. These sub-agents work in harmony to ensure efficient and effective delivery of software applications. This README provides an overview of the Codex System and its components.
 
-## Setup Guide
+## Setup Guide 
 
 Welcome to the initial setup guide for your project. Follow these easy steps to get everything up and running.
 
@@ -36,6 +36,7 @@ Then input:
 And select the Poetry Python Interpreter.
 
 ### Step 2: Initialize Docker Containers
+Remember to remove the app service, if you want to run only the DB. 
 
 Next, set up the Docker containers by executing:
 
