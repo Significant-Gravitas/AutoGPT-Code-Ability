@@ -122,11 +122,14 @@ async def setup_if_required(cwd: str, copy_from_parent: bool = False) -> str:
 
     # Create a virtual environment
     output = await execute_command(["python", "-m", "venv", "venv"], cwd, None)
-    logger.debug(output)
+    logger.info(f"[Setup] Creating virtual environment: {output}")
 
     # Install dependencies
     output = await execute_command(["pip", "install"] + DEFAULT_DEPS, cwd, path)
-    logger.debug(output)
+    logger.info(f"[Setup] Installing {DEFAULT_DEPS}: {output}")
+
+    output = await execute_command(["pyright"], cwd, path, raise_on_error=False)
+    logger.info(f"[Setup] Setting up pyright: {output}")
 
     return path
 
