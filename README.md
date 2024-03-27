@@ -44,6 +44,12 @@ Next, set up the Docker containers by executing:
 docker compose up
 ```
 
+To have docker compose watch file changes and automatically rebuild, execute:
+
+```
+docker compose alpha watch 
+```
+
 This spins up the necessary Docker containers as defined in your `docker-compose.yml`, ensuring your environment is correctly isolated.
 
 > Take note of the **port** printed in the output. e.g: `listening on IPv4 address "0.0.0.0", port 5432`.
