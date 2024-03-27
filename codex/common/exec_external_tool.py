@@ -166,4 +166,4 @@ async def execute_command(
     if raise_on_error:
         raise ValidationError((stderr or stdout).decode("utf-8"))
     else:
-        return stderr.decode("utf-8")
+        return (stderr or stdout).decode("utf-8")
