@@ -7,7 +7,6 @@ import zipfile
 from datetime import datetime
 from typing import List
 
-from packaging import version
 from prisma.models import DatabaseTable, Package
 
 from codex.common.constants import PRISMA_FILE_HEADER
@@ -49,23 +48,15 @@ EXPOSE 8000
 """.lstrip()
 
 
-def generate_requirements_txt(packages: List[Package]) -> str:
-    requirements: dict[str, Package] = {}
-
-    # Resolve multiplicate requirements to highest specified version
-    for package in packages:
-        name = package.packageName.strip()
-        if name not in requirements or version.parse(package.version) > version.parse(
-            requirements[name].version
-        ):
-            requirements[name] = package
-
+def requirements_txt_from_packages(packages: list[Package]) -> str:
+    """Format a `list[Package]` as a pip-parseable list as in requirements.txt"""
     return "\n".join(
-        fmt_package_requirement(p) for _, p in sorted(requirements.items())
+        fmt_package_as_requirement(p)
+        for p in sorted(packages, key=lambda p: p.packageName)
     )
 
 
-def fmt_package_requirement(p: Package) -> str:
+def fmt_package_as_requirement(p: Package) -> str:
     """Format a `Package` as a requirement string like `fastapi>=0.98.0`"""
     if p.version:
         return f"{p.packageName.strip()}{p.specifier}{p.version}"
@@ -382,7 +373,7 @@ async def create_zip_file(application: Application) -> bytes:
             requirements_file_path = os.path.join(package_dir, "requirements.txt")
             requirements_txt = ""
             if application.packages:
-                requirements_txt = generate_requirements_txt(application.packages)
+                requirements_txt = requirements_txt_from_packages(application.packages)
                 requirements_txt += "\n"
             with open(requirements_file_path, mode="w") as requirements_file:
                 requirements_file.write(requirements_txt)
