@@ -1,12 +1,13 @@
 import logging
 import os
 import random
-import subprocess
 import tempfile
 import zipfile
 from datetime import datetime
 from typing import List
 
+from git import GitCommandError
+from git.repo import Repo
 from prisma.models import DatabaseTable, Package
 
 from codex.common.constants import PRISMA_FILE_HEADER
@@ -272,54 +273,31 @@ def git_init(app_dir: str):
         app_dir (str): The directory path where the Git repository should be initialized.
 
     Raises:
-        subprocess.CalledProcessError: If there is an error while initializing the Git repository or committing files.
-
+        GitCommandError: if any of the Git operations fails.
     """
+    GIT_USER_NAME: str = os.environ.get("GIT_USER_NAME", default="AutoGPT")
+    GIT_USER_EMAIL: str = os.environ.get("GIT_USER_EMAIL", default="code@agpt.com")
+
     try:
         # Initialize Git repository
-        subprocess.run(args=["git", "init"], cwd=app_dir, check=True)
+        repo = Repo.init(app_dir)
 
-        GIT_USER_NAME: str = os.environ.get("GIT_USER_NAME", default="AutoGPT")
-        GIT_USER_EMAIL: str = os.environ.get("GIT_USER_EMAIL", default="code@agpt.com")
-
-        # Configure Git user only locally in the newly initialised repository
-        subprocess.run(
-            ["git", "config", "--local", "user.name", GIT_USER_NAME],
-            cwd=app_dir,
-            check=True,
-        )
-        subprocess.run(
-            ["git", "config", "--local", "user.email", GIT_USER_EMAIL],
-            cwd=app_dir,
-            check=True,
+        # Configure Git user for the current session
+        repo.git.set_persistent_git_options(
+            c=[
+                f"user.name={GIT_USER_NAME}",
+                f"user.email={GIT_USER_EMAIL}",
+                "commit.gpgsign=false",
+            ]
         )
 
-        # Add all files to the staging area
-        subprocess.run(args=["git", "add", "."], cwd=app_dir, check=True)
-
-        # Commit the changes
-        subprocess.run(
-            args=["git", "commit", "-m", "Initial commit"], cwd=app_dir, check=True
-        )
+        repo.git.add(".")
+        repo.git.commit("-m", "Initial commit")
 
         logger.info("Git repository initialized and all files committed")
 
-        # Unset the local Git configuration
-        subprocess.run(
-            ["git", "config", "--unset", "--local", "user.name"],
-            cwd=app_dir,
-            check=True,
-        )
-        subprocess.run(
-            ["git", "config", "--unset", "--local", "user.email"],
-            cwd=app_dir,
-            check=True,
-        )
-
-        logger.info("Local Git user configuration unset")
-
-    except subprocess.CalledProcessError as e:
-        logger.exception("Failed to initialize Git repository or commit files")
+    except GitCommandError as e:
+        logger.exception("Failed to initialize Git repository or commit files:", e)
         raise e
 
 
