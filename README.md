@@ -47,7 +47,7 @@ docker compose up
 To have docker compose watch file changes and automatically rebuild, execute:
 
 ```
-docker compose alpha watch 
+docker compose watch --no-up & docker compose up 
 ```
 
 This spins up the necessary Docker containers as defined in your `docker-compose.yml`, ensuring your environment is correctly isolated.

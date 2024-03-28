@@ -10,7 +10,7 @@ WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update \
-    && apt-get install -y build-essential curl ffmpeg git \
+    && apt-get install -y build-essential curl ffmpeg git netcat \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -25,6 +25,10 @@ RUN pip3 install poetry
 # Copy only requirements to cache them in Docker layer
 WORKDIR /app
 COPY pyproject.toml poetry.lock* /app/
+
+# Copy entrypoint script and set permissions
+COPY scripts/entrypoint.sh /app/
+RUN chmod +x /app/entrypoint.sh
 
 RUN mkdir /app/codex
 RUN touch /app/codex/__init__.py
@@ -42,11 +46,15 @@ RUN prisma generate
 FROM codex_db as codex
 # Fast build of codex - only needs to update the python code
 COPY . /app
+
 # Set a default value (this can be overridden)
 ENV PORT=8000
 
 # Just declare the variable, the value will be set when running the container
 ENV OPENAI_API_KEY=""
 
-# This will be the command to run the FastAPI server using uvicorn
-CMD ./run serve
+## This will be the command to run the FastAPI server using uvicorn
+#CMD ./run serve
+
+# Specify the entrypoint script
+ENTRYPOINT ["/app/entrypoint.sh"]
