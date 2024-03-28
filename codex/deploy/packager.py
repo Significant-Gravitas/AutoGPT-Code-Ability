@@ -480,6 +480,7 @@ author: {PROJECT_AUTHOR}
 async def create_pyproject(application: Application, package_dir: str) -> None:
     """Create a pyproject.toml file for `application` in `package_dir`"""
     app_name_slug = application.name.lower().replace(" ", "_")
+    app_description = application.description.split("\n", 1)[0]
     dependency_args = [
         f"--dependency={p.packageName}{f':^{p.version}' if p.version else '=*'}"
         for p in application.packages
@@ -489,7 +490,7 @@ async def create_pyproject(application: Application, package_dir: str) -> None:
             "poetry",
             "init",
             f"--name={app_name_slug}",
-            f"--description={application.description}",
+            f"--description={app_description}",
             f"--author={PROJECT_AUTHOR}",
             "--python=>=3.11",
             *dependency_args,
