@@ -483,7 +483,7 @@ async def create_pyproject(application: Application, package_dir: str) -> None:
     app_description = application.description.split("\n", 1)[0]
     dependency_args = [
         f"--dependency={p.packageName}{f':^{p.version}' if p.version else '=*'}"
-        for p in application.packages
+        for p in sorted(application.packages, key=lambda p: p.packageName)
     ]
     await execute_command(
         command=[
