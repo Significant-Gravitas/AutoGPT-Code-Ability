@@ -7,13 +7,15 @@ import zipfile
 from datetime import datetime
 from typing import List
 
-from prisma.models import DatabaseTable, Package
+from prisma.models import DatabaseTable
 
 from codex.common.constants import PRISMA_FILE_HEADER
+from codex.common.exec_external_tool import execute_command
 from codex.deploy.model import Application
 
 logger = logging.getLogger(__name__)
 
+PROJECT_AUTHOR = "AutoGPT <info@agpt.co>"
 
 DOCKERFILE = """
 # Use an official Python runtime as a parent image
@@ -46,22 +48,6 @@ COPY project/ /app/project/
 CMD uvicorn project.server:app --host 0.0.0.0 --port 8000
 EXPOSE 8000
 """.lstrip()
-
-
-def requirements_txt_from_packages(packages: list[Package]) -> str:
-    """Format a `list[Package]` as a pip-parseable list as in requirements.txt"""
-    return "\n".join(
-        fmt_package_as_requirement(p)
-        for p in sorted(packages, key=lambda p: p.packageName)
-    )
-
-
-def fmt_package_as_requirement(p: Package) -> str:
-    """Format a `Package` as a requirement string like `fastapi>=0.98.0`"""
-    if p.version:
-        return f"{p.packageName.strip()}{p.specifier}{p.version}"
-    else:
-        return p.packageName.strip()
 
 
 def generate_dotenv_example_file(application: Application) -> str:
@@ -369,14 +355,9 @@ async def create_zip_file(application: Application) -> bytes:
                 with open(service_file_path, "w") as service_file:
                     service_file.write(compiled_route.compiledCode)
 
-            # Make a requirements file
-            requirements_file_path = os.path.join(package_dir, "requirements.txt")
-            requirements_txt = ""
-            if application.packages:
-                requirements_txt = requirements_txt_from_packages(application.packages)
-                requirements_txt += "\n"
-            with open(requirements_file_path, mode="w") as requirements_file:
-                requirements_file.write(requirements_txt)
+            # Create pyproject.toml and poetry.lock
+            await create_pyproject(application=application, package_dir=package_dir)
+            await poetry_lock(package_dir)
 
             # Make a prisma schema file
             prism_schema_file_path = os.path.join(package_dir, "schema.prisma")
@@ -450,7 +431,7 @@ def generate_readme(application: Application) -> str:
     content += f"""
 ---
 date: {datetime.now().isoformat()}
-author: AutoGPT
+author: {PROJECT_AUTHOR}
 ---
 
 # {application.completed_app.name}
@@ -486,3 +467,37 @@ author: AutoGPT
 """.lstrip()
 
     return content
+
+
+async def create_pyproject(application: Application, package_dir: str) -> None:
+    """Create a pyproject.toml file for `application` in `package_dir`"""
+    app_name_slug = application.name.lower().replace(" ", "_")
+    dependency_args = [
+        f"--dependency={p.packageName}{f':^{p.version}' if p.version else '=*'}"
+        for p in application.packages
+    ]
+    await execute_command(
+        command=[
+            "poetry",
+            "init",
+            f"--name={app_name_slug}",
+            f"--description={application.description}",
+            f"--author={PROJECT_AUTHOR}",
+            "--python=>=3.11",
+            *dependency_args,
+            "--no-interaction",
+        ],
+        cwd=package_dir,
+    )
+
+
+async def poetry_lock(package_dir: str) -> None:
+    """Runs `poetry lock` in the given `package_dir`"""
+    if not os.path.exists(f"{package_dir}/pyproject.toml"):
+        raise FileNotFoundError(
+            f"Can not generate lockfile in {package_dir} without pyproject.toml"
+        )
+    await execute_command(
+        command=["poetry", "lock"],
+        cwd=package_dir,
+    )
