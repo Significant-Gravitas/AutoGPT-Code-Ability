@@ -481,7 +481,7 @@ author: {PROJECT_AUTHOR}
 
 async def create_pyproject(application: Application, package_dir: str) -> None:
     """Create a pyproject.toml file for `application` in `package_dir`"""
-    app_name_slug = application.name.lower().replace(" ", "_")
+    app_name_slug = application.name.lower().replace(" ", "-")
     app_description = application.description.split("\n", 1)[0]
     dependency_args = [
         f"--dependency={p.packageName}{f':^{p.version}' if p.version else '=*'}"
