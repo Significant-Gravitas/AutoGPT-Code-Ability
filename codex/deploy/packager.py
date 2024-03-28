@@ -31,11 +31,19 @@ RUN apt-get update \\
     && apt-get clean \\
     && rm -rf /var/lib/apt/lists/*
 
+# Install and configure Poetry
+ENV POETRY_HOME="/opt/poetry"
+ENV POETRY_VIRTUALENVS_PATH="/venv"
+ENV POETRY_VIRTUALENVS_IN_PROJECT=0
+ENV POETRY_NO_INTERACTION=1
+RUN curl -sSL https://install.python-poetry.org | python3 -
+ENV PATH="$POETRY_HOME/bin:$PATH"
+
 WORKDIR /app
 
 # Install dependencies
-COPY requirements.txt /app/
-RUN pip install -r requirements.txt
+COPY pyproject.toml poetry.lock ./
+RUN poetry install --no-cache --no-root
 
 # Generate Prisma client
 COPY schema.prisma /app/
@@ -455,7 +463,7 @@ author: {PROJECT_AUTHOR}
 
 3. Open a terminal in the folder containing this README and run the following commands:
 
-    1. `pip install -r requirements.txt` - install dependencies for the app
+    1. `poetry install` - install dependencies for the app
 
     2. `docker-compose up -d` - start the postgres database
 
