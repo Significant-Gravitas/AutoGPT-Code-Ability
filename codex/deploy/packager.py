@@ -47,13 +47,13 @@ RUN poetry install --no-cache --no-root
 
 # Generate Prisma client
 COPY schema.prisma /app/
-RUN prisma generate
+RUN poetry run prisma generate
 
 # Copy project code
 COPY project/ /app/project/
 
 # Serve the application on port 8000
-CMD uvicorn project.server:app --host 0.0.0.0 --port 8000
+CMD poetry run uvicorn project.server:app --host 0.0.0.0 --port 8000
 EXPOSE 8000
 """.lstrip()
 
