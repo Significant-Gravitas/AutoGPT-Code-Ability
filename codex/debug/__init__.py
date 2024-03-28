@@ -112,11 +112,11 @@ def what_to_debug():
     app = resume_points[case - 1]
     assert app is not None, "App is None"
     click.echo("Great, now what are you intestested in debugging?")
-    click.echo("Here are the different objects you can inspect:")
+    click.echo("Here are the different objects you can inspect:\n")
     for i, object in enumerate(DebugObjects):
         click.echo(f"{i + 1}. {object.value}")
 
-    case = int(input("Select index of the object you want to debug: "))
+    case = int(input("\nSelect index of the object you want to debug: "))
     click.echo(
         f"Okay, lets see what is going on with {app.name}'s {list(DebugObjects)[case -1].value}"
     )
@@ -130,9 +130,11 @@ def print_app(
     """
     Print the app.
     """
-    click.echo(f"Name: {app.name}")
-    click.echo(f"Description: {app.description}")
-    click.echo(f"Created At: {app.createdAt.isoformat().split('.')[0]}")
+    click.echo(f"\033[92m\nName: {app.name}\033[0m")
+    click.echo(f"\033[92mDescription: {app.description}\033[0m")
+    click.echo(
+        f"\033[92mCreated At: {app.createdAt.isoformat().split('.')[0]}\033[0m\n"
+    )
     click.echo("-" * 40)
     click.echo("✓ Interview" if resume_point.interviewId else "X Interview")
     click.echo("✓ Specification" if resume_point.specificationId else "X Specification")
