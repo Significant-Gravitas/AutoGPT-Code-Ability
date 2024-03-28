@@ -364,7 +364,9 @@ async def create_zip_file(application: Application) -> bytes:
                     service_file.write(compiled_route.compiledCode)
 
             # Create pyproject.toml and poetry.lock
+            logger.info("Creating pyproject.toml")
             await create_pyproject(application=application, package_dir=package_dir)
+            logger.info("Creating poetry.lock")
             await poetry_lock(package_dir)
 
             # Make a prisma schema file
