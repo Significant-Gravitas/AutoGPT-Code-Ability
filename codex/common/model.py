@@ -1,8 +1,10 @@
+import datetime
 from typing import List, Optional, __all__
 
 from prisma.models import Function, ObjectField, ObjectType
 from pydantic import BaseModel, Field
 
+from codex.api_model import Pagination
 from codex.common.database import INCLUDE_FIELD, INCLUDE_TYPE
 from codex.common.types import (
     extract_field_type,
@@ -252,3 +254,20 @@ async def create_object_type(
                 field.RelatedTypes = updated_object_field.RelatedTypes
 
     return available_objects
+
+
+class ResumePoint(BaseModel):
+    id: str | None = None
+    name: str
+    updatedAt: datetime.datetime
+    userId: str | None = None
+    applicationId: str | None = None
+    interviewId: str | None = None
+    specificationId: str | None = None
+    completedAppId: str | None = None
+    deploymentId: str | None = None
+
+
+class ResumePointsList(BaseModel):
+    resume_points: List[ResumePoint]
+    pagination: Pagination

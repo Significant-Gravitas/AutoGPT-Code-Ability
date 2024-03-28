@@ -5,6 +5,9 @@ import click
 import prisma
 import pydantic
 
+import codex.common.model
+import codex.debug.queries
+
 
 @click.group()
 def debug():
@@ -36,29 +39,17 @@ class WhatToDebug(pydantic.BaseModel):
     """
 
     object: DebugObjects
-    app: prisma.models.ResumePoint
+    app_ids: codex.common.model.ResumePoint
 
 
-async def get_resume_points(prisma_client):
+async def get_resume_points(prisma_client) -> list[codex.common.model.ResumePoint]:
     import datetime
-
-    import prisma.types
-    from prisma.models import ResumePoint
 
     if not prisma_client.is_connected():
         await prisma_client.connect()
 
-    resume_points = await ResumePoint.prisma().find_many(
-        include=prisma.types.ResumePointInclude(
-            Application=True,
-            Interview=True,
-            Specification=True,
-            CompletedApp=True,
-            Deployment=True,
-        ),
-        take=20,
-        order=[{"updatedAt": "desc"}],
-    )
+    resume_points_list = await codex.debug.queries.fetch_application_details()
+    resume_points = resume_points_list.resume_points
 
     print(
         "\033[92m Todays\033[0m and\033[93m yesterdays\033[0m days apps are colored:\n"
@@ -88,13 +79,19 @@ async def get_resume_points(prisma_client):
             str(i + 1),
             resume_point.updatedAt.isoformat().split(".")[0],
             resume_point.name[:30],
-            "✓" if resume_point.Interview and resume_point.Interview.finished else "X",
+            "✓" if resume_point.interviewId else "X",
             "✓" if resume_point.specificationId else "X",
             "✓" if resume_point.completedAppId else "X",
             "✓" if resume_point.deploymentId else "X",
         ]
         formatted_row = f"{color_code}{row[0]:<3} | {row[1]:<20} | {row[2]:<30} | {row[3]:<10} | {row[4]:<15} | {row[5]:<12} | {row[6]:<10}\033[0m"
         print(formatted_row)
+    print(
+        "\n"
+        + " " * 59
+        + f"{resume_points_list.pagination.current_page}/{resume_points_list.pagination.total_pages}"
+    )
+
     return resume_points
 
 
@@ -124,10 +121,12 @@ def what_to_debug():
         f"Okay, lets see what is going on with {app.name}'s {list(DebugObjects)[case -1].value}"
     )
 
-    return WhatToDebug(object=list(DebugObjects)[case - 1], app=app)
+    return WhatToDebug(object=list(DebugObjects)[case - 1], app_ids=app)
 
 
-def print_app(app: prisma.models.Application, resume_point: prisma.models.ResumePoint):
+def print_app(
+    app: prisma.models.Application, resume_point: codex.common.model.ResumePoint
+):
     """
     Print the app.
     """
@@ -148,9 +147,10 @@ async def explore_database(this: WhatToDebug):
     match this.object:
         case DebugObjects.APP:
             app = await prisma.models.Application.prisma().find_unique(
-                where={"id": this.app.applicationId}
+                where={"id": this.app_ids.applicationId}
             )
-            print_app(app, this.app)
+            if app:
+                print_app(app, this.app_ids)
         case DebugObjects.INTERVIEW:
             pass
         case DebugObjects.SPEC_SUMMARY:

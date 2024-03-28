@@ -6,15 +6,11 @@ import zipfile
 from enum import Enum
 
 from prisma import Prisma
-from prisma.models import Application, ResumePoint
-from prisma.types import ResumePointCreateInput
+from prisma.models import Application
 
-from codex.api_model import (
-    InterviewMessageWithResponse,
-    InterviewResponse,
-    SpecificationResponse,
-)
+from codex.api_model import InterviewMessageWithResponse, InterviewResponse
 from codex.common.codex_client import CodexClient
+from codex.common.model import ResumePoint
 from codex.interview.model import InterviewMessage
 
 logger = logging.getLogger(__name__)
@@ -59,12 +55,9 @@ async def run_task(
             app_name=task_name, app_description=task_description
         )
 
-        resume_point = await ResumePoint.prisma().create(
-            data={
-                "Application": {"connect": {"id": app.id}},
-                "User": {"connect": {"id": user_id}},
-                "name": task_name,
-            }
+        resume_point = ResumePoint(
+            userId=user_id,
+            applicationId=app.id,
         )
 
         await run_interview(
@@ -120,8 +113,6 @@ async def resume(
             app_id=resume_point.applicationId,
         )
 
-        create_new_resume_point = False
-
         app = await Application.prisma().find_first_or_raise(
             where={"id": resume_point.applicationId}
         )
@@ -133,73 +124,15 @@ async def resume(
             logger.error(f"Task description is missing for task: {task_name}")
             exit()
 
-        resume_create_data: ResumePointCreateInput | None = None
-
         match step:
             case ResumeStep.INTERVIEW:
-                if resume_point.interviewId:
-                    create_new_resume_point = True
-                    resume_create_data = ResumePointCreateInput(
-                        **{
-                            "Application": {
-                                "connect": {"id": resume_point.applicationId}
-                            },
-                            "User": {"connect": {"id": resume_point.userId}},
-                            "name": task_name,
-                        }
-                    )
-
+                pass
             case ResumeStep.SPECIFICATION:
-                if resume_point.specificationId:
-                    create_new_resume_point = True
-                    resume_create_data = ResumePointCreateInput(
-                        **{
-                            "Application": {
-                                "connect": {"id": resume_point.applicationId}
-                            },
-                            "Interview": {"connect": {"id": resume_point.interviewId}},
-                            "User": {"connect": {"id": resume_point.userId}},
-                            "name": task_name,
-                        }
-                    )
                 codex_client.interview_id = resume_point.interviewId
             case ResumeStep.DEVELOPMENT:
-                if resume_point.completedAppId:
-                    create_new_resume_point = True
-                    resume_create_data = ResumePointCreateInput(
-                        **{
-                            "Application": {
-                                "connect": {"id": resume_point.applicationId}
-                            },
-                            "Interview": {"connect": {"id": resume_point.interviewId}},
-                            "Specification": {
-                                "connect": {"id": resume_point.specificationId}
-                            },
-                            "User": {"connect": {"id": resume_point.userId}},
-                            "name": task_name,
-                        }
-                    )
                 codex_client.interview_id = resume_point.interviewId
                 codex_client.specification_id = resume_point.specificationId
             case ResumeStep.COMPILE:
-                if resume_point.deploymentId:
-                    create_new_resume_point = True
-                    resume_create_data = ResumePointCreateInput(
-                        **{
-                            "Application": {
-                                "connect": {"id": resume_point.applicationId}
-                            },
-                            "Interview": {"connect": {"id": resume_point.interviewId}},
-                            "Specification": {
-                                "connect": {"id": resume_point.specificationId}
-                            },
-                            "CompletedApp": {
-                                "connect": {"id": resume_point.completedAppId}
-                            },
-                            "User": {"connect": {"id": resume_point.userId}},
-                            "name": task_name,
-                        }
-                    )
                 codex_client.interview_id = resume_point.interviewId
                 codex_client.specification_id = resume_point.specificationId
                 codex_client.deliverable_id = resume_point.completedAppId
@@ -208,9 +141,6 @@ async def resume(
                 codex_client.specification_id = resume_point.specificationId
                 codex_client.deliverable_id = resume_point.completedAppId
                 codex_client.deployment_id = resume_point.deploymentId
-
-        if create_new_resume_point and resume_create_data:
-            resume_point = await ResumePoint.prisma().create(data=resume_create_data)
 
         logger.info(f"Task {task_name} resumed at step {step.name}")
 
@@ -277,14 +207,6 @@ async def run_interview(
         )
 
         next_interview: InterviewResponse = start_interview
-        updated_resume_point = await ResumePoint.prisma().update(
-            where={"id": resume_point.id},
-            data={"Interview": {"connect": {"id": start_interview.id}}},
-        )
-
-        if updated_resume_point:
-            resume_point = updated_resume_point
-
         while not next_interview.finished:
             logger.info(
                 f"[{task_name}] Interview: questions count {len(next_interview.uses)}"
@@ -326,13 +248,7 @@ async def run_specification(
     """
     try:
         logger.info(f"[{task_name}] Creating Specification")
-        spec: SpecificationResponse = await codex_client.generate_spec()
-        updated_resume_point = await ResumePoint.prisma().update(
-            where={"id": resume_point.id},
-            data={"Specification": {"connect": {"id": spec.id}}},
-        )
-        if updated_resume_point:
-            resume_point = updated_resume_point
+        await codex_client.generate_spec()
         logger.info(f"[{task_name}] Specification Created")
     except Exception as e:
         logger.exception(f"Error running specification: {e}")
@@ -358,11 +274,7 @@ async def run_development(
     """
     try:
         logger.info(f"[{task_name}] Running Development")
-        deliverable = await codex_client.generate_deliverable()
-        await ResumePoint.prisma().update(
-            where={"id": resume_point.id},
-            data={"CompletedApp": {"connect": {"id": deliverable.id}}},
-        )
+        await codex_client.generate_deliverable()
         logger.info(f"[{task_name}] Development Finished")
     except Exception as e:
         logger.exception(f"Error running development: {e}")
@@ -388,11 +300,7 @@ async def run_compile(
     """
     try:
         logger.info(f"[{task_name}] Running Compile")
-        deployment = await codex_client.create_deployment()
-        await ResumePoint.prisma().update(
-            where={"id": resume_point.id},
-            data={"Deployment": {"connect": {"id": deployment.id}}},
-        )
+        await codex_client.create_deployment()
         logger.info(f"[{task_name}] Development Compiling")
     except Exception as e:
         logger.exception(f"Error running compile: {e}")

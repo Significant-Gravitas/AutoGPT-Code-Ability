@@ -40,6 +40,8 @@ pytest-cov = "^4.1.0"
 pytest-integration = "^0.2.3"
 pandas = "^2.2.1"
 numpy = "^1.26.4"
+psycopg2 = "^2.9.9"
+sqlalchemy = "^2.0.29"
 
 [tool.black]
 line-length = 79
