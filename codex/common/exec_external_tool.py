@@ -122,11 +122,14 @@ async def setup_if_required(cwd: str, copy_from_parent: bool = False) -> str:
 
     # Create a virtual environment
     output = await execute_command(["python", "-m", "venv", "venv"], cwd, None)
-    logger.debug(output)
+    logger.info(f"[Setup] Creating virtual environment: {output}")
 
     # Install dependencies
     output = await execute_command(["pip", "install"] + DEFAULT_DEPS, cwd, path)
-    logger.debug(output)
+    logger.info(f"[Setup] Installing {DEFAULT_DEPS}: {output}")
+
+    output = await execute_command(["pyright"], cwd, path, raise_on_error=False)
+    logger.info(f"[Setup] Setting up pyright: {output}")
 
     return path
 
@@ -147,23 +150,23 @@ async def execute_command(
     Returns:
         str: The output of the command
     """
-    try:
-        # Set the python path by replacing the env 'PATH' with the provided python path
-        venv = os.environ.copy()
-        if python_path:
-            original_python_path = venv["PATH"].split(":")[1:]
-            venv["PATH"] = f"{python_path}:{':'.join(original_python_path)}"
-        r = await asyncio.create_subprocess_exec(
-            *command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            cwd=cwd,
-            env=venv,
-        )
-        stdout, stderr = await r.communicate()
+    # Set the python path by replacing the env 'PATH' with the provided python path
+    venv = os.environ.copy()
+    if python_path:
+        # PATH prioritize first occurrence of python_path, so we need to prepend.
+        venv["PATH"] = python_path + ":" + venv["PATH"]
+    r = await asyncio.create_subprocess_exec(
+        *command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        cwd=cwd,
+        env=venv,
+    )
+    stdout, stderr = await r.communicate()
+    if r.returncode == 0:
         return (stdout or stderr).decode("utf-8")
-    except subprocess.CalledProcessError as e:
-        if raise_on_error:
-            raise ValidationError((e.stderr or e.stdout).decode("utf-8")) from e
-        else:
-            return e.output.decode("utf-8")
+
+    if raise_on_error:
+        raise ValidationError((stderr or stdout).decode("utf-8"))
+    else:
+        return (stderr or stdout).decode("utf-8")

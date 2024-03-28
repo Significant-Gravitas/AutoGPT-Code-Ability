@@ -4,6 +4,7 @@ import re
 from datetime import datetime
 from typing import List, Set
 
+from packaging import version
 from prisma.models import (
     CompiledRoute,
     CompletedApp,
@@ -154,6 +155,7 @@ async def recursive_compile_route(
             **INCLUDE_FUNC["include"],
             "ParentFunction": INCLUDE_FUNC,
             "ChildFunctions": INCLUDE_FUNC,
+            "Packages": True,
         },  # type: ignore
     )
     logger.info(f"⚙️ Compiling function: {function.functionName}")
@@ -543,6 +545,16 @@ app = FastAPI(title="{name}", lifespan=lifespan, description='''{desc}''')
         )
 
         service_routes_code.append(create_server_route_code(compiled_route))
+
+    # Resolve multiplicate packages to highest specified version
+    resolved_packages: dict[str, Package] = {}
+    for package in packages:
+        name = package.packageName
+        if name not in resolved_packages or version.parse(
+            package.version
+        ) > version.parse(resolved_packages[name].version):
+            resolved_packages[name] = package
+    packages = list(resolved_packages.values())
 
     # Compile the server code
     server_code = "\n".join(server_code_imports)

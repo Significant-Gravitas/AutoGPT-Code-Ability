@@ -6,6 +6,7 @@ import click
 from dotenv import load_dotenv
 
 import codex.debug
+from codex.common.exec_external_tool import PROJECT_TEMP_DIR, setup_if_required
 from codex.common.logging_config import setup_logging
 
 logger = logging.getLogger(__name__)
@@ -48,11 +49,11 @@ def populate_db(database):
 @click.option(
     "--port",
     "-p",
-    default=8000,
+    default=8080,
     help="Port number of the Codex server",
     type=int,
 )
-def benchmark(port: int = 8000):
+def benchmark(port: int = 8080):
     """Run the benchmark tests"""
     import prisma
 
@@ -60,7 +61,7 @@ def benchmark(port: int = 8000):
     import codex.runner
     from codex.requirements.model import ExampleTask
 
-    base_url = f"http://127.0.0.1:{port}/api/v1"
+    base_url = f"http://0.0.0.0:{port}/api/v1"
     prisma_client = prisma.Prisma(auto_register=True)
     tasks = list(ExampleTask)
 
@@ -239,6 +240,9 @@ def serve() -> None:
     from codex.common.ai_model import OpenAIChatClient
 
     OpenAIChatClient.configure({})
+
+    initial_setup = setup_if_required(PROJECT_TEMP_DIR)
+    asyncio.get_event_loop().run_until_complete(initial_setup)
 
     uvicorn.run(
         app="codex.app:app",
