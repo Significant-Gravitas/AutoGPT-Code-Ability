@@ -177,6 +177,71 @@ __pycache__/
 """.lstrip()
 
 
+def generate_actions_workflow(application: Application) -> str:
+    """
+    Generates a deploy.yml file for the application
+    Args:
+        application (Application): The application to be used to generate the deploy.yml file
+
+    Returns:
+        str: The deploy.yml file
+    """
+    logger.info("Generating deploy.yml file")
+
+    if not application.completed_app:
+        raise ValueError("Application must have a completed app")
+    if not application.completed_app.CompiledRoutes:
+        raise ValueError("Application must have at least one compiled route")
+
+    deploy_file = """
+name: cloudrun-deploy
+#on:
+#  push:
+#    branches:
+#      - master
+on: workflow_dispatch
+jobs:
+  setup-build-publish-deploy:
+    name: Setup, Build, Publish, and Deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@master
+
+      # set up auth service account
+    - name: Auth service account
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+    # Setup gcloud CLI
+    - name: Set up gcloud
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        service_account_email: ${{ secrets.GCP_EMAIL }}
+        service_account_key: ${{ secrets.GCP_CREDENTIALS }}
+        export_default_credentials: true
+    
+    # Configure Docker with Credentials
+    - name: Configure Docker
+      run: |
+        gcloud auth configure-docker
+      
+    # Build the Docker image
+    - name: Build & Publish
+      run: |
+        gcloud config set project ${{ secrets.GCP_PROJECT }}
+        gcloud builds submit --tag gcr.io/${{ secrets.GCP_PROJECT }}/${{ secrets.GCP_APPLICATION }}
+        gcloud config set run/region us-central1
+        
+    - name: Deploy
+      run: |
+        gcloud run deploy ${{ secrets.GCP_APPLICATION }} --image gcr.io/${{ secrets.GCP_PROJECT }}/${{ secrets.GCP_APPLICATION }} --platform managed --allow-unauthenticated --memory 512M
+""".lstrip()
+
+    return deploy_file
+
+
 def generate_docker_compose_file(application: Application) -> str:
     """
     Generates a docker-compose.yml file from the application
@@ -377,6 +442,21 @@ async def create_zip_file(application: Application) -> bytes:
             with open(docker_compose_file_path, mode="w") as docker_compose_file:
                 docker_compose_file.write(docker_compose)
 
+            # Make a GitHub actions deploy file
+            github_actions_directory = os.path.join(
+                package_dir, ".github", "workflows"
+            )  # Define.github/workflows directory path
+            os.makedirs(
+                github_actions_directory, exist_ok=True
+            )  # Create .github/workflows directory if it doesn't exist
+
+            github_actions_deploy_file_path = os.path.join(
+                github_actions_directory, "deploy.yml"
+            )
+            with open(github_actions_deploy_file_path, mode="w") as deploy_file:
+                deploy_workflow = generate_actions_workflow(application)
+                deploy_file.write(deploy_workflow)
+
             # Initialize a Git repository and commit everything
             git_init(app_dir=package_dir)
 
@@ -452,6 +532,19 @@ author: {PROJECT_AUTHOR}
     4. `prisma db push` - set up the database schema, creating the necessary tables etc.
 
 4. Run `uvicorn project.server:app --reload` to start the app
+
+## How to deploy on your own GCP account
+1. Set up a GCP account
+2. Create secrets: GCP_EMAIL (service account email), GCP_CREDENTIALS (service account key), GCP_PROJECT, GCP_APPLICATION (app name)
+3. Ensure service account has following permissions: 
+    Cloud Build Editor
+    Cloud Build Service Account
+    Cloud Run Developer
+    Service Account User
+    Service Usage Consumer
+    Storage Object Viewer
+4. Remove on: workflow, uncomment on: push (lines 2-6)
+5. Push to master branch to trigger workflow
 """.lstrip()
 
     return content
