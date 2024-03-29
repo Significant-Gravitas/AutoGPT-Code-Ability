@@ -3,10 +3,6 @@ import logging
 import os
 
 import click
-from dotenv import load_dotenv
-
-from codex.common.exec_external_tool import PROJECT_TEMP_DIR, setup_if_required
-from codex.common.logging_config import setup_logging
 
 logger = logging.getLogger(__name__)
 
@@ -292,6 +288,7 @@ def serve() -> None:
     import uvicorn
 
     from codex.common.ai_model import OpenAIChatClient
+    from codex.common.exec_external_tool import PROJECT_TEMP_DIR, setup_if_required
 
     OpenAIChatClient.configure({})
 
@@ -306,6 +303,10 @@ def serve() -> None:
 
 
 if __name__ == "__main__":
+    from dotenv import load_dotenv
+
+    from codex.common.logging_config import setup_logging
+
     load_dotenv()
     setup_logging()
     cli()
