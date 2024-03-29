@@ -556,9 +556,12 @@ app = FastAPI(title="{name}", lifespan=lifespan, description='''{desc}''')
     server_code += "\n\n"
     server_code += "\n\n".join(service_routes_code)
 
-    db_schema = "\n\n".join(
-        [get_database_schema(r) for r in completed_app.CompiledRoutes]
-    )
+    # HACK: Database schema is duplicated across every route -> use first non-empty schema
+    # TODO: Clean up DB schema so we don't have to do hacky hacky like this
+    db_schema: str = ""
+    for r in completed_app.CompiledRoutes:
+        if db_schema := get_database_schema(r):
+            break
 
     # Update the application with the server code
     formatted_code = await CodeValidator(
