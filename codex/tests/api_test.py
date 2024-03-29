@@ -8,19 +8,11 @@ from codex import app
 from codex.common.ai_model import OpenAIChatClient
 from codex.common.logging_config import setup_logging
 from codex.common.test_const import user_id_1
-from codex.tests.gen_test import create_sample_app, with_db_connection
 
 load_dotenv()
 if not OpenAIChatClient._configured:
     OpenAIChatClient.configure({})
 setup_logging(local=True)
-
-
-async def init():
-    async def create_app():
-        return await create_sample_app(user_id_1, "Test App")
-
-    return await with_db_connection(create_app)
 
 
 app_id = ""
@@ -29,8 +21,17 @@ spec = None
 
 @pytest.fixture
 def client():
+    from codex.tests.gen_test import create_sample_app, with_db_connection
+
+    async def create_app():
+        return await create_sample_app(user_id_1, "Test App")
+
+    async def init():
+        return await with_db_connection(create_app)
+
     global app_id, spec
     app_id, spec = asyncio.get_event_loop().run_until_complete(init())
+
     with TestClient(app.app) as c:
         yield c
 
