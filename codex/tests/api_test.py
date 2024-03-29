@@ -10,8 +10,6 @@ from codex.common.logging_config import setup_logging
 from codex.common.test_const import user_id_1
 
 load_dotenv()
-if not OpenAIChatClient._configured:
-    OpenAIChatClient.configure({})
 setup_logging(local=True)
 
 
@@ -22,6 +20,9 @@ spec = None
 @pytest.fixture
 def client():
     from codex.tests.gen_test import create_sample_app, with_db_connection
+
+    if not OpenAIChatClient._configured:
+        OpenAIChatClient.configure({})
 
     async def create_app():
         return await create_sample_app(user_id_1, "Test App")
