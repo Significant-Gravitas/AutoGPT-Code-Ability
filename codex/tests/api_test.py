@@ -2,7 +2,6 @@ import asyncio
 
 import pytest
 from dotenv import load_dotenv
-
 from fastapi.testclient import TestClient
 
 from codex import app
@@ -24,11 +23,14 @@ async def init():
     return await with_db_connection(create_app)
 
 
-app_id, spec = asyncio.get_event_loop().run_until_complete(init())
+app_id = ""
+spec = None
 
 
 @pytest.fixture
 def client():
+    global app_id, spec
+    app_id, spec = asyncio.get_event_loop().run_until_complete(init())
     with TestClient(app.app) as c:
         yield c
 
