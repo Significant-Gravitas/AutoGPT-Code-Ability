@@ -292,9 +292,11 @@ def serve() -> None:
 
     OpenAIChatClient.configure({})
 
+    logger.info("Setting up code analysis tools...")
     initial_setup = setup_if_required(PROJECT_TEMP_DIR)
     asyncio.get_event_loop().run_until_complete(initial_setup)
 
+    logger.info("Starting server...")
     uvicorn.run(
         app="codex.app:app",
         host="0.0.0.0",
