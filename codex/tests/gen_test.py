@@ -25,11 +25,8 @@ from codex.requirements.model import (
 )
 
 load_dotenv()
-if not OpenAIChatClient._configured:
-    OpenAIChatClient.configure({})
-setup_logging(local=True)
-
 is_connected = False
+setup_logging(local=True)
 
 
 async def create_sample_app(user_id: str, cloud_id: str):
@@ -133,6 +130,9 @@ async def generate_function(
     user_id=user_id_1,
     cloud_id="",
 ) -> list[str] | None:
+    if not OpenAIChatClient._configured:
+        OpenAIChatClient.configure({})
+
     async def execute():
         app_id, spec = await create_sample_app(user_id, cloud_id)
         ids = Identifiers(user_id=user_id, app_id=app_id, cloud_services_id=cloud_id)
