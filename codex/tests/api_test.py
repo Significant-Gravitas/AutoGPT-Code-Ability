@@ -13,9 +13,8 @@ from codex.common.test_const import user_id_1
 from codex.tests.gen_test import create_sample_app, with_db_connection
 
 load_dotenv()
-
-openai_api_key = os.environ.get("OPENAI_API_KEY", "")
-OpenAIChatClient.configure({"api_key": openai_api_key})
+if not OpenAIChatClient._configured:
+    OpenAIChatClient.configure({})
 setup_logging(local=True)
 
 
