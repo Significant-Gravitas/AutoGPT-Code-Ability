@@ -449,7 +449,7 @@ model EventLog {
   keyValue      String
   event         String
   status        Status
-  message       Json?
+  message       String?
 
   @@index([userId, applicationId])
   @@index([keyValue])

@@ -3,11 +3,14 @@ import logging
 import traceback
 from typing import Callable
 
-from prisma import Json
+from fastapi.responses import JSONResponse
 from prisma.enums import DevelopmentPhase, Status
+from prisma.errors import RecordNotFoundError
 from prisma.models import EventLog
 
 from codex.api_model import Identifiers
+
+logger = logging.getLogger(__name__)
 
 
 # This is a custom logger that prints the exception stack trace on error by default
@@ -36,8 +39,22 @@ async def execute_and_log(
         await log_event(id, step, event, key, Status.SUCCESS)
         return result
     except Exception as e:
-        await log_event(id, step, event, key, Status.FAILED, e)
-        raise e
+        error = "\n".join(traceback.format_exception(e)).split(
+            "Traceback (most recent call last):"
+        )[-1]
+        logger.error(f"Error during {step} {event}: {error}")
+        await log_event(id, step, event, key, Status.FAILED, error)
+
+        status_code = (
+            404
+            if isinstance(e, RecordNotFoundError) or isinstance(e, FileNotFoundError)
+            else 500
+        )
+
+        return JSONResponse(
+            content=json.dumps({"error": str(e)}),
+            status_code=status_code,
+        )
 
 
 async def log_event(
@@ -46,20 +63,8 @@ async def log_event(
     event: str,
     key: str,
     status: Status,
-    data: Exception | object | None = None,
+    data: str | None = None,
 ):
-    if isinstance(data, Exception):
-        data = traceback.format_exception(data)
-
-    try:
-        if data:
-            data_str = Json(json.dumps(data))
-        else:
-            data_str = Json(None)
-    except TypeError as e:
-        # data is not serializable, store the error instead.
-        data_str = Json(str(e))
-
     await EventLog.prisma().create(
         data={
             "userId": id.user_id,
@@ -68,6 +73,6 @@ async def log_event(
             "keyType": step,
             "keyValue": key,
             "status": status,
-            "message": data_str,
+            "message": data,
         }
     )

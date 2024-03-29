@@ -14,16 +14,16 @@ class RouterLoggingMiddleware(BaseHTTPMiddleware):
     Logging will be using logging.execute_and_log
     """
 
-    LOGGED_API_PATH: dict[str, tuple[DevelopmentPhase, str]] = {
-        "deployments": (DevelopmentPhase.DEPLOYMENT, "deployment_id"),
-        "deliverables": (DevelopmentPhase.DEVELOPMENT, "completed_app_id"),
-        "interview": (DevelopmentPhase.REQUIREMENTS, "interview_id"),
+    LOGGED_API_PATH: dict[str, DevelopmentPhase] = {
+        "deployments": DevelopmentPhase.DEPLOYMENT,
+        "deliverables": DevelopmentPhase.DEVELOPMENT,
+        "interview": DevelopmentPhase.REQUIREMENTS,
     }
 
-    def get_matching_dev_phase(self, path_names: list[str]) -> str | None:
+    def get_matching_dev_phase(self, path_names: list[str]) -> DevelopmentPhase | None:
         for name in reversed(path_names):
             if name in self.LOGGED_API_PATH:
-                return name
+                return self.LOGGED_API_PATH[name]
         return None
 
     def extract_id(self, url: str, path: str) -> str | None:
@@ -67,14 +67,14 @@ class RouterLoggingMiddleware(BaseHTTPMiddleware):
                 path_template = path_template.replace(value, "{" + key + "}")
         event_name = f"{request.method}-{path_template}"
 
-        # get dev_phase and identifier key
-        dev_phase, key = self.LOGGED_API_PATH[dev_phase]
+        # get key from path, last UUID from the path
+        key = next(reversed([p for p in path.split("/") if len(p) == 36]))
 
         return await execute_and_log(
             id=identifiers,
             step=dev_phase,
             event=event_name,
-            key=ids_dict[key],
+            key=key,
             func=call_next,
             request=request,  # call_next's argument
         )

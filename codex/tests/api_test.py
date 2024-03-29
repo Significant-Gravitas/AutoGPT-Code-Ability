@@ -1,19 +1,32 @@
+import asyncio
 import os
 
 import pytest
 from dotenv import load_dotenv
+
 from fastapi.testclient import TestClient
 
 from codex import app
 from codex.common.ai_model import OpenAIChatClient
 from codex.common.logging_config import setup_logging
-from codex.common.test_const import app_id_1, user_id_1
+from codex.common.test_const import user_id_1
+from codex.tests.gen_test import create_sample_app, with_db_connection
 
 load_dotenv()
 
 openai_api_key = os.environ.get("OPENAI_API_KEY", "")
 OpenAIChatClient.configure({"api_key": openai_api_key})
 setup_logging(local=True)
+
+
+async def init():
+    async def create_app():
+        return await create_sample_app(user_id_1, "Test App")
+
+    return await with_db_connection(create_app)
+
+
+app_id, spec = asyncio.get_event_loop().run_until_complete(init())
 
 
 @pytest.fixture
@@ -89,7 +102,7 @@ def test_apps_apis(client):
 def test_interview_apis(client):
     # Create Interview
     response = client.post(
-        f"{API}/user/{user_id_1}/apps/{app_id_1}/interview/",
+        f"{API}/user/{user_id_1}/apps/{app_id}/interview/",
         json={"task": "Test Task", "name": "Test Interview"},
     )
     assert response.status_code == 200
@@ -102,7 +115,7 @@ def test_interview_apis(client):
 
     # Next Step Interview
     response = client.post(
-        f"{API}/user/{user_id_1}/apps/{app_id_1}/interview/{interview_id}/next",
+        f"{API}/user/{user_id_1}/apps/{app_id}/interview/{interview_id}/next",
         json=[],
     )
     assert response.status_code == 200
@@ -113,7 +126,7 @@ def test_interview_apis(client):
 
     # Delete Interview
     response = client.delete(
-        f"{API}/user/{user_id_1}/apps/{app_id_1}/interview/{interview['id']}"
+        f"{API}/user/{user_id_1}/apps/{app_id}/interview/{interview['id']}"
     )
     assert response.status_code == 200
 
@@ -121,14 +134,14 @@ def test_interview_apis(client):
 @pytest.mark.integration_test
 def test_specs_apis(client):
     # List Specs
-    response = client.get(f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/")
+    response = client.get(f"{API}/user/{user_id_1}/apps/{app_id}/specs/")
     assert response.status_code == 200
     specs = response.json()["specs"]
     assert len(specs) > 0
 
     # Get Spec
     spec_id = specs[0]["id"]
-    response = client.get(f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}")
+    response = client.get(f"{API}/user/{user_id_1}/apps/{app_id}/specs/{spec_id}")
     assert response.status_code == 200
     spec = response.json()
     assert spec["id"] == spec_id
@@ -152,13 +165,13 @@ def test_specs_apis(client):
 @pytest.mark.integration_test
 def test_deliverables_and_deployments_apis(client):
     ###### Deliverables ######
-    spec_id = client.get(f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/").json()[
+    spec_id = client.get(f"{API}/user/{user_id_1}/apps/{app_id}/specs/").json()[
         "specs"
     ][0]["id"]
 
     # Create Deliverable
     response = client.post(
-        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/"
+        f"{API}/user/{user_id_1}/apps/{app_id}/specs/{spec_id}/deliverables/"
     )
     assert response.status_code == 200
     deliverable = response.json()
@@ -167,7 +180,7 @@ def test_deliverables_and_deployments_apis(client):
 
     # List Deliverables
     response = client.get(
-        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/"
+        f"{API}/user/{user_id_1}/apps/{app_id}/specs/{spec_id}/deliverables/"
     )
     assert response.status_code == 200
     deliverables = response.json()["deliverables"]
@@ -176,7 +189,7 @@ def test_deliverables_and_deployments_apis(client):
     # Get Deliverable
     deliverable_id = deliverables[0]["id"]
     response = client.get(
-        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/{deliverable_id}"
+        f"{API}/user/{user_id_1}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}"
     )
     assert response.status_code == 200
     deliverable = response.json()
@@ -186,7 +199,7 @@ def test_deliverables_and_deployments_apis(client):
 
     # Create Deployment
     response = client.post(
-        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/"
+        f"{API}/user/{user_id_1}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/"
     )
     assert response.status_code == 200
     deployment = response.json()
@@ -195,7 +208,7 @@ def test_deliverables_and_deployments_apis(client):
 
     # List Deployments
     response = client.get(
-        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/"
+        f"{API}/user/{user_id_1}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/"
     )
     assert response.status_code == 200
     deployments = response.json()["deployments"]
@@ -204,7 +217,7 @@ def test_deliverables_and_deployments_apis(client):
     # Get Deployment
     deployment_id = deployments[0]["id"]
     response = client.get(
-        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/{deployment_id}"
+        f"{API}/user/{user_id_1}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/{deployment_id}"
     )
     assert response.status_code == 200
     deployment = response.json()
@@ -212,22 +225,22 @@ def test_deliverables_and_deployments_apis(client):
 
     # Delete Deliverable
     response = client.delete(
-        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/{deliverable_id}"
+        f"{API}/user/{user_id_1}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}"
     )
     assert response.status_code == 200
     response = client.get(
-        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/"
+        f"{API}/user/{user_id_1}/apps/{app_id}/specs/{spec_id}/deliverables/"
     )
     deliverables = response.json()["deliverables"]
     assert next((d for d in deliverables if d["id"] == deliverable_id), None) is None
 
     # Delete Deployment
     response = client.delete(
-        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/{deployment_id}"
+        f"{API}/user/{user_id_1}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/{deployment_id}"
     )
     assert response.status_code == 200
     response = client.get(
-        f"{API}/user/{user_id_1}/apps/{app_id_1}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/"
+        f"{API}/user/{user_id_1}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}/deployments/"
     )
     deployments = response.json()["deployments"]
     assert next((d for d in deployments if d["id"] == deployment_id), None) is None

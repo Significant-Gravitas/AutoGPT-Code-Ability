@@ -2,6 +2,7 @@ import json
 import logging
 
 from fastapi import APIRouter, Query, Response
+from fastapi.responses import JSONResponse
 
 import codex.database
 import codex.requirements.database
@@ -34,37 +35,26 @@ async def create_spec(
     """
     Create a new specification for a given application and user.
     """
-    try:
-        await codex.database.get_app_by_id(user_id, app_id)
-        user = await codex.database.get_user(user_id)
-        ids = Identifiers(
-            user_id=user_id,
-            app_id=app_id,
-            interview_id=interview_id,
-            cloud_services_id=user.cloudServicesId if user else "",
+    await codex.database.get_app_by_id(user_id, app_id)
+    user = await codex.database.get_user(user_id)
+    ids = Identifiers(
+        user_id=user_id,
+        app_id=app_id,
+        interview_id=interview_id,
+        cloud_services_id=user.cloudServicesId if user else "",
+    )
+    if not ids.user_id or not ids.app_id:
+        raise ValueError("User ID and App ID are required")
+    interview = await get_interview(
+        user_id=ids.user_id, app_id=ids.app_id, interview_id=interview_id
+    )
+    if not interview:
+        return JSONResponse(
+            content=json.dumps({"error": "Interview not found"}),
+            status_code=404,
         )
-        if not ids.user_id or not ids.app_id:
-            raise ValueError("User ID and App ID are required")
-        interview = await get_interview(
-            user_id=ids.user_id, app_id=ids.app_id, interview_id=interview_id
-        )
-        if not interview:
-            return Response(
-                content=json.dumps({"error": "Interview not found"}),
-                status_code=404,
-                media_type="application/json",
-            )
-        new_spec = await generate_requirements(ids, interview.task)
-        return SpecificationResponse.from_specification(new_spec)
-    except Exception as e:
-        logger.exception(f"Error creating a new specification: {e}")
-        return Response(
-            content=json.dumps(
-                {"error": f"Error creating a new specification: {str(e)}"}
-            ),
-            status_code=500,
-            media_type="application/json",
-        )
+    new_spec = await generate_requirements(ids, interview.task)
+    return SpecificationResponse.from_specification(new_spec)
 
 
 @spec_router.get(
@@ -76,24 +66,15 @@ async def get_spec(user_id: str, app_id: str, spec_id: str):
     """
     Retrieve a specific specification by its ID for a given application and user.
     """
-    try:
-        specification = await codex.requirements.database.get_specification(
-            user_id, app_id, spec_id
-        )
-        if specification:
-            return SpecificationResponse.from_specification(specification)
-        else:
-            return Response(
-                content=json.dumps({"error": "Specification not found"}),
-                status_code=404,
-                media_type="application/json",
-            )
-    except Exception as e:
-        logger.exception(f"Error retrieving specification: {e}")
-        return Response(
-            content=json.dumps({"error": "Error retrieving specification"}),
-            status_code=500,
-            media_type="application/json",
+    specification = await codex.requirements.database.get_specification(
+        user_id, app_id, spec_id
+    )
+    if specification:
+        return SpecificationResponse.from_specification(specification)
+    else:
+        return JSONResponse(
+            content=json.dumps({"error": "Specification not found"}),
+            status_code=404,
         )
 
 
@@ -112,12 +93,11 @@ async def update_spec(
     TODO: This needs to be implemented
     Update a specific specification by its ID for a given application and user.
     """
-    return Response(
+    return JSONResponse(
         content=json.dumps(
             {"error": "Updating a specification is not yet implemented."}
         ),
-        status_code=500,
-        media_type="application/json",
+        status_code=400,
     )
 
 
@@ -126,20 +106,11 @@ async def delete_spec(user_id: str, app_id: str, spec_id: str):
     """
     Delete a specific specification by its ID for a given application and user.
     """
-    try:
-        await codex.requirements.database.delete_specification(spec_id)
-        return Response(
-            content=json.dumps({"message": "Specification deleted successfully"}),
-            status_code=200,
-            media_type="application/json",
-        )
-    except Exception as e:
-        logger.exception(f"Error deleting specification: {e}")
-        return Response(
-            content=json.dumps({"error": "Error deleting specification"}),
-            status_code=500,
-            media_type="application/json",
-        )
+    await codex.requirements.database.delete_specification(spec_id)
+    return JSONResponse(
+        content=json.dumps({"message": "Specification deleted successfully"}),
+        status_code=200,
+    )
 
 
 @spec_router.get(
@@ -156,15 +127,7 @@ async def list_specs(
     """
     List all specifications for a given application and user.
     """
-    try:
-        specs = await codex.requirements.database.list_specifications(
-            user_id, app_id, page, page_size
-        )
-        return specs
-    except Exception as e:
-        logger.exception(f"Error listing specifications: {e}")
-        return Response(
-            content=json.dumps({"error": "Error listing specifications"}),
-            status_code=500,
-            media_type="application/json",
-        )
+    specs = await codex.requirements.database.list_specifications(
+        user_id, app_id, page, page_size
+    )
+    return specs
