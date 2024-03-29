@@ -1,6 +1,8 @@
 import pytest
 from dotenv import load_dotenv
 
+load_dotenv()
+
 from codex.develop.code_validation import CodeValidator
 from codex.develop.model import Package
 
@@ -247,6 +249,14 @@ async def api_post_create_booking(
 """
 
 SAMPLE_SCHEMA = """
+model Booking {
+    id          Int       @id @default(autoincrement())
+    status      BookingStatus
+    userId      Int
+    startTime   DateTime
+    endTime     DateTime
+}
+
 enum BookingStatus {
     PENDING
     CONFIRMED
@@ -268,4 +278,375 @@ async def test_simple_function():
     )
     assert "prisma.enums.BookingStatus" in response
     assert "from typing import Optional" in response
+    # TODO add more validations.
+
+
+PWUTS_SERVER_CODE = """
+import io
+import logging
+from contextlib import asynccontextmanager
+
+import prisma
+import project.cancel_appointment_service
+import project.check_availability_service
+import project.create_appointment_service
+import project.create_profile_service
+import project.get_profile_service
+import project.login_service
+import project.logout_service
+import project.reschedule_appointment_service
+import project.submit_feedback_service
+import project.update_availability_service
+import project.update_profile_service
+from fastapi import FastAPI
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import Response, StreamingResponse
+from prisma import Prisma
+
+logger = logging.getLogger(__name__)
+
+db_client = Prisma(auto_register=True)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await db_client.connect()
+    yield
+    await db_client.disconnect()
+
+
+app = FastAPI(
+    title="Availability Checker",
+    lifespan=lifespan,
+    description=\"\"\"To implement a function that returns the real-time availability of professionals, updating based on current activity or schedule, you'll build on the technologies and approaches discussed previously. Here's a comprehensive overview blending all gathered insights:
+
+1. **Tech Stack**:
+   - Programming Language: Python
+   - API Framework: FastAPI
+   - Database: PostgreSQL
+   - ORM: Prisma
+
+2. **Functionality Overview**:
+   Your application will allow users to check the real-time availability of professionals, taking into account their current activity and future schedules. This involves a back-end service that interacts with a PostgreSQL database to store and manage professional availability information.
+
+3. **Development Steps**:
+   a. Initialize your FastAPI project and set up your development environment. Include essential libraries and tools, such as Uvicorn for serving your application.
+   b. Utilize Prisma to define your database schema. Your `schema.prisma` file should include models for professionals, their services, schedules, and availability status.
+   c. Generate Prisma Client to interact with your database efficiently.
+   d. Implement the functionality to check real-time availability within a FastAPI endpoint (e.g., '/check-availability'). This endpoint should accept relevant parameters (e.g., professional ID, service type) and return the professional's availability status.
+   e. Build a function that updates professionals' availability in real-time. This can be based on their current activities (e.g., ongoing appointments) and scheduled future activities. Consider the use of background tasks or webhooks to update availability status based on real-time events.
+
+4. **Best Practices**:
+   - Employ WebSockets for real-time updates where applicable, especially for notifying users about changes in availability.
+   - Ensure robust error handling and validation to provide clear feedback and prevent incorrect availability status.
+   - Optimize your database queries for performance, especially if you're checking availability in real-time for a large number of professionals.
+
+5. **Security and Compliance**:
+   Implement secure access controls and authentication to protect sensitive data. Ensure your application complies with relevant data protection and privacy regulations.
+
+6. **Testing and Deployment**:
+   Before deploying your application, thoroughly test the availability checking functionality and real-time updates. Use tools like Swagger UI to test your FastAPI endpoints.
+
+This plan provides a detailed roadmap to develop a system that efficiently manages and displays the real-time availability of professionals, enhancing user experience by allowing for advanced scheduling and immediate availability checks.\"\"\",
+)
+
+
+@app.post(
+    "/appointments/create",
+    response_model=project.create_appointment_service.CreateAppointmentResponse,
+)
+async def api_post_create_appointment(
+    clientId: str,
+    professionalId: str,
+    serviceId: str,
+    startTime: datetime,
+    endTime: datetime,
+    notes: Optional[str],
+) -> project.create_appointment_service.CreateAppointmentResponse | Response:
+    \"\"\"
+    Schedule a new appointment.
+    \"\"\"
+    try:
+        res = await project.create_appointment_service.create_appointment(
+            clientId, professionalId, serviceId, startTime, endTime, notes
+        )
+        return res
+    except Exception as e:
+        logger.exception("Error processing request")
+        res = dict()
+        res["error"] = str(e)
+        return Response(
+            content=jsonable_encoder(res),
+            status_code=500,
+            media_type="application/json",
+        )
+
+
+@app.post(
+    "/feedback/submit",
+    response_model=project.submit_feedback_service.FeedbackSubmissionResponse,
+)
+async def api_post_submit_feedback(
+    userId: Optional[str], content: str, rating: Optional[int]
+) -> project.submit_feedback_service.FeedbackSubmissionResponse | Response:
+    \"\"\"
+    Allows users to submit feedback about the platform.
+    \"\"\"
+    try:
+        res = await project.submit_feedback_service.submit_feedback(
+            userId, content, rating
+        )
+        return res
+    except Exception as e:
+        logger.exception("Error processing request")
+        res = dict()
+        res["error"] = str(e)
+        return Response(
+            content=jsonable_encoder(res),
+            status_code=500,
+            media_type="application/json",
+        )
+
+
+@app.post("/auth/logout", response_model=project.logout_service.LogoutResponse)
+async def api_post_logout(
+    Authorization: str,
+) -> project.logout_service.LogoutResponse | Response:
+    \"\"\"
+    Terminates an active user session.
+    \"\"\"
+    try:
+        res = await project.logout_service.logout(Authorization)
+        return res
+    except Exception as e:
+        logger.exception("Error processing request")
+        res = dict()
+        res["error"] = str(e)
+        return Response(
+            content=jsonable_encoder(res),
+            status_code=500,
+            media_type="application/json",
+        )
+
+
+@app.put(
+    "/appointments/{appointmentId}/reschedule",
+    response_model=project.reschedule_appointment_service.RescheduleAppointmentResponse,
+)
+async def api_put_reschedule_appointment(
+    appointmentId: str, newStartTime: datetime, newEndTime: datetime
+) -> project.reschedule_appointment_service.RescheduleAppointmentResponse | Response:
+    \"\"\"
+    Reschedule an existing appointment.
+    \"\"\"
+    try:
+        res = await project.reschedule_appointment_service.reschedule_appointment(
+            appointmentId, newStartTime, newEndTime
+        )
+        return res
+    except Exception as e:
+        logger.exception("Error processing request")
+        res = dict()
+        res["error"] = str(e)
+        return Response(
+            content=jsonable_encoder(res),
+            status_code=500,
+            media_type="application/json",
+        )
+
+
+@app.delete(
+    "/appointments/{appointmentId}/cancel",
+    response_model=project.cancel_appointment_service.CancelAppointmentResponse,
+)
+async def api_delete_cancel_appointment(
+    appointmentId: str,
+) -> project.cancel_appointment_service.CancelAppointmentResponse | Response:
+    \"\"\"
+    Cancel an existing appointment.
+    \"\"\"
+    try:
+        res = await project.cancel_appointment_service.cancel_appointment(appointmentId)
+        return res
+    except Exception as e:
+        logger.exception("Error processing request")
+        res = dict()
+        res["error"] = str(e)
+        return Response(
+            content=jsonable_encoder(res),
+            status_code=500,
+            media_type="application/json",
+        )
+
+
+@app.post(
+    "/availability/update",
+    response_model=project.update_availability_service.UpdateAvailabilityResponse,
+)
+async def api_post_update_availability(
+    professional_id: str,
+    availability_status: bool,
+    start_time: datetime,
+    end_time: datetime,
+) -> project.update_availability_service.UpdateAvailabilityResponse | Response:
+    \"\"\"
+    Updates a professional's availability status.
+    \"\"\"
+    try:
+        res = await project.update_availability_service.update_availability(
+            professional_id, availability_status, start_time, end_time
+        )
+        return res
+    except Exception as e:
+        logger.exception("Error processing request")
+        res = dict()
+        res["error"] = str(e)
+        return Response(
+            content=jsonable_encoder(res),
+            status_code=500,
+            media_type="application/json",
+        )
+
+
+@app.post(
+    "/profiles/create",
+    response_model=project.create_profile_service.CreateUserProfileResponse,
+)
+async def api_post_create_profile(
+    userId: str,
+    fullName: str,
+    servicesOffered: Optional[List[str]],
+    contactInformation: project.create_profile_service.ContactInformation,
+) -> project.create_profile_service.CreateUserProfileResponse | Response:
+    \"\"\"
+    Creates a new user profile.
+    \"\"\"
+    try:
+        res = await project.create_profile_service.create_profile(
+            userId, fullName, servicesOffered, contactInformation
+        )
+        return res
+    except Exception as e:
+        logger.exception("Error processing request")
+        res = dict()
+        res["error"] = str(e)
+        return Response(
+            content=jsonable_encoder(res),
+            status_code=500,
+            media_type="application/json",
+        )
+
+
+@app.put(
+    "/profiles/{userId}/update",
+    response_model=project.update_profile_service.UpdateUserProfileResponse,
+)
+async def api_put_update_profile(
+    userId: str, full_name: str, email: str, phone: str, services_offered: List[str]
+) -> project.update_profile_service.UpdateUserProfileResponse | Response:
+    \"\"\"
+    Updates a user profile details.
+    \"\"\"
+    try:
+        res = await project.update_profile_service.update_profile(
+            userId, full_name, email, phone, services_offered
+        )
+        return res
+    except Exception as e:
+        logger.exception("Error processing request")
+        res = dict()
+        res["error"] = str(e)
+        return Response(
+            content=jsonable_encoder(res),
+            status_code=500,
+            media_type="application/json",
+        )
+
+
+@app.get(
+    "/availability/check",
+    response_model=project.check_availability_service.CheckAvailabilityResponse,
+)
+async def api_get_check_availability(
+    professional_id: str,
+    service_type: Optional[str],
+    start_time: datetime,
+    end_time: datetime,
+) -> project.check_availability_service.CheckAvailabilityResponse | Response:
+    \"\"\"
+    Checks a professional's availability based on input parameters.
+    \"\"\"
+    try:
+        res = await project.check_availability_service.check_availability(
+            professional_id, service_type, start_time, end_time
+        )
+        return res
+    except Exception as e:
+        logger.exception("Error processing request")
+        res = dict()
+        res["error"] = str(e)
+        return Response(
+            content=jsonable_encoder(res),
+            status_code=500,
+            media_type="application/json",
+        )
+
+
+@app.get(
+    "/profiles/{userId}", response_model=project.get_profile_service.GetProfileResponse
+)
+async def api_get_get_profile(
+    userId: str,
+) -> project.get_profile_service.GetProfileResponse | Response:
+    \"\"\"
+    Retrieves a user profile based on the user ID.
+    \"\"\"
+    try:
+        res = await project.get_profile_service.get_profile(userId)
+        return res
+    except Exception as e:
+        logger.exception("Error processing request")
+        res = dict()
+        res["error"] = str(e)
+        return Response(
+            content=jsonable_encoder(res),
+            status_code=500,
+            media_type="application/json",
+        )
+
+
+@app.post("/auth/login", response_model=project.login_service.LoginResponse)
+async def api_post_login(
+    email: str, password: str
+) -> project.login_service.LoginResponse | Response:
+    \"\"\"
+    Authenticates users and returns a session token.
+    \"\"\"
+    try:
+        res = await project.login_service.login(email, password)
+        return res
+    except Exception as e:
+        logger.exception("Error processing request")
+        res = dict()
+        res["error"] = str(e)
+        return Response(
+            content=jsonable_encoder(res),
+            status_code=500,
+            media_type="application/json",
+        )
+"""
+
+@pytest.mark.asyncio
+@pytest.mark.integration_test
+async def test_pwuts_function():
+    validator = CodeValidator(
+        compiled_route_id="test_1",
+        database_schema=SAMPLE_SCHEMA,
+    )
+    response = await validator.reformat_code(
+        PWUTS_SERVER_CODE,
+        [Package(package_name="fastapi"), Package(package_name="prisma")],
+    )
+    assert "from datetime import datetime" in response
+    assert "from typing import List, Optional" in response
     # TODO add more validations.
