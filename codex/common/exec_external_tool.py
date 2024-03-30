@@ -150,23 +150,23 @@ async def execute_command(
     Returns:
         str: The output of the command
     """
-    try:
-        # Set the python path by replacing the env 'PATH' with the provided python path
-        venv = os.environ.copy()
-        if python_path:
-            # PATH prioritize first occurrence of python_path, so we need to prepend.
-            venv["PATH"] = python_path + ":" + venv["PATH"]
-        r = await asyncio.create_subprocess_exec(
-            *command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            cwd=cwd,
-            env=venv,
-        )
-        stdout, stderr = await r.communicate()
+    # Set the python path by replacing the env 'PATH' with the provided python path
+    venv = os.environ.copy()
+    if python_path:
+        # PATH prioritize first occurrence of python_path, so we need to prepend.
+        venv["PATH"] = python_path + ":" + venv["PATH"]
+    r = await asyncio.create_subprocess_exec(
+        *command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        cwd=cwd,
+        env=venv,
+    )
+    stdout, stderr = await r.communicate()
+    if r.returncode == 0:
         return (stdout or stderr).decode("utf-8")
-    except subprocess.CalledProcessError as e:
-        if raise_on_error:
-            raise ValidationError((e.stderr or e.stdout).decode("utf-8")) from e
-        else:
-            return e.output.decode("utf-8")
+
+    if raise_on_error:
+        raise ValidationError((stderr or stdout).decode("utf-8"))
+    else:
+        return (stderr or stdout).decode("utf-8")
