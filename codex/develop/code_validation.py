@@ -67,7 +67,9 @@ class CodeValidator:
             ).get_compiled_code()
         except ValidationError as e:
             # We move on with unfixed code if there's an error
-            logger.debug(f"Error fixing code for route #{self.compiled_route_id}: {e}")
+            logger.warning(
+                f"Error fixing code for route #{self.compiled_route_id}: {e}"
+            )
 
         # Run the formatters
         try:
@@ -75,8 +77,8 @@ class CodeValidator:
             code = black.format_str(code, mode=black.FileMode())
         except Exception as e:
             # We move on with unformatted code if there's an error
-            logger.exception(
-                f"Error formatting code: {e} for route #{self.compiled_route_id}"
+            logger.warning(
+                f"Error formatting code for route #{self.compiled_route_id}: {e}"
             )
 
         return code
