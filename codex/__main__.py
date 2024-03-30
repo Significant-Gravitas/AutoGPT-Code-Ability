@@ -3,10 +3,6 @@ import logging
 import os
 
 import click
-from dotenv import load_dotenv
-
-from codex.common.exec_external_tool import PROJECT_TEMP_DIR, setup_if_required
-from codex.common.logging_config import setup_logging
 
 logger = logging.getLogger(__name__)
 
@@ -292,12 +288,15 @@ def serve() -> None:
     import uvicorn
 
     from codex.common.ai_model import OpenAIChatClient
+    from codex.common.exec_external_tool import PROJECT_TEMP_DIR, setup_if_required
 
     OpenAIChatClient.configure({})
 
+    logger.info("Setting up code analysis tools...")
     initial_setup = setup_if_required(PROJECT_TEMP_DIR)
     asyncio.get_event_loop().run_until_complete(initial_setup)
 
+    logger.info("Starting server...")
     uvicorn.run(
         app="codex.app:app",
         host="0.0.0.0",
@@ -306,6 +305,10 @@ def serve() -> None:
 
 
 if __name__ == "__main__":
+    from dotenv import load_dotenv
+
+    from codex.common.logging_config import setup_logging
+
     load_dotenv()
     setup_logging()
     cli()
