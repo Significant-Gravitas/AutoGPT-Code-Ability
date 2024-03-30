@@ -36,6 +36,7 @@ RUN poetry install --no-interaction --no-ansi
 FROM codex_base as codex_db
 # Caching prisma generate step
 COPY schema.prisma /app/
+COPY migrations /app/migrations
 
 RUN prisma generate
 
