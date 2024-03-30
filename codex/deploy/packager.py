@@ -292,7 +292,7 @@ def git_init(app_dir: str):
         )
 
         repo.git.add(".")
-        repo.git.commit("-m", "Initial commit")
+        repo.index.commit("Initial commit")
 
         logger.info("Git repository initialized and all files committed")
 
