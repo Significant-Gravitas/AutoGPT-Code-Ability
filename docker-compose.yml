@@ -3,11 +3,17 @@ services:
   postgres:
     image: ankane/pgvector:latest
     environment:
-      POSTGRES_USER: agpt_live
-      POSTGRES_PASSWORD: bnfaHGGSDF134345
-      POSTGRES_DB: codegen
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+      PGUSER: ${DB_USER}
+    healthcheck:
+      test: pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
+      interval: 10s
+      timeout: 5s
+      retries: 5
     ports:
-      - "5432:5432"
+      - ${DB_PORT}:5432
   app:
     build:
       context: .
@@ -18,12 +24,10 @@ services:
           files:
             - ./**/*.py
     environment:
-      - PORT=8080
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DATABASE_URL=postgres://agpt_live:bnfaHGGSDF134345@postgres:5432/codegen
-      - OPENAI_API_KEY=<your-open-ai-key>
+      # Override DATABASE_URL from .env with host and port (db:5432) of DB service
+      DATABASE_URL: "postgresql://${DB_USER}:${DB_PASS}@postgres:${DB_PORT}/${DB_NAME}"
     ports:
-      - "8080:8080"
+      - "${PORT:-8080}:8000"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
