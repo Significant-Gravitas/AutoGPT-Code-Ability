@@ -145,6 +145,23 @@ def test_function_visitor():
     assert not functions["is_within_working_hours"].is_implemented
     assert not functions["calculate_travel_time"].is_implemented
 
+    # Assert detail for calculate_travel_time
+    func = functions["calculate_travel_time"]
+    assert func.name == "calculate_travel_time"
+    assert func.arg_types == [
+        ("start_location", "Location"),
+        ("end_location", "Location"),
+    ]
+    assert func.arg_descs == {
+        "start_location": "The starting location's name or coordinates.",
+        "end_location": "The ending location's name or coordinates.",
+    }
+    assert func.return_type == "timedelta"
+    assert func.return_desc.startswith("The estimated travel time between")
+    assert func.return_desc.endswith("time is returned to simulate functionality.")
+    assert func.function_desc.startswith("Stub function to calculate the travel time")
+    assert func.function_desc.endswith("how travel time is calculated are abstract.")
+
 
 CLASS_AND_ENUM_SAMPLE_CODE = """
 from pydantic import BaseModel

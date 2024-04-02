@@ -137,7 +137,7 @@ async def setup_if_required(cwd: str, copy_from_parent: bool = False) -> str:
 async def execute_command(
     command: list[str],
     cwd: str | None,
-    python_path: str | None,
+    python_path: str | None = None,
     raise_on_error: bool = True,
 ) -> str:
     """
