@@ -5,4 +5,4 @@
 
 */
 -- AlterTable
-ALTER TABLE "LLMCallTemplate" ADD COLUMN     "model" TEXT NOT NULL;
+ALTER TABLE "LLMCallTemplate" ADD COLUMN "model" TEXT NOT NULL DEFAULT 'gpt-4-0125-preview';
