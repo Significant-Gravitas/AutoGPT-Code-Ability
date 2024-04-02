@@ -56,6 +56,8 @@ async def run_task(
         )
 
         resume_point = ResumePoint(
+            name=app.name,
+            updatedAt=app.updatedAt,
             userId=user_id,
             applicationId=app.id,
         )

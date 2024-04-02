@@ -81,8 +81,6 @@ async def fetch_application_details(
     if count_resp:
         count = count_resp.count
 
-    print(f"Raw Quest Results: {results}")
-
     pages = codex.api_model.Pagination(
         total_items=count,
         total_pages=math.ceil(count / page_size),

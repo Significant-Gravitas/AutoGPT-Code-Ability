@@ -79,8 +79,12 @@ def benchmark(port: int = 8080):
         # Run all tasks concurrently
         await asyncio.gather(*awaitables)
 
-    asyncio.get_event_loop().run_until_complete(run_tasks())
-    asyncio.get_event_loop().run_until_complete(prisma_client.disconnect())
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    loop.run_until_complete(run_tasks())
+
+    loop.run_until_complete(prisma_client.disconnect())
 
 
 @cli.command()
