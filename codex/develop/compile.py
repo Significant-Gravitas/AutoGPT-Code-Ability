@@ -4,6 +4,7 @@ import re
 from datetime import datetime
 from typing import List, Set
 
+from packaging import version
 from prisma.models import (
     CompiledRoute,
     CompletedApp,
@@ -18,6 +19,7 @@ from pydantic import BaseModel
 
 from codex.api_model import Identifiers
 from codex.common.database import INCLUDE_FIELD, INCLUDE_FUNC
+from codex.common.exec_external_tool import DEFAULT_DEPS
 from codex.common.types import normalize_type
 from codex.deploy.model import Application
 from codex.develop.code_validation import CodeValidator
@@ -545,6 +547,8 @@ app = FastAPI(title="{name}", lifespan=lifespan, description='''{desc}''')
 
         service_routes_code.append(create_server_route_code(compiled_route))
 
+    packages = resolve_package_requirements(packages)
+
     # Compile the server code
     server_code = "\n".join(server_code_imports)
     server_code += "\n\n"
@@ -552,9 +556,12 @@ app = FastAPI(title="{name}", lifespan=lifespan, description='''{desc}''')
     server_code += "\n\n"
     server_code += "\n\n".join(service_routes_code)
 
-    db_schema = "\n\n".join(
-        [get_database_schema(r) for r in completed_app.CompiledRoutes]
-    )
+    # HACK: Database schema is duplicated across every route -> use first non-empty schema
+    # TODO: Clean up DB schema so we don't have to do hacky hacky like this
+    db_schema: str = ""
+    for r in completed_app.CompiledRoutes:
+        if db_schema := get_database_schema(r):
+            break
 
     # Update the application with the server code
     formatted_code = await CodeValidator(
@@ -579,3 +586,29 @@ app = FastAPI(title="{name}", lifespan=lifespan, description='''{desc}''')
         completed_app=completed_app,
         packages=packages,
     )
+
+
+def resolve_package_requirements(packages: list[Package]) -> list[Package]:
+    """
+    Resolve duplicates and version conflicts in a list of package requirements.
+
+    - Resolves multiple requirements for the same package to the highest specified version
+    - Resolves requirements that match an entry of `DEFAULT_DEPS` to the hardcoded entry
+    """
+    resolved_packages: dict[str, Package] = {}
+    for package in packages:
+        name = package.packageName
+        if (
+            package.id == name
+            and name in DEFAULT_DEPS
+            or (
+                name not in resolved_packages
+                or not resolved_packages[name].version
+                or package.version
+                and version.parse(package.version)
+                > version.parse(resolved_packages[name].version)
+            )
+            and name not in DEFAULT_DEPS
+        ):
+            resolved_packages[name] = package
+    return list(resolved_packages.values())

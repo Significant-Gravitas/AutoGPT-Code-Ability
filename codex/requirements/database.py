@@ -71,11 +71,12 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
             "AccessLevel": route.access_level.value,
             "description": route.description,
         }
-        if route.request_model:
+        # [AGPT-593] Link the ObjectTypes to the route, if they exist and have fields.
+        if route.request_model and route.request_model.Fields:
             create_route["RequestObject"] = {  # type: ignore
                 "connect": {"id": created_objects[route.request_model.name].id}
             }
-        if route.response_model:
+        if route.response_model and route.response_model.Fields:
             create_route["ResponseObject"] = {  # type: ignore
                 "connect": {"id": created_objects[route.response_model.name].id}
             }
@@ -86,6 +87,7 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
     create_spec = SpecificationCreateInput(
         name=spec.name,
         context=spec.context,
+        Interview={"connect": {"id": ids.interview_id}},
         User={"connect": {"id": ids.user_id}},
         Application={"connect": {"id": ids.app_id}},
         ApiRouteSpecs={"create": routes},

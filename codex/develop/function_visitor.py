@@ -1,4 +1,5 @@
 import ast
+import re
 
 from codex.common.model import (
     PYTHON_TYPES,
@@ -95,15 +96,49 @@ class FunctionVisitor(ast.NodeVisitor):
             function_code = function_code.replace("def ", "async def ")
             function_template = function_template.replace("def ", "async def ")
 
+        def split_doc(keywords: list[str], doc: str) -> tuple[str, str]:
+            for keyword in keywords:
+                if match := re.search(f"{keyword}\s?:", doc):
+                    return doc[: match.start()], doc[match.end() :]
+            return doc, ""
+
+        # Decompose doc_pattern into func_doc, args_doc, rets_doc, errs_doc, usage_doc by splitting in reverse order
+        func_doc = doc_string
+        func_doc, usage_doc = split_doc(
+            ["Ex", "Usage", "Usages", "Example", "Examples"], func_doc
+        )
+        func_doc, errs_doc = split_doc(["Error", "Errors", "Raise", "Raises"], func_doc)
+        func_doc, rets_doc = split_doc(["Return", "Returns"], func_doc)
+        func_doc, args_doc = split_doc(
+            ["Arg", "Args", "Argument", "Arguments"], func_doc
+        )
+
+        # Extract Func
+        function_desc = func_doc.strip()
+
+        # Extract Args
+        args_descs = {}
+        split_pattern = r"\n(\s+.+):"
+        for match in reversed(list(re.finditer(split_pattern, string=args_doc))):
+            arg = match.group(1).strip().split(" ")[0]
+            desc = args_doc.rsplit(match.group(1), 1)[1].strip(": ")
+            args_descs[arg] = desc.strip()
+            args_doc = args_doc[: match.start()]
+
+        # Extract Returns
+        return_desc = ""
+        if match := re.match(split_pattern, string=rets_doc):
+            return_desc = rets_doc[match.end() :].strip()
+
         self.functions.append(
             FunctionDef(
                 name=node.name,
                 arg_types=args,
-                arg_descs={},  # TODO: Extract out Args and Returns from doc_string
+                arg_descs=args_descs,
                 return_type=return_type,
-                return_desc="",  # TODO: Extract out Args and Returns from doc_string
+                return_desc=return_desc,
                 is_implemented=is_implemented,
-                function_desc=doc_string,  # TODO: Exclude Args and Returns from doc_string,
+                function_desc=function_desc,
                 function_template=function_template,
                 function_code=function_code,
             )
