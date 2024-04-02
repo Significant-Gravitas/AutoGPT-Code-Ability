@@ -494,11 +494,11 @@ async def get_error_enhancements(
                 logger.info(f"Attempting to enhance error: {error_message}")
 
                 # Extract the attempted attribute and the module
-                attempted_attribute = (
-                    error_message.split("is not a known member of module")[0]
-                    .strip()
-                    .replace('"', "")
-                )
+                # attempted_attribute = (
+                #     error_message.split("is not a known member of module")[0]
+                #     .strip()
+                #     .replace('"', "")
+                # )
                 # Split out ' "module". reportAttributeAccessIssue ' from the error message
                 module = (
                     error_message.split("is not a known member of module")[1]
