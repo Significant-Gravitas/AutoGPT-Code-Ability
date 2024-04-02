@@ -7,14 +7,14 @@ from codex.common.logging_config import setup_logging
 from codex.common.model import ObjectFieldModel, ObjectTypeModel, create_object_type
 
 load_dotenv()
-if not OpenAIChatClient._configured:
-    OpenAIChatClient.configure({})
 setup_logging(local=True)
 
 
 @pytest.mark.asyncio
 @pytest.mark.integration_test
 async def test_create_nested_object_type():
+    if not OpenAIChatClient._configured:
+        OpenAIChatClient.configure({})
     await db_client.connect()
 
     object_type = ObjectTypeModel(

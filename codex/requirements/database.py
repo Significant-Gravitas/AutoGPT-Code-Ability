@@ -87,11 +87,14 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
     create_spec = SpecificationCreateInput(
         name=spec.name,
         context=spec.context,
-        Interview={"connect": {"id": ids.interview_id}},
-        User={"connect": {"id": ids.user_id}},
-        Application={"connect": {"id": ids.app_id}},
         ApiRouteSpecs={"create": routes},
     )
+    if ids.interview_id:
+        create_spec["Interview"] = {"connect": {"id": ids.interview_id}}
+    if ids.user_id:
+        create_spec["User"] = {"connect": {"id": ids.user_id}}
+    if ids.app_id:
+        create_spec["Application"] = {"connect": {"id": ids.app_id}}
 
     new_spec = await Specification.prisma().create(
         data=create_spec,

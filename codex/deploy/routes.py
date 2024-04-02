@@ -3,8 +3,8 @@ import io
 import json
 import logging
 
-from fastapi import APIRouter, HTTPException, Query, Response
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import JSONResponse, StreamingResponse
 from prisma.models import CompletedApp
 from prisma.types import (
     CompiledRouteIncludeFromCompiledRouteRecursive1,
@@ -38,53 +38,42 @@ async def create_deployment(
     """
     Create a new deployment with the provided zip file.
     """
-    try:
-        include = CompletedAppInclude(
-            CompiledRoutes=FindManyCompiledRouteArgsFromCompletedApp(
-                include=CompiledRouteIncludeFromCompiledRouteRecursive1(
-                    ApiRouteSpec=INCLUDE_API_ROUTE,  # type: ignore
-                    RootFunction=INCLUDE_FUNC,  # type: ignore
-                    Packages=True,
-                )
-            ),
-        )
-        completedApp = await CompletedApp.prisma().find_unique(
-            where={"id": deliverable_id},
-            include=include,
-        )
+    include = CompletedAppInclude(
+        CompiledRoutes=FindManyCompiledRouteArgsFromCompletedApp(
+            include=CompiledRouteIncludeFromCompiledRouteRecursive1(
+                ApiRouteSpec=INCLUDE_API_ROUTE,  # type: ignore
+                RootFunction=INCLUDE_FUNC,  # type: ignore
+                Packages=True,
+            )
+        ),
+    )
+    completedApp = await CompletedApp.prisma().find_unique(
+        where={"id": deliverable_id},
+        include=include,
+    )
 
-        user = await codex.database.get_user(user_id)
+    user = await codex.database.get_user(user_id)
 
-        if not completedApp:
-            raise ValueError(f"Completed app {deliverable_id} not found")
+    if not completedApp:
+        raise ValueError(f"Completed app {deliverable_id} not found")
 
-        logger.info(f"Creating deployment for {completedApp.name}")
-        ids = Identifiers(
-            user_id=user_id,
-            app_id=app_id,
-            spec_id=spec_id,
-            completed_app_id=deliverable_id,
-            cloud_services_id=user.cloudServicesId if user else "",
-        )
+    logger.info(f"Creating deployment for {completedApp.name}")
+    ids = Identifiers(
+        user_id=user_id,
+        app_id=app_id,
+        spec_id=spec_id,
+        completed_app_id=deliverable_id,
+        cloud_services_id=user.cloudServicesId if user else "",
+    )
 
-        deployment = await deploy_agent.create_deployment(ids, completedApp)
+    deployment = await deploy_agent.create_deployment(ids, completedApp)
 
-        return DeploymentResponse(
-            id=deployment.id,
-            created_at=deployment.createdAt,
-            file_name=deployment.fileName,
-            file_size=deployment.fileSize,
-        )
-    except Exception as e:
-        logger.exception(f"Error creating deployment: {e}")
-        # File upload handling and metadata storage implementation goes here
-        return Response(
-            content=json.dumps(
-                {"error": "Error creating deployment", "details": str(e)}
-            ),
-            status_code=500,
-            media_type="application/json",
-        )
+    return DeploymentResponse(
+        id=deployment.id,
+        created_at=deployment.createdAt,
+        file_name=deployment.fileName,
+        file_size=deployment.fileSize,
+    )
 
 
 @deployment_router.get(
@@ -98,22 +87,13 @@ async def get_deployment(
     """
     Retrieve metadata about a specific deployment.
     """
-    try:
-        deployment = await codex.deploy.database.get_deployment(
-            deployment_id=deployment_id
-        )
-        return DeploymentResponse(
-            id=deployment.id,
-            created_at=deployment.createdAt,
-            file_name=deployment.fileName,
-            file_size=deployment.fileSize,
-        )
-    except ValueError as e:
-        return Response(
-            content=json.dumps({"error": str(e)}),
-            status_code=500,
-            media_type="application/json",
-        )
+    deployment = await codex.deploy.database.get_deployment(deployment_id=deployment_id)
+    return DeploymentResponse(
+        id=deployment.id,
+        created_at=deployment.createdAt,
+        file_name=deployment.fileName,
+        file_size=deployment.fileSize,
+    )
 
 
 @deployment_router.delete(
@@ -126,19 +106,11 @@ async def delete_deployment(
     """
     Delete a specific deployment.
     """
-    try:
-        await codex.deploy.database.delete_deployment(deployment_id=deployment_id)
-        return Response(
-            content=json.dumps({"message": "Deployment deleted successfully"}),
-            status_code=200,
-            media_type="application/json",
-        )
-    except ValueError as e:
-        return Response(
-            content=json.dumps({"error": str(e)}),
-            status_code=500,
-            media_type="application/json",
-        )
+    await codex.deploy.database.delete_deployment(deployment_id=deployment_id)
+    return JSONResponse(
+        content=json.dumps({"message": "Deployment deleted successfully"}),
+        status_code=200,
+    )
 
 
 @deployment_router.get(
@@ -157,20 +129,13 @@ async def list_deployments(
     """
     List all deployments for a specific deliverable.
     """
-    try:
-        deployements = await codex.deploy.database.list_deployments(
-            user_id=user_id,
-            deliverable_id=deliverable_id,
-            page=page,
-            page_size=page_size,
-        )
-        return deployements
-    except ValueError as e:
-        return Response(
-            content=json.dumps({"error": str(e)}),
-            status_code=500,
-            media_type="application/json",
-        )
+    deployements = await codex.deploy.database.list_deployments(
+        user_id=user_id,
+        deliverable_id=deliverable_id,
+        page=page,
+        page_size=page_size,
+    )
+    return deployements
 
 
 @deployment_router.get("/deployments/{deployment_id}/download", tags=["deployments"])
@@ -189,12 +154,7 @@ async def download_deployment(deployment_id: str):
     logger.info(f"Downloading deployment: {deployment_id}")
 
     # Decode the base64-encoded file bytes
-    try:
-        file_bytes = base64.b64decode(str(deployment_details.fileBytes))
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error decoding file content: {str(e)}"
-        )
+    file_bytes = base64.b64decode(str(deployment_details.fileBytes))
 
     # Convert the bytes to a BytesIO object for streaming
     file_stream = io.BytesIO(file_bytes)

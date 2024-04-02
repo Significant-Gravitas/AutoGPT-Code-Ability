@@ -412,3 +412,24 @@ model LLMCallAttempt {
   LLMCallTemplate   LLMCallTemplate? @relation(fields: [llmCallTemplateId], references: [id], onDelete: Cascade)
   llmCallTemplateId String?
 }
+
+enum Status {
+  STARTED
+  SUCCESS
+  FAILED
+}
+
+model EventLog {
+  id            String           @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt     DateTime         @default(now())
+  userId        String?
+  applicationId String?
+  keyType       DevelopmentPhase
+  keyValue      String
+  event         String
+  status        Status
+  message       String?
+
+  @@index([userId, applicationId])
+  @@index([keyValue])
+}
