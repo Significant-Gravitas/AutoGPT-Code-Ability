@@ -8,13 +8,15 @@ from typing import List
 
 from git import GitCommandError
 from git.repo import Repo
-from prisma.models import DatabaseTable, Package
+from prisma.models import DatabaseTable
 
 from codex.common.constants import PRISMA_FILE_HEADER
+from codex.common.exec_external_tool import execute_command
 from codex.deploy.model import Application
 
 logger = logging.getLogger(__name__)
 
+PROJECT_AUTHOR = "AutoGPT <info@agpt.co>"
 
 DOCKERFILE = """
 # Use an official Python runtime as a parent image
@@ -30,39 +32,31 @@ RUN apt-get update \\
     && apt-get clean \\
     && rm -rf /var/lib/apt/lists/*
 
+# Install and configure Poetry
+ENV POETRY_HOME="/opt/poetry"
+ENV POETRY_VIRTUALENVS_PATH="/venv"
+ENV POETRY_VIRTUALENVS_IN_PROJECT=0
+ENV POETRY_NO_INTERACTION=1
+RUN curl -sSL https://install.python-poetry.org | python3 -
+ENV PATH="$POETRY_HOME/bin:$PATH"
+
 WORKDIR /app
 
 # Install dependencies
-COPY requirements.txt /app/
-RUN pip install -r requirements.txt
+COPY pyproject.toml poetry.lock ./
+RUN poetry install --no-cache --no-root
 
 # Generate Prisma client
 COPY schema.prisma /app/
-RUN prisma generate
+RUN poetry run prisma generate
 
 # Copy project code
 COPY project/ /app/project/
 
 # Serve the application on port 8000
-CMD uvicorn project.server:app --host 0.0.0.0 --port 8000
+CMD poetry run uvicorn project.server:app --host 0.0.0.0 --port 8000
 EXPOSE 8000
 """.lstrip()
-
-
-def requirements_txt_from_packages(packages: list[Package]) -> str:
-    """Format a `list[Package]` as a pip-parseable list as in requirements.txt"""
-    return "\n".join(
-        fmt_package_as_requirement(p)
-        for p in sorted(packages, key=lambda p: p.packageName)
-    )
-
-
-def fmt_package_as_requirement(p: Package) -> str:
-    """Format a `Package` as a requirement string like `fastapi>=0.98.0`"""
-    if p.version:
-        return f"{p.packageName.strip()}{p.specifier}{p.version}"
-    else:
-        return p.packageName.strip()
 
 
 def generate_dotenv_example_file(application: Application) -> str:
@@ -347,14 +341,11 @@ async def create_zip_file(application: Application) -> bytes:
                 with open(service_file_path, "w") as service_file:
                     service_file.write(compiled_route.compiledCode)
 
-            # Make a requirements file
-            requirements_file_path = os.path.join(package_dir, "requirements.txt")
-            requirements_txt = ""
-            if application.packages:
-                requirements_txt = requirements_txt_from_packages(application.packages)
-                requirements_txt += "\n"
-            with open(requirements_file_path, mode="w") as requirements_file:
-                requirements_file.write(requirements_txt)
+            # Create pyproject.toml and poetry.lock
+            logger.info("Creating pyproject.toml")
+            await create_pyproject(application=application, package_dir=package_dir)
+            logger.info("Creating poetry.lock")
+            await poetry_lock(package_dir)
 
             # Make a prisma schema file
             prism_schema_file_path = os.path.join(package_dir, "schema.prisma")
@@ -428,7 +419,7 @@ def generate_readme(application: Application) -> str:
     content += f"""
 ---
 date: {datetime.now().isoformat()}
-author: AutoGPT
+author: {PROJECT_AUTHOR}
 ---
 
 # {application.completed_app.name}
@@ -452,7 +443,7 @@ author: AutoGPT
 
 3. Open a terminal in the folder containing this README and run the following commands:
 
-    1. `pip install -r requirements.txt` - install dependencies for the app
+    1. `poetry install` - install dependencies for the app
 
     2. `docker-compose up -d` - start the postgres database
 
@@ -464,3 +455,38 @@ author: AutoGPT
 """.lstrip()
 
     return content
+
+
+async def create_pyproject(application: Application, package_dir: str) -> None:
+    """Create a pyproject.toml file for `application` in `package_dir`"""
+    app_name_slug = application.name.lower().replace(" ", "-")
+    app_description = application.description.split("\n", 1)[0]
+    dependency_args = [
+        f"--dependency={p.packageName}{f':^{p.version}' if p.version else '=*'}"
+        for p in sorted(application.packages, key=lambda p: p.packageName)
+    ]
+    await execute_command(
+        command=[
+            "poetry",
+            "init",
+            f"--name={app_name_slug}",
+            f"--description={app_description}",
+            f"--author={PROJECT_AUTHOR}",
+            "--python=>=3.11",
+            *dependency_args,
+            "--no-interaction",
+        ],
+        cwd=package_dir,
+    )
+
+
+async def poetry_lock(package_dir: str) -> None:
+    """Runs `poetry lock` in the given `package_dir`"""
+    if not os.path.exists(f"{package_dir}/pyproject.toml"):
+        raise FileNotFoundError(
+            f"Can not generate lockfile in {package_dir} without pyproject.toml"
+        )
+    await execute_command(
+        command=["poetry", "lock"],
+        cwd=package_dir,
+    )
