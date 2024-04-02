@@ -516,6 +516,7 @@ async def get_error_enhancements(
 
                 # Return if we can't find the dist info or the module path
                 if not dist_info_path and not module_path:
+                    logger.info(f"Could not enhance error: {error_message}")
                     return None
 
                 # Find the metadata and the matching context
@@ -532,6 +533,7 @@ async def get_error_enhancements(
                 # Find the module's nearest matching attempted attribute in the module folder using treesitter
                 # TODO(ntindle): Implement this
                 if not metadata_contents and not matching_context:
+                    logger.info(f"Could not enhance error: {error_message}")
                     return None
 
                 return f"Found Metadata for the module: {metadata_contents}"
