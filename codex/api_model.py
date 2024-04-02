@@ -170,10 +170,6 @@ class SpecificationResponse(BaseModel):
         if specification.ApiRouteSpecs is None:
             raise ValueError("No routes found for the specification")
         for route in specification.ApiRouteSpecs:
-            if route.RequestObject is None:
-                raise ValueError("No request object found for the route")
-            if route.ResponseObject is None:
-                raise ValueError("No response object found for the route")
             routes.append(
                 APIRouteSpecModel(
                     id=route.id,
@@ -198,7 +194,9 @@ class SpecificationResponse(BaseModel):
                             )
                             for param in route.RequestObject.Fields or []
                         ],
-                    ),
+                    )
+                    if route.RequestObject
+                    else None,
                     responseObject=ResponseObjectModel(
                         id=route.ResponseObject.id,
                         createdAt=route.ResponseObject.createdAt,
@@ -214,7 +212,9 @@ class SpecificationResponse(BaseModel):
                             )
                             for param in route.ResponseObject.Fields or []
                         ],
-                    ),
+                    )
+                    if route.ResponseObject
+                    else None,
                 )
             )
 
