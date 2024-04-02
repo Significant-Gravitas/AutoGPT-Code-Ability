@@ -6,9 +6,7 @@ import click
 from dotenv import load_dotenv
 
 import codex.debug
-from codex.common.exec_external_tool import PROJECT_TEMP_DIR, setup_if_required
 from codex.common.logging_config import setup_logging
-
 
 logger = logging.getLogger(__name__)
 

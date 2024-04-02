@@ -1,3 +1,5 @@
+from typing import Callable
+
 import pytest
 from dotenv import load_dotenv
 
@@ -23,23 +25,11 @@ from codex.requirements.model import (
 )
 
 load_dotenv()
-if not OpenAIChatClient._configured:
-    OpenAIChatClient.configure({})
+is_connected = False
 setup_logging(local=True)
 
-is_connected = False
 
-
-async def generate_function(
-    user_id=user_id_1,
-    cloud_id="",
-) -> list[str] | None:
-    global is_connected
-
-    if not is_connected:
-        await db_client.connect()
-        is_connected = True
-
+async def create_sample_app(user_id: str, cloud_id: str):
     app = await create_app(
         user_id,
         ApplicationCreate(
@@ -49,6 +39,7 @@ async def generate_function(
     )
 
     ids = Identifiers(user_id=user_id, app_id=app.id, cloud_services_id=cloud_id)
+
     spec = await create_spec(
         ids,
         spec=ApplicationRequirements(
@@ -116,15 +107,39 @@ async def generate_function(
             ],
         ),
     )
-    func = await agent.develop_application(ids=ids, spec=spec)
 
-    code = await get_compiled_code(func.id) if func else None
+    return app.id, spec
+
+
+async def with_db_connection(func: Callable):
+    global is_connected
+    if not is_connected:
+        await db_client.connect()
+        is_connected = True
+
+    result = await func()
 
     if is_connected:
         await db_client.disconnect()
         is_connected = False
 
-    return code
+    return result
+
+
+async def generate_function(
+    user_id=user_id_1,
+    cloud_id="",
+) -> list[str] | None:
+    if not OpenAIChatClient._configured:
+        OpenAIChatClient.configure({})
+
+    async def execute():
+        app_id, spec = await create_sample_app(user_id, cloud_id)
+        ids = Identifiers(user_id=user_id, app_id=app_id, cloud_services_id=cloud_id)
+        func = await agent.develop_application(ids=ids, spec=spec)
+        return await get_compiled_code(func.id) if func else None
+
+    return await with_db_connection(execute)
 
 
 @pytest.mark.asyncio
