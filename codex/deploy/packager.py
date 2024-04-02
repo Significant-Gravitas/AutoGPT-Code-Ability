@@ -208,8 +208,8 @@ jobs:
     - name: Checkout
       uses: actions/checkout@master
 
-      # set up auth service account
-    - name: Auth service account
+      # Set up auth service account with Credentials
+    - name: Set up auth service account
       uses: google-github-actions/auth@v2
       with:
         credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
