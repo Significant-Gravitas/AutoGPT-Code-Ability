@@ -87,6 +87,7 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
     create_spec = SpecificationCreateInput(
         name=spec.name,
         context=spec.context,
+        Interview={"connect": {"id": ids.interview_id}},
         User={"connect": {"id": ids.user_id}},
         Application={"connect": {"id": ids.app_id}},
         ApiRouteSpecs={"create": routes},
