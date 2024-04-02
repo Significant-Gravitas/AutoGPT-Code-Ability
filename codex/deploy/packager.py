@@ -3,6 +3,7 @@ import os
 import random
 import tempfile
 import zipfile
+import requests
 from datetime import datetime
 from typing import List
 
@@ -259,9 +260,45 @@ async def create_prisma_schema_file(application: Application) -> str:
     return prisma_file
 
 
+def create_github_repo(repo_name: str) -> str:
+    """
+    Creates a new GitHub repository under Significant-Gravitas.
+
+    Args:
+        repo_name (str): The name of the repository to create.
+
+    Returns:
+        str: The HTTPS URL of the newly created repository.
+
+    Raises:
+        Exception: If the repository creation fails.
+    """
+
+    GIT_TOKEN: str = os.environ.get("GIT_TOKEN")
+    if not GIT_TOKEN:
+        logger.error("GitHub token not found in environment variables.")
+        return
+
+    url = f"https://api.github.com/orgs/Significant-Gravitas/repos"
+    headers = {
+        "Authorization": f"token {GIT_TOKEN}",
+        "Accept": "application/vnd.github.v3+json",
+    }
+    data = {"name": repo_name, "private": False}
+    response = requests.post(url, headers=headers, json=data)
+
+    if response.status_code == 201:
+        repo_url = response.json()["html_url"]
+        logger.info(f"Repository created at {repo_url}")
+        authenticated_url = repo_url.replace("https://", f"https://{GIT_TOKEN}@")
+        return authenticated_url
+    else:
+        raise Exception(f"Failed to create repository: {response.text}")
+
+
 def git_init(app_dir: str):
     """
-    Initializes a Git repository in the specified directory and commits all files.
+    Initializes a Git repository in the specified directory and pushes all files.
 
     Args:
         app_dir (str): The directory path where the Git repository should be initialized.
@@ -270,7 +307,7 @@ def git_init(app_dir: str):
         GitCommandError: if any of the Git operations fails.
     """
     GIT_USER_NAME: str = os.environ.get("GIT_USER_NAME", default="AutoGPT")
-    GIT_USER_EMAIL: str = os.environ.get("GIT_USER_EMAIL", default="code@agpt.com")
+    GIT_USER_EMAIL: str = os.environ.get("GIT_USER_EMAIL", default="code@agpt.co")
 
     try:
         # Initialize Git repository
@@ -289,6 +326,11 @@ def git_init(app_dir: str):
         repo.index.commit("Initial commit")
 
         logger.info("Git repository initialized and all files committed")
+
+        remote_url = create_github_repo(app_dir)
+        origin = repo.create_remote("origin", remote_url)
+        origin.push("master")
+        logger.info(f"Code successfully pushed to repo")
 
     except GitCommandError as e:
         logger.exception("Failed to initialize Git repository or commit files:", e)
