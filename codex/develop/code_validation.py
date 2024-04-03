@@ -444,7 +444,7 @@ async def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
 
 
 async def find_module_dist_and_source(
-    module, py_path
+    module: str, py_path: pathlib.Path | str
 ) -> typing.Tuple[pathlib.Path | None, pathlib.Path | None]:
     # Find the module in the env
     modules_path = pathlib.Path(py_path).parent / "lib" / "python3.11" / "site-packages"
