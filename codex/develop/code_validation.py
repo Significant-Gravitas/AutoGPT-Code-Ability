@@ -231,6 +231,7 @@ class CodeValidator:
             if raise_validation_error:
                 raise ListValidationError("Error validating code", validation_errors)
             else:
+                # This should happen only on `reformat_code` call
                 logger.warning("Error validating code: %s", validation_errors)
 
         return result
