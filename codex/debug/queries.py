@@ -23,20 +23,21 @@ async def fetch_application_details(
     # Raw SQL query
     raw_sql = """
         SELECT
-            a."userId" AS user_id,
+            CAST(ROW_NUMBER() OVER (ORDER BY a."updatedAt" DESC) AS VARCHAR) AS id,
             a.name AS name,
             a."updatedAt" AS "updatedAt",
-            a.id AS application_id,
-            i.id AS interview_id,
-            s.id AS spec_id,
-            ca.id AS completed_app_id,
-            d.id AS deployment_id
+            a."userId" AS "userId",
+            a.id AS "applicationId",
+            i.id AS "interviewId",
+            s.id AS "specificationId",
+            ca.id AS "completedAppId",
+            d.id AS "deploymentId"
         FROM
             "Application" a
         LEFT JOIN
             "Interview" i ON a.id = i."applicationId" AND i.deleted = false
         LEFT JOIN
-            "Specification" s ON a.id = s."applicationId" AND s.deleted = false
+            "Specification" s ON i.id = s."interviewId" AND s.deleted = false
         LEFT JOIN
             "CompletedApp" ca ON s.id = ca."specificationId" AND ca.deleted = false
         LEFT JOIN
