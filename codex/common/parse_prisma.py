@@ -64,7 +64,7 @@ def parse_prisma_schema(schema_text: str) -> SchemaInfo:
         r"model\s+(\w+)\s*{\s*((?:[^{}]|//.*$)*?)\s*}", re.MULTILINE
     )
     field_pattern = re.compile(
-        r"(\w+)\s+(\w+(?:\[])?\??)(?:\s+(@.*))*(?:\s*//\s*(?<comment>.*))?"
+        r"(\w+)\s+(\w+(?:\[])?\??)(?:\s+(@.*))*(?:\s*//\s*(.*))?"
     )
     attribute_pattern = re.compile(r"@\w+(\((?:[^()]*|\([^()]*\))*\))?")
     relation_pattern = re.compile(r"@relation\((.*?)\)")
