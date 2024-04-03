@@ -12,6 +12,7 @@ from prisma.types import (
 from codex.common.ai_block import (
     AIBlock,
     Identifiers,
+    ListValidationError,
     ValidatedResponse,
     ValidationError,
 )
@@ -74,7 +75,8 @@ class DevelopAIBlock(AIBlock):
     async def validate(
         self, invoke_params: dict, response: ValidatedResponse
     ) -> ValidatedResponse:
-        validation_errors = []
+        func_name = invoke_params.get("function_name", "")
+        validation_errors = ListValidationError(f"Error developing `{func_name}`")
         try:
             text = response.response
 
@@ -85,7 +87,7 @@ class DevelopAIBlock(AIBlock):
                 packages = []
             elif len(requirement_blocks) > 1:
                 packages = []
-                validation_errors.append(
+                validation_errors.append_message(
                     f"There are {len(requirement_blocks)} requirements blocks in the response. "
                     + "There should be exactly 1"
                 )
@@ -100,24 +102,26 @@ class DevelopAIBlock(AIBlock):
             if len(code_blocks) == 0:
                 raise ValidationError("No code blocks found in the response")
             elif len(code_blocks) != 1:
-                validation_errors.append(
+                validation_errors.append_message(
                     f"There are {len(code_blocks)} code blocks in the response. "
                     + "There should be exactly 1"
                 )
             code = code_blocks[0].split("```")[0]
+            is_still_can_retry = bool(invoke_params.get("will_retry_on_failure", True))
             response.response = await CodeValidator(
                 compiled_route_id=invoke_params["compiled_route_id"],
                 database_schema=invoke_params["database_schema"],
                 function_name=invoke_params["function_name"],
                 available_objects=invoke_params["available_objects"],
                 available_functions=invoke_params["available_functions"],
-            ).validate_code(packages, code)
+            ).validate_code(
+                packages=packages,
+                raw_code=code,
+                route_errors_as_todo=not is_still_can_retry,
+            )
 
         except ValidationError as e:
-            if isinstance(e.args[0], List):
-                validation_errors.extend(e.args[0])
-            else:
-                validation_errors.append(str(e))
+            validation_errors.append_error(e)
 
         except Exception as e:
             # This is not a validation error we want to the agent to fix
@@ -125,12 +129,7 @@ class DevelopAIBlock(AIBlock):
             logger.exception(e)
             raise e
 
-        if validation_errors:
-            # Important: ValidationErrors are used in the retry prompt
-            errors = [f"\n  - {e}" for e in validation_errors]
-            func_name = invoke_params.get("function_name", "")
-            raise ValidationError(f"Error developing {func_name}. {''.join(errors)}")
-
+        validation_errors.raise_if_errors()
         return response
 
     async def create_item(

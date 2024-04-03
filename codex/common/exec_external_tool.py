@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 from asyncio.subprocess import Process
 
-from codex.common.ai_block import ValidationError
+from codex.common.ai_block import ValidationError, ValidationErrorWithContent
 
 logger = logging.getLogger(__name__)
 
@@ -86,9 +86,9 @@ async def exec_external_on_contents(
         return file_contents
 
     if raise_file_contents_on_error:
-        raise ValidationError(f"Errors with generation: {errors}", file_contents)
+        raise ValidationErrorWithContent(errors, file_contents)
 
-    raise ValidationError(f"Errors with generation: {errors}")
+    raise ValidationError(errors)
 
 
 PROJECT_TEMP_DIR = os.path.join(tempfile.gettempdir(), "codex-static-code-analysis")

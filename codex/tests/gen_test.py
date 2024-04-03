@@ -229,10 +229,9 @@ async def test_class_with_db_query():
 @pytest.mark.integration_test
 async def test_with_undefined_entity():
     ai_block.MOCK_RESPONSE = UNDEFINED_ENTITY_RESPONSE
-    with pytest.raises(LLMFailure) as e:
-        await generate_function()
-    assert "Undefined" in str(e.value)
-    assert "UnknownEntity.get_game_state" in str(e.value)
+    result = await generate_function()
+    assert result is not None
+    assert "Undefined name `UnknownEntity`" in str(result[0])
 
 
 COMPLEX_RESPONSE = """

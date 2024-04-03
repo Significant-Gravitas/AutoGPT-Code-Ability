@@ -252,6 +252,13 @@ enum BookingStatus {
     CONFIRMED
     CANCELLED
 }
+
+model Booking {
+    id String @id @default(cuid())
+    status BookingStatus
+    scheduledStartTime DateTime
+    scheduledEndTime DateTime
+}
 """
 
 
