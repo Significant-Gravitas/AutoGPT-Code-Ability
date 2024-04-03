@@ -31,7 +31,7 @@ class ParsingError(Exception):
 
 class ValidationError(Exception):
     def append_error_as_todo(self, code: str) -> str:
-        error_message = f"# TODO: Unresolved error: {self.__str__().replace("\n", " ")}"
+        error_message = "# TODO: Unresolved error: " + self.__str__().replace("\n", " ")
         if error_message not in code:  # TODO: we can do better than this naive check.
             return f"{error_message}\n{code}"
         return code
