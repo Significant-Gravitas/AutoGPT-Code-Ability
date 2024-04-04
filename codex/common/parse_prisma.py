@@ -66,7 +66,7 @@ def parse_prisma_schema(schema_text: str) -> SchemaInfo:
     field_pattern = re.compile(
         r"(\w+)\s+(\w+(?:\[])?\??)(?:\s+(@.*))*(?:\s*//\s*(.*))?"
     )
-    attribute_pattern = re.compile(r"@\w+(\((?:[^()]*|\([^()]*\))*\))?")
+    attribute_pattern = re.compile(r"@\w+(\((?:[^()]*|\((?:[^()]*|\([^()]*\))*\))*\))?")
     relation_pattern = re.compile(r"@relation\((.*?)\)")
 
     # Parse datasource
