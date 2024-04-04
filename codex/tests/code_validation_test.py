@@ -1,7 +1,8 @@
 import pytest
 from dotenv import load_dotenv
 
-from codex.develop.code_validation import CodeValidator
+from codex.common.ai_block import LineValidationError, ValidationError
+from codex.develop.code_validation import CodeValidator, append_errors_as_todos
 from codex.develop.model import Package
 
 load_dotenv()
@@ -263,8 +264,7 @@ model Booking {
 
 
 @pytest.mark.asyncio
-@pytest.mark.integration_test
-async def test_simple_function():
+async def test_server_code():
     validator = CodeValidator(
         compiled_route_id="test_1",
         database_schema=SAMPLE_SCHEMA,
@@ -275,4 +275,38 @@ async def test_simple_function():
     )
     assert "prisma.enums.BookingStatus" in response
     assert "from typing import Optional" in response
+    assert "TODO" not in response
     # TODO add more validations.
+
+
+SIMPLE_FUNCTION = """
+def hello_world():
+    return "Hello World"
+
+hello_world() # comment
+""".strip()
+
+EXPECTED_TODOS = """
+# TODO(autogpt): First Error
+# TODO(autogpt): Second Error
+#     Second Error continuation
+def hello_world():
+    return "Hello World" # TODO(autogpt): Third Error
+#   Third Error continuation
+
+hello_world() # comment # TODO(autogpt): Fourth Error
+""".strip()
+
+
+def test_append_errors_as_todos():
+    code = SIMPLE_FUNCTION
+    response = append_errors_as_todos(
+        [
+            LineValidationError("Third Error\nThird Error continuation", code, 2),
+            LineValidationError("Fourth Error", code, 4),
+            ValidationError("Second Error\nSecond Error continuation"),
+            ValidationError("First Error"),
+        ],
+        code,
+    )
+    assert response == EXPECTED_TODOS
