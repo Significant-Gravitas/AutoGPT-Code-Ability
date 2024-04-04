@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 load_dotenv()
 
+
 @click.group()
 def cli():
     pass
