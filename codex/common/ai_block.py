@@ -29,9 +29,12 @@ class ParsingError(Exception):
     pass
 
 
+TODO_COMMENT = "# TODO(autogpt):"
+
+
 class ValidationError(Exception):
     def append_error_as_todo(self, code: str) -> str:
-        error_message = "# TODO: Unresolved error: " + self.__str__().replace("\n", " ")
+        error_message = TODO_COMMENT + " " + self.__str__().replace("\n", " ")
         if error_message not in code:  # TODO: we can do better than this naive check.
             return f"{error_message}\n{code}"
         return code
@@ -73,8 +76,8 @@ class LineValidationError(ValidationError):
             return code
         error_msg = super().__str__().replace("\n", " ")
         index = self.line_from - 1
-        if "# TODO" not in lines[index]:
-            lines[index] = f"{lines[index]} # TODO: {error_msg}"
+        if TODO_COMMENT not in lines[index]:
+            lines[index] = f"{lines[index]} {TODO_COMMENT} {error_msg}"
         return "\n".join(lines)
 
 

@@ -10,6 +10,7 @@ from prisma.types import (
 )
 
 from codex.common.ai_block import (
+    TODO_COMMENT,
     AIBlock,
     Identifiers,
     ListValidationError,
@@ -17,6 +18,7 @@ from codex.common.ai_block import (
     ValidationError,
 )
 from codex.common.database import INCLUDE_FUNC
+from codex.common.logging import log_event
 from codex.common.model import create_object_type
 from codex.develop.code_validation import CodeValidator
 from codex.develop.function import construct_function
@@ -107,7 +109,7 @@ class DevelopAIBlock(AIBlock):
                     + "There should be exactly 1"
                 )
             code = code_blocks[0].split("```")[0]
-            is_still_can_retry = bool(invoke_params.get("will_retry_on_failure", True))
+            route_errors_as_todo = not invoke_params.get("will_retry_on_failure", True)
             response.response = await CodeValidator(
                 compiled_route_id=invoke_params["compiled_route_id"],
                 database_schema=invoke_params["database_schema"],
@@ -117,7 +119,7 @@ class DevelopAIBlock(AIBlock):
             ).validate_code(
                 packages=packages,
                 raw_code=code,
-                route_errors_as_todo=not is_still_can_retry,
+                route_errors_as_todo=route_errors_as_todo,
             )
 
         except ValidationError as e:
@@ -193,6 +195,16 @@ class DevelopAIBlock(AIBlock):
 
         if not generated_response.function_id:
             raise AssertionError("Function ID is required to update")
+
+        compiled_code = generated_response.get_compiled_code()
+        if TODO_COMMENT in compiled_code:
+            await log_event(
+                id=ids,
+                step=DevelopmentPhase.DEVELOPMENT,
+                event="CODE_ERRORS_AS_TODO_COMMENTS",
+                key=generated_response.function_id,
+                data=f"{generated_response.db_schema}\n#-----#\n{compiled_code}",
+            )
 
         func: Function | None = await Function.prisma().update(
             where={"id": generated_response.function_id},

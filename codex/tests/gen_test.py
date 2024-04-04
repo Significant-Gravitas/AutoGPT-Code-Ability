@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from codex.api_model import ApplicationCreate
 from codex.app import db_client
 from codex.common import ai_block
-from codex.common.ai_block import LLMFailure
+from codex.common.ai_block import TODO_COMMENT, LLMFailure
 from codex.common.ai_model import OpenAIChatClient
 from codex.common.logging_config import setup_logging
 from codex.common.model import ObjectFieldModel, ObjectTypeModel
@@ -231,7 +231,8 @@ async def test_with_undefined_entity():
     ai_block.MOCK_RESPONSE = UNDEFINED_ENTITY_RESPONSE
     result = await generate_function()
     assert result is not None
-    assert "Undefined name `UnknownEntity`" in str(result[0])
+    assert TODO_COMMENT in result[0]
+    assert "Undefined name `UnknownEntity`" in result[0]
 
 
 COMPLEX_RESPONSE = """

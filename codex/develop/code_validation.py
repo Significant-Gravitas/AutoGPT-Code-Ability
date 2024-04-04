@@ -291,13 +291,23 @@ async def static_code_analysis(
     return validation_errors
 
 
+CODE_SEPARATOR = "#------Code-Start------#"
+
+
+def __pack_import_and_function_code(func: GeneratedFunctionResponse) -> str:
+    return "\n".join(func.imports + [CODE_SEPARATOR, func.rawCode])
+
+
+def __unpack_import_and_function_code(code: str) -> tuple[list[str], str]:
+    split = code.split(CODE_SEPARATOR)
+    return split[0].splitlines(), split[1].strip()
+
+
 async def __execute_ruff(
     func: GeneratedFunctionResponse,
     add_todo_on_error: bool,
 ) -> list[ValidationError]:
-    separator = "#------Code-Start------#"
-    code = "\n".join(func.imports + [separator, func.rawCode])
-    validation_errors: list[ValidationError] = []
+    code = __pack_import_and_function_code(func)
 
     try:
         # Currently Disabled Rule List
@@ -317,6 +327,9 @@ async def __execute_ruff(
             suffix=".py",
             raise_file_contents_on_error=True,
         )
+        func.imports, func.rawCode = __unpack_import_and_function_code(code)
+        return []
+
     except ValidationError as e:
         if isinstance(e, ValidationErrorWithContent):
             # Ruff failed, but the code is reformatted
@@ -327,10 +340,13 @@ async def __execute_ruff(
             v
             for v in str(e).split("\n")
             if v.strip()
-            if re.match(r"Found \d+ errors?\.", v) is None
+            if re.match(r"Found \d+ errors?\.*", v) is None
         ]
 
+        added_imports, error_messages = __fix_missing_imports(error_messages, func)
+
         # Append problematic line to the error message or add it as TODO line
+        validation_errors: list[ValidationError] = []
         split_pattern = r"(.+):(\d+):(\d+): (.+)"
         for error_message in error_messages:
             error_split = re.match(split_pattern, error_message)
@@ -346,22 +362,17 @@ async def __execute_ruff(
             else:
                 validation_errors.append(error)
 
-        if __fix_missing_imports(error_messages, func):
-            return validation_errors
+        func.imports, func.rawCode = __unpack_import_and_function_code(code)
+        func.imports.extend(added_imports)  # Avoid line-code change, do it at the end.
 
-    split = code.split(separator)
-    func.imports = split[0].splitlines()
-    func.rawCode = split[1].strip()
-
-    return validation_errors
+        return validation_errors
 
 
 async def __execute_pyright(
     func: GeneratedFunctionResponse,
     add_todo_on_error: bool,
 ) -> list[ValidationError]:
-    separator = "#------Code-Start------#"
-    code = "\n".join(func.imports + [separator, func.rawCode])
+    code = __pack_import_and_function_code(func)
     validation_errors: list[ValidationError] = []
 
     # Create temporary directory under the TEMP_DIR with random name
@@ -423,9 +434,7 @@ async def __execute_pyright(
 
         # read code from code.py. split the code into imports and raw code
         code = open(f"{temp_dir}/code.py").read()
-        split = code.split(separator)
-        func.imports = split[0].splitlines()
-        func.rawCode = split[1].strip()
+        func.imports, func.rawCode = __unpack_import_and_function_code(code)
 
         return validation_errors
 
@@ -467,7 +476,15 @@ for t in collections.__all__:
 
 def __fix_missing_imports(
     errors: list[str], func: GeneratedFunctionResponse
-) -> list[str]:
+) -> tuple[set[str], list[str]]:
+    """
+    Generate missing imports based on the errors
+    Args:
+        errors (list[str]): The list of errors
+        func (GeneratedFunctionResponse): The function to fix the imports
+    Returns:
+        tuple[set[str], list[str]]: The set of missing imports and the list of non-missing import errors
+    """
     # parse "model X {" and "enum X {" from func.db_schema
     schema_imports = {}
     for entity in ["model", "enum"]:
@@ -477,10 +494,12 @@ def __fix_missing_imports(
             schema_imports[match] = f"from prisma.{entity}s import {match}"
 
     missing_imports = []
+    filtered_errors = []
     for error in errors:
         pattern = r"Undefined name `(.+?)`"
         match = re.search(pattern, error)
         if not match:
+            filtered_errors.append(error)
             continue
 
         missing_type = match.group(1)
@@ -488,9 +507,10 @@ def __fix_missing_imports(
             missing_imports.append(schema_imports[missing_type])
         elif missing_type in AUTO_IMPORT_TYPES:
             missing_imports.append(AUTO_IMPORT_TYPES[missing_type])
+        else:
+            filtered_errors.append(error)
 
-    func.imports = sorted(set(func.imports + list(missing_imports)))
-    return missing_imports
+    return set(missing_imports), filtered_errors
 
 
 def validate_normalize_prisma(func: GeneratedFunctionResponse) -> list[ValidationError]:
