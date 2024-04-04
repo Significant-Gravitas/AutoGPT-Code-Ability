@@ -373,6 +373,15 @@ async def __execute_ruff(
 
 
 def append_errors_as_todos(errors: list[ValidationError], code: str) -> str:
+    """
+    Append the errors as TODO comments in the code
+    Args:
+        errors (list[ValidationError]): The list of errors
+        code (str): The code snippet
+    Returns:
+        str: The code snippet with the errors appended as TODO comments
+    """
+
     line_validation_errors: list[LineValidationError] = []
     non_line_validation_errors: list[ValidationError] = []
     for error in errors:
