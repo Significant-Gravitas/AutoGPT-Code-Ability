@@ -83,11 +83,21 @@ class DatabaseGenerationBlock(AIBlock):
         try:
             unparsed = await exec_external_on_contents(
                 ["prisma", "format", "--schema"],
-                text_schema,
+                unparsed,
                 output_type=OutputType.STD_ERR,
             )
         except ValidationError as e:
             validation_errors.append(str(e))
+
+        try:
+            unparsed = await exec_external_on_contents(
+                ["prisma", "validate", "--schema"],
+                unparsed,
+                output_type=OutputType.STD_ERR,
+            )
+        except ValidationError as e:
+            if str(e) not in validation_errors:
+                validation_errors.append(str(e))
 
         parsed_prisma = parse_prisma_schema(unparsed)
 
