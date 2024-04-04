@@ -390,9 +390,7 @@ def append_errors_as_todos(errors: list[ValidationError], code: str) -> str:
             continue
 
         error_uid: str = uuid.uuid4().hex
-        error_msg: str = (
-            super(ValidationError, err).__str__().replace("\n", "\n#   ")
-        )
+        error_msg: str = super(ValidationError, err).__str__().replace("\n", "\n#   ")
 
         index = err.line_from - 1
         if TODO_COMMENT not in code_lines[index]:
@@ -456,7 +454,6 @@ async def __execute_pyright(
         for e in json_response:
             rule: str = e.get("rule", "")
             severity: str = e.get("severity", "")
-            file: str = e.get("file", "")
             excluded_rules = ["reportMissingImports"] if add_todo_on_error else []
             if (
                 severity != "error"

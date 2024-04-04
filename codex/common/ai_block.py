@@ -89,7 +89,6 @@ class ListValidationError(ValidationError):
             raise self
 
 
-
 class PromptTemplateInvocationError(Exception):
     pass
 
