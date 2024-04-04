@@ -10,6 +10,7 @@ from codex.common.logging_config import setup_logging
 
 logger = logging.getLogger(__name__)
 
+load_dotenv()
 
 @click.group()
 def cli():
@@ -23,7 +24,7 @@ cli.add_command(cmd=codex.debug.debug)  # type: ignore
 @click.option(
     "--database",
     "-d",
-    default="postgres://agpt_live:bnfaHGGSDF134345@127.0.0.1/codegen",
+    default=os.getenv("DATABASE_URL"),
 )
 def populate_db(database):
     """Populate the database with test data"""
@@ -48,7 +49,7 @@ def populate_db(database):
 @click.option(
     "--port",
     "-p",
-    default=8080,
+    default=os.getenv("PORT"),
     help="Port number of the Codex server",
     type=int,
 )
@@ -60,7 +61,7 @@ def benchmark(port: int = 8080):
     import codex.runner
     from codex.requirements.model import ExampleTask
 
-    base_url = f"http://0.0.0.0:{port}/api/v1"
+    base_url = f"http://127.0.0.1:{port}/api/v1"
     prisma_client = prisma.Prisma(auto_register=True)
     tasks = list(ExampleTask)
 
@@ -90,7 +91,7 @@ def benchmark(port: int = 8080):
 @click.option(
     "-p",
     "--port",
-    default=8000,
+    default=os.getenv("PORT"),
     help="Port number of the Codex server",
     type=int,
 )
@@ -149,7 +150,7 @@ def costs():
 @click.option(
     "--port",
     "-p",
-    default=8000,
+    default=os.getenv("PORT"),
     help="Port number of the Codex server",
     type=int,
 )
@@ -262,6 +263,5 @@ if __name__ == "__main__":
 
     from codex.common.logging_config import setup_logging
 
-    load_dotenv()
     setup_logging()
     cli()
