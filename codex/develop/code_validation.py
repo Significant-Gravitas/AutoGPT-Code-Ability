@@ -4,6 +4,7 @@ import datetime
 import json
 import logging
 import os
+import pathlib
 import re
 import typing
 
@@ -409,8 +410,9 @@ async def __execute_pyright(
             raise e
 
         for e in json_response:
-            rule = e.get("rule", "")
-            severity = e.get("severity", "")
+            rule: str = e.get("rule", "")
+            severity: str = e.get("severity", "")
+            file: str = e.get("file", "")
             if (
                 severity != "error"
                 or rule
@@ -422,8 +424,26 @@ async def __execute_pyright(
             ):
                 continue
 
+            # Grab any enhancements we can for the error
+            code_lines: list[str] = code.splitlines()
+            error_message: str = f"{e['message']}. {e.get('rule', '')}"
+            error_line: str = "\n".join(
+                code_lines[e["range"]["start"]["line"] : e["range"]["end"]["line"] + 1]
+            )
+            if error_enhancements := await get_error_enhancements(
+                rule,
+                severity,
+                code_lines,
+                error_message,
+                error_line,
+                temp_dir,
+                file,
+                py_path,
+            ):
+                error_message += f"\n{error_enhancements}"
+
             e = LineValidationError(
-                error=f"{e['message']} [{e.get('rule', '')}]",
+                error=error_message,
                 code=code,
                 line_from=e["range"]["start"]["line"] + 1,
             )
@@ -457,6 +477,105 @@ async def __execute_pyright(
                 p.flush()
 
                 return await __execute_pyright_commands(code)
+
+
+async def find_module_dist_and_source(
+    module: str, py_path: pathlib.Path | str
+) -> typing.Tuple[pathlib.Path | None, pathlib.Path | None]:
+    # Find the module in the env
+    modules_path = pathlib.Path(py_path).parent / "lib" / "python3.11" / "site-packages"
+    matches = modules_path.glob(f"{module}*")
+
+    # resolve the generator to an array
+    matches = list(matches)
+    if not matches:
+        return None, None
+
+    # find the dist info path and the module path
+    dist_info_path: typing.Optional[pathlib.Path] = None
+    module_path: typing.Optional[pathlib.Path] = None
+
+    # find the dist info and the module path
+    # TODO(ntindle): This is a naive implementation, we should improve this as pydantic and pydantic-core would match and its a crapshoot which one we get
+    for match in matches:
+        if ".dist-info" in match.name:
+            dist_info_path = match
+            break
+    for match in matches:
+        if module in match.name:
+            module_path = match
+            break
+
+    # We couldn't find the module
+    if not dist_info_path or not module_path:
+        return None, None
+
+    return dist_info_path, module_path
+
+
+async def get_error_enhancements(
+    rule: str,
+    severity: str,
+    code_lines: list[str],
+    error_message: str,
+    error_line: str,
+    temp_dir: str,
+    file: str,
+    py_path: str,
+) -> str | None:
+    # python match the rule and error message to a case
+    match rule:
+        case "reportAttributeAccessIssue":
+            if "is not a known member of module" in error_message:
+                logger.info(f"Attempting to enhance error: {error_message}")
+
+                # Extract the attempted attribute and the module
+                # attempted_attribute = (
+                #     error_message.split("is not a known member of module")[0]
+                #     .strip()
+                #     .replace('"', "")
+                # )
+                # Split out ' "module". reportAttributeAccessIssue ' from the error message
+                module = (
+                    error_message.split("is not a known member of module")[1]
+                    .split(". reportAttributeAccessIssue")[0]
+                    .strip()
+                    .replace('"', "")
+                )
+
+                # Find the dist info and the module path
+                dist_info_path: typing.Optional[pathlib.Path] = None
+                module_path: typing.Optional[pathlib.Path] = None
+                dist_info_path, module_path = await find_module_dist_and_source(
+                    module, py_path
+                )
+
+                # Return if we can't find the dist info or the module path
+                if not dist_info_path and not module_path:
+                    logger.info(f"Could not enhance error: {error_message}")
+                    return None
+
+                # Find the metadata and the matching context
+                metadata_contents: typing.Optional[str] = None
+                matching_context: typing.Optional[str] = None
+
+                # Read the dist info's METADATA file
+                if dist_info_path:
+                    # Find the dist info's METADATA file
+                    metadata_file = dist_info_path / "METADATA"
+                    if metadata_file.exists():
+                        metadata_contents = metadata_file.read_text()
+
+                # Find the module's nearest matching attempted attribute in the module folder using treesitter
+                # TODO(ntindle): Implement this
+                if not metadata_contents and not matching_context:
+                    logger.info(f"Could not enhance error: {error_message}")
+                    return None
+
+                return f"Found Metadata for the module: {metadata_contents}"
+        case _:
+            pass
+    return None
 
 
 AUTO_IMPORT_TYPES: dict[str, str] = {
