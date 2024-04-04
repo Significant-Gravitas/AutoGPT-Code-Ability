@@ -7,14 +7,15 @@ from codex.develop.model import GeneratedFunctionResponse
 
 @pytest.mark.unit
 def test_valid_prisma_schema():
-    schema = """
+    model_user_definition = """
 model User {
     id Int @id @default(autoincrement())
     name String
     email String @unique
     posts Post[]
-}
+}""".lstrip()
 
+    model_post_definition = """
 model Post {
     id Int @id @default(autoincrement())
     title String
@@ -22,8 +23,27 @@ model Post {
     published Boolean @default(false)
     author User @relation(fields: [authorId], references: [id])
     authorId Int
-}
-    """
+}""".lstrip()
+
+    model_search_log_definition = """
+model SearchLog {
+    id String @id @default(dbgenerated("gen_random_uuid()"))
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    userId String
+    query String
+    filters Json // Example: {"location": "New York", "skills": ["Python", "Django"]}
+}""".lstrip()
+
+    schema = "\n".join(
+        f"{m}\n"
+        for m in (
+            model_user_definition,
+            model_post_definition,
+            model_search_log_definition,
+        )
+    )
+
     response = parse_prisma_schema(schema)
     # User Object
     assert response.models["User"].fields["id"].type == "Int"
@@ -35,10 +55,7 @@ model Post {
     assert response.models["User"].fields["email"].type == "String"
     assert response.models["User"].fields["email"].attributes == ["@unique"]
     assert response.models["User"].fields["posts"].type == "Post[]"
-    assert (
-        response.models["User"].definition
-        == "model User {\n    id Int @id @default(autoincrement())\n    name String\n    email String @unique\n    posts Post[]\n}"
-    )
+    assert response.models["User"].definition == model_user_definition
 
     # Post Object
     assert response.models["Post"].fields["id"].type == "Int"
@@ -56,10 +73,24 @@ model Post {
         == "@relation(fields: [authorId], references: [id])"
     )
     assert response.models["Post"].fields["authorId"].type == "Int"
-    assert (
-        response.models["Post"].definition
-        == "model Post {\n    id Int @id @default(autoincrement())\n    title String\n    content String\n    published Boolean @default(false)\n    author User @relation(fields: [authorId], references: [id])\n    authorId Int\n}"
-    )
+    assert response.models["Post"].definition == model_post_definition
+
+    # SearchLog Object
+    assert response.models["SearchLog"].fields["id"].type == "String"
+    assert response.models["SearchLog"].fields["id"].attributes == [
+        "@id",
+        '@default(dbgenerated("gen_random_uuid()"))',
+    ]
+    assert response.models["SearchLog"].fields["createdAt"].type == "DateTime"
+    assert response.models["SearchLog"].fields["createdAt"].attributes == [
+        "@default(now())"
+    ]
+    assert response.models["SearchLog"].fields["updatedAt"].type == "DateTime"
+    assert response.models["SearchLog"].fields["updatedAt"].attributes == ["@updatedAt"]
+    assert response.models["SearchLog"].fields["userId"].type == "String"
+    assert response.models["SearchLog"].fields["query"].type == "String"
+    assert response.models["SearchLog"].fields["filters"].type == "Json"
+    assert response.models["SearchLog"].definition == model_search_log_definition
 
     # No enums
     assert response.enums == {}
@@ -109,6 +140,13 @@ enum UserRole {
     periodEnd    DateTime
     totalIncome  Float
     tutor        User     @relation(fields: [tutorId], references: [id])
+}model SearchLog {
+    id        String   @id @default(dbgenerated("gen_random_uuid()"))
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    userId    String
+    query     String
+    filters   Json     // Example: {"location": "New York", "skills": ["Python", "Django"]}
 }
     """
     response = parse_prisma_schema(schema_text)
