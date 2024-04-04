@@ -26,6 +26,7 @@ services:
           files:
             - ./**/*.py
     environment:
+      # Override DATABASE_URL from .env with host and port (db:5432) of DB service
       DATABASE_URL: "postgresql://${DB_USER}:${DB_PASS}@postgres:${DB_PORT}/${DB_NAME}"
       OPENAI_API_KEY: ${OPENAI_API_KEY}
     ports:
