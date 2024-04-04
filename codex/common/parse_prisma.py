@@ -149,16 +149,19 @@ def parse_prisma_schema(schema_text: str) -> SchemaInfo:
                     field_type = field_match.group(2)
                     field_attributes = []
                     field_relation = None
-                    for attribute_match in attribute_pattern.finditer(
-                        field_match.group(3)
-                    ):
-                        attribute = attribute_match.group()
-                        if attribute.startswith("@relation"):
-                            relation_match = relation_pattern.search(attribute)
-                            if relation_match:
-                                field_relation = f"@relation({relation_match.group(1)})"
-                        else:
-                            field_attributes.append(attribute)
+                    if _attributes_str := field_match.group(3):
+                        for attribute_match in attribute_pattern.finditer(
+                            _attributes_str
+                        ):
+                            attribute = attribute_match.group()
+                            if attribute.startswith("@relation"):
+                                relation_match = relation_pattern.search(attribute)
+                                if relation_match:
+                                    field_relation = (
+                                        f"@relation({relation_match.group(1)})"
+                                    )
+                            else:
+                                field_attributes.append(attribute)
                     model_fields[field_name] = FieldInfo(
                         type=field_type,
                         attributes=field_attributes,
