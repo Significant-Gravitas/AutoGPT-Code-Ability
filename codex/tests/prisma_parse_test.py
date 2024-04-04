@@ -483,4 +483,4 @@ def test_prisma_code_validation():
     # catch validation error without using db_schema
     func.db_schema = ""
     errors = validate_normalize_prisma(func)[0]
-    assert "not available in the prisma schema" in errors
+    assert "not available in the prisma schema" in str(errors)

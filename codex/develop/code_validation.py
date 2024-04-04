@@ -13,7 +13,12 @@ import isort
 import prisma
 from prisma.models import Function, ObjectType
 
-from codex.common.ai_block import ValidationError
+from codex.common.ai_block import (
+    LineValidationError,
+    ListValidationError,
+    ValidationError,
+    ValidationErrorWithContent,
+)
 from codex.common.constants import PRISMA_FILE_HEADER
 from codex.common.exec_external_tool import (
     DEFAULT_DEPS,
@@ -63,24 +68,27 @@ class CodeValidator:
                 await self.validate_code(
                     raw_code=code,
                     packages=packages,
-                    suppress_errors=True,
+                    route_errors_as_todo=True,
+                    raise_validation_error=False,
                 )
             ).get_compiled_code()
-        except ValidationError as e:
-            # We move on with unfixed code if there's an error
-            logger.warning(
-                f"Error fixing code for route #{self.compiled_route_id}: {e}"
-            )
-
-        # Run the formatters
-        try:
-            code = isort.code(code)
-            code = black.format_str(code, mode=black.FileMode())
         except Exception as e:
-            # We move on with unformatted code if there's an error
+            # We move on with unfixed code if there's an error
             logger.warning(
                 f"Error formatting code for route #{self.compiled_route_id}: {e}"
             )
+
+        for formatter in [
+            lambda code: isort.code(code),
+            lambda code: black.format_str(code, mode=black.FileMode()),
+        ]:
+            try:
+                code = formatter(code)
+            except Exception as e:
+                # We move on with unformatted code if there's an error
+                logger.warning(
+                    f"Error formatting code for route #{self.compiled_route_id}: {e}"
+                )
 
         return code
 
@@ -88,8 +96,9 @@ class CodeValidator:
         self,
         packages: list[Package],
         raw_code: str,
+        route_errors_as_todo: bool = False,
+        raise_validation_error: bool = True,
         call_cnt: int = 0,
-        suppress_errors: bool = False,
     ) -> GeneratedFunctionResponse:
         """
         Validate the code snippet for any error
@@ -101,20 +110,22 @@ class CodeValidator:
         Raise:
             ValidationError(e): The list of validation errors in the code snippet
         """
-        validation_errors = []
+        validation_errors: list[ValidationError] = []
 
         try:
             tree = ast.parse(raw_code)
             visitor = FunctionVisitor()
             visitor.visit(tree)
-            validation_errors.extend(visitor.errors)
+            validation_errors.extend([ValidationError(e) for e in visitor.errors])
         except Exception as e:
             # parse invalid code line and add it to the error message
-            error = str(e)
-            line = re.search(r"line (\d+)", error)
-            if line:
-                error = f"{error} -> '{parse_line_code(raw_code, int(line.group(1)))}'"
-            raise ValidationError(f"Error parsing code: {error}")
+            error = f"Error parsing code: {e}"
+            if line := re.search(r"line (\d+)", error):
+                raise LineValidationError(
+                    error=error, code=raw_code, line_from=int(line.group(1))
+                )
+            else:
+                raise ValidationError(error)
 
         # Eliminate duplicate visitor.functions and visitor.objects, prefer the last one
         visitor.imports = list(set(visitor.imports))
@@ -176,8 +187,11 @@ class CodeValidator:
         )
         if not already_declared_entities:
             validation_errors.append(
-                "These class/function names has already been declared in the code, "
-                "no need to declare them again: " + ", ".join(already_declared_entities)
+                ValidationError(
+                    "These class/function names has already been declared in the code, "
+                    "no need to declare them again: "
+                    + ", ".join(already_declared_entities)
+                )
             )
 
         result = GeneratedFunctionResponse(
@@ -187,7 +201,7 @@ class CodeValidator:
             available_functions=self.available_functions,
             rawCode=function_code,
             imports=visitor.imports.copy(),
-            objects=[],  # Bundle objects from the visitor to the function code
+            objects=[],  # Objects will be bundled in the function_code instead.
             template=function_template or "",
             functionCode=function_code,
             functions=stub_funcs,
@@ -199,17 +213,27 @@ class CodeValidator:
         # Execute static validators and fixers.
         old_compiled_code = result.regenerate_compiled_code()
         validation_errors.extend(validate_normalize_prisma(result))
-        validation_errors.extend(await static_code_analysis(result))
+        validation_errors.extend(
+            await static_code_analysis(result, route_errors_as_todo)
+        )
         new_compiled_code = result.get_compiled_code()
 
         # Auto-fixer works, retry validation (limit to 5 times, to avoid infinite loop)
         if old_compiled_code != new_compiled_code and call_cnt < 5:
             return await self.validate_code(
-                packages, new_compiled_code, call_cnt + 1, suppress_errors
+                packages=packages,
+                raw_code=new_compiled_code,
+                route_errors_as_todo=route_errors_as_todo,
+                raise_validation_error=raise_validation_error,
+                call_cnt=call_cnt + 1,
             )
 
-        if validation_errors and not suppress_errors:
-            raise ValidationError(validation_errors)
+        if validation_errors:
+            if raise_validation_error:
+                raise ListValidationError("Error validating code", validation_errors)
+            else:
+                # This should happen only on `reformat_code` call
+                logger.warning("Error validating code: %s", validation_errors)
 
         return result
 
@@ -217,7 +241,7 @@ class CodeValidator:
         self,
         deps_funcs: list[FunctionDef],
         function_code: str,
-        validation_errors: list[str],
+        validation_errors: list[ValidationError],
     ) -> tuple[str, FunctionDef]:
         """
         Validate the main function body and signature
@@ -240,33 +264,18 @@ class CodeValidator:
         try:
             func_obj.validate_matching_function(func_db)
         except Exception as e:
-            validation_errors.append(str(e))
+            validation_errors.append(ValidationError(e))
 
         return func_db.id, func_obj
-
-
-def parse_line_code(code: str, line_from: int, line_to: int | None = None) -> str:
-    """
-    Parse the code from the given line number range
-    Args:
-        code (str): The code to parse
-        line_from (int): The starting line number
-        line_to (int): The ending line number, if not provided, it will be line_from + 1
-    Returns:
-        str: The extracted code from the given line number range
-    """
-    lines = code.split("\n")
-    if not line_to:
-        line_to = line_from + 1
-    if line_from > len(lines):
-        return ""
-    return "\n".join(lines[line_from - 1 : line_to - 1])
 
 
 # ======= Static Code Validation Helper Functions =======#
 
 
-async def static_code_analysis(func: GeneratedFunctionResponse) -> list[str]:
+async def static_code_analysis(
+    func: GeneratedFunctionResponse,
+    add_todo_on_error: bool,
+) -> list[ValidationError]:
     """
     Run static code analysis on the function code and mutate the function code to
     fix any issues.
@@ -277,15 +286,29 @@ async def static_code_analysis(func: GeneratedFunctionResponse) -> list[str]:
         list[str]: The list of validation errors
     """
     validation_errors = []
-    validation_errors += await __execute_ruff(func)
-    validation_errors += await __execute_pyright(func)
+    validation_errors += await __execute_ruff(func, add_todo_on_error)
+    validation_errors += await __execute_pyright(func, add_todo_on_error)
 
     return validation_errors
 
 
-async def __execute_ruff(func: GeneratedFunctionResponse) -> list[str]:
-    separator = "#------Code-Start------#"
-    code = "\n".join(func.imports + [separator, func.rawCode])
+CODE_SEPARATOR = "#------Code-Start------#"
+
+
+def __pack_import_and_function_code(func: GeneratedFunctionResponse) -> str:
+    return "\n".join(func.imports + [CODE_SEPARATOR, func.rawCode])
+
+
+def __unpack_import_and_function_code(code: str) -> tuple[list[str], str]:
+    split = code.split(CODE_SEPARATOR)
+    return split[0].splitlines(), split[1].strip()
+
+
+async def __execute_ruff(
+    func: GeneratedFunctionResponse,
+    add_todo_on_error: bool,
+) -> list[ValidationError]:
+    code = __pack_import_and_function_code(func)
 
     try:
         # Currently Disabled Rule List
@@ -305,57 +328,69 @@ async def __execute_ruff(func: GeneratedFunctionResponse) -> list[str]:
             suffix=".py",
             raise_file_contents_on_error=True,
         )
-
-        split = code.split(separator)
-        func.imports = split[0].splitlines()
-        func.rawCode = split[1].strip()
+        func.imports, func.rawCode = __unpack_import_and_function_code(code)
         return []
 
     except ValidationError as e:
-        if len(e.args) > 1:
+        if isinstance(e, ValidationErrorWithContent):
             # Ruff failed, but the code is reformatted
-            code = e.args[1]
-            e = e.args[0]
+            code = e.content
+            e = str(e)
 
-        validation_errors = [
+        error_messages = [
             v
             for v in str(e).split("\n")
             if v.strip()
-            if re.match(r"Found \d+ errors?\.", v) is None
+            if re.match(r"Found \d+ errors?\.*", v) is None
         ]
 
-        __fix_missing_imports(validation_errors, func)
+        added_imports, error_messages = __fix_missing_imports(error_messages, func)
 
-        # Append problematic line to the error message
+        # Append problematic line to the error message or add it as TODO line
+        validation_errors: list[ValidationError] = []
         split_pattern = r"(.+):(\d+):(\d+): (.+)"
-        for i in range(len(validation_errors)):
-            error_split = re.match(split_pattern, validation_errors[i])
+        for error_message in error_messages:
+            error_split = re.match(split_pattern, error_message)
+
             if not error_split:
-                continue
-            _, line, _, error = error_split.groups()
-            problematic_line = parse_line_code(code, int(line))
-            validation_errors[i] = f"{error} -> '{problematic_line}'"
+                error = ValidationError(error_message)
+            else:
+                _, line, _, error = error_split.groups()
+                error = LineValidationError(error=error, code=code, line_from=int(line))
+
+            if add_todo_on_error:
+                code = error.append_error_as_todo(code)
+            else:
+                validation_errors.append(error)
+
+        func.imports, func.rawCode = __unpack_import_and_function_code(code)
+        func.imports.extend(added_imports)  # Avoid line-code change, do it at the end.
 
         return validation_errors
 
 
-async def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
-    separator = "#------Code-Start------#"
-    code = "\n".join(func.imports + [separator, func.rawCode])
-    validation_errors = []
+async def __execute_pyright(
+    func: GeneratedFunctionResponse,
+    add_todo_on_error: bool,
+) -> list[ValidationError]:
+    code = __pack_import_and_function_code(func)
+    validation_errors: list[ValidationError] = []
 
     # Create temporary directory under the TEMP_DIR with random name
     temp_dir = os.path.join(PROJECT_TEMP_DIR, func.compiled_route_id)
     py_path = await setup_if_required(temp_dir, copy_from_parent=True)
 
-    async def __execute_pyright_commands(code: str) -> list[str]:
+    async def __execute_pyright_commands(code: str) -> list[ValidationError]:
         try:
             await execute_command(
                 ["pip", "install", "-r", "requirements.txt"], temp_dir, py_path
             )
         except ValidationError as e:
             # Unknown deps should be reported as validation errors
-            validation_errors.append(str(e))
+            if add_todo_on_error:
+                code = e.append_error_as_todo(code)
+            else:
+                validation_errors.append(e)
 
         # run prisma generate
         if func.db_schema:
@@ -384,20 +419,18 @@ async def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
                 in [
                     "reportRedeclaration",
                     "reportArgumentType",  # This breaks prisma query with dict
-                    "reportReturnType",  # This breaks returning Option without fallback
                 ]
                 or rule.startswith("reportOptional")  # TODO: improve prompt & enable
             ):
                 continue
 
+            # Grab any enhancements we can for the error
             code_lines: list[str] = code.splitlines()
             error_message: str = f"{e['message']}. {e.get('rule', '')}"
             error_line: str = "\n".join(
                 code_lines[e["range"]["start"]["line"] : e["range"]["end"]["line"] + 1]
             )
-
-            # Grab any enhancements we can for the error
-            error_enhancements: str | None = await get_error_enhancements(
+            if error_enhancements := await get_error_enhancements(
                 rule,
                 severity,
                 code_lines,
@@ -406,19 +439,22 @@ async def __execute_pyright(func: GeneratedFunctionResponse) -> list[str]:
                 temp_dir,
                 file,
                 py_path,
-            )
+            ):
+                error_message += f"\n{error_enhancements}"
 
-            # Add our error message to the list
-            error_line = f"{error_message} -> '{error_line}'"
-            if error_enhancements:
-                error_line += f"\n{error_enhancements}"
-            validation_errors.append(error_line)
+            e = LineValidationError(
+                error=error_message,
+                code=code,
+                line_from=e["range"]["start"]["line"] + 1,
+            )
+            if add_todo_on_error:
+                code = e.append_error_as_todo(code)
+            else:
+                validation_errors.append(e)
 
         # read code from code.py. split the code into imports and raw code
         code = open(f"{temp_dir}/code.py").read()
-        split = code.split(separator)
-        func.imports = split[0].splitlines()
-        func.rawCode = split[1].strip()
+        func.imports, func.rawCode = __unpack_import_and_function_code(code)
 
         return validation_errors
 
@@ -557,7 +593,17 @@ for t in collections.__all__:
     AUTO_IMPORT_TYPES[t] = f"from collections import {t}"
 
 
-def __fix_missing_imports(errors: list[str], func: GeneratedFunctionResponse):
+def __fix_missing_imports(
+    errors: list[str], func: GeneratedFunctionResponse
+) -> tuple[set[str], list[str]]:
+    """
+    Generate missing imports based on the errors
+    Args:
+        errors (list[str]): The list of errors
+        func (GeneratedFunctionResponse): The function to fix the imports
+    Returns:
+        tuple[set[str], list[str]]: The set of missing imports and the list of non-missing import errors
+    """
     # parse "model X {" and "enum X {" from func.db_schema
     schema_imports = {}
     for entity in ["model", "enum"]:
@@ -567,10 +613,12 @@ def __fix_missing_imports(errors: list[str], func: GeneratedFunctionResponse):
             schema_imports[match] = f"from prisma.{entity}s import {match}"
 
     missing_imports = []
+    filtered_errors = []
     for error in errors:
         pattern = r"Undefined name `(.+?)`"
         match = re.search(pattern, error)
         if not match:
+            filtered_errors.append(error)
             continue
 
         missing_type = match.group(1)
@@ -578,11 +626,13 @@ def __fix_missing_imports(errors: list[str], func: GeneratedFunctionResponse):
             missing_imports.append(schema_imports[missing_type])
         elif missing_type in AUTO_IMPORT_TYPES:
             missing_imports.append(AUTO_IMPORT_TYPES[missing_type])
+        else:
+            filtered_errors.append(error)
 
-    func.imports = sorted(set(func.imports + list(missing_imports)))
+    return set(missing_imports), filtered_errors
 
 
-def validate_normalize_prisma(func: GeneratedFunctionResponse) -> list[str]:
+def validate_normalize_prisma(func: GeneratedFunctionResponse) -> list[ValidationError]:
     """
     Validate and normalize the prisma code in the function
     Args:
@@ -592,7 +642,7 @@ def validate_normalize_prisma(func: GeneratedFunctionResponse) -> list[str]:
     Returns:
         list[str]: The list validation errors
     """
-    validation_errors = []
+    validation_errors: list[str] = []
     imports = func.imports
     code = func.rawCode
 
@@ -703,4 +753,4 @@ user = await prisma.models.User.prisma().create(
 
     func.imports, func.rawCode = imports, code
 
-    return validation_errors
+    return [ValidationError(e) for e in validation_errors]
