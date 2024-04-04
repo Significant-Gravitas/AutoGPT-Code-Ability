@@ -62,7 +62,7 @@ async def log_event(
     step: DevelopmentPhase,
     event: str,
     key: str,
-    status: Status,
+    status: Status = Status.FAILED,
     data: str | None = None,
 ):
     await EventLog.prisma().create(

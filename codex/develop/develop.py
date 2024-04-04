@@ -10,12 +10,15 @@ from prisma.types import (
 )
 
 from codex.common.ai_block import (
+    TODO_COMMENT,
     AIBlock,
     Identifiers,
+    ListValidationError,
     ValidatedResponse,
     ValidationError,
 )
 from codex.common.database import INCLUDE_FUNC
+from codex.common.logging import log_event
 from codex.common.model import create_object_type
 from codex.develop.code_validation import CodeValidator
 from codex.develop.function import construct_function
@@ -74,7 +77,8 @@ class DevelopAIBlock(AIBlock):
     async def validate(
         self, invoke_params: dict, response: ValidatedResponse
     ) -> ValidatedResponse:
-        validation_errors = []
+        func_name = invoke_params.get("function_name", "")
+        validation_errors = ListValidationError(f"Error developing `{func_name}`")
         try:
             text = response.response
 
@@ -85,7 +89,7 @@ class DevelopAIBlock(AIBlock):
                 packages = []
             elif len(requirement_blocks) > 1:
                 packages = []
-                validation_errors.append(
+                validation_errors.append_message(
                     f"There are {len(requirement_blocks)} requirements blocks in the response. "
                     + "There should be exactly 1"
                 )
@@ -100,24 +104,26 @@ class DevelopAIBlock(AIBlock):
             if len(code_blocks) == 0:
                 raise ValidationError("No code blocks found in the response")
             elif len(code_blocks) != 1:
-                validation_errors.append(
+                validation_errors.append_message(
                     f"There are {len(code_blocks)} code blocks in the response. "
                     + "There should be exactly 1"
                 )
             code = code_blocks[0].split("```")[0]
+            route_errors_as_todo = not invoke_params.get("will_retry_on_failure", True)
             response.response = await CodeValidator(
                 compiled_route_id=invoke_params["compiled_route_id"],
                 database_schema=invoke_params["database_schema"],
                 function_name=invoke_params["function_name"],
                 available_objects=invoke_params["available_objects"],
                 available_functions=invoke_params["available_functions"],
-            ).validate_code(packages, code)
+            ).validate_code(
+                packages=packages,
+                raw_code=code,
+                route_errors_as_todo=route_errors_as_todo,
+            )
 
         except ValidationError as e:
-            if isinstance(e.args[0], List):
-                validation_errors.extend(e.args[0])
-            else:
-                validation_errors.append(str(e))
+            validation_errors.append_error(e)
 
         except Exception as e:
             # This is not a validation error we want to the agent to fix
@@ -125,12 +131,7 @@ class DevelopAIBlock(AIBlock):
             logger.exception(e)
             raise e
 
-        if validation_errors:
-            # Important: ValidationErrors are used in the retry prompt
-            errors = [f"\n  - {e}" for e in validation_errors]
-            func_name = invoke_params.get("function_name", "")
-            raise ValidationError(f"Error developing {func_name}. {''.join(errors)}")
-
+        validation_errors.raise_if_errors()
         return response
 
     async def create_item(
@@ -194,6 +195,16 @@ class DevelopAIBlock(AIBlock):
 
         if not generated_response.function_id:
             raise AssertionError("Function ID is required to update")
+
+        compiled_code = generated_response.get_compiled_code()
+        if TODO_COMMENT in compiled_code:
+            await log_event(
+                id=ids,
+                step=DevelopmentPhase.DEVELOPMENT,
+                event="CODE_ERRORS_AS_TODO_COMMENTS",
+                key=generated_response.function_id,
+                data=f"{generated_response.db_schema}\n#-----#\n{compiled_code}",
+            )
 
         func: Function | None = await Function.prisma().update(
             where={"id": generated_response.function_id},

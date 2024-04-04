@@ -81,7 +81,7 @@ def test_apps_apis(client):
     assert app["userid"] == user_id_1
 
     # List Apps
-    response = client.get(f"{API}/user/{user_id_1}/apps/")
+    response = client.get(f"{API}/user/{user_id_1}/apps?page=1&page_size=100")
     assert response.status_code == 200
     apps = response.json()["applications"]
     assert len(apps) > 0
