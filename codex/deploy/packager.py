@@ -5,7 +5,7 @@ import tempfile
 import zipfile
 import requests
 from datetime import datetime
-from typing import List
+from typing import List, Tuple
 
 from git import GitCommandError
 from git.repo import Repo
@@ -325,7 +325,7 @@ async def create_prisma_schema_file(application: Application) -> str:
     return prisma_file
 
 
-def create_github_repo(application: Application) -> str:
+def create_github_repo(application: Application) -> (str, str):
     """
     Creates a new GitHub repository under agpt-coder.
 
@@ -333,7 +333,7 @@ def create_github_repo(application: Application) -> str:
         application (Application): The application to be used to create the github repo
 
     Returns:
-        str: The HTTPS URL of the newly created repository.
+        (str, str): A tuple containing the HTTPS URL of the newly created repository and authenticated repository URL.
 
     Raises:
         Exception: If the repository creation fails.
@@ -358,7 +358,7 @@ def create_github_repo(application: Application) -> str:
         authenticated_url = (
             repo_url.replace("https://", f"https://{GIT_TOKEN}:x-oauth-basic@") + ".git"
         )
-        return authenticated_url
+        return authenticated_url, repo_url
     else:
         raise Exception(f"Failed to create repository: {response.text}")
 
@@ -413,16 +413,16 @@ def push_to_remote(repo, remote_name, remote_url, branch="master"):
         raise
 
 
-async def create_zip_file(application: Application) -> bytes:
+async def create_remote_repo(application: Application) -> str:
     """
-    Creates a zip file from the application
+    Creates and pushes to GitHub repo for application
     Args:
-        application (Application): The application to be zipped
+        application (Application): The application to be pushed to GitHub
 
     Returns:
-        bytes: The zipped file
+        str: GitHub repo URL
     """
-    logger.info("Creating zip file")
+    logger.info("Starting Git processes.")
 
     if not application.completed_app:
         raise ValueError("Application must have a completed app")
@@ -513,28 +513,14 @@ async def create_zip_file(application: Application) -> bytes:
             # Initialize a Git repository and commit everything
             repo = git_init(app_dir=package_dir)
 
-            remote_url = create_github_repo(application)
+            remote_url, repo_url = create_github_repo(application)
             push_to_remote(repo, "origin", remote_url)
 
             logger.info("Code successfully pushed to repo")
 
             logger.info("Created server code")
-            # Create a zip file of the directory
-            zip_file_path = os.path.join(app_dir, "server.zip")
-            with zipfile.ZipFile(zip_file_path, "w") as zipf:
-                for root, dirs, files in os.walk(package_dir):
-                    for file in files:
-                        if file == "server.zip":
-                            continue
-                        file_path = os.path.join(root, file)
-                        zipf.write(file_path, os.path.relpath(file_path, package_dir))
 
-            logger.info("Created zip file")
-            # Read and return the bytes of the zip file
-            with open(zip_file_path, "rb") as zipf:
-                zip_bytes = zipf.read()
-
-            return zip_bytes
+            return repo_url
     except Exception as e:
         logger.exception(e)
         raise e
