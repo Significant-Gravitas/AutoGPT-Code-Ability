@@ -33,7 +33,79 @@ TODO_COMMENT = "# TODO(autogpt):"
 
 
 class ValidationError(Exception):
-    pass
+    def append_error_as_todo(self, code: str) -> str:
+        error_message = TODO_COMMENT + " " + self.__str__().replace("\n", " ")
+        if error_message not in code:  # TODO: we can do better than this naive check.
+            return f"{error_message}\n{code}"
+        return code
+
+
+class ValidationErrorWithContent(ValidationError):
+    content: str
+
+    def __init__(self, error: str, content: str):
+        super().__init__(error)
+        self.content = content
+
+
+class LineValidationError(ValidationError):
+    line_from: int
+    line_to: int
+    code: str
+
+    def __init__(
+        self, error: str, code: str, line_from: int, line_to: int | None = None
+    ):
+        super().__init__(error)
+        self.line_from = line_from
+        self.line_to = line_to if line_to else line_from + 1
+        self.code = code
+
+    def __parse_line_code(self) -> str:
+        lines = self.code.split("\n")
+        if self.line_from > len(lines):
+            return ""
+        return "\n".join(lines[self.line_from - 1 : self.line_to - 1])
+
+    def __str__(self):
+        return f"{super().__str__()} -> '{self.__parse_line_code()}'"
+
+    def append_error_as_todo(self, code: str) -> str:
+        lines = code.split("\n")
+        if self.line_from > len(lines):
+            return code
+        error_msg = super().__str__().replace("\n", " ")
+        index = self.line_from - 1
+        if TODO_COMMENT not in lines[index]:
+            lines[index] = f"{lines[index]} {TODO_COMMENT} {error_msg}"
+        return "\n".join(lines)
+
+
+class ListValidationError(ValidationError):
+    errors: list[ValidationError]
+
+    def __init__(self, message: str, errors: list[ValidationError] | None = None):
+        super().__init__(message)
+        self.errors = errors if errors else []
+
+    def __str__(self):
+        errors = ["\n  - " + "   \n".join(e.__str__().split("\n")) for e in self.errors]
+        return f"{super().__str__()}{''.join(errors)}".strip()
+
+    def append_error(self, error: ValidationError):
+        self.errors.append(error)
+
+    def append_message(self, message: str):
+        self.errors.append(ValidationError(message))
+
+    def raise_if_errors(self):
+        if self.errors:
+            raise self
+
+    def append_error_as_todo(self, code: str) -> str:
+        for error in self.errors:
+            code = error.append_error_as_todo(code)
+        return code
 
 
 class ValidationErrorWithContent(ValidationError):

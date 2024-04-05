@@ -440,8 +440,10 @@ async def __execute_pyright(
             )
         except ValidationError as e:
             # Unknown deps should be reported as validation errors
-            logger.warning(f"Error installing deps on function {func.function_id}: {e}")
-            validation_errors.append(e)
+            if add_todo_on_error:
+                code = e.append_error_as_todo(code)
+            else:
+                validation_errors.append(e)
 
         # run prisma generate
         if func.db_schema:
