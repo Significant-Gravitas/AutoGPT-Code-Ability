@@ -62,7 +62,7 @@ def benchmark(port: int = 8080):
     import codex.runner
     from codex.requirements.model import ExampleTask
 
-    base_url = f"http://127.0.0.1:8080/api/v1"
+    base_url = f"http://127.0.0.1:{port}/api/v1"
     prisma_client = prisma.Prisma(auto_register=True)
     tasks = list(ExampleTask)
 
@@ -103,7 +103,7 @@ def example(port: int):
     import codex.runner
     from codex.requirements.model import ExampleTask
 
-    base_url = f"http://127.0.0.1:8080/api/v1"
+    base_url = f"http://127.0.0.1:{port}/api/v1"
     prisma_client = prisma.Prisma(auto_register=True)
     i = 1
     click.echo("Select a test case:")
@@ -161,7 +161,7 @@ def resume(port: int):
     import codex.debug
     import codex.runner
 
-    base_url = f"http://127.0.0.1:8080/api/v1"
+    base_url = f"http://127.0.0.1:{port}/api/v1"
     prisma_client = prisma.Prisma(auto_register=True)
     print("")
     resume_points = asyncio.get_event_loop().run_until_complete(
