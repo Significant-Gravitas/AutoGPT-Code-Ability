@@ -531,9 +531,10 @@ async def get_error_enhancements(
                 logger.info(f"Attempting to enhance error: {error_message}")
 
                 # Extract the attempted attribute and the module
-                #     .strip()
-                #     .replace('"', "")
-                # )
+                attempted_attribute = (
+                    error_message.split("is not a known member of module")[0]
+                    .strip()
+                    .replace('"', "")
                 )
                 # Split out ' "module". reportAttributeAccessIssue ' from the error message
                 module_full = (
@@ -542,6 +543,7 @@ async def get_error_enhancements(
                     .strip()
                     .replace('"', "")
                 )
+                module = module_full.split(".")[0]
 
                 # Find the dist info and the module path
                 dist_info_path: typing.Optional[pathlib.Path] = None
@@ -567,12 +569,39 @@ async def get_error_enhancements(
                         metadata_contents = metadata_file.read_text()
 
                 # Find the module's nearest matching attempted attribute in the module folder using treesitter
-                # TODO(ntindle): Implement this
+                if module_path:
+                    # find the nearest matching file using the venv path with the module and the attempted attribute
+                    useful = []
+                    best_match = module_path / "__init__.py"
+                    if not best_match.exists():
+                        best_match = module_path / f"{attempted_attribute}.py"
+                    if best_match.exists():
+                        useful.append(best_match)
+                    # try fuzzy matching the attempted attribute in the module path
+                    fuzzed = find_best_match(
+                        module_full, [str(x) for x in list(module_path.glob("**/*"))]
+                    )
+                    if fuzzed:
+                        _fuzzy_match, _similarity = fuzzed[0], fuzzed[1]
+                        if _similarity >= 0.9:
+                            useful.append(pathlib.Path(_fuzzy_match))
+
+                    # Join the useful files
+                    matching_context = "\n".join(
+                        [f.read_text() for f in useful if f.exists()]
+                    )
+
                 if not metadata_contents and not matching_context:
                     logger.info(f"Could not enhance error: {error_message}")
                     return None
-
-                return f"Found Metadata for the module: {metadata_contents}"
+                response = ""
+                if metadata_contents:
+                    response += f"Found Metadata for the module: {metadata_contents}\n"
+                if matching_context:
+                    response += (
+                        f"Found matching context for the module: {matching_context}\n"
+                    )
+                return response
         case _:
             pass
     return None
