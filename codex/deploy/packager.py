@@ -224,22 +224,61 @@ jobs:
         service_account_email: ${{ secrets.GCP_EMAIL }}
         service_account_key: ${{ secrets.GCP_CREDENTIALS }}
         export_default_credentials: true
-    
+
     # Configure Docker with Credentials
     - name: Configure Docker
       run: |
         gcloud auth configure-docker
-      
+    
+    # Create a new database
+    - name: Create Database (if non exists)
+      run: |
+        # Normalize GitHub repository name to use as the database name
+        REPO_NAME=$(echo "${{ github.repository }}" | sed 's/\//-/g' | sed 's/^[^-]*-//g' | tr '[:upper:]' '[:lower:]')
+        DB_NAME="${REPO_NAME}_db"
+        echo "Normalized DB name: $DB_NAME"
+        
+        # Check if the database exists
+        EXISTS=$(gcloud sql databases list --instance=${{ secrets.CLOUD_SQL_INSTANCE_NAME }} --filter="name=$DB_NAME" --format="value(name)")
+        echo "Database exists: $EXISTS"
+        
+        # If the database does not exist, create it
+        if [ -z "$EXISTS" ]; then
+          echo "Database $DB_NAME does not exist, creating..."
+          gcloud sql databases create $DB_NAME --instance=${{ secrets.CLOUD_SQL_INSTANCE_NAME }}
+        else
+          echo "Database $DB_NAME already exists, skipping creation."
+        fi
+        
+        # Export the DB_NAME for use in subsequent steps
+        echo "DB_NAME=$DB_NAME" >> $GITHUB_ENV
+
+    # Run migrations
+    - name: Run Migrations
+      run: |
+        export DATABASE_URL="postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@${{ secrets.DB_HOST }}:5432/$DB_NAME"
+        npm install prisma -g
+        prisma migrate deploy
+      env:
+        DB_NAME: ${{ env.DB_NAME }}
+
     # Build the Docker image
     - name: Build & Publish
       run: |
         gcloud config set project ${{ secrets.GCP_PROJECT }}
-        gcloud builds submit --tag gcr.io/${{ secrets.GCP_PROJECT }}/${{ secrets.GCP_APPLICATION }}
+        gcloud builds submit --tag gcr.io/${{ secrets.GCP_PROJECT }}/${{ secrets.GCP_APPLICATION }} --verbosity=debug
         gcloud config set run/region us-central1
-        
+
     - name: Deploy
       run: |
-        gcloud run deploy ${{ secrets.GCP_APPLICATION }} --image gcr.io/${{ secrets.GCP_PROJECT }}/${{ secrets.GCP_APPLICATION }} --platform managed --allow-unauthenticated --memory 512M
+        gcloud run deploy ${{ secrets.GCP_APPLICATION }}_${{ github.run_number }} \
+          --image gcr.io/${{ secrets.GCP_PROJECT }}/${{ secrets.GCP_APPLICATION }}_${{ github.run_number }} \
+          --platform managed \
+          --allow-unauthenticated \
+          --memory 512M \
+          --set-env-vars=DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@${{ secrets.DB_HOST }}:5432/$DB_NAME
+      env:
+        DB_NAME: ${{ env.DB_NAME }}
 """.lstrip()
 
     return deploy_file
