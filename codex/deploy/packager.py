@@ -398,7 +398,6 @@ def git_init(app_dir: str):
         logger.exception("Failed to initialize Git repository or commit files:", e)
         raise e
 
-
 def push_to_remote(repo, remote_name, remote_url, branch="master"):
     """
     Pushes the local branch to the remote repository.
@@ -410,7 +409,6 @@ def push_to_remote(repo, remote_name, remote_url, branch="master"):
     except GitCommandError as e:
         logger.error(f"Failed to push code: {e}")
         raise
-
 
 async def create_zip_file(application: Application) -> bytes:
     """
