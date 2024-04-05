@@ -98,7 +98,7 @@ class FunctionVisitor(ast.NodeVisitor):
 
         def split_doc(keywords: list[str], doc: str) -> tuple[str, str]:
             for keyword in keywords:
-                if match := re.search(f"{keyword}\s?:", doc):
+                if match := re.search(f"{keyword}\\s?:", doc):
                     return doc[: match.start()], doc[match.end() :]
             return doc, ""
 

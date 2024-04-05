@@ -33,11 +33,7 @@ TODO_COMMENT = "# TODO(autogpt):"
 
 
 class ValidationError(Exception):
-    def append_error_as_todo(self, code: str) -> str:
-        error_message = TODO_COMMENT + " " + self.__str__().replace("\n", " ")
-        if error_message not in code:  # TODO: we can do better than this naive check.
-            return f"{error_message}\n{code}"
-        return code
+    pass
 
 
 class ValidationErrorWithContent(ValidationError):
@@ -70,16 +66,6 @@ class LineValidationError(ValidationError):
     def __str__(self):
         return f"{super().__str__()} -> '{self.__parse_line_code()}'"
 
-    def append_error_as_todo(self, code: str) -> str:
-        lines = code.split("\n")
-        if self.line_from > len(lines):
-            return code
-        error_msg = super().__str__().replace("\n", " ")
-        index = self.line_from - 1
-        if TODO_COMMENT not in lines[index]:
-            lines[index] = f"{lines[index]} {TODO_COMMENT} {error_msg}"
-        return "\n".join(lines)
-
 
 class ListValidationError(ValidationError):
     errors: list[ValidationError]
@@ -101,11 +87,6 @@ class ListValidationError(ValidationError):
     def raise_if_errors(self):
         if self.errors:
             raise self
-
-    def append_error_as_todo(self, code: str) -> str:
-        for error in self.errors:
-            code = error.append_error_as_todo(code)
-        return code
 
 
 class PromptTemplateInvocationError(Exception):
