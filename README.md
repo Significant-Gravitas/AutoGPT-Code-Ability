@@ -504,5 +504,5 @@ So you want to deploy Codex to a new environment? Here's a quick guide to get yo
     1. attach your sql instance to the service
     1. set your environment variables, you need to find the ones the system uses.
         1. Stuff like DATABASE_URL
-        1. stuff like ENV to prod
+        1. stuff like DEV_ENV to prod
 1. setup the migration job to run against the db
