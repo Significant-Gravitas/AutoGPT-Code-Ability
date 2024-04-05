@@ -495,14 +495,14 @@ async def find_module_dist_and_source(
     dist_info_path: typing.Optional[pathlib.Path] = None
     module_path: typing.Optional[pathlib.Path] = None
 
-    # find the dist info and the module path
-    # TODO(ntindle): This is a naive implementation, we should improve this as pydantic and pydantic-core would match and its a crapshoot which one we get
+    # find the dist info path
     for match in matches:
-        if ".dist-info" in match.name:
+        if re.match(f"{module}-[0-9]+.[0-9]+.[0-9]+.dist-info", match.name):
             dist_info_path = match
             break
+    # Get the module path
     for match in matches:
-        if module in match.name:
+        if module == match.name:
             module_path = match
             break
 
