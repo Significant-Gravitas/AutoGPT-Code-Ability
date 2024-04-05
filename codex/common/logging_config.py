@@ -4,12 +4,11 @@ import os
 import coloredlogs
 
 
-def setup_logging(local: bool = False):
-    if local is False:
-        local = os.environ.get("DEV_ENV", "CLOUD").lower() == "local"
+def setup_logging():
+    local_mode = os.environ.get("DEV_ENV", "CLOUD").lower() == "local"
     file_path = os.path.abspath(__file__)
     cloud_config = os.path.join(os.path.dirname(file_path), "log_config_cloud.ini")
-    if local:
+    if local_mode:
         log_format = "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
         # Set up basic configuration with standard output
         logging.basicConfig(level=logging.INFO, format=log_format)

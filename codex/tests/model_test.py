@@ -7,7 +7,7 @@ from codex.common.logging_config import setup_logging
 from codex.common.model import ObjectFieldModel, ObjectTypeModel, create_object_type
 
 load_dotenv()
-setup_logging(local=True)
+setup_logging()
 
 
 @pytest.mark.asyncio

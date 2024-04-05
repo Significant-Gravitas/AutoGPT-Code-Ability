@@ -26,7 +26,7 @@ from codex.requirements.model import (
 
 load_dotenv()
 is_connected = False
-setup_logging(local=True)
+setup_logging()
 
 
 async def create_sample_app(user_id: str, cloud_id: str):
