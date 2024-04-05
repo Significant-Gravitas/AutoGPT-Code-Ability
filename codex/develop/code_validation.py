@@ -32,6 +32,7 @@ from codex.common.model import FunctionDef
 from codex.develop.function import generate_object_code
 from codex.develop.function_visitor import FunctionVisitor
 from codex.develop.model import GeneratedFunctionResponse, Package
+from codex.requirements.matching import find_best_match
 
 logger = logging.getLogger(__name__)
 
@@ -559,13 +560,12 @@ async def get_error_enhancements(
                 logger.info(f"Attempting to enhance error: {error_message}")
 
                 # Extract the attempted attribute and the module
-                # attempted_attribute = (
-                #     error_message.split("is not a known member of module")[0]
                 #     .strip()
                 #     .replace('"', "")
                 # )
+                )
                 # Split out ' "module". reportAttributeAccessIssue ' from the error message
-                module = (
+                module_full = (
                     error_message.split("is not a known member of module")[1]
                     .split(". reportAttributeAccessIssue")[0]
                     .strip()
