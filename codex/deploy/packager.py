@@ -295,8 +295,8 @@ async def create_prisma_schema_file(application: Application) -> str:
     db_schema_id = None
 
     if not (
-            application.completed_app.CompiledRoutes
-            and application.completed_app.CompiledRoutes
+        application.completed_app.CompiledRoutes
+        and application.completed_app.CompiledRoutes
     ):
         raise ValueError("Application must have at least one compiled route")
 
@@ -341,8 +341,7 @@ def create_github_repo(application: Application) -> str:
 
     GIT_TOKEN: str = os.environ.get("GIT_TOKEN")
     if not GIT_TOKEN:
-        logger.error("GitHub token not found in environment variables.")
-        return
+        raise EnvironmentError("GitHub token not found in environment variables.")
 
     url = "https://api.github.com/orgs/agpt-coder/repos"
     headers = {
@@ -356,7 +355,9 @@ def create_github_repo(application: Application) -> str:
     if response.status_code == 201:
         repo_url = response.json()["html_url"]
         logger.info(f"Repository created at {repo_url}")
-        authenticated_url = repo_url.replace('https://', f'https://{GIT_TOKEN}:x-oauth-basic@') + ".git"
+        authenticated_url = (
+            repo_url.replace("https://", f"https://{GIT_TOKEN}:x-oauth-basic@") + ".git"
+        )
         return authenticated_url
     else:
         raise Exception(f"Failed to create repository: {response.text}")
@@ -364,7 +365,7 @@ def create_github_repo(application: Application) -> str:
 
 def git_init(app_dir: str):
     """
-    Initializes a Git repository in the specified directory and pushes all files.
+    Initializes a Git repository in the specified directory and commits all files.
 
     Args:
         app_dir (str): The directory path where the Git repository should be initialized.
@@ -398,17 +399,19 @@ def git_init(app_dir: str):
         logger.exception("Failed to initialize Git repository or commit files:", e)
         raise e
 
+
 def push_to_remote(repo, remote_name, remote_url, branch="master"):
     """
     Pushes the local branch to the remote repository.
     """
     try:
         origin = repo.create_remote(remote_name, remote_url)
-        origin.push(refspec='master:main')
-        logger.info(f"Code successfully pushed.")
+        origin.push(refspec="master:main")
+        logger.info("Code successfully pushed.")
     except GitCommandError as e:
         logger.error(f"Failed to push code: {e}")
         raise
+
 
 async def create_zip_file(application: Application) -> bytes:
     """
