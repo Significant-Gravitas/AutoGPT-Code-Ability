@@ -8,6 +8,7 @@ from prisma.types import DeploymentCreateInput
 from codex.api_model import Identifiers
 from codex.deploy.packager import create_remote_repo, create_zip_file
 from codex.develop.compile import create_server_code
+from codex.deploy.infrastructure import create_cloud_db
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,8 @@ async def create_local_deployment(
                 # I need to do this as the Base64 type in prisma is not working
                 fileBytes=encoded_file_bytes,  # type: ignore
                 repo="",
+                db_name="",
+                db_user="",
             )
         )
     except Exception as e:
@@ -64,6 +67,7 @@ async def create_cloud_deployment(
 
     repo = await create_remote_repo(app)
     completedApp.name.replace(" ", "_")
+    db_name, db_username = await create_cloud_db(repo)
 
     try:
         logger.info(f"Creating deployment for {completedApp.name}")
@@ -72,6 +76,8 @@ async def create_cloud_deployment(
                 CompletedApp={"connect": {"id": completedApp.id}},
                 User={"connect": {"id": ids.user_id}},
                 repo=repo,
+                dbName=db_name,
+                dbUser=db_username,
             )
         )
     except Exception as e:

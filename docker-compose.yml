@@ -25,6 +25,7 @@ services:
         - action: rebuild
           files:
             - ./**/*.py
+          path: .
     environment:
       # Override DATABASE_URL from .env with host and port (db:5432) of DB service
       DATABASE_URL: "postgresql://${DB_USER}:${DB_PASS}@postgres:${DB_PORT}/${DB_NAME}"
