@@ -3,6 +3,7 @@ import os
 import random
 import tempfile
 import zipfile
+import requests
 from datetime import datetime
 from typing import List
 
@@ -324,6 +325,44 @@ async def create_prisma_schema_file(application: Application) -> str:
     return prisma_file
 
 
+def create_github_repo(application: Application) -> str:
+    """
+    Creates a new GitHub repository under agpt-coder.
+
+    Args:
+        application (Application): The application to be used to create the github repo
+
+    Returns:
+        str: The HTTPS URL of the newly created repository.
+
+    Raises:
+        Exception: If the repository creation fails.
+    """
+
+    GIT_TOKEN: str = os.environ.get("GIT_TOKEN")
+    if not GIT_TOKEN:
+        raise EnvironmentError("GitHub token not found in environment variables.")
+
+    url = "https://api.github.com/orgs/agpt-coder/repos"
+    headers = {
+        "Authorization": f"token {GIT_TOKEN}",
+        "Accept": "application/vnd.github.v3+json",
+    }
+    repo_name = application.name.lower().replace(" ", "-")
+    data = {"name": repo_name, "private": False}
+    response = requests.post(url, headers=headers, json=data)
+
+    if response.status_code == 201:
+        repo_url = response.json()["html_url"]
+        logger.info(f"Repository created at {repo_url}")
+        authenticated_url = (
+            repo_url.replace("https://", f"https://{GIT_TOKEN}:x-oauth-basic@") + ".git"
+        )
+        return authenticated_url
+    else:
+        raise Exception(f"Failed to create repository: {response.text}")
+
+
 def git_init(app_dir: str):
     """
     Initializes a Git repository in the specified directory and commits all files.
@@ -335,7 +374,7 @@ def git_init(app_dir: str):
         GitCommandError: if any of the Git operations fails.
     """
     GIT_USER_NAME: str = os.environ.get("GIT_USER_NAME", default="AutoGPT")
-    GIT_USER_EMAIL: str = os.environ.get("GIT_USER_EMAIL", default="code@agpt.com")
+    GIT_USER_EMAIL: str = os.environ.get("GIT_USER_EMAIL", default="code@agpt.co")
 
     try:
         # Initialize Git repository
@@ -354,10 +393,24 @@ def git_init(app_dir: str):
         repo.index.commit("Initial commit")
 
         logger.info("Git repository initialized and all files committed")
+        return repo
 
     except GitCommandError as e:
         logger.exception("Failed to initialize Git repository or commit files:", e)
         raise e
+
+
+def push_to_remote(repo: Repo, remote_name: str, remote_url: str):
+    """
+    Pushes the local branch to the remote repository.
+    """
+    try:
+        origin = repo.create_remote(remote_name, remote_url)
+        origin.push(refspec="master:main")
+        logger.info("Code successfully pushed.")
+    except GitCommandError as e:
+        logger.error(f"Failed to push code: {e}")
+        raise
 
 
 async def create_zip_file(application: Application) -> bytes:
@@ -458,7 +511,12 @@ async def create_zip_file(application: Application) -> bytes:
                 deploy_file.write(deploy_workflow)
 
             # Initialize a Git repository and commit everything
-            git_init(app_dir=package_dir)
+            repo = git_init(app_dir=package_dir)
+
+            remote_url = create_github_repo(application)
+            push_to_remote(repo, "origin", remote_url)
+
+            logger.info("Code successfully pushed to repo")
 
             logger.info("Created server code")
             # Create a zip file of the directory
