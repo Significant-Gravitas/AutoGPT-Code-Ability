@@ -3,7 +3,6 @@ import collections
 import datetime
 import json
 import logging
-import os
 import pathlib
 import re
 import typing
@@ -430,7 +429,7 @@ async def __execute_pyright(
     validation_errors: list[ValidationError] = []
 
     # Create temporary directory under the TEMP_DIR with random name
-    temp_dir = os.path.join(PROJECT_TEMP_DIR, func.compiled_route_id)
+    temp_dir = PROJECT_TEMP_DIR / func.compiled_route_id
     py_path = await setup_if_required(temp_dir, copy_from_parent=True)
 
     async def __execute_pyright_commands(code: str) -> list[ValidationError]:
@@ -507,22 +506,11 @@ async def __execute_pyright(
     packages = "\n".join(
         [str(p) for p in func.packages if p.package_name not in DEFAULT_DEPS]
     )
-    with open(f"{temp_dir}/schema.prisma", "w") as p:
-        with open(f"{temp_dir}/code.py", "w") as f:
-            with open(f"{temp_dir}/requirements.txt", "w") as r:
-                # write the requirements to requirements.txt
-                r.write(packages)
-                r.flush()
+    (temp_dir / "requirements.txt").write_text(packages)
+    (temp_dir / "code.py").write_text(code)
+    (temp_dir / "schema.prisma").write_text(PRISMA_FILE_HEADER + "\n" + func.db_schema)
 
-                # write the code to code.py
-                f.write(code)
-                f.flush()
-
-                # write the prisma schema to schema.prisma
-                p.write(PRISMA_FILE_HEADER + "\n" + func.db_schema)
-                p.flush()
-
-                return await __execute_pyright_commands(code)
+    return await __execute_pyright_commands(code)
 
 
 async def find_module_dist_and_source(
