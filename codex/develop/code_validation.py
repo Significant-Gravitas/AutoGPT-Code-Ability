@@ -430,7 +430,7 @@ async def __execute_pyright(
 
     # Create temporary directory under the TEMP_DIR with random name
     temp_dir = PROJECT_TEMP_DIR / func.compiled_route_id
-    py_path = await setup_if_required(temp_dir, copy_from_parent=True)
+    py_path = await setup_if_required(temp_dir)
 
     async def __execute_pyright_commands(code: str) -> list[ValidationError]:
         try:
@@ -440,7 +440,7 @@ async def __execute_pyright(
         except ValidationError as e:
             # Unknown deps should be reported as validation errors
             if add_todo_on_error:
-                code = e.append_error_as_todo(code)
+                code = append_errors_as_todos([e], code)
             else:
                 validation_errors.append(e)
 

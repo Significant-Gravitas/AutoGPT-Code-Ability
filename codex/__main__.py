@@ -243,12 +243,12 @@ def serve() -> None:
     import uvicorn
 
     from codex.common.ai_model import OpenAIChatClient
-    from codex.common.exec_external_tool import PROJECT_TEMP_DIR, setup_if_required
+    from codex.common.exec_external_tool import setup_if_required
 
     OpenAIChatClient.configure({})
 
     logger.info("Setting up code analysis tools...")
-    initial_setup = setup_if_required(PROJECT_TEMP_DIR)
+    initial_setup = setup_if_required()
     asyncio.get_event_loop().run_until_complete(initial_setup)
 
     logger.info("Starting server...")
