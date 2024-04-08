@@ -5,6 +5,7 @@ import os
 import subprocess
 import tempfile
 from asyncio.subprocess import Process
+from pathlib import Path
 
 from codex.common.ai_block import ValidationError, ValidationErrorWithContent
 
@@ -91,61 +92,63 @@ async def exec_external_on_contents(
     raise ValidationError(errors)
 
 
-PROJECT_TEMP_DIR = os.path.join(tempfile.gettempdir(), "codex-static-code-analysis")
+PROJECT_TEMP_DIR = Path(tempfile.gettempdir()) / "codex-static-code-analysis"
 DEFAULT_DEPS = ["prisma", "pyright", "pydantic", "virtualenv-clone"]
 
 
-async def setup_if_required(cwd: str, copy_from_parent: bool = False) -> str:
+async def setup_if_required(cwd: Path, copy_from_parent: bool = False) -> Path:
     """
     Setup the virtual environment if it does not exist
     This setup is executed expectedly once per application run
     Args:
-        cwd (str): The current working directory
+        cwd (Path): The current working directory
         copy_from_parent (bool): Whether to copy the virtual environment from the parent directory
     Returns:
-        str: The path to the virtual environment
+        Path: The path to the virtual environment
     """
-    if not os.path.exists(cwd):
-        os.makedirs(cwd, exist_ok=True)
+    if not cwd.exists():
+        cwd.mkdir(parents=True, exist_ok=True)
 
-    path = f"{cwd}/venv/bin"
-    if os.path.exists(path):
+    path = cwd / "venv/bin"
+    if path.exists():
         return path
 
-    parent_dir = os.path.abspath(f"{cwd}/../")
-    if copy_from_parent and os.path.exists(f"{parent_dir}/venv"):
+    parent_dir = cwd.resolve().parent
+    if copy_from_parent and (parent_dir / "venv").exists():
         parent_path = await setup_if_required(parent_dir)
         await execute_command(
-            ["virtualenv-clone", f"{parent_dir}/venv", f"{cwd}/venv"], cwd, parent_path
+            ["virtualenv-clone", str(parent_dir / "venv"), str(cwd / "venv")],
+            cwd,
+            parent_path,
         )
         return path
 
     # Create a virtual environment
     output = await execute_command(["python", "-m", "venv", "venv"], cwd, None)
-    logger.info(f"[Setup] Creating virtual environment: {output}")
+    logger.info(f"[Setup] Created virtual environment: {output}")
 
     # Install dependencies
     output = await execute_command(["pip", "install"] + DEFAULT_DEPS, cwd, path)
-    logger.info(f"[Setup] Installing {DEFAULT_DEPS}: {output}")
+    logger.info(f"[Setup] Installed {DEFAULT_DEPS}: {output}")
 
     output = await execute_command(["pyright"], cwd, path, raise_on_error=False)
-    logger.info(f"[Setup] Setting up pyright: {output}")
+    logger.info(f"[Setup] Set up pyright: {output}")
 
     return path
 
 
 async def execute_command(
     command: list[str],
-    cwd: str | None,
-    python_path: str | None = None,
+    cwd: str | Path | None,
+    python_path: str | Path | None = None,
     raise_on_error: bool = True,
 ) -> str:
     """
     Execute a command in the shell
     Args:
         command (list[str]): The command to execute
-        cwd (str): The current working directory
-        python_path (str): The python executable path
+        cwd (str | Path): The current working directory
+        python_path (str | Path): The python executable path
         raise_on_error (bool): Whether to raise an error if the command fails
     Returns:
         str: The output of the command
@@ -154,7 +157,7 @@ async def execute_command(
     venv = os.environ.copy()
     if python_path:
         # PATH prioritize first occurrence of python_path, so we need to prepend.
-        venv["PATH"] = python_path + ":" + venv["PATH"]
+        venv["PATH"] = f"{python_path}:{venv['PATH']}"
     r = await asyncio.create_subprocess_exec(
         *command,
         stdout=subprocess.PIPE,

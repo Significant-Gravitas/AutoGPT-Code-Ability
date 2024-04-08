@@ -6,7 +6,9 @@ import zipfile
 import requests
 from datetime import datetime
 from typing import List, Tuple
+from pathlib import Path
 
+import requests
 from git import GitCommandError
 from git.repo import Repo
 from prisma.models import DatabaseTable
@@ -363,12 +365,12 @@ def create_github_repo(application: Application) -> (str, str):
         raise Exception(f"Failed to create repository: {response.text}")
 
 
-def git_init(app_dir: str):
+def git_init(app_dir: Path) -> Repo:
     """
     Initializes a Git repository in the specified directory and commits all files.
 
     Args:
-        app_dir (str): The directory path where the Git repository should be initialized.
+        app_dir (Path): The directory path where the Git repository should be initialized.
 
     Raises:
         GitCommandError: if any of the Git operations fails.
@@ -399,8 +401,7 @@ def git_init(app_dir: str):
         logger.exception("Failed to initialize Git repository or commit files:", e)
         raise e
 
-
-def push_to_remote(repo, remote_name, remote_url, branch="master"):
+def push_to_remote(repo: Repo, remote_name: str, remote_url: str):
     """
     Pushes the local branch to the remote repository.
     """
@@ -431,33 +432,29 @@ async def create_remote_repo(application: Application) -> str:
 
     try:
         with tempfile.TemporaryDirectory() as package_dir:
-            app_dir = os.path.join(package_dir, "project")
-            os.makedirs(app_dir, exist_ok=True)
+            package_dir = Path(package_dir)
+            app_dir = package_dir / "project"
+            app_dir.mkdir(parents=True, exist_ok=True)
 
             # Make a readme file
-            readme_file_path = os.path.join(package_dir, "README.md")
-            with open(readme_file_path, "w") as readme_file:
-                readme_file.write(generate_readme(application))
+            readme_file = package_dir / "README.md"
+            readme_file.write_text(generate_readme(application))
 
-            dockerfile_path = os.path.join(package_dir, "Dockerfile")
-            with open(dockerfile_path, "w") as dockerfile:
-                dockerfile.write(DOCKERFILE)
+            dockerfile = package_dir / "Dockerfile"
+            dockerfile.write_text(DOCKERFILE)
 
             # Make a __init__.py file
-            init_file_path = os.path.join(app_dir, "__init__.py")
-            with open(init_file_path, "w") as init_file:
-                init_file.write("")
+            init_file = app_dir / "__init__.py"
+            init_file.touch()
 
             # Make a server.py file
-            server_file_path = os.path.join(app_dir, "server.py")
-            with open(server_file_path, "w") as server_file:
-                server_file.write(application.server_code)
+            server_file = app_dir / "server.py"
+            server_file.write_text(application.server_code)
 
             # Make all the service files
             for compiled_route in application.completed_app.CompiledRoutes:
-                service_file_path = os.path.join(app_dir, compiled_route.fileName)
-                with open(service_file_path, "w") as service_file:
-                    service_file.write(compiled_route.compiledCode)
+                service_file = app_dir / compiled_route.fileName
+                service_file.write_text(compiled_route.compiledCode)
 
             # Create pyproject.toml and poetry.lock
             logger.info("Creating pyproject.toml")
@@ -466,49 +463,38 @@ async def create_remote_repo(application: Application) -> str:
             await poetry_lock(package_dir)
 
             # Make a prisma schema file
-            prism_schema_file_path = os.path.join(package_dir, "schema.prisma")
-            prisma_content = await create_prisma_schema_file(application)
-            if prisma_content:
-                with open(prism_schema_file_path, mode="w") as prisma_file:
-                    prisma_file.write(prisma_content)
+            prisma_schema_file = package_dir / "schema.prisma"
+            prisma_schema = await create_prisma_schema_file(application)
+            if prisma_schema:
+                prisma_schema_file.write_text(prisma_schema)
 
             # Make a .env.example file
-            dotenv_example_file_path = os.path.join(package_dir, ".env.example")
+            dotenv_example_file = package_dir / ".env.example"
             dotenv_example = generate_dotenv_example_file(application)
-            with open(dotenv_example_file_path, mode="w") as dotenv_example_file:
-                dotenv_example_file.write(dotenv_example)
+            dotenv_example_file.write_text(dotenv_example)
 
             # Also create .env for convenience
-            dotenv_file_path = os.path.join(package_dir, ".env")
-            with open(dotenv_file_path, mode="w") as dotenv_file:
-                dotenv_file.write(dotenv_example)
+            dotenv_file = package_dir / ".env"
+            dotenv_file.write_text(dotenv_example)
 
             # Make a .gitignore file
-            gitignore_file_path = os.path.join(package_dir, ".gitignore")
+            gitignore_file = package_dir / ".gitignore"
             gitignore = generate_gitignore_file()
-            with open(gitignore_file_path, mode="w") as gitignore_file:
-                gitignore_file.write(gitignore)
+            gitignore_file.write_text(gitignore)
 
             # Make a docker-compose.yml file
-            docker_compose_file_path = os.path.join(package_dir, "docker-compose.yml")
+            docker_compose_file = package_dir / "docker-compose.yml"
             docker_compose = generate_docker_compose_file(application)
-            with open(docker_compose_file_path, mode="w") as docker_compose_file:
-                docker_compose_file.write(docker_compose)
+            docker_compose_file.write_text(docker_compose)
 
             # Make a GitHub actions deploy file
-            github_actions_directory = os.path.join(
-                package_dir, ".github", "workflows"
-            )  # Define.github/workflows directory path
-            os.makedirs(
-                github_actions_directory, exist_ok=True
-            )  # Create .github/workflows directory if it doesn't exist
+            github_workflows_directory = package_dir / ".github" / "workflows"
+            github_workflows_directory.mkdir(parents=True, exist_ok=True)
 
-            github_actions_deploy_file_path = os.path.join(
-                github_actions_directory, "deploy.yml"
+            github_deploy_workflow_path = github_workflows_directory / "deploy.yml"
+            github_deploy_workflow_path.write_text(
+                generate_actions_workflow(application)
             )
-            with open(github_actions_deploy_file_path, mode="w") as deploy_file:
-                deploy_workflow = generate_actions_workflow(application)
-                deploy_file.write(deploy_workflow)
 
             # Initialize a Git repository and commit everything
             repo = git_init(app_dir=package_dir)
@@ -594,7 +580,7 @@ author: {PROJECT_AUTHOR}
     return content
 
 
-async def create_pyproject(application: Application, package_dir: str) -> None:
+async def create_pyproject(application: Application, package_dir: Path) -> None:
     """Create a pyproject.toml file for `application` in `package_dir`"""
     app_name_slug = application.name.lower().replace(" ", "-")
     app_description = application.description.split("\n", 1)[0]
@@ -617,9 +603,9 @@ async def create_pyproject(application: Application, package_dir: str) -> None:
     )
 
 
-async def poetry_lock(package_dir: str) -> None:
+async def poetry_lock(package_dir: Path) -> None:
     """Runs `poetry lock` in the given `package_dir`"""
-    if not os.path.exists(f"{package_dir}/pyproject.toml"):
+    if not (package_dir / "pyproject.toml").exists():
         raise FileNotFoundError(
             f"Can not generate lockfile in {package_dir} without pyproject.toml"
         )

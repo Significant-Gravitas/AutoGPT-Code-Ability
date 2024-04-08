@@ -448,7 +448,7 @@ Additionally, it will have proper management of financials, including invoice ma
     async def run_gen():
         await db_client.connect()
         ids.interview_id = interview_id_1
-        setup_logging(local=True)
+        setup_logging()
         logger.info("Starting Requirements Generation")
         output = await generate_requirements(ids=ids, description=task)
         logger.info("Requirements Generation Done")

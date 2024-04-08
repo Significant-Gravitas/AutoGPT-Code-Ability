@@ -3,10 +3,10 @@ import collections
 import datetime
 import json
 import logging
-import os
 import pathlib
 import re
 import typing
+import uuid
 
 import black
 import isort
@@ -14,6 +14,7 @@ import prisma
 from prisma.models import Function, ObjectType
 
 from codex.common.ai_block import (
+    TODO_COMMENT,
     LineValidationError,
     ListValidationError,
     ValidationError,
@@ -358,15 +359,66 @@ async def __execute_ruff(
                 _, line, _, error = error_split.groups()
                 error = LineValidationError(error=error, code=code, line_from=int(line))
 
-            if add_todo_on_error:
-                code = error.append_error_as_todo(code)
-            else:
-                validation_errors.append(error)
+            validation_errors.append(error)
+
+        if add_todo_on_error:
+            code = append_errors_as_todos(validation_errors, code)
+            validation_errors.clear()
 
         func.imports, func.rawCode = __unpack_import_and_function_code(code)
         func.imports.extend(added_imports)  # Avoid line-code change, do it at the end.
 
         return validation_errors
+
+
+def append_errors_as_todos(errors: list[ValidationError], code: str) -> str:
+    """
+    Append the errors as TODO comments in the code
+    Args:
+        errors (list[ValidationError]): The list of errors
+        code (str): The code snippet
+    Returns:
+        str: The code snippet with the errors appended as TODO comments
+    """
+
+    line_validation_errors: list[LineValidationError] = []
+    non_line_validation_errors: list[ValidationError] = []
+    for error in errors:
+        if isinstance(error, LineValidationError):
+            line_validation_errors.append(error)
+        else:
+            non_line_validation_errors.append(error)
+
+    replaced_error_messages: dict[str, str] = {}
+
+    # Start with line-errors, to avoid changing the line numbers
+    for err in line_validation_errors:
+        code_lines = code.split("\n")
+        if err.line_from > len(code_lines):
+            continue
+
+        error_uid: str = uuid.uuid4().hex
+        error_msg: str = super(ValidationError, err).__str__().replace("\n", "\n#   ")
+
+        index = err.line_from - 1
+        if TODO_COMMENT not in code_lines[index]:
+            code_lines[index] = f"{code_lines[index]} {TODO_COMMENT} {error_uid}"
+
+        replaced_error_messages[error_uid] = error_msg
+        code = "\n".join(code_lines)
+
+    # Append non-line errors at the initial code
+    for err in non_line_validation_errors:
+        error_uid: str = uuid.uuid4().hex
+        error_msg: str = err.__str__().replace("\n", "\n#     ")
+        code = f"{TODO_COMMENT} {error_uid}\n{code}"
+        replaced_error_messages[error_uid] = error_msg
+
+    # Replace error_uid with the actual error message
+    for uid, msg in replaced_error_messages.items():
+        code = code.replace(uid, msg)
+
+    return code
 
 
 async def __execute_pyright(
@@ -377,7 +429,7 @@ async def __execute_pyright(
     validation_errors: list[ValidationError] = []
 
     # Create temporary directory under the TEMP_DIR with random name
-    temp_dir = os.path.join(PROJECT_TEMP_DIR, func.compiled_route_id)
+    temp_dir = PROJECT_TEMP_DIR / func.compiled_route_id
     py_path = await setup_if_required(temp_dir, copy_from_parent=True)
 
     async def __execute_pyright_commands(code: str) -> list[ValidationError]:
@@ -412,7 +464,7 @@ async def __execute_pyright(
         for e in json_response:
             rule: str = e.get("rule", "")
             severity: str = e.get("severity", "")
-            file: str = e.get("file", "")
+            excluded_rules = ["reportMissingImports"] if add_todo_on_error else []
             if (
                 severity != "error"
                 or rule
@@ -420,24 +472,16 @@ async def __execute_pyright(
                     "reportRedeclaration",
                     "reportArgumentType",  # This breaks prisma query with dict
                 ]
+                + excluded_rules
                 or rule.startswith("reportOptional")  # TODO: improve prompt & enable
             ):
                 continue
 
             # Grab any enhancements we can for the error
-            code_lines: list[str] = code.splitlines()
             error_message: str = f"{e['message']}. {e.get('rule', '')}"
-            error_line: str = "\n".join(
-                code_lines[e["range"]["start"]["line"] : e["range"]["end"]["line"] + 1]
-            )
             if error_enhancements := await get_error_enhancements(
                 rule,
-                severity,
-                code_lines,
                 error_message,
-                error_line,
-                temp_dir,
-                file,
                 py_path,
             ):
                 error_message += f"\n{error_enhancements}"
@@ -447,13 +491,14 @@ async def __execute_pyright(
                 code=code,
                 line_from=e["range"]["start"]["line"] + 1,
             )
-            if add_todo_on_error:
-                code = e.append_error_as_todo(code)
-            else:
-                validation_errors.append(e)
+            validation_errors.append(e)
 
         # read code from code.py. split the code into imports and raw code
         code = open(f"{temp_dir}/code.py").read()
+        if add_todo_on_error:
+            code = append_errors_as_todos(validation_errors, code)
+            validation_errors.clear()
+
         func.imports, func.rawCode = __unpack_import_and_function_code(code)
 
         return validation_errors
@@ -461,22 +506,11 @@ async def __execute_pyright(
     packages = "\n".join(
         [str(p) for p in func.packages if p.package_name not in DEFAULT_DEPS]
     )
-    with open(f"{temp_dir}/schema.prisma", "w") as p:
-        with open(f"{temp_dir}/code.py", "w") as f:
-            with open(f"{temp_dir}/requirements.txt", "w") as r:
-                # write the requirements to requirements.txt
-                r.write(packages)
-                r.flush()
+    (temp_dir / "requirements.txt").write_text(packages)
+    (temp_dir / "code.py").write_text(code)
+    (temp_dir / "schema.prisma").write_text(PRISMA_FILE_HEADER + "\n" + func.db_schema)
 
-                # write the code to code.py
-                f.write(code)
-                f.flush()
-
-                # write the prisma schema to schema.prisma
-                p.write(PRISMA_FILE_HEADER + "\n" + func.db_schema)
-                p.flush()
-
-                return await __execute_pyright_commands(code)
+    return await __execute_pyright_commands(code)
 
 
 async def find_module_dist_and_source(
@@ -515,12 +549,7 @@ async def find_module_dist_and_source(
 
 async def get_error_enhancements(
     rule: str,
-    severity: str,
-    code_lines: list[str],
     error_message: str,
-    error_line: str,
-    temp_dir: str,
-    file: str,
     py_path: str,
 ) -> str | None:
     # python match the rule and error message to a case

@@ -249,7 +249,7 @@ if __name__ == "__main__":
     from codex.requirements.database import get_latest_specification
 
     OpenAIChatClient.configure({})
-    setup_logging(local=True)
+    setup_logging()
     client = prisma.Prisma(auto_register=True)
 
     async def run_me():
