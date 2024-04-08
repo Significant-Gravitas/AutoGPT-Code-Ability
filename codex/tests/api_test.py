@@ -10,7 +10,7 @@ from codex.common.logging_config import setup_logging
 from codex.common.test_const import user_id_1
 
 load_dotenv()
-setup_logging(local=True)
+setup_logging()
 
 
 app_id = ""

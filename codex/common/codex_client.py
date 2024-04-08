@@ -596,7 +596,7 @@ if __name__ == "__main__":
 
     from common.test_const import identifier_1
 
-    setup_logging(local=True)
+    setup_logging()
 
     db_client = Prisma(auto_register=True)
 

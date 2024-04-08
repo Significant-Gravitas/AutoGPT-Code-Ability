@@ -169,7 +169,7 @@ if __name__ == "__main__":
 
     ids = identifier_1
 
-    setup_logging(local=True)
+    setup_logging()
 
     OpenAIChatClient.configure({})
     db_client = prisma.Prisma(auto_register=True)
