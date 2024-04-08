@@ -2,6 +2,7 @@ import logging
 import os
 import random
 import tempfile
+import uuid
 import zipfile
 from datetime import datetime
 from pathlib import Path
@@ -340,7 +341,7 @@ async def create_github_repo(application: Application) -> str:
         Exception: If the repository creation fails.
     """
 
-    GIT_TOKEN: str = os.environ.get("GIT_TOKEN")
+    GIT_TOKEN: str | None = os.environ.get("GIT_TOKEN")
     if not GIT_TOKEN:
         raise EnvironmentError("GitHub token not found in environment variables.")
 
@@ -350,9 +351,8 @@ async def create_github_repo(application: Application) -> str:
         "Accept": "application/vnd.github.v3+json",
     }
     # App name plus a random slug word trio to avoid conflicts
-    repo_name = application.name.lower().replace(" ", "-") + "-".join(
-        [random.choice("abcdefghjkmnopqrstuvwxyz") for _ in range(3)]
-    )
+    repo_name = application.name.lower().replace(" ", "-") + str(uuid.uuid4())
+
     data = {"name": repo_name, "private": False}
     # Create the repository
     async with aiohttp.ClientSession() as session:
