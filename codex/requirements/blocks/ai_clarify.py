@@ -196,8 +196,10 @@ if __name__ == "__main__":
     from openai import AsyncOpenAI
     from prisma import Prisma
 
+    from codex.common.ai_model import OpenAIChatClient
     from codex.common.test_const import identifier_1
 
+    OpenAIChatClient.configure({})
     ids = identifier_1
     db_client = Prisma(auto_register=True)
     oai = AsyncOpenAI()

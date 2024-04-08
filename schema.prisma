@@ -59,6 +59,7 @@ model Application {
   User            User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId          String?
   Interviews      Interview[]
+  Clarification   Clarification[]
 }
 
 // ------------------------- Interview Models ---------------------------- //
@@ -98,6 +99,89 @@ model Question {
 // ApplicationRequirements represents the requirements for a specific application.  
 // ------------------------- -------------------------------------------------- //
 
+enum ClarificationType {
+  FRONTEND
+  USERPERSONA
+  USERSKILL
+  QUESTIONS
+}
+
+model Clarification {
+  id                String            @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  deleted           Boolean           @default(false)
+  question          String
+  answer            String
+  thoughts          String
+  clarificationType ClarificationType
+  Application       Application       @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId     String
+  Specification     Specification     @relation(fields: [specificationId], references: [id], onDelete: Cascade)
+  specificationId   String
+}
+
+model EndpointRefinement {
+  id                   String     @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+  deleted              Boolean    @default(false)
+  think                String
+  dbModelsNeeded       String[]
+  request_model        ObjectType @relation(fields: [requestObjectTypeId], references: [id])
+  requestObjectTypeId  String
+  response_mode        ObjectType @relation(fields: [responseObjectTypeId], references: [id])
+  responseObjectTypeId String
+  end_thoughts         String?
+
+  Application     Application   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId   String
+  Specification   Specification @relation(fields: [specificationId], references: [id], onDelete: Cascade)
+  specificationId String
+}
+
+model Feature {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  deleted             Boolean  @default(false)
+  name                String
+  thoughts            String
+  description         String
+  considerations      String
+  risks               String
+  neededExternalTools String
+  priority            String
+}
+
+model FeatureResponse {
+  id                     String        @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+  deleted                Boolean       @default(false)
+  think                  String
+  projectName            String
+  description            String
+  generalFeatureThoughts String
+  Features               Feature[]
+  Application            Application   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId          String
+  Specification          Specification @relation(fields: [specificationId], references: [id], onDelete: Cascade)
+  specificationId        String
+}
+
+
+model Module {
+  id                     String        @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+  deleted                Boolean       @default(false)
+  name String
+  description String
+  
+
+}
+
 model Specification {
   id        String   @id @default(dbgenerated("gen_random_uuid()"))
   createdAt DateTime @default(now())
@@ -115,6 +199,7 @@ model Specification {
   Application    Application?     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   applicationId  String?
   LLMCallAttempt LLMCallAttempt[]
+  Clarification  Clarification[]
 }
 
 enum AccessLevel {
@@ -174,9 +259,10 @@ model ObjectType {
   databaseTableId String?
 
   // Reverse relations
-  ReferredRequestAPIRoutes  APIRouteSpec[] @relation("RequestObjectForAPI")
-  ReferredResponseAPIRoutes APIRouteSpec[] @relation("ResponseObjectForAPI")
-  ReferredObjectFields      ObjectField[]  @relation("ObjectFieldTypes")
+  ReferredRequestAPIRoutes  APIRouteSpec[]       @relation("RequestObjectForAPI")
+  ReferredResponseAPIRoutes APIRouteSpec[]       @relation("ResponseObjectForAPI")
+  ReferredObjectFields      ObjectField[]        @relation("ObjectFieldTypes")
+  EndpointRefinement        EndpointRefinement[]
 }
 
 model ObjectField {
