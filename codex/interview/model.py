@@ -4,6 +4,38 @@ from typing import List, Optional, Tuple
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class AppFeature(BaseModel):
+    reasoning: str
+    name: str
+    functionality: str
+
+
+class UndestandRequest(BaseModel):
+    thoughts: str
+    features: list[AppFeature] | None = None
+    say_to_user: str
+    phase_completed: str
+
+
+class AppCheckList(BaseModel):
+    notifications: bool
+    database: bool
+    caching: bool
+
+    gdpr_compliance: bool
+    stripe_integration: bool
+    analytics: bool
+
+    email_integration: bool
+    social_media_integration: bool
+    search_functionality: bool
+    api_integration: bool
+    apis_required: list[str]
+
+    security_audit: bool
+    backup_and_recovery: bool
+
+
 class InterviewMessage(BaseModel):
     model_config = ConfigDict(strict=False)
 
