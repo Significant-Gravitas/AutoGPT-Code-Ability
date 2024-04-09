@@ -11,8 +11,6 @@ from codex.api_model import (
     SpecificationResponse,
     SpecificationsListResponse,
 )
-from codex.interview.database import get_interview
-from codex.requirements.agent import generate_requirements
 
 logger = logging.getLogger(__name__)
 
@@ -45,16 +43,17 @@ async def create_spec(
     )
     if not ids.user_id or not ids.app_id:
         raise ValueError("User ID and App ID are required")
-    interview = await get_interview(
-        user_id=ids.user_id, app_id=ids.app_id, interview_id=interview_id
-    )
-    if not interview:
-        return JSONResponse(
-            content=json.dumps({"error": "Interview not found"}),
-            status_code=404,
-        )
-    new_spec = await generate_requirements(ids, interview.task)
-    return SpecificationResponse.from_specification(new_spec)
+    # interview = await get_interview(
+    #     user_id=ids.user_id, app_id=ids.app_id, interview_id=interview_id
+    # # )
+    # if not interview:
+    #     return JSONResponse(
+    #         content=json.dumps({"error": "Interview not found"}),
+    #         status_code=404,
+    #     )
+    # new_spec = await generate_requirements(ids, interview.task)
+    # return SpecificationResponse.from_specification(new_spec)
+    return None
 
 
 @spec_router.get(

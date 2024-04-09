@@ -138,6 +138,7 @@ async def get_app_by_id(user_id: str, app_id: str) -> ApplicationResponse:
         name=app.name,
         userid=app.userId,
         cloud_services_id=app.User.cloudServicesId if app.User else "",
+        description=app.description,
     )
 
 

@@ -14,7 +14,6 @@ from codex.common.logging_config import setup_logging
 from codex.common.model import ObjectFieldModel
 from codex.common.model import ObjectTypeModel as ObjectTypeE
 from codex.common.test_const import identifier_1
-from codex.interview.database import get_interview
 from codex.prompts.claude.requirements.NestJSDocs import (
     NEST_JS_CRUD_GEN,
     NEST_JS_FIRST_STEPS,
@@ -81,13 +80,13 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
     logger.info("State Object Created")
 
     # User Interview
-    interview = await get_interview(
-        user_id=ids.user_id, app_id=ids.app_id, interview_id=ids.interview_id or ""
-    )
+    # interview = await get_interview(
+    #     user_id=ids.user_id, app_id=ids.app_id, interview_id=ids.interview_id or ""
+    # )
 
     # set interview id
-    ids.interview_id = interview.id
-
+    # ids.interview_id = interview.id
+    interview = None
     if not interview:
         raise ValueError("Interview not found")
 

@@ -59,6 +59,7 @@ model Application {
   User            User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId          String?
   Interviews      Interview[]
+  InterviewStep   InterviewStep[]
 }
 
 // ------------------------- Interview Models ---------------------------- //
@@ -75,23 +76,41 @@ model Interview {
   task           String
   User           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId         String
-  Questions      Question[]
-  application    Application      @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  Application    Application      @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   applicationId  String
-  LLMCallAttempt LLMCallAttempt[]
   Specification  Specification[]
+  InterviewStep  InterviewStep[]
+  LLMCallAttempt LLMCallAttempt[]
 }
 
-model Question {
-  id          String    @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deleted     Boolean   @default(false)
-  question    String
-  tool        String
-  answer      String?
-  Interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-  interviewId String
+model InterviewStep {
+  id        String    @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deleted   Boolean   @default(false)
+  say       String
+  thoughts  String
+  Features  Feature[]
+
+  Interview      Interview        @relation(fields: [interviewId], references: [id])
+  interviewId    String
+  Application    Application      @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId  String
+  LLMCallAttempt LLMCallAttempt[]
+}
+
+model Feature {
+  id              String         @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deleted         Boolean        @default(false)
+  name            String
+  reasoning       String
+  functionality   String
+  InterviewStep   InterviewStep? @relation(fields: [interviewStepId], references: [id])
+  interviewStepId String?
+
+  @@map("Question")
 }
 
 // ------------------------- Requirements Models ------------------------------ //
@@ -411,6 +430,8 @@ model LLMCallAttempt {
 
   LLMCallTemplate   LLMCallTemplate? @relation(fields: [llmCallTemplateId], references: [id], onDelete: Cascade)
   llmCallTemplateId String?
+  InterviewStep     InterviewStep?   @relation(fields: [interviewStepId], references: [id])
+  interviewStepId   String?
 }
 
 enum Status {
