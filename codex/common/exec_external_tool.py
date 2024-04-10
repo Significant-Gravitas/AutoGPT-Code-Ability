@@ -92,17 +92,31 @@ async def exec_external_on_contents(
     raise ValidationError(errors)
 
 
-PROJECT_TEMP_DIR = Path(tempfile.gettempdir()) / "codex-static-code-analysis"
+FOLDER_NAME = "codex-static-code-analysis"
+PROJECT_PARENT_DIR = Path(__file__).resolve().parent.parent.parent / f".{FOLDER_NAME}"
+PROJECT_TEMP_DIR = Path(tempfile.gettempdir()) / FOLDER_NAME
 DEFAULT_DEPS = ["prisma", "pyright", "pydantic", "virtualenv-clone"]
 
 
-async def setup_if_required(cwd: Path, copy_from_parent: bool = False) -> Path:
+def is_env_exists(path: Path):
+    return (
+        (path / "venv/bin/python").exists()
+        and (path / "venv/bin/pip").exists()
+        and (path / "venv/bin/virtualenv-clone").exists()
+        and (path / "venv/bin/prisma").exists()
+        and (path / "venv/bin/pyright").exists()
+    )
+
+
+async def setup_if_required(
+    cwd: Path = PROJECT_PARENT_DIR, copy_from_parent: bool = True
+) -> Path:
     """
-    Setup the virtual environment if it does not exist
+    Set-up the virtual environment if it does not exist
     This setup is executed expectedly once per application run
     Args:
         cwd (Path): The current working directory
-        copy_from_parent (bool): Whether to copy the virtual environment from the parent directory
+        copy_from_parent (bool): Whether to copy the virtual environment from PROJECT_PARENT_DIR
     Returns:
         Path: The path to the virtual environment
     """
@@ -110,16 +124,14 @@ async def setup_if_required(cwd: Path, copy_from_parent: bool = False) -> Path:
         cwd.mkdir(parents=True, exist_ok=True)
 
     path = cwd / "venv/bin"
-    if path.exists():
+    if is_env_exists(cwd):
         return path
 
-    parent_dir = cwd.resolve().parent
-    if copy_from_parent and (parent_dir / "venv").exists():
-        parent_path = await setup_if_required(parent_dir)
+    if copy_from_parent and cwd != PROJECT_PARENT_DIR:
         await execute_command(
-            ["virtualenv-clone", str(parent_dir / "venv"), str(cwd / "venv")],
+            ["virtualenv-clone", str(PROJECT_PARENT_DIR / "venv"), str(cwd / "venv")],
             cwd,
-            parent_path,
+            await setup_if_required(PROJECT_PARENT_DIR),
         )
         return path
 
@@ -128,7 +140,7 @@ async def setup_if_required(cwd: Path, copy_from_parent: bool = False) -> Path:
     logger.info(f"[Setup] Created virtual environment: {output}")
 
     # Install dependencies
-    output = await execute_command(["pip", "install"] + DEFAULT_DEPS, cwd, path)
+    output = await execute_command(["pip", "install", "-I"] + DEFAULT_DEPS, cwd, path)
     logger.info(f"[Setup] Installed {DEFAULT_DEPS}: {output}")
 
     output = await execute_command(["pyright"], cwd, path, raise_on_error=False)
@@ -162,7 +174,7 @@ async def execute_command(
         *command,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        cwd=cwd,
+        cwd=str(cwd),
         env=venv,
     )
     stdout, stderr = await r.communicate()
