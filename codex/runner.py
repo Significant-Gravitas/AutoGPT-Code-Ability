@@ -168,7 +168,6 @@ async def resume(
                 resume_point=resume_point,
             )
 
-
         logger.info(f"Task {task_name} finished")
 
     except Exception as e:
@@ -300,4 +299,3 @@ async def run_compile(
     except Exception as e:
         logger.exception(f"Error running compile: {e}")
         raise e
-

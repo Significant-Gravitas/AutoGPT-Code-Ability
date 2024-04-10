@@ -390,7 +390,6 @@ class CodexClient:
             logger.exception(f"Unknown Error when trying to create the deployment: {e}")
             raise e
 
-
     @staticmethod
     async def build_codex_client(
         client: "Prisma",

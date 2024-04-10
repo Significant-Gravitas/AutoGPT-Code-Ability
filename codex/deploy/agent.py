@@ -25,7 +25,7 @@ async def create_deployment(ids: Identifiers, completedApp: CompletedApp) -> Dep
             data=DeploymentCreateInput(
                 CompletedApp={"connect": {"id": completedApp.id}},
                 User={"connect": {"id": ids.user_id}},
-                repo=repo
+                repo=repo,
             )
         )
     except Exception as e:

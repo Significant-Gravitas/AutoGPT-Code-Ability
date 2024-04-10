@@ -403,6 +403,7 @@ def git_init(app_dir: Path) -> Repo:
         logger.exception("Failed to initialize Git repository or commit files:", e)
         raise e
 
+
 def push_to_remote(repo: Repo, remote_name: str, remote_url: str):
     """
     Pushes the local branch to the remote repository.
