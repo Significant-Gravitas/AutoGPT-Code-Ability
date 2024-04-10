@@ -12,6 +12,7 @@ import black
 import isort
 import prisma
 from prisma.models import Function, ObjectType
+from prisma.enums import DevelopmentPhase
 
 from codex.common.ai_block import (
     TODO_COMMENT,
@@ -19,6 +20,9 @@ from codex.common.ai_block import (
     ListValidationError,
     ValidationError,
     ValidationErrorWithContent,
+    AIBlock,
+    ValidatedResponse,
+    Identifiers,
 )
 from codex.common.constants import PRISMA_FILE_HEADER
 from codex.common.exec_external_tool import (
@@ -32,9 +36,43 @@ from codex.common.model import FunctionDef
 from codex.develop.function import generate_object_code
 from codex.develop.function_visitor import FunctionVisitor
 from codex.develop.model import GeneratedFunctionResponse, Package
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
+class DoccumentationExtractor(AIBlock):
+    """
+    This is a block that handles extracting relevant doccumenation from a PyPi README or similar, based on an error message.
+    """
+
+    developement_phase = DevelopmentPhase.DEVELOPMENT
+    # The name of the prompt template folder in codex/prompts/{model}
+    prompt_template_name = "validate/documentation_extractor"
+    # Model to use for the LLM
+    model = "gpt-4-0125-preview"
+    # Should we force the LLM to reply in JSON
+    is_json_response = False
+
+    async def validate(
+        self, invoke_params: dict, response: ValidatedResponse
+    ) -> ValidatedResponse:
+        """
+        The validation logic for the response. In this case, we perform some basic checks
+        to ensure the response is not empty.
+        """
+        if not response.response.strip():
+            raise ValidationError("Response is empty")
+        
+        return response
+
+    async def create_item(
+        self, ids: Identifiers, validated_response: ValidatedResponse
+    ):
+        """
+        This is where we would store the response in the database.
+        For now, we can just pass since we don't have a specific database model for this.
+        """
+        pass
 
 class CodeValidator:
     def __init__(
@@ -601,7 +639,31 @@ async def get_error_enhancements(
                     logger.info(f"Could not enhance error: {error_message}")
                     return None
 
-                return f"Found Metadata for the module: {metadata_contents}"
+                # Extact the relevant information from the metadata using an LLM
+                docs_extractor =  DoccumentationExtractor()
+
+                ids = Identifiers(
+                    user_id="umm",
+                    cloud_services_id="how",
+                    app_id="do",
+                    interview_id="I",
+                    spec_id="get",
+                    compiled_route_id="all",
+                    function_id="of",
+                    completed_app_id="these",
+                    deployment_id="ids"
+                )
+                
+                response = await docs_extractor.invoke(
+                    ids=ids,
+                    invoke_params={
+                        "error": error_message,
+                        "readme": metadata_contents,
+                    },
+                )
+                
+                
+                return f"Found Metadata for the module: {response}"
         case _:
             pass
     return None
