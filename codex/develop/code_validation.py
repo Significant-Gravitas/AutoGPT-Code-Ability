@@ -11,18 +11,18 @@ import uuid
 import black
 import isort
 import prisma
-from prisma.models import Function, ObjectType
 from prisma.enums import DevelopmentPhase
+from prisma.models import Function, ObjectType
 
 from codex.common.ai_block import (
     TODO_COMMENT,
+    AIBlock,
+    Identifiers,
     LineValidationError,
     ListValidationError,
+    ValidatedResponse,
     ValidationError,
     ValidationErrorWithContent,
-    AIBlock,
-    ValidatedResponse,
-    Identifiers,
 )
 from codex.common.constants import PRISMA_FILE_HEADER
 from codex.common.exec_external_tool import (
@@ -36,9 +36,9 @@ from codex.common.model import FunctionDef
 from codex.develop.function import generate_object_code
 from codex.develop.function_visitor import FunctionVisitor
 from codex.develop.model import GeneratedFunctionResponse, Package
-from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
+
 
 class DoccumentationExtractor(AIBlock):
     """
@@ -62,7 +62,7 @@ class DoccumentationExtractor(AIBlock):
         """
         if not response.response.strip():
             raise ValidationError("Response is empty")
-        
+
         return response
 
     async def create_item(
@@ -73,6 +73,7 @@ class DoccumentationExtractor(AIBlock):
         For now, we can just pass since we don't have a specific database model for this.
         """
         pass
+
 
 class CodeValidator:
     def __init__(
@@ -640,7 +641,7 @@ async def get_error_enhancements(
                     return None
 
                 # Extact the relevant information from the metadata using an LLM
-                docs_extractor =  DoccumentationExtractor()
+                docs_extractor = DoccumentationExtractor()
 
                 ids = Identifiers(
                     user_id="umm",
@@ -651,9 +652,9 @@ async def get_error_enhancements(
                     compiled_route_id="all",
                     function_id="of",
                     completed_app_id="these",
-                    deployment_id="ids"
+                    deployment_id="ids",
                 )
-                
+
                 response = await docs_extractor.invoke(
                     ids=ids,
                     invoke_params={
@@ -661,8 +662,7 @@ async def get_error_enhancements(
                         "readme": metadata_contents,
                     },
                 )
-                
-                
+
                 return f"Found doccumentation for the module:\n {response}"
         case _:
             pass
