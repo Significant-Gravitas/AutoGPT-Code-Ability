@@ -3,10 +3,8 @@ import os
 import random
 import tempfile
 import uuid
-import zipfile
-import requests
 from datetime import datetime
-from typing import List, Tuple
+from typing import List
 from pathlib import Path
 
 import aiohttp
@@ -503,7 +501,7 @@ async def create_remote_repo(application: Application) -> str:
             # Initialize a Git repository and commit everything
             repo = git_init(app_dir=package_dir)
 
-            remote_url. repo_url = await create_github_repo(application)
+            remote_url, repo_url = await create_github_repo(application)
             push_to_remote(repo, "origin", remote_url)
 
             logger.info("Code successfully pushed to repo")
