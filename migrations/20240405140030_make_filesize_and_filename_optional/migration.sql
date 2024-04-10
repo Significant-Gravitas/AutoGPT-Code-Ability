@@ -1,3 +1,0 @@
--- AlterTable
-ALTER TABLE "Deployment" ALTER COLUMN "fileName" DROP NOT NULL,
-ALTER COLUMN "fileSize" DROP NOT NULL;

@@ -5,7 +5,9 @@
 
 */
 -- AlterTable
-ALTER TABLE "Deployment" ADD COLUMN     "repo" TEXT;
+ALTER TABLE "Deployment" ADD COLUMN     "repo" TEXT,
+ALTER COLUMN "fileName" DROP NOT NULL,
+ALTER COLUMN "fileSize" DROP NOT NULL;
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Deployment_repo_key" ON "Deployment"("repo");
