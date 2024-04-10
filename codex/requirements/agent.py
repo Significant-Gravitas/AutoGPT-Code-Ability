@@ -4,7 +4,6 @@ import logging
 from asyncio import run
 
 import prisma
-from prisma.enums import AccessLevel
 from prisma.models import Specification
 from pydantic.json import pydantic_encoder
 
