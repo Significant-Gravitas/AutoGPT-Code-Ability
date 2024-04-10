@@ -65,6 +65,8 @@ async def log_event(
     status: Status = Status.FAILED,
     data: str | None = None,
 ):
+    if not EventLog.prisma()._client.is_connected():
+        await EventLog.prisma()._client.connect()
     await EventLog.prisma().create(
         data={
             "userId": id.user_id,
