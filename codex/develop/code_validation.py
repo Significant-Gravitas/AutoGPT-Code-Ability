@@ -640,6 +640,7 @@ AUTO_IMPORT_TYPES: dict[str, str] = {
     "prisma": "import prisma",
     "BaseModel": "from pydantic import BaseModel",
     "Enum": "from enum import Enum",
+    "UploadFile": "from fastapi import UploadFile",
 }
 for t in typing.__all__:
     AUTO_IMPORT_TYPES[t] = f"from typing import {t}"

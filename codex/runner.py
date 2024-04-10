@@ -1,8 +1,4 @@
-import io
 import logging
-import os
-import shutil
-import zipfile
 from enum import Enum
 
 from prisma import Prisma
@@ -81,7 +77,6 @@ async def run_task(
             codex_client=codex_client, task_name=task_name, resume_point=resume_point
         )
 
-        await get_deployment(codex_client=codex_client, task_name=task_name)
     except Exception as e:
         logger.exception(f"Error running task: {e}")
 
@@ -172,9 +167,6 @@ async def resume(
                 task_name=task_name,
                 resume_point=resume_point,
             )
-
-        if step.value <= ResumeStep.DOWNLOAD.value:
-            await get_deployment(codex_client=codex_client, task_name=task_name)
 
         logger.info(f"Task {task_name} finished")
 
@@ -306,40 +298,4 @@ async def run_compile(
         logger.info(f"[{task_name}] Development Compiling")
     except Exception as e:
         logger.exception(f"Error running compile: {e}")
-        raise e
-
-
-async def get_deployment(codex_client: CodexClient, task_name: str):
-    """
-    Downloads a zip file from the Codex client and extracts its contents to a specified folder.
-
-    Args:
-        codex_client (CodexClient): The Codex client instance.
-        task_name (str): The name of the task.
-
-    Raises:
-        Exception: If there is an error downloading the file.
-
-    Returns:
-        None
-    """
-    try:
-        logger.info(f"[{task_name}] Downloading File")
-        content, file_name = await codex_client.download_zip()
-        content = io.BytesIO(content)
-        extracted_folder = f"workspace/{file_name.split('.')[0]}"
-        if os.path.exists(extracted_folder):
-            shutil.rmtree(extracted_folder)
-
-        # Create a new directory
-        if not os.path.exists(extracted_folder):
-            os.makedirs(extracted_folder)
-        with zipfile.ZipFile(content, "r") as zip_ref:
-            zip_ref.extractall(extracted_folder)
-
-        logger.info(f"[{task_name}] Download Complete File is in : {extracted_folder}")
-    except Exception as e:
-        logger.exception(f"Error downloading the file: {e}")
-        raise e
-        logger.exception(f"Error downloading the file: {e}")
         raise e
