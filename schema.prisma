@@ -361,10 +361,11 @@ model Deployment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   deleted   Boolean  @default(false)
-  fileName  String
-  fileSize  Int
+  fileName  String?
+  fileSize  Int?
   path      String?
   fileBytes Bytes?
+  repo String? @unique
 
   User           User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId         String?

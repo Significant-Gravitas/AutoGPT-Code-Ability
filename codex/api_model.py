@@ -244,8 +244,7 @@ class DeliverablesListResponse(BaseModel):
 class DeploymentMetadata(BaseModel):
     id: str
     created_at: datetime
-    file_name: str
-    file_size: int
+    repo: str
 
 
 class DeploymentResponse(DeploymentMetadata):
