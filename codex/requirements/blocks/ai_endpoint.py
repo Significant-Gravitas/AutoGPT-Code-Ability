@@ -95,6 +95,7 @@ def is_valid_type(
         "Path",
         "PosixPath",
         "WindowsPath",
+        "UploadFile",
     ]
     return (
         type_name in object_type_names
