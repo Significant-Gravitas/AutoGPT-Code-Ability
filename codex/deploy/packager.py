@@ -382,7 +382,7 @@ def git_init(app_dir: Path) -> Repo:
 
     try:
         # Initialize Git repository
-        repo = Repo.init(app_dir, initial_branch='main')
+        repo = Repo.init(app_dir, initial_branch="main")
 
         # Configure Git user for the current session
         repo.git.set_persistent_git_options(
