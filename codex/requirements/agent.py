@@ -107,7 +107,6 @@ async def generate_requirements(ids: Identifiers, app: Application) -> Specifica
     running_state_obj.project_description_thoughts = interview.thoughts
 
     logger.info("User Interview Done")
-    logger.info(running_state_obj.project_description)
 
     frontend_clarify = FrontendClarificationBlock()
     frontend_clarification: Clarification = await frontend_clarify.invoke(
