@@ -1,4 +1,3 @@
-import base64
 import logging
 
 from prisma.models import CompletedApp, Deployment
@@ -18,7 +17,7 @@ async def create_deployment(ids: Identifiers, completedApp: CompletedApp) -> Dep
     app = await create_server_code(completedApp)
 
     repo = await create_remote_repo(app)
-    file_name = completedApp.name.replace(" ", "_")
+    completedApp.name.replace(" ", "_")
 
     try:
         logger.info(f"Creating deployment for {completedApp.name}")
