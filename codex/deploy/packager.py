@@ -410,7 +410,7 @@ def push_to_remote(repo: Repo, remote_name: str, remote_url: str):
     """
     try:
         origin = repo.create_remote(remote_name, remote_url)
-        origin.push(refspec="main:main")
+        origin.push(refspec="master:main")
         logger.info(f"Code successfully pushed. Repo: {remote_url}")
     except GitCommandError as e:
         logger.error(f"Failed to push code: {e}")
