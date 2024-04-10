@@ -174,7 +174,7 @@ async def generate_requirements(ids: Identifiers, app: Application) -> Specifica
     )
 
     # Parsing
-    running_state_obj.product_name = interview.name
+    running_state_obj.product_name = app.name
     running_state_obj.product_description = feature_so.description
     features: list[Feature] = []
 
