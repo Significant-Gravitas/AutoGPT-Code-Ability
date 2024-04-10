@@ -2,13 +2,14 @@ import logging
 import os
 import random
 import tempfile
+import uuid
 import zipfile
 import requests
 from datetime import datetime
 from typing import List, Tuple
 from pathlib import Path
 
-import requests
+import aiohttp
 from git import GitCommandError
 from git.repo import Repo
 from prisma.models import DatabaseTable
@@ -327,7 +328,7 @@ async def create_prisma_schema_file(application: Application) -> str:
     return prisma_file
 
 
-def create_github_repo(application: Application) -> (str, str):
+async def create_github_repo(application: Application) -> (str, str):
     """
     Creates a new GitHub repository under agpt-coder.
 
@@ -341,7 +342,7 @@ def create_github_repo(application: Application) -> (str, str):
         Exception: If the repository creation fails.
     """
 
-    GIT_TOKEN: str = os.environ.get("GIT_TOKEN")
+    GIT_TOKEN: str | None = os.environ.get("GIT_TOKEN")
     if not GIT_TOKEN:
         raise EnvironmentError("GitHub token not found in environment variables.")
 
@@ -350,19 +351,22 @@ def create_github_repo(application: Application) -> (str, str):
         "Authorization": f"token {GIT_TOKEN}",
         "Accept": "application/vnd.github.v3+json",
     }
-    repo_name = application.name.lower().replace(" ", "-")
+    # App name plus a random slug word trio to avoid conflicts
+    repo_name = application.name.lower().replace(" ", "-") + str(uuid.uuid4())
     data = {"name": repo_name, "private": False}
-    response = requests.post(url, headers=headers, json=data)
-
-    if response.status_code == 201:
-        repo_url = response.json()["html_url"]
-        logger.info(f"Repository created at {repo_url}")
-        authenticated_url = (
-            repo_url.replace("https://", f"https://{GIT_TOKEN}:x-oauth-basic@") + ".git"
-        )
-        return authenticated_url, repo_url
-    else:
-        raise Exception(f"Failed to create repository: {response.text}")
+    # Create the repository
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url=url, headers=headers, json=data) as response:
+            if response.status == 201:
+                repo_url = (await response.json())["html_url"]
+                logger.info(f"Repository created at {repo_url}")
+                authenticated_url = (
+                    repo_url.replace("https://", f"https://{GIT_TOKEN}:x-oauth-basic@")
+                    + ".git"
+                )
+                return authenticated_url, repo_url
+            else:
+                raise Exception(f"Failed to create repository: {response.text}")
 
 
 def git_init(app_dir: Path) -> Repo:
@@ -407,8 +411,8 @@ def push_to_remote(repo: Repo, remote_name: str, remote_url: str):
     """
     try:
         origin = repo.create_remote(remote_name, remote_url)
-        origin.push(refspec="master:main")
-        logger.info("Code successfully pushed.")
+        origin.push(refspec="main:main")
+        logger.info(f"Code successfully pushed. Repo: {remote_url}")
     except GitCommandError as e:
         logger.error(f"Failed to push code: {e}")
         raise
@@ -499,7 +503,7 @@ async def create_remote_repo(application: Application) -> str:
             # Initialize a Git repository and commit everything
             repo = git_init(app_dir=package_dir)
 
-            remote_url, repo_url = create_github_repo(application)
+            remote_url. repo_url = await create_github_repo(application)
             push_to_remote(repo, "origin", remote_url)
 
             logger.info("Code successfully pushed to repo")
