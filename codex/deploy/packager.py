@@ -382,7 +382,7 @@ def git_init(app_dir: Path) -> Repo:
 
     try:
         # Initialize Git repository
-        repo = Repo.init(app_dir)
+        repo = Repo.init(app_dir, initial_branch='main')
 
         # Configure Git user for the current session
         repo.git.set_persistent_git_options(
@@ -410,7 +410,7 @@ def push_to_remote(repo: Repo, remote_name: str, remote_url: str):
     """
     try:
         origin = repo.create_remote(remote_name, remote_url)
-        origin.push(refspec="master:main")
+        origin.push(refspec="main:main")
         logger.info(f"Code successfully pushed. Repo: {remote_url}")
     except GitCommandError as e:
         logger.error(f"Failed to push code: {e}")
