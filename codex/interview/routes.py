@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 import codex.database
 import codex.interview.agent
 import codex.interview.database
-from codex.api_model import Identifiers
+from codex.api_model import Identifiers, InterviewNextRequest
 from codex.interview.model import InterviewResponse
 
 logger = logging.getLogger(__name__)
@@ -45,11 +45,13 @@ async def start_interview(
     response_model=InterviewResponse,
 )
 async def take_next_step(
-    user_id: str, app_id: str, interview_id: str, user_message: str
+    user_id: str, app_id: str, interview_id: str, next_request: InterviewNextRequest
 ) -> Response | InterviewResponse:
     """
     Keep working through the interview until it is finished
     """
+    user_message = next_request.msg
+    logger.info(f"Next request recieved {user_message}")
     app = await codex.database.get_app_by_id(user_id, app_id)
     user = await codex.database.get_user(user_id)
     ids = Identifiers(
@@ -62,6 +64,7 @@ async def take_next_step(
     response = await codex.interview.agent.continue_interview(
         ids=ids, app=app, user_message=user_message
     )
+    logger.info(response)
     return response
 
 

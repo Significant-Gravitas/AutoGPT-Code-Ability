@@ -12,6 +12,7 @@ from codex.api_model import (
     DeliverableResponse,
     DeploymentResponse,
     Identifiers,
+    InterviewNextRequest,
     SpecificationResponse,
     UserCreate,
     UserResponse,
@@ -243,12 +244,12 @@ class CodexClient:
             )
         url = f"{self.base_url}/user/{self.codex_user_id}/apps/{self.app_id}/interview/{self.interview_id}/next"
 
-        obj = {"user_message": user_message}
+        obj = InterviewNextRequest(msg=user_message)
 
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.post(
-                    url, headers=self.headers, json=obj
+                    url, headers=self.headers, json=obj.model_dump()
                 ) as response:
                     response.raise_for_status()
                     interview_response = InterviewResponse(**await response.json())

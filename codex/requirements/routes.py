@@ -5,6 +5,7 @@ from fastapi import APIRouter, Query, Response
 from fastapi.responses import JSONResponse
 
 import codex.database
+import codex.requirements.agent
 import codex.requirements.database
 from codex.api_model import (
     Identifiers,
@@ -43,16 +44,11 @@ async def create_spec(
     )
     if not ids.user_id or not ids.app_id:
         raise ValueError("User ID and App ID are required")
-    # interview = await get_interview(
-    #     user_id=ids.user_id, app_id=ids.app_id, interview_id=interview_id
-    # # )
-    # if not interview:
-    #     return JSONResponse(
-    #         content=json.dumps({"error": "Interview not found"}),
-    #         status_code=404,
-    #     )
-    # new_spec = await generate_requirements(ids, interview.task)
-    # return SpecificationResponse.from_specification(new_spec)
+
+    app = await codex.database.get_app_by_id(user_id, app_id)
+
+    new_spec = await codex.requirements.agent.generate_requirements(ids, app=app)
+    return SpecificationResponse.from_specification(new_spec)
     return None
 
 

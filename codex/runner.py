@@ -209,10 +209,6 @@ async def run_interview(
 
         next_interview: InterviewResponse = start_interview
         while not next_interview.phase_completed:
-            logger.info(
-                f"[{task_name}] Interview: questions count {len(next_interview.uses)}"
-            )
-
             next_interview = await codex_client.interview_next(
                 user_message="Thats great thanks, make the app please."
             )

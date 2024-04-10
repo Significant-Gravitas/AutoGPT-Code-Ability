@@ -96,6 +96,8 @@ class ApplicationsListResponse(BaseModel):
 
 
 ###### SPECS ######
+class InterviewNextRequest(BaseModel):
+    msg: str
 
 
 class ParamModel(BaseModel):

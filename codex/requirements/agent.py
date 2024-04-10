@@ -5,9 +5,10 @@ from asyncio import run
 
 import prisma
 from prisma.enums import AccessLevel
-from prisma.models import Specification
+from prisma.models import Application, Specification
 from pydantic.json import pydantic_encoder
 
+import codex.interview.database
 from codex.api_model import Identifiers
 from codex.common.ai_model import OpenAIChatClient
 from codex.common.logging_config import setup_logging
@@ -60,7 +61,7 @@ from codex.requirements.unwrap_schemas import convert_endpoint
 logger = logging.getLogger(__name__)
 
 
-async def generate_requirements(ids: Identifiers, description: str) -> Specification:
+async def generate_requirements(ids: Identifiers, app: Application) -> Specification:
     """
     Runs the Requirements Agent to generate the system requirements based
     upon the provided task
@@ -75,7 +76,7 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
     if not ids.user_id or not ids.app_id:
         raise ValueError("User and App Ids are required")
 
-    running_state_obj = StateObj(task=description)
+    running_state_obj = StateObj(task=app.description)
 
     logger.info("State Object Created")
 
@@ -83,22 +84,30 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
     # interview = await get_interview(
     #     user_id=ids.user_id, app_id=ids.app_id, interview_id=ids.interview_id or ""
     # )
-
+    interview = await codex.interview.database.get_last_interview_step(
+        interview_id=ids.interview_id, app_id=ids.app_id
+    )
+    running_state_obj.product_name = app.name
     # set interview id
     # ids.interview_id = interview.id
-    interview = None
     if not interview:
         raise ValueError("Interview not found")
 
-    questions = interview.Questions or []
-    running_state_obj.project_description = [
-        question for question in questions if question.tool == "finished"
-    ][0].question
-    running_state_obj.project_description_thoughts = "\n".join(
-        [f"{item.tool}: {item.question} :{item.answer}" for item in questions]
-    )
+    def make_project_description(interview):
+        features_str = "\nFeatures:\n\n"
+        for feature in interview.Features:
+            features_str += "\nFeature Name: " + str(feature.name)
+            features_str += "\nFunctionality: " + str(feature.functionality)
+            features_str += "\nReasoning: " + str(feature.reasoning)
+            features_str += "\n"
+        return features_str
+
+    running_state_obj.project_description = make_project_description(interview)
+
+    running_state_obj.project_description_thoughts = interview.thoughts
 
     logger.info("User Interview Done")
+    logger.info(running_state_obj.project_description)
 
     frontend_clarify = FrontendClarificationBlock()
     frontend_clarification: Clarification = await frontend_clarify.invoke(

@@ -11,7 +11,7 @@ class UndestandRequest(BaseModel):
     thoughts: str
     features: list[AppFeature] | None = None
     say_to_user: str
-    phase_completed: str
+    phase_completed: bool
 
 
 class InterviewResponse(BaseModel):
