@@ -353,7 +353,8 @@ async def create_github_repo(application: Application) -> str:
     # App name plus a random slug word trio to avoid conflicts
     repo_name = application.name.lower().replace(" ", "-") + str(uuid.uuid4())
 
-    data = {"name": repo_name, "private": False}
+    # We should condition the repo status on the app development environment
+    data = {"name": repo_name, "private": True}
     # Create the repository
     async with aiohttp.ClientSession() as session:
         async with session.post(url=url, headers=headers, json=data) as response:
@@ -413,7 +414,7 @@ def push_to_remote(repo: Repo, remote_name: str, remote_url: str):
     try:
         origin = repo.create_remote(remote_name, remote_url)
         origin.push(refspec="main:main")
-        logger.info(f"Code successfully pushed. Repo: {remote_url}")
+        logger.info("Code successfully pushed.")
     except GitCommandError as e:
         logger.error(f"Failed to push code: {e}")
         raise
