@@ -3,10 +3,9 @@ import os
 import random
 import tempfile
 import uuid
-import zipfile
 from datetime import datetime
-from pathlib import Path
 from typing import List
+from pathlib import Path
 
 import aiohttp
 from git import GitCommandError
@@ -327,7 +326,7 @@ async def create_prisma_schema_file(application: Application) -> str:
     return prisma_file
 
 
-async def create_github_repo(application: Application) -> str:
+async def create_github_repo(application: Application) -> (str, str):
     """
     Creates a new GitHub repository under agpt-coder.
 
@@ -335,7 +334,7 @@ async def create_github_repo(application: Application) -> str:
         application (Application): The application to be used to create the github repo
 
     Returns:
-        str: The HTTPS URL of the newly created repository.
+        (str, str): A tuple containing the HTTPS URL of the newly created repository and authenticated repository URL.
 
     Raises:
         Exception: If the repository creation fails.
@@ -354,7 +353,7 @@ async def create_github_repo(application: Application) -> str:
     repo_name = application.name.lower().replace(" ", "-") + str(uuid.uuid4())
 
     # We should condition the repo status on the app development environment
-    data = {"name": repo_name, "private": True}
+    data = {"name": repo_name, "private": False}
     # Create the repository
     async with aiohttp.ClientSession() as session:
         async with session.post(url=url, headers=headers, json=data) as response:
@@ -365,7 +364,7 @@ async def create_github_repo(application: Application) -> str:
                     repo_url.replace("https://", f"https://{GIT_TOKEN}:x-oauth-basic@")
                     + ".git"
                 )
-                return authenticated_url
+                return authenticated_url, repo_url
             else:
                 raise Exception(f"Failed to create repository: {response.text}")
 
@@ -385,7 +384,7 @@ def git_init(app_dir: Path) -> Repo:
 
     try:
         # Initialize Git repository
-        repo = Repo.init(app_dir)
+        repo = Repo.init(app_dir, initial_branch="main")
 
         # Configure Git user for the current session
         repo.git.set_persistent_git_options(
@@ -420,16 +419,16 @@ def push_to_remote(repo: Repo, remote_name: str, remote_url: str):
         raise
 
 
-async def create_zip_file(application: Application) -> bytes:
+async def create_remote_repo(application: Application) -> str:
     """
-    Creates a zip file from the application
+    Creates and pushes to GitHub repo for application
     Args:
-        application (Application): The application to be zipped
+        application (Application): The application to be pushed to GitHub
 
     Returns:
-        bytes: The zipped file
+        str: GitHub repo URL
     """
-    logger.info("Creating zip file")
+    logger.info("Starting Git processes.")
 
     if not application.completed_app:
         raise ValueError("Application must have a completed app")
@@ -505,23 +504,14 @@ async def create_zip_file(application: Application) -> bytes:
             # Initialize a Git repository and commit everything
             repo = git_init(app_dir=package_dir)
 
-            remote_url = await create_github_repo(application)
+            remote_url, repo_url = await create_github_repo(application)
             push_to_remote(repo, "origin", remote_url)
 
             logger.info("Code successfully pushed to repo")
 
             logger.info("Created server code")
 
-            # Create a zip file of the directory
-            zip_file_path = app_dir / "server.zip"
-            with zipfile.ZipFile(zip_file_path, "w") as zipf:
-                for file in package_dir.rglob("*"):
-                    if file.is_file() and file.name != "server.zip":
-                        zipf.write(file, file.relative_to(package_dir))
-            logger.info("Created zip file")
-
-            # Read and return the bytes of the zip file
-            return zip_file_path.read_bytes()
+            return repo_url
     except Exception as e:
         logger.exception(e)
         raise e
