@@ -663,7 +663,7 @@ async def get_error_enhancements(
                 )
                 
                 
-                return f"Found Metadata for the module: {response}"
+                return f"Found doccumentation for the module:\n {response}"
         case _:
             pass
     return None
