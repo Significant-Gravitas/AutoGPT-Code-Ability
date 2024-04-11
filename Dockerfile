@@ -10,9 +10,14 @@ WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update \
-    && apt-get install -y build-essential curl ffmpeg git \
+    && apt-get install -y build-essential curl ffmpeg wget libcurl4-gnutls-dev libexpat1-dev gettext libz-dev libssl-dev \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && wget https://github.com/git/git/archive/v2.28.0.tar.gz -O git.tar.gz \
+    && tar -zxf git.tar.gz \
+    && cd git-* \
+    && make prefix=/usr all \
+    && make prefix=/usr install
 
 # Install Poetry - respects $POETRY_VERSION & $POETRY_HOME
 ENV POETRY_VERSION=1.1.8 \
@@ -48,6 +53,7 @@ ENV PORT=8000
 
 # Just declare the variable, the value will be set when running the container
 ENV OPENAI_API_KEY=""
+ENV RUN_ENV=""
 
 # This will be the command to run the FastAPI server using uvicorn
 CMD ./run serve

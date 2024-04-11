@@ -72,6 +72,8 @@ async def create_deployment(
         id=deployment.id,
         created_at=deployment.createdAt,
         repo=deployment.repo,
+        file_name=deployment.fileName,
+        file_size=deployment.fileSize,
     )
 
 
@@ -91,6 +93,8 @@ async def get_deployment(
         id=deployment.id,
         created_at=deployment.createdAt,
         repo=deployment.repo,
+        file_name=deployment.fileName,
+        file_size=deployment.fileSize,
     )
 
 
