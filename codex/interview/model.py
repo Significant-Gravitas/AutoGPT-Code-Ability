@@ -14,8 +14,13 @@ class UndestandRequest(BaseModel):
     phase_completed: bool
 
 
+class Feature(BaseModel):
+    name: str
+    functionality: str
+
+
 class InterviewResponse(BaseModel):
     id: str
     say_to_user: str
-    features: list[str] | None = None
+    features: list[Feature] | None = None
     phase_completed: bool

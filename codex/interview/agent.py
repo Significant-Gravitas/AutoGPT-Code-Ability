@@ -6,7 +6,7 @@ import prisma
 from codex.common.ai_block import Identifiers
 from codex.deploy.model import Application
 from codex.interview.ai_interview import InterviewBlock
-from codex.interview.model import InterviewResponse
+from codex.interview.model import Feature, InterviewResponse
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,9 @@ async def start_interview(ids: Identifiers, app: Application) -> InterviewRespon
     return InterviewResponse(
         id=interview.id,
         say_to_user=ans.say_to_user,
-        features=[f.name for f in ans.features],
+        features=[
+            Feature(name=f.name, functionality=f.functionality) for f in ans.features
+        ],
         phase_completed=ans.phase_completed,
     )
 
@@ -113,7 +115,10 @@ async def continue_interview(
         return InterviewResponse(
             id=last_step.interviewId,
             say_to_user=ans.say_to_user,
-            features=[f.name for f in ans.features],
+            features=[
+                Feature(name=f.name, functionality=f.functionality)
+                for f in ans.features
+            ],
             phase_completed=ans.phase_completed,
         )
     except Exception:
