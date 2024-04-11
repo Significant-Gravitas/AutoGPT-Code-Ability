@@ -341,6 +341,7 @@ class Endpoint(BaseModel):
     # TODO(ntindle): reintroduce this when supported by the system?
     # data_models: Optional[List[ObjectFieldE]]
     database_schema: Optional[DatabaseSchema]
+    access_level: AccessLevel = AccessLevel.PUBLIC
 
     def __str__(self):
         request_response_text = ""

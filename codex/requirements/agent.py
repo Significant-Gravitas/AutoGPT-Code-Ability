@@ -4,7 +4,6 @@ import logging
 from asyncio import run
 
 import prisma
-from prisma.enums import AccessLevel
 from prisma.models import Specification
 from pydantic.json import pydantic_encoder
 
@@ -399,7 +398,7 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
                             ],
                         ),
                         database_schema=route.database_schema,
-                        access_level=AccessLevel.PUBLIC,
+                        access_level=route.access_level,
                     )
                 )
 
