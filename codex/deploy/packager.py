@@ -2,6 +2,7 @@ import logging
 import os
 import random
 import tempfile
+import zipfile
 import uuid
 from datetime import datetime
 from typing import List
@@ -367,6 +368,128 @@ async def create_github_repo(application: Application) -> (str, str):
                 return authenticated_url, repo_url
             else:
                 raise Exception(f"Failed to create repository: {response.text}")
+
+
+async def create_zip_file(application: Application) -> bytes:
+    """
+    Creates a zip file from the application
+    Args:
+        application (Application): The application to be zipped
+
+    Returns:
+        bytes: The zipped file
+    """
+    logger.info("Creating zip file")
+
+    if not application.completed_app:
+        raise ValueError("Application must have a completed app")
+    if not application.completed_app.CompiledRoutes:
+        raise ValueError("Application must have at least one compiled route")
+
+    try:
+        with tempfile.TemporaryDirectory() as package_dir:
+            app_dir = os.path.join(package_dir, "project")
+            os.makedirs(app_dir, exist_ok=True)
+
+            # Make a readme file
+            readme_file_path = os.path.join(package_dir, "README.md")
+            with open(readme_file_path, "w") as readme_file:
+                readme_file.write(generate_readme(application))
+
+            dockerfile_path = os.path.join(package_dir, "Dockerfile")
+            with open(dockerfile_path, "w") as dockerfile:
+                dockerfile.write(DOCKERFILE)
+
+            # Make a __init__.py file
+            init_file_path = os.path.join(app_dir, "__init__.py")
+            with open(init_file_path, "w") as init_file:
+                init_file.write("")
+
+            # Make a server.py file
+            server_file_path = os.path.join(app_dir, "server.py")
+            with open(server_file_path, "w") as server_file:
+                server_file.write(application.server_code)
+
+            # Make all the service files
+            for compiled_route in application.completed_app.CompiledRoutes:
+                service_file_path = os.path.join(app_dir, compiled_route.fileName)
+                with open(service_file_path, "w") as service_file:
+                    service_file.write(compiled_route.compiledCode)
+
+            # Create pyproject.toml and poetry.lock
+            logger.info("Creating pyproject.toml")
+            await create_pyproject(application=application, package_dir=package_dir)
+            logger.info("Creating poetry.lock")
+            await poetry_lock(package_dir)
+
+            # Make a prisma schema file
+            prism_schema_file_path = os.path.join(package_dir, "schema.prisma")
+            prisma_content = await create_prisma_schema_file(application)
+            if prisma_content:
+                with open(prism_schema_file_path, mode="w") as prisma_file:
+                    prisma_file.write(prisma_content)
+
+            # Make a .env.example file
+            dotenv_example_file_path = os.path.join(package_dir, ".env.example")
+            dotenv_example = generate_dotenv_example_file(application)
+            with open(dotenv_example_file_path, mode="w") as dotenv_example_file:
+                dotenv_example_file.write(dotenv_example)
+
+            # Also create .env for convenience
+            dotenv_file_path = os.path.join(package_dir, ".env")
+            with open(dotenv_file_path, mode="w") as dotenv_file:
+                dotenv_file.write(dotenv_example)
+
+            # Make a .gitignore file
+            gitignore_file_path = os.path.join(package_dir, ".gitignore")
+            gitignore = generate_gitignore_file()
+            with open(gitignore_file_path, mode="w") as gitignore_file:
+                gitignore_file.write(gitignore)
+
+            # Make a docker-compose.yml file
+            docker_compose_file_path = os.path.join(package_dir, "docker-compose.yml")
+            docker_compose = generate_docker_compose_file(application)
+            with open(docker_compose_file_path, mode="w") as docker_compose_file:
+                docker_compose_file.write(docker_compose)
+
+            # Make a GitHub actions deploy file
+            github_actions_directory = os.path.join(
+                package_dir, ".github", "workflows"
+            )  # Define.github/workflows directory path
+            os.makedirs(
+                github_actions_directory, exist_ok=True
+            )  # Create .github/workflows directory if it doesn't exist
+
+            github_actions_deploy_file_path = os.path.join(
+                github_actions_directory, "deploy.yml"
+            )
+            with open(github_actions_deploy_file_path, mode="w") as deploy_file:
+                deploy_workflow = generate_actions_workflow(application)
+                deploy_file.write(deploy_workflow)
+
+            # Initialize a Git repository and commit everything
+            repo = git_init(app_dir=package_dir)
+
+            logger.info("Created server code")
+            # Create a zip file of the directory
+            zip_file_path = os.path.join(app_dir, "server.zip")
+            with zipfile.ZipFile(zip_file_path, "w") as zipf:
+                for root, dirs, files in os.walk(package_dir):
+                    for file in files:
+                        if file == "server.zip":
+                            continue
+                        file_path = os.path.join(root, file)
+                        zipf.write(file_path, os.path.relpath(file_path, package_dir))
+
+            logger.info("Created zip file")
+            # Read and return the bytes of the zip file
+            with open(zip_file_path, "rb") as zipf:
+                zip_bytes = zipf.read()
+
+            return zip_bytes
+    except Exception as e:
+        logger.exception(e)
+        raise e
 
 
 def git_init(app_dir: Path) -> Repo:
