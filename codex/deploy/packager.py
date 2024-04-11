@@ -2,6 +2,7 @@ import logging
 import os
 import random
 import tempfile
+import zipfile
 import uuid
 from datetime import datetime
 from typing import List
@@ -367,6 +368,108 @@ async def create_github_repo(application: Application) -> (str, str):
                 return authenticated_url, repo_url
             else:
                 raise Exception(f"Failed to create repository: {response.text}")
+
+
+async def create_zip_file(application: Application) -> bytes:
+    """
+    Creates a zip file from the application
+    Args:
+        application (Application): The application to be zipped
+
+    Returns:
+        bytes: The zipped file
+    """
+    logger.info("Creating zip file")
+
+    if not application.completed_app:
+        raise ValueError("Application must have a completed app")
+    if not application.completed_app.CompiledRoutes:
+        raise ValueError("Application must have at least one compiled route")
+
+    try:
+        with tempfile.TemporaryDirectory() as package_dir:
+            package_dir = Path(package_dir)
+            app_dir = package_dir / "project"
+            app_dir.mkdir(parents=True, exist_ok=True)
+
+            # Make a readme file
+            readme_file = package_dir / "README.md"
+            readme_file.write_text(generate_readme(application))
+
+            dockerfile = package_dir / "Dockerfile"
+            dockerfile.write_text(DOCKERFILE)
+
+            # Make a __init__.py file
+            init_file = app_dir / "__init__.py"
+            init_file.touch()
+
+            # Make a server.py file
+            server_file = app_dir / "server.py"
+            server_file.write_text(application.server_code)
+
+            # Make all the service files
+            for compiled_route in application.completed_app.CompiledRoutes:
+                service_file = app_dir / compiled_route.fileName
+                service_file.write_text(compiled_route.compiledCode)
+
+            # Create pyproject.toml and poetry.lock
+            logger.info("Creating pyproject.toml")
+            await create_pyproject(application=application, package_dir=package_dir)
+            logger.info("Creating poetry.lock")
+            await poetry_lock(package_dir)
+
+            # Make a prisma schema file
+            prisma_schema_file = package_dir / "schema.prisma"
+            prisma_schema = await create_prisma_schema_file(application)
+            if prisma_schema:
+                prisma_schema_file.write_text(prisma_schema)
+
+            # Make a .env.example file
+            dotenv_example_file = package_dir / ".env.example"
+            dotenv_example = generate_dotenv_example_file(application)
+            dotenv_example_file.write_text(dotenv_example)
+
+            # Also create .env for convenience
+            dotenv_file = package_dir / ".env"
+            dotenv_file.write_text(dotenv_example)
+
+            # Make a .gitignore file
+            gitignore_file = package_dir / ".gitignore"
+            gitignore = generate_gitignore_file()
+            gitignore_file.write_text(gitignore)
+
+            # Make a docker-compose.yml file
+            docker_compose_file = package_dir / "docker-compose.yml"
+            docker_compose = generate_docker_compose_file(application)
+            docker_compose_file.write_text(docker_compose)
+
+            # Make a GitHub actions deploy file
+            github_workflows_directory = package_dir / ".github" / "workflows"
+            github_workflows_directory.mkdir(parents=True, exist_ok=True)
+
+            github_deploy_workflow_path = github_workflows_directory / "deploy.yml"
+            github_deploy_workflow_path.write_text(
+                generate_actions_workflow(application)
+            )
+
+            # Initialize a Git repository and commit everything
+            repo = git_init(app_dir=package_dir)
+
+            logger.info("Created server code")
+
+            # Create a zip file of the directory
+            zip_file_path = app_dir / "server.zip"
+            with zipfile.ZipFile(zip_file_path, "w") as zipf:
+                for file in package_dir.rglob("*"):
+                    if file.is_file() and file.name != "server.zip":
+                        zipf.write(file, file.relative_to(package_dir))
+            logger.info("Created zip file")
+
+            # Read and return the bytes of the zip file
+            return zip_file_path.read_bytes()
+    except Exception as e:
+        logger.exception(e)
+        raise e
 
 
 def git_init(app_dir: Path) -> Repo:
