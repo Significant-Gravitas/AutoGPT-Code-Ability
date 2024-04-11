@@ -453,7 +453,7 @@ async def create_zip_file(application: Application) -> bytes:
             )
 
             # Initialize a Git repository and commit everything
-            repo = git_init(app_dir=package_dir)
+            git_init(app_dir=package_dir)
 
             logger.info("Created server code")
 
