@@ -484,6 +484,7 @@ def git_init(app_dir: Path) -> Repo:
     """
     GIT_USER_NAME: str = os.environ.get("GIT_USER_NAME", default="AutoGPT")
     GIT_USER_EMAIL: str = os.environ.get("GIT_USER_EMAIL", default="code@agpt.co")
+    GIT_AUTHOR = f"{GIT_USER_NAME} <{GIT_USER_EMAIL}>"
 
     try:
         # Initialize Git repository
@@ -499,7 +500,7 @@ def git_init(app_dir: Path) -> Repo:
         )
 
         repo.git.add(".")
-        repo.index.commit("Initial commit")
+        repo.index.commit("Initial commit", author=GIT_AUTHOR)
 
         logger.info("Git repository initialized and all files committed")
         return repo
