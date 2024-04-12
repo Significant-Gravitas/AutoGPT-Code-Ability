@@ -482,7 +482,7 @@ async def __execute_pyright(
 
             # Grab any enhancements we can for the error
             error_message: str = f"{e['message']}. {e.get('rule', '')}"
-            ids = get_ids_from_function_id_and_compiled_route(
+            ids = await get_ids_from_function_id_and_compiled_route(
                 func.function_id, compiled_route_id=func.compiled_route_id
             )
             if error_enhancements := await get_error_enhancements(
