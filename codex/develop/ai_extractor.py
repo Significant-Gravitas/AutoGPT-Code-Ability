@@ -2,7 +2,6 @@ from prisma.enums import DevelopmentPhase
 
 from codex.api_model import Identifiers
 from codex.common.ai_block import AIBlock, ValidatedResponse, ValidationError
-from codex.common.ai_block import AIBlock, ValidatedResponse, ValidationError
 
 
 class DocumentationExtractor(AIBlock):
