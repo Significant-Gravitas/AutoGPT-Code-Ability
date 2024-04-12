@@ -602,6 +602,48 @@ async def get_error_enhancements(
                     return None
 
                 return f"Found Metadata for the module: {metadata_contents}"
+        case "reportPrivateImportUsage":
+            if "is not exported from module" in error_message:
+                # Example error message: ""Completion" is not exported from module "openai""
+                logger.info(f"Attempting to enhance error: {error_message}")
+                # Extract the attempted import and the module
+                # attempted_import = (
+                #     error_message.split("is not exported from module")[0]
+                #     .strip()
+                #     .replace('"', "")
+                # )
+                module = (
+                    error_message.split("is not exported from module")[1]
+                    .split(". reportPrivateImportUsage")[0]
+                    .strip()
+                    .replace('"', "")
+                )
+
+                # Find the dist info and the module path
+                dist_info_path: typing.Optional[pathlib.Path] = None
+                module_path: typing.Optional[pathlib.Path] = None
+                dist_info_path, module_path = await find_module_dist_and_source(
+                    module, py_path
+                )
+
+                # Return if we can't find the dist info or the module path
+                if not dist_info_path and not module_path:
+                    logger.info(f"Could not enhance error: {error_message}")
+                    return None
+
+                # Find the metadata and the matching context
+                metadata_contents: typing.Optional[str] = None
+                matching_context: typing.Optional[str] = None
+
+                # Read the dist info's METADATA file
+                if dist_info_path:
+                    # Find the dist info's METADATA file
+                    metadata_file = dist_info_path / "METADATA"
+                    if metadata_file.exists():
+                        metadata_contents = metadata_file.read_text()
+                        
+                return f"Found Metadata for the module: {metadata_contents}"
+
         case _:
             pass
     return None
