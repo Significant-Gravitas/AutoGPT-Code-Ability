@@ -546,13 +546,6 @@ async def find_module_dist_and_source(
 
     return dist_info_path, module_path
 
-def extract_module_name(error_message: str) -> str:
-    return (
-        error_message.split("is not a known member of module")[1]
-        .split(". reportAttributeAccessIssue")[0]
-        .strip()
-        .replace('"', "")
-    )
 
 async def enhance_error(module: str, py_path: str) -> typing.Optional[typing.Dict[str, str]]:
     dist_info_path, module_path = await find_module_dist_and_source(module, py_path)
@@ -586,7 +579,13 @@ async def get_error_enhancements(
         case "reportAttributeAccessIssue":
             if "is not a known member of module" in error_message:
                 logger.info(f"Attempting to enhance error: {error_message}")
-                module = extract_module_name(error_message)
+                module = (
+                    error_message.split("is not a known member of module")[1]
+                    .split(". reportAttributeAccessIssue")[0]
+                    .strip()
+                    .replace('"', "")
+                )
+
                 enhancement_info = await enhance_error(module, py_path)
                 if enhancement_info:
                     return enhancement_info
@@ -595,7 +594,12 @@ async def get_error_enhancements(
         case "reportPrivateImportUsage":
             if "is not exported from module" in error_message:
                 logger.info(f"Attempting to enhance error: {error_message}")
-                module = extract_module_name(error_message)
+                module = (
+                    error_message.split("is not exported from module")[1]
+                    .split(". reportPrivateImportUsage")[0]
+                    .strip()
+                    .replace('"', "")
+                )
                 enhancement_info = await enhance_error(module, py_path)
                 if enhancement_info:
                     return enhancement_info
