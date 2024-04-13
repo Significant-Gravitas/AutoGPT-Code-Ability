@@ -6,6 +6,8 @@ import pathlib
 from typing import Any, Callable, Optional, Type
 
 import prisma
+from anthropic import AsyncAnthropic
+from anthropic.types import Message
 from jinja2 import Environment, FileSystemLoader
 from openai import AsyncOpenAI
 from openai.types import CompletionUsage
@@ -147,6 +149,7 @@ class AIBlock:
             db_client (Prisma): The Prisma Database client
         """
         self.oai_client: AsyncOpenAI = OpenAIChatClient.get_instance().openai
+        self.anthropic_client: AsyncAnthropic = AsyncAnthropic()
         self.template_base_path_with_model = pathlib.Path(
             os.path.join(
                 os.path.dirname(__file__),
@@ -302,26 +305,39 @@ class AIBlock:
             prompt += f"### {message['role']}\n\n {message['content']}\n\n"
         return prompt
 
-    def parse(self, response: ChatCompletion) -> ValidatedResponse:
-        usage_statistics = response.usage
-        message = response.choices[0].message
+    def parse(self, response: ChatCompletion | Message) -> ValidatedResponse:
+        if isinstance(response, ChatCompletion):
+            usage_statistics = response.usage
+            message = response.choices[0].message
 
-        if message.tool_calls is not None:
-            raise NotImplementedError("Tool calls are not supported")
-        elif message.function_call is not None:
-            raise NotImplementedError("Function calls are not supported")
+            if message.tool_calls is not None:
+                raise NotImplementedError("Tool calls are not supported")
+            elif message.function_call is not None:
+                raise NotImplementedError("Function calls are not supported")
 
-        if usage_statistics is None:
-            raise ParsingError("Usage statistics are missing")
+            if usage_statistics is None:
+                raise ParsingError("Usage statistics are missing")
 
-        if message.content is None:
-            raise ParsingError("Message content is missing")
+            if message.content is None:
+                raise ParsingError("Message content is missing")
 
-        return ValidatedResponse(
-            response=message.content,
-            usage_statistics=usage_statistics,
-            message=message.content,
-        )
+            return ValidatedResponse(
+                response=message.content,
+                usage_statistics=usage_statistics,
+                message=message.content,
+            )
+        elif isinstance(response, Message):
+            usage_statistics = CompletionUsage(
+                completion_tokens=response.usage.output_tokens,
+                prompt_tokens=response.usage.input_tokens,
+                total_tokens=response.usage.input_tokens + response.usage.output_tokens,
+            )
+            message = response.content[0]
+            return ValidatedResponse(
+                response=message.text,
+                usage_statistics=usage_statistics,
+                message=message.text,
+            )
 
     async def validate(
         self, invoke_params: dict, response: ValidatedResponse
@@ -364,14 +380,25 @@ class AIBlock:
             system_prompt = self.load_template("system", invoke_params)
             user_prompt = self.load_template("user", invoke_params)
 
-            request_params = {
-                "model": self.model,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-                "max_tokens": 4095,
-            }
+            request_params: dict[str, Any]
+            if self.model == "claude-3-opus-20240229":
+                request_params = {
+                    "model": self.model,
+                    "system": system_prompt,
+                    "messages": [
+                        {"role": "user", "content": user_prompt},
+                    ],
+                    "max_tokens": 4095,
+                }
+            else:
+                request_params = {
+                    "model": self.model,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt},
+                    ],
+                    "max_tokens": 4095,
+                }
 
             if self.is_json_response:
                 request_params["response_format"] = {"type": "json_object"}
@@ -453,7 +480,11 @@ class AIBlock:
                 ),
                 message=MOCK_RESPONSE,
             )
-        response = await self.oai_client.chat.completions.create(**request_params)
+        response: Message | ChatCompletion
+        if self.model == "claude-3-opus-20240229":
+            response = await self.anthropic_client.messages.create(**request_params)
+        else:
+            response = await self.oai_client.chat.completions.create(**request_params)
         return self.parse(response)
 
     async def create_item(
