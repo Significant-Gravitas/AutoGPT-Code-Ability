@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Tuple
 
 import aiohttp
 from prisma import Prisma
@@ -382,6 +382,51 @@ class CodexClient:
             logger.exception(f"Unknown Error when trying to create the deployment: {e}")
             raise e
 
+    async def download_zip(self) -> Tuple[bytes, str]:
+        """
+        Step 6: Download the deployment zip file.
+
+        Note: The request returns a FastAPI streaming response.
+
+        Returns:
+            Tuple[bytes, str]: The bytes of the zip file and the name of the file.
+        """
+        if not self.deployment_id:
+            raise ValueError("You must create a deployment before downloading a zip")
+        url = f"{self.base_url}/deployments/{self.deployment_id}/download"
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=self.headers) as response:
+                    response.raise_for_status()
+                    content = await response.read()
+                    filename = response.headers.get("Content-Disposition", "").split(
+                        "filename="
+                    )[1]
+                    return content, filename
+            # with requests.get(url, stream=True) as response:
+            #     response.raise_for_status()  # Raises stored HTTPError, if one occurred.
+
+            #     # Extract filename from Content-Disposition header if available.
+            #     filename = "deployment.zip"  # Default filename if not found in headers.
+            #     cd = response.headers.get("Content-Disposition")
+            #     if cd:
+            #         filenames = [
+            #             fn.strip().split("=")[1] if "filename=" in fn else None
+            #             for fn in cd.split(";")
+            #         ]
+            #         filename = next((fn.strip('"') for fn in filenames if fn), filename)
+
+            #     # Download the content.
+            #     content = response.content
+
+            #     return content, filename
+        except aiohttp.ClientError as e:
+            logger.exception(f"HTTP error occurred: {e}")
+            raise e
+        except Exception as err:
+            logger.exception(f"An error occurred: {err}")
+            raise
+
     @staticmethod
     async def build_codex_client(
         client: "Prisma",
@@ -438,6 +483,8 @@ class CodexClient:
 
 
 class TestModel(BaseModel):
+    content: bytes
+    filename: str
     deployment: DeploymentResponse
     deliverable: DeliverableResponse
     spec: SpecificationResponse
@@ -471,8 +518,11 @@ async def from_existing(db_client: Prisma, identifier: Identifiers) -> TestModel
     logger.info(f"Deliverable: {deliverable.id}")
     deployment = await codex_client.create_deployment()
     logger.info(f"Deployment: {deployment.id}")
+    content, filename = await codex_client.download_zip()
     await db_client.disconnect()
     return TestModel(
+        content=content,
+        filename=filename,
         deployment=deployment,
         deliverable=deliverable,
         interview=InterviewResponse(
@@ -519,9 +569,12 @@ async def partial(db_client: Prisma, identifier: Identifiers) -> TestModel:
     logger.info(f"Deliverable: {deliverable.id}")
     deployment = await codex_client.create_deployment()
     logger.info(f"Deployment: {deployment.id}")
+    content, filename = await codex_client.download_zip()
 
     await db_client.disconnect()
     return TestModel(
+        content=content,
+        filename=filename,
         deployment=deployment,
         deliverable=deliverable,
         spec=spec,
@@ -550,11 +603,15 @@ if __name__ == "__main__":
             ),
         )
     )
-
+    with open(response.filename, "wb") as f:
+        f.write(response.content)
+    logger.info(f"Downloaded {response.filename}")
     logger.info(f"{response!r}")
     logger.info("Done")
 
     response = run(partial(db_client, identifier_1))
-    logger.info(f"Your code is at {response.deployment.repo}!")
+    with open(response.filename, "wb") as f:
+        f.write(response.content)
+    logger.info(f"Downloaded {response.filename}")
     logger.info(f"{response!r}")
     logger.info("Done")

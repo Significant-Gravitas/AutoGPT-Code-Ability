@@ -406,7 +406,7 @@ async def generate_requirements(ids: Identifiers, app: Application) -> Specifica
                             ],
                         ),
                         database_schema=route.database_schema,
-                        access_level=AccessLevel.PUBLIC,
+                        access_level=route.access_level,
                     )
                 )
 

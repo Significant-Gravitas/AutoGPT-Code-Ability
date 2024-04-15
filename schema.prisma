@@ -140,8 +140,7 @@ model Specification {
 
 enum AccessLevel {
   PUBLIC
-  USER
-  ADMIN
+  PROTECTED
 }
 
 enum HTTPVerb {
@@ -365,7 +364,7 @@ model Deployment {
   fileSize  Int?
   path      String?
   fileBytes Bytes?
-  repo String? @unique
+  repo      String?  @unique
 
   User           User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId         String?
