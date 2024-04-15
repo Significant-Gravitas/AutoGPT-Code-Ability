@@ -576,7 +576,7 @@ async def get_error_enhancements(
     rule: str,
     error_message: str,
     py_path: str,
-) -> typing.Optional[typing.Dict[str, str]]:
+) -> typing.Optional[typing.Dict[str, typing.Optional[str]]]:
     # python match the rule and error message to a case
     match rule:
         case "reportAttributeAccessIssue":
