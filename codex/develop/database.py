@@ -1,8 +1,8 @@
 from typing import List, Tuple
 
-from prisma.models import CompiledRoute, CompletedApp
+from prisma.models import CompiledRoute, CompletedApp, Function, Specification
 
-from codex.api_model import Pagination
+from codex.api_model import Identifiers, Pagination
 from codex.common.database import INCLUDE_API_ROUTE, INCLUDE_FUNC
 
 
@@ -72,4 +72,58 @@ async def get_compiled_route(compiled_route_id: str) -> CompiledRoute:
             "Functions": INCLUDE_FUNC,  # type: ignore
             "ApiRouteSpec": INCLUDE_API_ROUTE,  # type: ignore
         },
+    )
+
+
+async def get_ids_from_function_id_and_compiled_route(
+    function_id: str, compiled_route_id: str
+) -> Identifiers:
+    function = await Function.prisma().find_unique_or_raise(
+        where={"id": function_id},
+        include={
+            "CompiledRoute": {
+                "include": {
+                    "ApiRouteSpec": True,
+                    "CompletedApp": {
+                        "include": {
+                            "User": True,
+                            "Application": True,
+                            "Specification": True,
+                        },
+                    },
+                },
+            },
+        },
+    )
+
+    compiled_route = await CompiledRoute.prisma().find_unique_or_raise(
+        where={"id": compiled_route_id},
+        include={
+            "CompletedApp": {
+                "include": {"User": True, "Application": True, "Specification": True},
+            }
+        },
+    )
+    if not compiled_route.CompletedApp:
+        raise ValueError("Compiled route does not have a completed app")
+    if not compiled_route.CompletedApp.Specification:
+        raise ValueError("Compiled route does not have a specification")
+    specification = await Specification.prisma().find_unique_or_raise(
+        where={"id": compiled_route.CompletedApp.Specification.id},
+        include={
+            "Interview": True,
+            "User": True,
+        },
+    )
+    if not specification.User:
+        raise ValueError("Specification does not have a user")
+    return Identifiers(
+        user_id=specification.userId,
+        cloud_services_id=specification.User.cloudServicesId,
+        app_id=specification.applicationId,
+        interview_id=specification.interviewId,
+        spec_id=specification.id,
+        compiled_route_id=function.compiledRouteId,
+        function_id=function.id,
+        completed_app_id=compiled_route.completedAppId,
     )
