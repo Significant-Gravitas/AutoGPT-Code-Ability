@@ -90,7 +90,9 @@ async def generate_requirements(ids: Identifiers, description: str) -> Specifica
     if not interview:
         raise ValueError("Interview not found")
 
-    questions = interview.Questions or []
+    questions = interview.Questions
+    if not questions:
+        raise ValueError("Questions not found")
     running_state_obj.project_description = [
         question for question in questions if question.tool == "finished"
     ][0].question

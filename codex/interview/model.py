@@ -39,6 +39,7 @@ class InterviewDBBase(BaseModel):
     project_description: str
     questions: List[InterviewMessageOptionalId | InterviewMessageWithResponseOptionalId]
     finished: bool = False
+    finished_text: Optional[Tuple[str, str]] = None
 
 
 class Interview(InterviewDBBase):
