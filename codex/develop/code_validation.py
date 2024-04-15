@@ -547,7 +547,9 @@ async def find_module_dist_and_source(
     return dist_info_path, module_path
 
 
-async def enhance_error(module: str, py_path: str) -> typing.Optional[typing.Dict[str, str]]:
+>async def enhance_error(
+    module: str, py_path: str
+) -> typing.Optional[typing.Dict[str, str]]:
     dist_info_path, module_path = await find_module_dist_and_source(module, py_path)
     if not dist_info_path and not module_path:
         return None
@@ -568,6 +570,7 @@ async def enhance_error(module: str, py_path: str) -> typing.Optional[typing.Dic
         }
     else:
         return None
+
 
 async def get_error_enhancements(
     rule: str,
@@ -608,6 +611,7 @@ async def get_error_enhancements(
         case _:
             pass
     return None
+
 
 AUTO_IMPORT_TYPES: dict[str, str] = {
     "prisma": "import prisma",
