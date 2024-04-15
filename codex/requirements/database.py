@@ -13,6 +13,12 @@ from codex.common.model import create_object_type
 from codex.requirements.model import ApplicationRequirements
 
 
+async def create_spec_v2(
+    ids: Identifiers, spec: ApplicationRequirements
+) -> Specification:
+    pass
+
+
 async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specification:
     routes = []
 

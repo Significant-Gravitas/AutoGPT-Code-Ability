@@ -314,9 +314,7 @@ class APIEndpointWrapper(BaseModel):
 class EndpointSchemaRefinementResponse(BaseModel):
     think: str
     db_models_needed: list[str]
-    # new_api_models: list[ObjectTypeE]
     api_endpoint: APIEndpointWrapper
-    end_thoughts: Optional[str]
 
 
 class Endpoint(BaseModel):
@@ -523,7 +521,7 @@ class APIRouteRequirement(BaseModel):
     description: str
 
     # This is the access level required to access this api route
-    access_level: AccessLevel
+    access_level: list[str]
 
     # This is the model for the request and response
     request_model: ObjectTypeE
