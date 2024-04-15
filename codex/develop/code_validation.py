@@ -591,7 +591,7 @@ async def enhance_error(
                 useful.append(pathlib.Path(_fuzzy_match))
 
         # Join the useful files
-        # TODO(ntindle): disable this for now, as it's not working as expected
+        # TODO(ntindle): disable this for now, as we're not sure it's working as expected
         # matching_context = "\n".join(
         #     [f.read_text() for f in useful if f.exists() and f.is_file()]
         # )
