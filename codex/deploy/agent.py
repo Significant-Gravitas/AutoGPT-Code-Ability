@@ -2,6 +2,7 @@ import logging
 import os
 
 import base64
+import uuid
 from prisma.models import CompletedApp, Deployment
 from prisma.types import DeploymentCreateInput
 
@@ -45,7 +46,8 @@ async def create_local_deployment(
                 fileSize=len(zip_file),
                 # I need to do this as the Base64 type in prisma is not working
                 fileBytes=encoded_file_bytes,  # type: ignore
-                repo="",
+                # So that we don't get dupe errors
+                repo=str(uuid.uuid4()),
             )
         )
     except Exception as e:
