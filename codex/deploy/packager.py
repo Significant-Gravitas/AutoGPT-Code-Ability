@@ -9,7 +9,7 @@ from typing import List
 from pathlib import Path
 
 import aiohttp
-from git import GitCommandError
+from git import GitCommandError, Actor
 from git.repo import Repo
 from prisma.models import DatabaseTable
 
@@ -484,6 +484,7 @@ def git_init(app_dir: Path) -> Repo:
     """
     GIT_USER_NAME: str = os.environ.get("GIT_USER_NAME", default="AutoGPT")
     GIT_USER_EMAIL: str = os.environ.get("GIT_USER_EMAIL", default="code@agpt.co")
+    author = Actor(GIT_USER_NAME, GIT_USER_EMAIL)
 
     try:
         # Initialize Git repository
@@ -499,7 +500,7 @@ def git_init(app_dir: Path) -> Repo:
         )
 
         repo.git.add(".")
-        repo.index.commit("Initial commit")
+        repo.index.commit("Initial commit", author=author, committer=author)
 
         logger.info("Git repository initialized and all files committed")
         return repo
