@@ -553,22 +553,39 @@ async def find_module_dist_and_source(
     return dist_info_path, module_path
 
 
+async def enhance_error(
+    module: str, py_path: str
+) -> typing.Optional[typing.Dict[str, typing.Optional[str]]]:
+    dist_info_path, module_path = await find_module_dist_and_source(module, py_path)
+    if not dist_info_path and not module_path:
+        return None
+
+    metadata_contents: typing.Optional[str] = None
+    if dist_info_path:
+        metadata_file = dist_info_path / "METADATA"
+        if metadata_file.exists():
+            metadata_contents = metadata_file.read_text()
+
+    matching_context: typing.Optional[str] = None
+    # TODO(ntindle): Implement finding the matching context using treesitter
+
+    if metadata_contents or matching_context:
+        return {
+            "metadata": metadata_contents,
+            "context": matching_context,
+        }
+    else:
+        return None
+
+
 async def get_error_enhancements(
     rule: str, error_message: str, py_path: pathlib.Path | str, ids: Identifiers
-) -> str | None:
+) -> typing.Optional[typing.Dict[str, typing.Optional[str]]]:
     # python match the rule and error message to a case
     match rule:
         case "reportAttributeAccessIssue":
             if "is not a known member of module" in error_message:
                 logger.info(f"Attempting to enhance error: {error_message}")
-
-                # Extract the attempted attribute and the module
-                # attempted_attribute = (
-                #     error_message.split("is not a known member of module")[0]
-                #     .strip()
-                #     .replace('"', "")
-                # )
-                # Split out ' "module". reportAttributeAccessIssue ' from the error message
                 module = (
                     error_message.split("is not a known member of module")[1]
                     .split(". reportAttributeAccessIssue")[0]
@@ -576,47 +593,46 @@ async def get_error_enhancements(
                     .replace('"', "")
                 )
 
-                # Find the dist info and the module path
-                dist_info_path: typing.Optional[pathlib.Path] = None
-                module_path: typing.Optional[pathlib.Path] = None
-                dist_info_path, module_path = await find_module_dist_and_source(
-                    module, py_path
+                enhancement_info = await enhance_error(module, py_path)
+                if enhancement_info:
+                    return enhancement_info
+                else:
+                    logger.warning(f"Could not enhance error: {error_message}")
+        case "reportPrivateImportUsage":
+            if "is not exported from module" in error_message:
+                logger.info(f"Attempting to enhance error: {error_message}")
+                module = (
+                    error_message.split("is not exported from module")[1]
+                    .split(". reportPrivateImportUsage")[0]
+                    .strip()
+                    .replace('"', "")
                 )
 
-                # Return if we can't find the dist info or the module path
-                if not dist_info_path and not module_path:
-                    logger.info(f"Could not enhance error: {error_message}")
-                    return None
+                enhancement_info = await enhance_error(module, py_path)
 
-                # Find the metadata and the matching context
-                metadata_contents: typing.Optional[str] = None
-                matching_context: typing.Optional[str] = None
+                if enhancement_info:
+                    if "metadata" in enhancement_info:
+                        metadata_contents = enhancement_info["metadata"]
 
-                # Read the dist info's METADATA file
-                if dist_info_path:
-                    # Find the dist info's METADATA file
-                    metadata_file = dist_info_path / "METADATA"
-                    if metadata_file.exists():
-                        metadata_contents = metadata_file.read_text()
+                        docs_extractor = DocumentationExtractor()
 
-                # Find the module's nearest matching attempted attribute in the module folder using treesitter
-                # TODO(ntindle): Implement this
-                if not metadata_contents and not matching_context:
-                    logger.info(f"Could not enhance error: {error_message}")
-                    return None
+                        response = await docs_extractor.invoke(
+                            ids=ids,
+                            invoke_params={
+                                "full_error_message": error_message,
+                                "readme": metadata_contents,
+                            },
+                        )
 
-                # Extact the relevant information from the metadata using an LLM
-                docs_extractor = DocumentationExtractor()
-
-                response = await docs_extractor.invoke(
-                    ids=ids,
-                    invoke_params={
-                        "full_error_message": error_message,
-                        "readme": metadata_contents,
-                    },
-                )
-
-                return f"Found doccumentation for the module:\n {response}"
+                        return f"Found doccumentation for the module:\n {response}"
+                    else:
+                        logger.warning(
+                            f"Could not enhance error since metadata_contents was empty: {error_message}"
+                        )
+                else:
+                    logger.warning(
+                        f"Could not enhance error since enhancement_info was empty: {error_message}"
+                    )
         case _:
             pass
     return None
