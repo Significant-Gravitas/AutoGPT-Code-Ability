@@ -1,5 +1,7 @@
 import logging
 
+from prisma.enums import AccessLevel
+
 from codex.common.ai_block import (
     AIBlock,
     Identifiers,
@@ -88,7 +90,22 @@ class ModuleRefinementBlock(AIBlock):
             model = ModuleRefinement.model_validate_json(
                 response.response, strict=False
             )
+            errors = []
+            for module in model.modules:
+                for endpoint_group in module.endpoint_groups:
+                    for endpoint in endpoint_group.endpoints:
+                        if endpoint.access_level not in [
+                            "PUBLIC",
+                            "PROTECTED",
+                            AccessLevel.PUBLIC,
+                            AccessLevel.PROTECTED,
+                        ]:
+                            errors += [
+                                f"Invalid access level: {endpoint.access_level} for endpoint: {endpoint.name}"
+                            ]
             response.response = model
+            if errors:
+                raise ValidationError("\n".join(errors))
         except Exception as e:
             raise ValidationError(f"Error validating response: {e}")
 
