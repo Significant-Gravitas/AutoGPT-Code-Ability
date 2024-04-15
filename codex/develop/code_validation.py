@@ -568,7 +568,7 @@ async def enhance_error(
 
     matching_context: typing.Optional[str] = None
     # TODO(ntindle): Implement finding the matching context using treesitter
-    
+
     if metadata_contents or matching_context:
         return {
             "metadata": metadata_contents,
@@ -609,11 +609,11 @@ async def get_error_enhancements(
                 )
 
                 enhancement_info = await enhance_error(module, py_path)
-                
+
                 if enhancement_info:
                     if "metadata" in enhancement_info:
                         metadata_contents = enhancement_info["metadata"]
-                        
+
                         docs_extractor = DocumentationExtractor()
 
                         response = await docs_extractor.invoke(
@@ -626,9 +626,13 @@ async def get_error_enhancements(
 
                         return f"Found doccumentation for the module:\n {response}"
                     else:
-                        logger.warning(f"Could not enhance error since metadata_contents was empty: {error_message}")
+                        logger.warning(
+                            f"Could not enhance error since metadata_contents was empty: {error_message}"
+                        )
                 else:
-                    logger.warning(f"Could not enhance error since enhancement_info was empty: {error_message}")
+                    logger.warning(
+                        f"Could not enhance error since enhancement_info was empty: {error_message}"
+                    )
         case _:
             pass
     return None
