@@ -500,7 +500,7 @@ def git_init(app_dir: Path) -> Repo:
         )
 
         repo.git.add(".")
-        repo.index.commit("Initial commit", author=author)
+        repo.index.commit("Initial commit", author=author, committer=author)
 
         logger.info("Git repository initialized and all files committed")
         return repo
