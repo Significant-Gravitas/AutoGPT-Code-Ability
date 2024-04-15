@@ -611,7 +611,7 @@ async def get_error_enhancements(
                 response = await docs_extractor.invoke(
                     ids=ids,
                     invoke_params={
-                        "error": error_message,
+                        "full_error_message": error_message,
                         "readme": metadata_contents,
                     },
                 )
