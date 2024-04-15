@@ -6,6 +6,7 @@ from codex.interview.model import (
     InterviewDBBase,
     InterviewMessageOptionalId,
     InterviewMessageWithResponse,
+    InterviewMessageWithResponseOptionalId,
 )
 
 
@@ -14,7 +15,18 @@ async def create_interview(ids: Identifiers, interview: InterviewDBBase) -> Inte
         raise ValueError("User ID is required to create an interview")
     if not ids.app_id:
         raise ValueError("App ID is required to create an interview")
-
+    if len(interview.questions) == 0:
+        interview.questions.append(
+            InterviewMessageWithResponseOptionalId(
+                id=None,
+                tool="finished",
+                content=(interview.finished_text or [interview.project_description])[0],
+                response=(
+                    interview.finished_text
+                    or [interview.project_description, interview.project_description]
+                )[1],
+            )
+        )
     data = InterviewCreateInput(
         applicationId=ids.app_id,
         userId=ids.user_id,
@@ -26,6 +38,7 @@ async def create_interview(ids: Identifiers, interview: InterviewDBBase) -> Inte
                 {
                     "question": q.content,
                     "tool": q.tool,
+                    "answer": q.content if q.tool == "finished" else None,
                 }
                 for q in interview.questions
             ]
