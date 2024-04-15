@@ -49,7 +49,6 @@ async def create_spec(
 
     new_spec = await codex.requirements.agent.generate_requirements(ids, app=app)
     return SpecificationResponse.from_specification(new_spec)
-    return None
 
 
 @spec_router.get(

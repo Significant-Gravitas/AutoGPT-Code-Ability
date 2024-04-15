@@ -4,7 +4,6 @@ import logging
 from asyncio import run
 
 import prisma
-from prisma.enums import AccessLevel
 from prisma.models import Application, Specification
 from pydantic.json import pydantic_encoder
 
@@ -81,15 +80,11 @@ async def generate_requirements(ids: Identifiers, app: Application) -> Specifica
     logger.info("State Object Created")
 
     # User Interview
-    # interview = await get_interview(
-    #     user_id=ids.user_id, app_id=ids.app_id, interview_id=ids.interview_id or ""
-    # )
     interview = await codex.interview.database.get_last_interview_step(
         interview_id=ids.interview_id, app_id=ids.app_id
     )
     running_state_obj.product_name = app.name
-    # set interview id
-    # ids.interview_id = interview.id
+
     if not interview:
         raise ValueError("Interview not found")
 
