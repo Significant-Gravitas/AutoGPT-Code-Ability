@@ -30,13 +30,13 @@ ADD COLUMN     "reasoning" TEXT NOT NULL;
 CREATE TABLE "InterviewStep" (
     "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "deleted" BOOLEAN NOT NULL DEFAULT false,
     "phase_complete" BOOLEAN NOT NULL DEFAULT false,
-    "say" TEXT NOT NULL,
-    "thoughts" TEXT NOT NULL,
-    "interviewId" TEXT NOT NULL,
-    "applicationId" TEXT NOT NULL,
+    "say" TEXT NOT NULL DEFAULT '',
+    "thoughts" TEXT NOT NULL DEFAULT '',
+    "interviewId" TEXT NOT NULL DEFAULT '',
+    "applicationId" TEXT NOT NULL DEFAULT '',
 
     CONSTRAINT "InterviewStep_pkey" PRIMARY KEY ("id")
 );
