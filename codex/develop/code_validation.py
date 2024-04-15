@@ -547,7 +547,7 @@ async def find_module_dist_and_source(
     return dist_info_path, module_path
 
 
->async def enhance_error(
+async def enhance_error(
     module: str, py_path: str
 ) -> typing.Optional[typing.Dict[str, str]]:
     dist_info_path, module_path = await find_module_dist_and_source(module, py_path)
