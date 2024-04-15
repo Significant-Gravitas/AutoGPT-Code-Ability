@@ -71,6 +71,7 @@ async def start_interview(
         app_name=app.name,
         questions=interview.questions_to_ask,
         finished=interview.finished,
+        finished_text=interview.finished_text,
     )
 
     # Create db for an interview
@@ -175,10 +176,11 @@ async def take_next_step(
         if x.tool != "ask":
             error_message = "User answered a question with a tool other than 'ask'."
             logger.warning(msg=error_message)
-            return JSONResponse(
-                content=json.dumps({"error": error_message}),
-                status_code=400,
-            )
+            # return JSONResponse(
+            #     content=json.dumps({"error": error_message}),
+            #     status_code=400,
+            # )
+            continue
 
     # Add Answers to any questions that were answered by the user
     updated_interview = await codex.interview.database.answer_questions(

@@ -591,9 +591,10 @@ async def enhance_error(
                 useful.append(pathlib.Path(_fuzzy_match))
 
         # Join the useful files
-        matching_context = "\n".join(
-            [f.read_text() for f in useful if f.exists() and f.is_file()]
-        )
+        # TODO(ntindle): disable this for now, as we're not sure it's working as expected
+        # matching_context = "\n".join(
+        #     [f.read_text() for f in useful if f.exists() and f.is_file()]
+        # )
 
     if metadata_contents or matching_context:
         return ErrorEnhancements(
@@ -682,7 +683,7 @@ async def get_error_enhancements(
                 f"Could not enhance error since metadata_contents and context was empty: {error_message}"
             )
     else:
-        logger.warning(
+        logger.debug(
             f"Could not enhance error since enhancement_info was empty: {error_message}"
         )
     return None

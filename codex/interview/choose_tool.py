@@ -53,6 +53,13 @@ async def use_tool(
                     response=response.response,
                 )
 
+    if input.tool == "finished":
+        return InterviewMessageWithResponseOptionalId(
+            id=input.id,
+            tool=input.tool,
+            content=input.content,
+            response=input.content,
+        )
     logger.error("No Match Found")
     return InterviewMessageWithResponseOptionalId(
         id=input.id,
