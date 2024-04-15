@@ -549,7 +549,7 @@ async def find_module_dist_and_source(
 
 async def enhance_error(
     module: str, py_path: str
-) -> typing.Optional[typing.Dict[str, str]]:
+) -> typing.Optional[typing.Dict[str, typing.Optional[str]]]:
     dist_info_path, module_path = await find_module_dist_and_source(module, py_path)
     if not dist_info_path and not module_path:
         return None
