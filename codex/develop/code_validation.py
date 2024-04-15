@@ -548,10 +548,6 @@ async def find_module_dist_and_source(
             module_path = match
             break
 
-    # We couldn't find the module
-    if not dist_info_path or not module_path:
-        return None, None
-
     return dist_info_path, module_path
 
 
@@ -565,7 +561,9 @@ async def enhance_error(
 ) -> typing.Optional[ErrorEnhancements]:
     dist_info_path, module_path = await find_module_dist_and_source(module, py_path)
     if not dist_info_path and not module_path:
-        return None
+        return ErrorEnhancements(
+            metadata="Could not find the module in the environment.", context=None
+        )
 
     metadata_contents: typing.Optional[str] = None
     if dist_info_path:
@@ -593,10 +591,12 @@ async def enhance_error(
                 useful.append(pathlib.Path(_fuzzy_match))
 
         # Join the useful files
-        matching_context = "\n".join([f.read_text() for f in useful if f.exists()])
+        matching_context = "\n".join(
+            [f.read_text() for f in useful if f.exists() and f.is_file()]
+        )
 
     if metadata_contents or matching_context:
-        ErrorEnhancements(
+        return ErrorEnhancements(
             metadata=metadata_contents,
             context=matching_context,
         )
@@ -648,7 +648,7 @@ async def get_error_enhancements(
 
                 # Extract the attempted attribute and the module
                 attempted_attribute = (
-                    error_message.split("is not a known member of module")[0]
+                    error_message.split("is not exported from module")[0]
                     .strip()
                     .replace('"', "")
                 )
@@ -679,7 +679,7 @@ async def get_error_enhancements(
             return f"Found documentation for the module:\n {response}"
         else:
             logger.warning(
-                f"Could not enhance error since metadata_contents was empty: {error_message}"
+                f"Could not enhance error since metadata_contents and context was empty: {error_message}"
             )
     else:
         logger.warning(
