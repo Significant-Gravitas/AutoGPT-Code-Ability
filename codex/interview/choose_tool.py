@@ -53,7 +53,7 @@ async def use_tool(
                     response=response.response,
                 )
 
-    if input.tool == 'finished':
+    if input.tool == "finished":
         return InterviewMessageWithResponseOptionalId(
             id=input.id,
             tool=input.tool,
