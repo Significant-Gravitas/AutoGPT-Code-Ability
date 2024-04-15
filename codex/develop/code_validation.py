@@ -15,6 +15,7 @@ from prisma.models import Function, ObjectType
 
 from codex.common.ai_block import (
     TODO_COMMENT,
+    Identifiers,
     LineValidationError,
     ListValidationError,
     ValidationError,
@@ -29,6 +30,8 @@ from codex.common.exec_external_tool import (
     setup_if_required,
 )
 from codex.common.model import FunctionDef
+from codex.develop.ai_extractor import DocumentationExtractor
+from codex.develop.database import get_ids_from_function_id_and_compiled_route
 from codex.develop.function import generate_object_code
 from codex.develop.function_visitor import FunctionVisitor
 from codex.develop.model import GeneratedFunctionResponse, Package
@@ -479,10 +482,13 @@ async def __execute_pyright(
 
             # Grab any enhancements we can for the error
             error_message: str = f"{e['message']}. {e.get('rule', '')}"
+            if not func.function_id:
+                raise ValueError("Could not get function_id!")
+            ids = await get_ids_from_function_id_and_compiled_route(
+                func.function_id, compiled_route_id=func.compiled_route_id
+            )
             if error_enhancements := await get_error_enhancements(
-                rule,
-                error_message,
-                py_path,
+                rule, error_message, py_path, ids=ids
             ):
                 error_message += f"\n{error_enhancements}"
 
@@ -548,9 +554,7 @@ async def find_module_dist_and_source(
 
 
 async def get_error_enhancements(
-    rule: str,
-    error_message: str,
-    py_path: str,
+    rule: str, error_message: str, py_path: pathlib.Path | str, ids: Identifiers
 ) -> str | None:
     # python match the rule and error message to a case
     match rule:
@@ -601,7 +605,18 @@ async def get_error_enhancements(
                     logger.info(f"Could not enhance error: {error_message}")
                     return None
 
-                return f"Found Metadata for the module: {metadata_contents}"
+                # Extact the relevant information from the metadata using an LLM
+                docs_extractor = DocumentationExtractor()
+
+                response = await docs_extractor.invoke(
+                    ids=ids,
+                    invoke_params={
+                        "full_error_message": error_message,
+                        "readme": metadata_contents,
+                    },
+                )
+
+                return f"Found doccumentation for the module:\n {response}"
         case _:
             pass
     return None
