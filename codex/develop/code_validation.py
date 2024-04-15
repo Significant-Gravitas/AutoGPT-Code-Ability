@@ -12,6 +12,7 @@ import black
 import isort
 import prisma
 from prisma.models import Function, ObjectType
+from pydantic import BaseModel
 
 from codex.common.ai_block import (
     TODO_COMMENT,
@@ -35,6 +36,7 @@ from codex.develop.database import get_ids_from_function_id_and_compiled_route
 from codex.develop.function import generate_object_code
 from codex.develop.function_visitor import FunctionVisitor
 from codex.develop.model import GeneratedFunctionResponse, Package
+from codex.requirements.matching import find_best_match
 
 logger = logging.getLogger(__name__)
 
@@ -535,30 +537,33 @@ async def find_module_dist_and_source(
     dist_info_path: typing.Optional[pathlib.Path] = None
     module_path: typing.Optional[pathlib.Path] = None
 
-    # find the dist info and the module path
-    # TODO(ntindle): This is a naive implementation, we should improve this as pydantic and pydantic-core would match and its a crapshoot which one we get
+    # find the dist info path
     for match in matches:
-        if ".dist-info" in match.name:
+        if re.match(f"{module}-[0-9]+.[0-9]+.[0-9]+.dist-info", match.name):
             dist_info_path = match
             break
+    # Get the module path
     for match in matches:
-        if module in match.name:
+        if module == match.name:
             module_path = match
             break
-
-    # We couldn't find the module
-    if not dist_info_path or not module_path:
-        return None, None
 
     return dist_info_path, module_path
 
 
+class ErrorEnhancements(BaseModel):
+    metadata: typing.Optional[str]
+    context: typing.Optional[str]
+
+
 async def enhance_error(
-    module: str, py_path: str
-) -> typing.Optional[typing.Dict[str, typing.Optional[str]]]:
+    module: str, module_full: str, py_path: str | pathlib.Path, attempted_attribute: str
+) -> typing.Optional[ErrorEnhancements]:
     dist_info_path, module_path = await find_module_dist_and_source(module, py_path)
     if not dist_info_path and not module_path:
-        return None
+        return ErrorEnhancements(
+            metadata="Could not find the module in the environment.", context=None
+        )
 
     metadata_contents: typing.Optional[str] = None
     if dist_info_path:
@@ -567,37 +572,70 @@ async def enhance_error(
             metadata_contents = metadata_file.read_text()
 
     matching_context: typing.Optional[str] = None
-    # TODO(ntindle): Implement finding the matching context using treesitter
+    # Find the module's nearest matching attempted attribute in the module folder using treesitter
+    if module_path:
+        # find the nearest matching file using the venv path with the module and the attempted attribute
+        useful = []
+        best_match = module_path / "__init__.py"
+        if not best_match.exists():
+            best_match = module_path / f"{attempted_attribute}.py"
+        if best_match.exists():
+            useful.append(best_match)
+        # try fuzzy matching the attempted attribute in the module path
+        fuzzed = find_best_match(
+            module_full, [str(x) for x in list(module_path.glob("**/*"))]
+        )
+        if fuzzed:
+            _fuzzy_match, _similarity = fuzzed[0], fuzzed[1]
+            if _similarity >= 0.9:
+                useful.append(pathlib.Path(_fuzzy_match))
+
+        # Join the useful files
+        matching_context = "\n".join(
+            [f.read_text() for f in useful if f.exists() and f.is_file()]
+        )
 
     if metadata_contents or matching_context:
-        return {
-            "metadata": metadata_contents,
-            "context": matching_context,
-        }
+        return ErrorEnhancements(
+            metadata=metadata_contents,
+            context=matching_context,
+        )
     else:
         return None
 
 
 async def get_error_enhancements(
     rule: str, error_message: str, py_path: pathlib.Path | str, ids: Identifiers
-) -> typing.Optional[typing.Dict[str, typing.Optional[str]]]:
+) -> typing.Optional[str]:
+    enhancement_info: typing.Optional[ErrorEnhancements] = None
     # python match the rule and error message to a case
     match rule:
         case "reportAttributeAccessIssue":
             if "is not a known member of module" in error_message:
                 logger.info(f"Attempting to enhance error: {error_message}")
-                module = (
+
+                # Extract the attempted attribute and the module
+                attempted_attribute = (
+                    error_message.split("is not a known member of module")[0]
+                    .strip()
+                    .replace('"', "")
+                )
+                # Split out ' "module". reportAttributeAccessIssue ' from the error message
+                module_full = (
                     error_message.split("is not a known member of module")[1]
                     .split(". reportAttributeAccessIssue")[0]
                     .strip()
                     .replace('"', "")
                 )
+                module = module_full.split(".")[0]
 
-                enhancement_info = await enhance_error(module, py_path)
-                if enhancement_info:
-                    return enhancement_info
-                else:
-                    logger.warning(f"Could not enhance error: {error_message}")
+                enhancement_info = await enhance_error(
+                    module=module,
+                    module_full=module_full,
+                    py_path=py_path,
+                    attempted_attribute=attempted_attribute,
+                )
+
         case "reportPrivateImportUsage":
             if "is not exported from module" in error_message:
                 logger.info(f"Attempting to enhance error: {error_message}")
@@ -608,33 +646,45 @@ async def get_error_enhancements(
                     .replace('"', "")
                 )
 
-                enhancement_info = await enhance_error(module, py_path)
+                # Extract the attempted attribute and the module
+                attempted_attribute = (
+                    error_message.split("is not exported from module")[0]
+                    .strip()
+                    .replace('"', "")
+                )
 
-                if enhancement_info:
-                    if "metadata" in enhancement_info:
-                        metadata_contents = enhancement_info["metadata"]
+                enhancement_info = await enhance_error(
+                    module=module,
+                    module_full=module,
+                    py_path=py_path,
+                    attempted_attribute=attempted_attribute,
+                )
 
-                        docs_extractor = DocumentationExtractor()
-
-                        response = await docs_extractor.invoke(
-                            ids=ids,
-                            invoke_params={
-                                "full_error_message": error_message,
-                                "readme": metadata_contents,
-                            },
-                        )
-
-                        return f"Found doccumentation for the module:\n {response}"
-                    else:
-                        logger.warning(
-                            f"Could not enhance error since metadata_contents was empty: {error_message}"
-                        )
-                else:
-                    logger.warning(
-                        f"Could not enhance error since enhancement_info was empty: {error_message}"
-                    )
         case _:
             pass
+    if enhancement_info:
+        if enhancement_info.metadata or enhancement_info.context:
+            docs_extractor = DocumentationExtractor()
+            metadata_contents = enhancement_info.metadata
+            context = enhancement_info.context
+
+            response = await docs_extractor.invoke(
+                ids=ids,
+                invoke_params={
+                    "full_error_message": error_message,
+                    "readme": metadata_contents,
+                    "context": context,
+                },
+            )
+            return f"Found documentation for the module:\n {response}"
+        else:
+            logger.warning(
+                f"Could not enhance error since metadata_contents and context was empty: {error_message}"
+            )
+    else:
+        logger.warning(
+            f"Could not enhance error since enhancement_info was empty: {error_message}"
+        )
     return None
 
 
