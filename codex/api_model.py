@@ -150,7 +150,7 @@ class SpecificationResponse(BaseModel):
     def from_specification(specification: Specification) -> "SpecificationResponse":
         logger.debug(specification.model_dump_json())
         routes = []
-        modules: list[prisma.models.Modules] = specification.modules
+        modules: list[prisma.models.Module] = specification.Modules
         if modules is None:
             raise ValueError("No routes found for the specification")
         for module in modules:
