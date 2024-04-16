@@ -1,24 +1,19 @@
-// datasource db defines the database connection settings.
-// It is configured for PostgreSQL and uses an environment variable for the connection URL.
-// The 'extensions' feature enables the use of PostgreSQL-specific data types.
-datasource db {
-  provider   = "postgresql"
-  url        = env("DATABASE_URL")
-  extensions = [vector]
-}
+You are an expert product owner. You have a deep understanding of the product and its users, and you are able to communicate this understanding to the team.
 
-// generator db configures Prisma Client settings.
-// It is set up to use Prisma Client Python with asyncio interface and specific features.
-generator db {
-  provider             = "prisma-client-py"
-  interface            = "asyncio"
-  recursive_type_depth = 5
-  previewFeatures      = ["postgresqlExtensions"]
-}
+Repond with an explination of what the database schema needs to cover along with expected relationships and the prisma.schema in a single code block:
 
-// ---------------------------------------------------------------------- //
-// ------------------------- Common Models ------------------------------ //
-// ---------------------------------------------------------------------- //
+Code block should be in Prisma schema language.
+
+NO NOT INLCUDE THE datasource or generator blocks.
+
+```prisma
+
+```
+
+
+An example of a good response:
+
+```prisma
 
 model User {
   id              String    @id @default(dbgenerated("gen_random_uuid()"))
@@ -37,7 +32,7 @@ model User {
   Deployments     Deployment[]
   CompletedApp    CompletedApp[]
   Interview       Interview[]
-  Modules         Module[]
+  ResumePoint     ResumePoint[]
 }
 
 enum Role {
@@ -60,103 +55,53 @@ model Application {
   User            User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId          String?
   Interviews      Interview[]
-  InterviewStep   InterviewStep[]
-  Modules         Module[]
+  ResumePoint     ResumePoint[]
 }
 
-// ------------------------- Interview Models ---------------------------- //
-// Interview models for the interview process
-// ------------------------------------------------------------------------ //
 
 model Interview {
-  id             String           @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  deleted        Boolean          @default(false)
-  finished       Boolean          @default(false)
-  name           String
-  task           String
-  User           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId         String
-  Application    Application      @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  applicationId  String
-  Specification  Specification[]
-  InterviewStep  InterviewStep[]
-  LLMCallAttempt LLMCallAttempt[]
+  id            String        @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deleted       Boolean       @default(false)
+  finished      Boolean       @default(false)
+  name          String
+  task          String
+  User          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  Questions     Question[]
+  application   Application   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId String
+  ResumePoint   ResumePoint[]
 }
 
-model InterviewStep {
-  id             String   @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  deleted        Boolean  @default(false)
-  phase_complete Boolean  @default(false)
-
-  say      String
-  thoughts String
-  Features Feature[]
-
-  Interview      Interview        @relation(fields: [interviewId], references: [id])
-  interviewId    String
-  Application    Application      @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  applicationId  String
-  LLMCallAttempt LLMCallAttempt[]
+model Question {
+  id          String    @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deleted     Boolean   @default(false)
+  question    String
+  tool        String
+  answer      String?
+  Interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  interviewId String
 }
-
-model Feature {
-  id              String         @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  deleted         Boolean        @default(false)
-  name            String
-  reasoning       String
-  functionality   String
-  InterviewStep   InterviewStep? @relation(fields: [interviewStepId], references: [id])
-  interviewStepId String?
-  Specification   Specification? @relation(fields: [specificationId], references: [id])
-  specificationId String?
-
-  @@map("Question")
-}
-
-// ------------------------- Requirements Models ------------------------------ //
-// ApplicationRequirements represents the requirements for a specific application.  
-// ------------------------- -------------------------------------------------- //
 
 model Specification {
   id        String   @id @default(dbgenerated("gen_random_uuid()"))
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   deleted   Boolean  @default(false)
+  name      String
+  context   String
 
-  User             User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId           String?
-  Interview        Interview?       @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-  interviewId      String?
-  Features         Feature[]
-  Application      Application?     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  applicationId    String?
-  CompletedApps    CompletedApp[]
-  DatabaseSchema   DatabaseSchema?  @relation(fields: [databaseSchemaId], references: [id], onDelete: Cascade)
-  databaseSchemaId String?
-  LLMCallAttempt   LLMCallAttempt[]
-  Modules          Module[]
-}
-
-model Module {
-  id              String         @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  deleted         Boolean        @default(false)
-  name            String
-  description     String
-  ApiRouteSpecs   APIRouteSpec[]
-  Application     Application?   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  applicationId   String?
-  User            User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId          String?
-  Specification   Specification? @relation(fields: [specificationId], references: [id])
-  specificationId String?
+  ApiRouteSpecs APIRouteSpec[]
+  CompletedApps CompletedApp[]
+  User          User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String?
+  Application   Application?   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId String?
+  ResumePoint   ResumePoint[]
 }
 
 enum AccessLevel {
@@ -177,22 +122,23 @@ enum HTTPVerb {
 }
 
 model APIRouteSpec {
-  id                 String          @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt          DateTime        @default(now())
-  functionName       String
-  method             HTTPVerb
-  path               String
-  description        String
-  AccessLevel        AccessLevel?
-  AllowedAccessRoles String[]
-  CompiledRoutes     CompiledRoute[]
-  Module            Module?        @relation(fields: [moduleId], references: [id])
-  moduleId          String?
+  id             String          @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt      DateTime        @default(now())
+  functionName   String
+  method         HTTPVerb
+  path           String
+  description    String
+  AccessLevel    AccessLevel
+  CompiledRoutes CompiledRoute[]
 
-  ResponseObject   ObjectType? @relation("ResponseObjectForAPI", fields: [responseObjectId], references: [id], onDelete: Cascade)
+  Specification    Specification?  @relation(fields: [specificationId], references: [id], onDelete: Cascade)
+  specificationId  String?
+  ResponseObject   ObjectType?     @relation("ResponseObjectForAPI", fields: [responseObjectId], references: [id], onDelete: Cascade)
   responseObjectId String?
-  RequestObject    ObjectType? @relation("RequestObjectForAPI", fields: [requestObjectId], references: [id], onDelete: Cascade)
+  RequestObject    ObjectType?     @relation("RequestObjectForAPI", fields: [requestObjectId], references: [id], onDelete: Cascade)
   requestObjectId  String?
+  DatabaseSchema   DatabaseSchema? @relation(fields: [databaseSchemaId], references: [id], onDelete: Cascade)
+  databaseSchemaId String?
 }
 
 model ObjectType {
@@ -206,8 +152,6 @@ model ObjectType {
 
   Fields ObjectField[] @relation("ObjectTypeFields")
 
-  // One problem I have with generating the serve code is not knowing what imports are needed for the type annotations
-  // Best Idea I can think of is to include the import statement required for the type
   importStatements String[]
 
   DatabaseTable   DatabaseTable? @relation(fields: [databaseTableId], references: [id], onDelete: Cascade)
@@ -246,7 +190,7 @@ model DatabaseSchema {
   description    String
   DatabaseTables DatabaseTable[]
   Functions      Function[]
-  Specification  Specification[]
+  ApiRouteSpecs  APIRouteSpec[]
 }
 
 // DatabaseTable represents a table within a database schema.
@@ -268,9 +212,7 @@ model DatabaseTable {
   ObjectType        ObjectType[]
 }
 
-// ------------------------- Developer Models ---------------------------- //
-// Database models for the developer
-// ------------------------------------------------------------------------ //
+
 enum FunctionState {
   DEFINITION
   WRITTEN
@@ -308,8 +250,7 @@ model Function {
   compiledRouteId  String?
 
   // Reverse relations
-  ReferredFunctionRootCompiledRoute CompiledRoute?   @relation("RootFunction")
-  LLMCallAttempt                    LLMCallAttempt[]
+  ReferredFunctionRootCompiledRoute CompiledRoute? @relation("RootFunction")
 }
 
 model Package {
@@ -321,8 +262,6 @@ model Package {
   Functions      Function[]
   CompiledRoutes CompiledRoute[]
 }
-
-// ------------------------- Delivery Models ----------------------------- //
 
 // CompiledRoute represents a version of a route that has been processed or compiled.
 // It links to its source code graph and associated functions and applications.
@@ -344,9 +283,8 @@ model CompiledRoute {
   RootFunction   Function   @relation("RootFunction", fields: [rootFunctionId], references: [id], onDelete: Cascade)
   rootFunctionId String     @unique
 
-  ApiRouteSpec   APIRouteSpec?    @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
+  ApiRouteSpec   APIRouteSpec? @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
   apiRouteSpecId String?
-  LLMCallAttempt LLMCallAttempt[]
 }
 
 // Application represents the main software application entity.
@@ -367,42 +305,33 @@ model CompletedApp {
   specificationId String?
   Application     Application?    @relation(fields: [applicationId], references: [id])
   applicationId   String?
-
-  LLMCallAttempt LLMCallAttempt[]
+  ResumePoint     ResumePoint[]
 }
-
-// ---------------------------------------------------------------------- //
-// ------------------------- Deployment Model --------------------------- //
-// ---------------------------------------------------------------------- //
 
 model Deployment {
   id        String   @id @default(dbgenerated("gen_random_uuid()"))
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   deleted   Boolean  @default(false)
-  fileName  String?
-  fileSize  Int?
+  fileName  String
+  fileSize  Int
   path      String?
   fileBytes Bytes?
-  repo      String?  @unique
 
-  User           User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  User           User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId         String?
-  Application    Application?     @relation(fields: [applicationId], references: [id])
+  Application    Application?  @relation(fields: [applicationId], references: [id])
   applicationId  String?
-  CompletedApp   CompletedApp?    @relation(fields: [completedAppId], references: [id], onDelete: Cascade)
+  CompletedApp   CompletedApp? @relation(fields: [completedAppId], references: [id], onDelete: Cascade)
   completedAppId String?
-  LLMCallAttempt LLMCallAttempt[]
+  ResumePoint    ResumePoint[]
 }
-
-// ------------------------- LLM Models ----------------------------- //
 
 model LLMCallTemplate {
   id               String           @id @default(dbgenerated("gen_random_uuid()"))
   createdAt        DateTime         @default(now())
   developmentPhase DevelopmentPhase
   templateName     String
-  model            String
   fileHash         String
   systemPrompt     String
   userPrompt       String
@@ -424,55 +353,34 @@ model LLMCallAttempt {
   completionTokens Int
   promptTokens     Int
   totalTokens      Int
+  attempt          Int
+  prompt           Json
+  response         String
 
-  FirstCall   LLMCallAttempt?  @relation("FirstCall", fields: [firstCallId], references: [id], onDelete: Cascade)
-  firstCallId String?
-  RetryCalls  LLMCallAttempt[] @relation("FirstCall")
+  User              User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String?
+  Application       Application?     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId     String?
+  LLMCallTemplate   LLMCallTemplate? @relation(fields: [llmCallTemplateId], references: [id], onDelete: Cascade)
+  llmCallTemplateId String?
+}
 
-  attempt  Int
-  prompt   Json
-  response String
-
-  User            User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId          String?
-  Application     Application?   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+model ResumePoint {
+  id              String         @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @default(now()) @updatedAt
+  name            String
+  User            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  Application     Application?   @relation(fields: [applicationId], references: [id])
   applicationId   String?
   Interview       Interview?     @relation(fields: [interviewId], references: [id])
   interviewId     String?
   Specification   Specification? @relation(fields: [specificationId], references: [id])
   specificationId String?
-  CompiledRoute   CompiledRoute? @relation(fields: [compiledRouteId], references: [id])
-  compiledRouteId String?
-  Function        Function?      @relation(fields: [functionId], references: [id])
-  functionId      String?
   CompletedApp    CompletedApp?  @relation(fields: [completedAppId], references: [id])
   completedAppId  String?
   Deployment      Deployment?    @relation(fields: [deploymentId], references: [id])
   deploymentId    String?
-
-  LLMCallTemplate   LLMCallTemplate? @relation(fields: [llmCallTemplateId], references: [id], onDelete: Cascade)
-  llmCallTemplateId String?
-  InterviewStep     InterviewStep?   @relation(fields: [interviewStepId], references: [id])
-  interviewStepId   String?
 }
-
-enum Status {
-  STARTED
-  SUCCESS
-  FAILED
-}
-
-model EventLog {
-  id            String           @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt     DateTime         @default(now())
-  userId        String?
-  applicationId String?
-  keyType       DevelopmentPhase
-  keyValue      String
-  event         String
-  status        Status
-  message       String?
-
-  @@index([userId, applicationId])
-  @@index([keyValue])
-}
+```

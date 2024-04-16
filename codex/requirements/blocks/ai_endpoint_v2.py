@@ -45,64 +45,57 @@ def extract_field_types(field_type: str, types: Set[str]) -> None:
         types.add(field_type)
 
 
+ALLOWED_TYPES = sorted(typing.__all__) + [
+    "int",
+    "float",
+    "str",
+    "bool",
+    "bytes",
+    "bytearray",
+    "complex",
+    "dict",
+    "frozenset",
+    "list",
+    "set",
+    "tuple",
+    "range",
+    "slice",
+    "memoryview",
+    "None",
+    "NotImplemented",
+    "Ellipsis",
+    "type",
+    "object",
+    "property",
+    "classmethod",
+    "staticmethod",
+    "super",
+    "datetime",
+    "date",
+    "time",
+    "timedelta",
+    "timezone",
+    "enum",
+    "array",
+    "deque",
+    "defaultdict",
+    "OrderedDict",
+    "Counter",
+    "ChainMap",
+    "namedtuple",
+    "Path",
+    "PosixPath",
+    "WindowsPath",
+    "UploadFile",
+]
+
+
 def is_valid_type(
     type_name: str,
     object_type_names: Set[str],
-    enum_names: List[str],
-    table_names: List[str],
+    allowed_types: List[str],
 ) -> bool:
-    typing_types = sorted(typing.__all__)
-
-    default_types = [
-        "int",
-        "float",
-        "str",
-        "bool",
-        "bytes",
-        "bytearray",
-        "complex",
-        "dict",
-        "frozenset",
-        "list",
-        "set",
-        "tuple",
-        "range",
-        "slice",
-        "memoryview",
-        "None",
-        "NotImplemented",
-        "Ellipsis",
-        "type",
-        "object",
-        "property",
-        "classmethod",
-        "staticmethod",
-        "super",
-        "datetime",
-        "date",
-        "time",
-        "timedelta",
-        "timezone",
-        "enum",
-        "array",
-        "deque",
-        "defaultdict",
-        "OrderedDict",
-        "Counter",
-        "ChainMap",
-        "namedtuple",
-        "Path",
-        "PosixPath",
-        "WindowsPath",
-        "UploadFile",
-    ]
-    return (
-        type_name in object_type_names
-        or type_name in typing_types
-        or type_name in default_types
-        or type_name in enum_names
-        or type_name in table_names
-    )
+    return type_name in object_type_names or type_name in allowed_types
 
 
 def replace_types(types: Set[str]) -> Set[str]:
@@ -381,8 +374,7 @@ def attach_related_types(
 def parse_object_model(
     request_model: ObjectTypeModel,
     response_model: ObjectTypeModel,
-    enum_names: List[str],
-    table_names: List[str],
+    allowed_types: List[str],
 ) -> Tuple[
     Set[str],
     Set[str],
@@ -413,12 +405,12 @@ def parse_object_model(
     invalid_request_types = [
         type_name
         for type_name in request_types
-        if not is_valid_type(type_name, request_type_names, enum_names, table_names)
+        if not is_valid_type(type_name, request_type_names, allowed_types)
     ]
     invalid_response_types = [
         type_name
         for type_name in response_types
-        if not is_valid_type(type_name, response_type_names, enum_names, table_names)
+        if not is_valid_type(type_name, response_type_names, allowed_types)
     ]
 
     while invalid_request_types or invalid_response_types:
@@ -464,16 +456,12 @@ def parse_object_model(
     invalid_request_types_post = [
         type_name
         for type_name in request_types_post
-        if not is_valid_type(
-            type_name, request_type_names_post, enum_names, table_names
-        )
+        if not is_valid_type(type_name, request_type_names_post, allowed_types)
     ]
     invalid_response_types_post = [
         type_name
         for type_name in response_types_post
-        if not is_valid_type(
-            type_name, response_type_names_post, enum_names, table_names
-        )
+        if not is_valid_type(type_name, response_type_names_post, allowed_types)
     ]
 
     return (
@@ -536,14 +524,22 @@ class EndpointSchemaRefinementBlock(AIBlock):
             ) = parse_object_model(
                 request_model=model.api_endpoint.request_model,
                 response_model=model.api_endpoint.response_model,
-                enum_names=invoke_params["db_enums"],
-                table_names=invoke_params["db_models"],
+                allowed_types=invoke_params["allowed_types"],
             )
 
-            if invalid_request_types or invalid_response_types:
-                raise ValidationError(
-                    f"Invalid types in request or response: {invalid_request_types} {invalid_response_types}"
+            error_message = ""
+            if invalid_request_types:
+                error_message += f"Invalid types in request: {invalid_request_types}\n"
+            if invalid_response_types:
+                error_message += (
+                    f"Invalid types in response: {invalid_response_types}\n"
                 )
+
+            if error_message:
+                raise ValidationError(
+                    error_message + f"Allowed types: {invoke_params['allowed_types']}"
+                )
+
             model.api_endpoint.request_model = new_request_model
             model.api_endpoint.response_model = new_response_model
 

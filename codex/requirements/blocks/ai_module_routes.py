@@ -1,5 +1,6 @@
 import logging
 
+import prisma
 import pydantic
 
 import codex.common.ai_block
@@ -10,7 +11,8 @@ class APIRoute(pydantic.BaseModel):
     A Software Module for the application
     """
 
-    http_verb: str
+    http_verb: prisma.enums.HTTPVerb
+    function_name: str
     path: str
     description: str
     allowed_access_roles: list[str]
@@ -37,7 +39,7 @@ class ModuleGenerationBlock(codex.common.ai_block.AIBlock):
     """
 
     # The name of the prompt template folder in codex/prompts/{model}
-    prompt_template_name = "requirements/module/generation"
+    prompt_template_name = "requirements/module_routes"
     # Model to use for the LLM
     model = "gpt-4-turbo"
     # Should we force the LLM to reply in JSON

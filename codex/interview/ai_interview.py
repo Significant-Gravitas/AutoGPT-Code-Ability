@@ -19,7 +19,7 @@ class InterviewBlock(AIBlock):
     """
 
     prompt_template_name = "interview/understand"
-    model = "gpt-4-0125-preview"
+    model = "gpt-4-turbo"
     is_json_response = True
     pydantic_object = UndestandRequest
 

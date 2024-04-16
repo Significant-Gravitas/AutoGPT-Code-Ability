@@ -1,19 +1,59 @@
 import asyncio
 import logging
 
+import prisma
 import pydantic
 from prisma.models import Application, Specification
 
+import codex.common.model
 import codex.common.types
 import codex.interview.database
 import codex.requirements.blocks.ai_database
 import codex.requirements.blocks.ai_endpoint_v2
 import codex.requirements.blocks.ai_module_routes
 import codex.requirements.blocks.ai_module_v2
+import codex.requirements.database
 import codex.requirements.model
 from codex.api_model import Identifiers
 
 logger = logging.getLogger(__name__)
+
+
+class APIRouteSpec(pydantic.BaseModel):
+    """
+    A Software Module for the application
+    """
+
+    module_name: str
+    http_verb: prisma.enums.HTTPVerb
+    function_name: str
+    path: str
+    description: str
+    allowed_access_roles: list[str]
+    request_model: codex.common.model.ObjectTypeModel
+    response_model: codex.common.model.ObjectTypeModel
+
+
+class Module(pydantic.BaseModel):
+    """
+    A Software Module for the application
+    """
+
+    name: str
+    description: str
+    api_routes: list[APIRouteSpec]
+
+
+class SpecHolder(pydantic.BaseModel):
+    """
+    A Software Module for the application
+    """
+
+    ids: Identifiers
+    app: Application
+    features: list[prisma.models.Feature] = []
+    modules: list[Module] = []
+    db_response: codex.requirements.model.DBResponse | None = None
 
 
 async def generate_requirements(ids: Identifiers, app: Application) -> Specification:
@@ -44,19 +84,28 @@ async def generate_requirements(ids: Identifiers, app: Application) -> Specifica
     if not ids.user_id or not ids.app_id:
         raise ValueError("User and App Ids are required")
 
-    logger.info("State Object Created")
+    spec_holder = SpecHolder(
+        ids=ids,
+        app=app,
+    )
+
+    logger.info("Spec Definition Started")
 
     # User Interview
     interview = await codex.interview.database.get_last_interview_step(
         interview_id=ids.interview_id, app_id=ids.app_id
     )
 
+    spec_holder.features = interview.Features
+
     features_string = ""
-    for feature in interview.features:
+    for feature in interview.Features:
         features_string += "\nFeature Name: " + str(feature.name)
         features_string += "\nFunctionality: " + str(feature.functionality)
         features_string += "\nReasoning: " + str(feature.reasoning)
         features_string += "\n"
+
+    logger.info("Defining Modules from features")
 
     module_block = codex.requirements.blocks.ai_module_v2.ModuleGenerationBlock()
     module_response = await module_block.invoke(
@@ -64,11 +113,11 @@ async def generate_requirements(ids: Identifiers, app: Application) -> Specifica
         invoke_params={
             "poduct_name": app.name,
             "product_description": app.description,
-            "features": interview.features,
+            "features": interview.Features,
         },
     )
 
-    logger.info("DB Started")
+    logger.info("Designing Database")
     # Database Design
     database_block = codex.requirements.blocks.ai_database.DatabaseGenerationBlock()
 
@@ -76,7 +125,7 @@ async def generate_requirements(ids: Identifiers, app: Application) -> Specifica
 
     db_invoke_params = {
         "product_spec": product_spec_str,
-        "needed_auth_roles": ", ".join(a for a in module_response.access_level),
+        "needed_auth_roles": ", ".join(a for a in module_response.access_roles),
         "modules": ", ".join(module.name for module in module_response.modules),
     }
 
@@ -85,14 +134,15 @@ async def generate_requirements(ids: Identifiers, app: Application) -> Specifica
         invoke_params=db_invoke_params,
     )
 
-    logger.info(f"DB Finished {db_response}")
+    spec_holder.db_response = db_response
 
-    module_routes = await asyncio.gather(
+    logger.info("Specifying Module API Routes")
+    modules = await asyncio.gather(
         *[
             denfine_module_routes(
                 ids=ids,
                 app=app,
-                module=module,
+                module_reqs=module,
                 features=features_string,
                 roles=", ".join(module_response.access_roles),
                 db_response=db_response,
@@ -101,9 +151,11 @@ async def generate_requirements(ids: Identifiers, app: Application) -> Specifica
         ]
     )
 
-    api_routes = [route for module in module_routes for route in module]
+    spec_holder.modules = modules
 
-    return api_routes
+    logger.info("Specification Definition Complete, saving to database")
+    spec = await codex.requirements.database.create_spec_v2(spec_holder)
+    return spec
 
 
 async def denfine_module_routes(
@@ -113,7 +165,7 @@ async def denfine_module_routes(
     features: str,
     roles: str,
     db_response: codex.requirements.model.DBResponse,
-) -> list[codex.requirements.blocks.ai_module_routes.APIRoute]:
+) -> Module:
     block = codex.requirements.blocks.ai_module_routes.ModuleGenerationBlock()
 
     module_routes = await block.invoke(
@@ -133,29 +185,21 @@ async def denfine_module_routes(
                 ids=ids,
                 app=app,
                 features=features,
-                module=module_reqs,
+                module_reqs=module_reqs,
                 api_route=route,
                 db_response=db_response,
             )
-            for route in module_routes.modules
+            for route in module_routes.routes
         ]
     )
 
-    return endpoints
+    module = Module(
+        name=module_reqs.name,
+        description=module_reqs.description,
+        api_routes=endpoints,
+    )
 
-
-class APIRouteSpec(pydantic.BaseModel):
-    """
-    A Software Module for the application
-    """
-
-    module_name: str
-    http_verb: str
-    path: str
-    description: str
-    allowed_access_roles: list[str]
-    request_model: codex.common.types.ObjectTypeE
-    response_model: codex.common.types.ObjectTypeE
+    return module
 
 
 async def define_api_spec(
@@ -166,22 +210,33 @@ async def define_api_spec(
     api_route: codex.requirements.blocks.ai_module_routes.APIRoute,
     db_response: codex.requirements.model.DBResponse,
 ):
-    block = codex.requirements.blocks.ai_endpoint_v2.EndpointGenerationBlock()
+    block = codex.requirements.blocks.ai_endpoint_v2.EndpointSchemaRefinementBlock()
+    model_names = [table.name for table in db_response.database_schema.tables]
+
+    enum_names = [enum.name for enum in db_response.database_schema.enums]
+
+    allowed_types = (
+        model_names
+        + enum_names
+        + codex.requirements.blocks.ai_endpoint_v2.ALLOWED_TYPES
+    )
 
     endpoint: codex.requirements.model.EndpointSchemaRefinementResponse = await block.invoke(
         ids=ids,
         invoke_params={
             "spec": f"{app.name} - {app.description}\nFeatures:\n{features}",
-            "db_models": db_response.models,
-            "db_enums": db_response.enums,
+            "db_models": db_response.database_schema.tables,
+            "db_enums": db_response.database_schema.enums,
             "module_repr": f"{module_reqs.name} - {module_reqs.description}",
             "endpoint_repr": f"{api_route.http_verb} - {api_route.path} - {api_route.description} \n Roles Allowed: {', '.join(api_route.allowed_access_roles)}",
+            "allowed_types": allowed_types,
         },
     )
 
     api_spec = APIRouteSpec(
         module_name=module_reqs.name,
         http_verb=api_route.http_verb,
+        function_name=api_route.function_name,
         path=api_route.path,
         description=api_route.description,
         allowed_access_roles=api_route.allowed_access_roles,

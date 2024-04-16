@@ -77,7 +77,7 @@ async def get_app(
     """
     Retrieve a specific application by its ID for a given user.
     """
-    app_response = await codex.database.get_app_by_id(user_id, app_id)
+    app_response = await codex.database.get_app_response_by_id(user_id, app_id)
     if app_response:
         return app_response
     else:

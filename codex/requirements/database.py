@@ -1,22 +1,129 @@
+import prisma
 from prisma.models import Specification
 from prisma.types import SpecificationCreateInput
 
+import codex.requirements.agent_v2
 from codex.api_model import (
     Identifiers,
     Pagination,
     SpecificationResponse,
     SpecificationsListResponse,
 )
-from codex.common.database import INCLUDE_API_ROUTE
+from codex.common.database import INCLUDE_API_ROUTE, INCLUDE_FIELD
 from codex.common.model import ObjectTypeModel as ObjectTypeE
 from codex.common.model import create_object_type
 from codex.requirements.model import ApplicationRequirements
 
 
 async def create_spec_v2(
-    ids: Identifiers, spec: ApplicationRequirements
+    spec_holder: codex.requirements.agent_v2.SpecHolder,
 ) -> Specification:
-    pass
+    if spec_holder.ids.user_id is None:
+        raise ValueError("User ID is required")
+
+    if spec_holder.ids.app_id is None:
+        raise ValueError("App ID is required")
+
+    request_models = [
+        r.request_model
+        for m in spec_holder.modules
+        for r in m.api_routes
+        if r.request_model
+    ]
+    response_models = [
+        r.response_model
+        for m in spec_holder.modules
+        for r in m.api_routes
+        if r.response_model
+    ]
+    all_models = request_models + response_models
+
+    created_objects = {}
+    for model in all_models:
+        created_objects = await create_object_type(model, created_objects)
+
+    create_db = prisma.types.DatabaseSchemaCreateInput(
+        name=spec_holder.db_response.database_schema.name,
+        description=spec_holder.db_response.database_schema.description,
+        DatabaseTables={
+            "create": [
+                {
+                    "name": table.name,
+                    "description": table.description,
+                    "definition": table.definition,
+                    "isEnum": False,
+                }
+                for table in spec_holder.db_response.database_schema.tables
+            ]
+            + [
+                {
+                    "name": enum.name,
+                    "description": enum.description,
+                    "definition": enum.definition,
+                    "isEnum": True,
+                }
+                for enum in spec_holder.db_response.database_schema.enums
+            ]
+        },
+    )
+
+    create_modules = [
+        prisma.types.ModuleCreateInput(
+            name=m.name,
+            description=m.description,
+            ApiRouteSpecs={
+                "create": [
+                    {
+                        "method": r.http_verb,
+                        "path": r.path,
+                        "functionName": r.function_name,
+                        "AllowedAccessRoles": r.allowed_access_roles,
+                        "description": r.description,
+                        "RequestObject": {
+                            "connect": {"id": created_objects[r.request_model.name].id}
+                        }
+                        if r.request_model
+                        else None,
+                        "ResponseObject": {
+                            "connect": {"id": created_objects[r.response_model.name].id}
+                        }
+                        if r.response_model
+                        else None,
+                    }
+                    for r in m.api_routes
+                ]
+            },
+        )
+        for m in spec_holder.modules
+    ]
+
+    create_spec = SpecificationCreateInput(
+        Features={"connect": [{"id": f.id} for f in spec_holder.features]},
+        DatabaseSchema={"create": create_db},
+        Modules={"create": create_modules},
+        User={"connect": {"id": spec_holder.ids.user_id}},
+        Application={"connect": {"id": spec_holder.ids.app_id}},
+    )
+
+    spec = await Specification.prisma().create(
+        data=create_spec,
+        include={
+            "Features": True,
+            "DatabaseSchema": {"include": {"DatabaseTables": True}},
+            "Modules": {
+                "include": {
+                    "ApiRouteSpecs": {
+                        "include": {
+                            "RequestObject": INCLUDE_FIELD,
+                            "ResponseObject": INCLUDE_FIELD,
+                        }
+                    },
+                },
+            },
+        },
+    )
+
+    return spec
 
 
 async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specification:
@@ -70,6 +177,7 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
                     ]
                 },
             }
+
         create_route = {
             "method": route.method,
             "path": route.path,

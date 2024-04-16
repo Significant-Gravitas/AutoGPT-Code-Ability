@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 from typing import List, Optional
 
+import prisma
 from prisma.enums import Role
 from prisma.models import Specification
 from pydantic import BaseModel, Field
@@ -149,56 +150,58 @@ class SpecificationResponse(BaseModel):
     def from_specification(specification: Specification) -> "SpecificationResponse":
         logger.debug(specification.model_dump_json())
         routes = []
-        if specification.ApiRouteSpecs is None:
+        modules: list[prisma.models.Modules] = specification.modules
+        if modules is None:
             raise ValueError("No routes found for the specification")
-        for route in specification.ApiRouteSpecs:
-            routes.append(
-                APIRouteSpecModel(
-                    id=route.id,
-                    createdAt=route.createdAt,
-                    # if you've come here to fix this, talk to Nick. Something in the
-                    # system is misbehaving and treating this as if its a dict not an enum
-                    method=str(route.method),
-                    path=route.path,
-                    description=route.description,
-                    requestObject=RequestObjectModel(
-                        id=route.RequestObject.id,
-                        createdAt=route.RequestObject.createdAt,
-                        name=route.RequestObject.name,
-                        description=route.RequestObject.description or "",
-                        params=[
-                            ParamModel(
-                                id=param.id,
-                                createdAt=param.createdAt,
-                                name=param.name,
-                                description=param.description or "",
-                                param_type=param.typeName,
-                            )
-                            for param in route.RequestObject.Fields or []
-                        ],
+        for module in modules:
+            for route in module.ApiRouteSpecs:
+                routes.append(
+                    APIRouteSpecModel(
+                        id=route.id,
+                        createdAt=route.createdAt,
+                        # if you've come here to fix this, talk to Nick. Something in the
+                        # system is misbehaving and treating this as if its a dict not an enum
+                        method=str(route.method),
+                        path=route.path,
+                        description=route.description,
+                        requestObject=RequestObjectModel(
+                            id=route.RequestObject.id,
+                            createdAt=route.RequestObject.createdAt,
+                            name=route.RequestObject.name,
+                            description=route.RequestObject.description or "",
+                            params=[
+                                ParamModel(
+                                    id=param.id,
+                                    createdAt=param.createdAt,
+                                    name=param.name,
+                                    description=param.description or "",
+                                    param_type=param.typeName,
+                                )
+                                for param in route.RequestObject.Fields or []
+                            ],
+                        )
+                        if route.RequestObject
+                        else None,
+                        responseObject=ResponseObjectModel(
+                            id=route.ResponseObject.id,
+                            createdAt=route.ResponseObject.createdAt,
+                            name=route.ResponseObject.name,
+                            description=route.ResponseObject.description or "",
+                            params=[
+                                ParamModel(
+                                    id=param.id,
+                                    createdAt=param.createdAt,
+                                    name=param.name,
+                                    description=param.description or "",
+                                    param_type=param.typeName,
+                                )
+                                for param in route.ResponseObject.Fields or []
+                            ],
+                        )
+                        if route.ResponseObject
+                        else None,
                     )
-                    if route.RequestObject
-                    else None,
-                    responseObject=ResponseObjectModel(
-                        id=route.ResponseObject.id,
-                        createdAt=route.ResponseObject.createdAt,
-                        name=route.ResponseObject.name,
-                        description=route.ResponseObject.description or "",
-                        params=[
-                            ParamModel(
-                                id=param.id,
-                                createdAt=param.createdAt,
-                                name=param.name,
-                                description=param.description or "",
-                                param_type=param.typeName,
-                            )
-                            for param in route.ResponseObject.Fields or []
-                        ],
-                    )
-                    if route.ResponseObject
-                    else None,
                 )
-            )
 
         ret_obj = SpecificationResponse(
             id=specification.id,

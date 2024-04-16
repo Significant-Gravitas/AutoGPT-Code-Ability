@@ -5,7 +5,7 @@ from fastapi import APIRouter, Query, Response
 from fastapi.responses import JSONResponse
 
 import codex.database
-import codex.requirements.agent
+import codex.requirements.agent_v2
 import codex.requirements.database
 from codex.api_model import (
     Identifiers,
@@ -34,7 +34,7 @@ async def create_spec(
     """
     Create a new specification for a given application and user.
     """
-    await codex.database.get_app_by_id(user_id, app_id)
+    await codex.database.get_app_response_by_id(user_id, app_id)
     user = await codex.database.get_user(user_id)
     ids = Identifiers(
         user_id=user_id,
@@ -47,7 +47,7 @@ async def create_spec(
 
     app = await codex.database.get_app_by_id(user_id, app_id)
 
-    new_spec = await codex.requirements.agent.generate_requirements(ids, app=app)
+    new_spec = await codex.requirements.agent_v2.generate_requirements(ids, app=app)
     return SpecificationResponse.from_specification(new_spec)
 
 
