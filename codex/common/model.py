@@ -20,8 +20,8 @@ class ObjectTypeModel(BaseModel):
     description: Optional[str] = Field(
         description="The description of the object", default=None
     )
-    Fields: Optional[List["ObjectFieldModel"]] = Field(
-        description="The fields of the object", default=None
+    Fields: List["ObjectFieldModel"] = Field(
+        description="The fields of the object"
     )
     is_pydantic: bool = Field(
         description="Whether the object is a pydantic model", default=True
