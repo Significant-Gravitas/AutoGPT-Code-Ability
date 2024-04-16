@@ -251,7 +251,8 @@ def serve() -> None:
 
     logger.info("Setting up code analysis tools...")
     initial_setup = setup_if_required()
-    asyncio.get_event_loop().run_until_complete(initial_setup)
+    loop = asyncio.new_event_loop()
+    loop.run_until_complete(initial_setup)
 
     logger.info("Starting server...")
     uvicorn.run(

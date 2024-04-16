@@ -175,7 +175,8 @@ async def create_object_type(
         return available_objects
 
     if object.Fields is None:
-        raise AssertionError("Fields should be an array")
+        print(f"Fields is None and should be an array. \n {object}")
+        raise AssertionError(f"Fields is None and should be an array. \n {object}")
     fields = object.Fields
 
     field_inputs = []

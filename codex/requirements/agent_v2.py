@@ -12,7 +12,6 @@ import codex.requirements.blocks.ai_database
 import codex.requirements.blocks.ai_endpoint_v2
 import codex.requirements.blocks.ai_module_routes
 import codex.requirements.blocks.ai_module_v2
-import codex.requirements.database
 import codex.requirements.model
 from codex.api_model import Identifiers
 
@@ -154,8 +153,7 @@ async def generate_requirements(ids: Identifiers, app: Application) -> Specifica
     spec_holder.modules = modules
 
     logger.info("Specification Definition Complete, saving to database")
-    spec = await codex.requirements.database.create_spec_v2(spec_holder)
-    return spec
+    return spec_holder
 
 
 async def denfine_module_routes(
@@ -232,6 +230,15 @@ async def define_api_spec(
             "allowed_types": allowed_types,
         },
     )
+
+    assert endpoint.api_endpoint.request_model is not None, "Request Model is None"
+    assert endpoint.api_endpoint.response_model is not None, "Response Model is None"
+    assert (
+        endpoint.api_endpoint.request_model.Fields is not None
+    ), "Request Model Fields is None"
+    assert (
+        endpoint.api_endpoint.response_model.Fields is not None
+    ), "Response Model Fields is None"
 
     api_spec = APIRouteSpec(
         module_name=module_reqs.name,

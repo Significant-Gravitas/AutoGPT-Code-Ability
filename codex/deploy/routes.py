@@ -66,7 +66,11 @@ async def create_deployment(
         cloud_services_id=user.cloudServicesId if user else "",
     )
 
-    deployment = await deploy_agent.create_deployment(ids, completedApp)
+    spec = await codex.requirements.database.get_specification(
+        user_id=user_id, app_id=app_id, spec_id=spec_id
+    )
+
+    deployment = await deploy_agent.create_deployment(ids, completedApp, spec)
 
     return DeploymentResponse(
         id=deployment.id,

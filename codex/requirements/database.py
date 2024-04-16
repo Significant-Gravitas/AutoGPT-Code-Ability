@@ -103,6 +103,7 @@ async def create_spec_v2(
         Modules={"create": create_modules},
         User={"connect": {"id": spec_holder.ids.user_id}},
         Application={"connect": {"id": spec_holder.ids.app_id}},
+        Interview={"connect": {"id": spec_holder.ids.interview_id}},
     )
 
     spec = await Specification.prisma().create(
@@ -224,7 +225,16 @@ async def get_specification(user_id: str, app_id: str, spec_id: str) -> Specific
             "userId": user_id,
             "applicationId": app_id,
         },
-        include={"ApiRouteSpecs": INCLUDE_API_ROUTE},  # type: ignore
+        include={
+            "Modules": {"include": {"ApiRouteSpecs": INCLUDE_API_ROUTE}},
+            "DatabaseSchema": {
+                "include": {
+                    "DatabaseTables": True,
+                }
+            },
+            "Features": True,
+            # type: ignore
+        },
     )
 
     return specification

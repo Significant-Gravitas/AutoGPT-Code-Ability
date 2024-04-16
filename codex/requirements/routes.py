@@ -47,8 +47,13 @@ async def create_spec(
 
     app = await codex.database.get_app_by_id(user_id, app_id)
 
-    new_spec = await codex.requirements.agent_v2.generate_requirements(ids, app=app)
-    return SpecificationResponse.from_specification(new_spec)
+    spec_holder = await codex.requirements.agent_v2.generate_requirements(ids, app=app)
+    new_spec = await codex.requirements.database.create_spec_v2(spec_holder)
+
+    spec_response = SpecificationResponse.from_specification(new_spec)
+    spec_response.name = app.name
+    spec_response.context = app.description
+    return spec_response
 
 
 @spec_router.get(

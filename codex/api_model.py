@@ -206,8 +206,8 @@ class SpecificationResponse(BaseModel):
         ret_obj = SpecificationResponse(
             id=specification.id,
             createdAt=specification.createdAt,
-            name=specification.name,
-            context=specification.context,
+            name="",
+            context="",
             apiRouteSpecs=routes,
         )
 
