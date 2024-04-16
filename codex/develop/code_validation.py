@@ -636,6 +636,11 @@ async def get_error_enhancements(
                     py_path=py_path,
                     attempted_attribute=attempted_attribute,
                 )
+            else:
+                logger.warn(
+                    f"Rule {rule} was not of format 'is not a known member of module'"
+                )
+                return None
 
         case "reportPrivateImportUsage":
             if "is not exported from module" in error_message:
@@ -660,9 +665,17 @@ async def get_error_enhancements(
                     py_path=py_path,
                     attempted_attribute=attempted_attribute,
                 )
+            else:
+                logger.warn(
+                    f"Rule {rule} was not of format 'is not exported from module'"
+                )
+                return None
 
         case _:
-            pass
+            logger.debug(
+                f"Rule: {rule} not found in fixes available for error message: {error_message}"
+            )
+            return None
     if enhancement_info:
         if enhancement_info.metadata or enhancement_info.context:
             docs_extractor = DocumentationExtractor()
@@ -683,7 +696,7 @@ async def get_error_enhancements(
                 f"Could not enhance error since metadata_contents and context was empty: {error_message}"
             )
     else:
-        logger.debug(
+        logger.error(
             f"Could not enhance error since enhancement_info was empty: {error_message}"
         )
     return None
