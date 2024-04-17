@@ -344,7 +344,7 @@ async def create_github_repo(application: Application) -> (str, str):
                 raise Exception(f"Failed to create repository: {response.text}")
 
 
-async def create_zip_file(application: Application, spec) -> bytes:
+async def create_zip_file(application: Application, spec: Specification) -> bytes:
     """
     Creates a zip file from the application
     Args:
@@ -368,7 +368,7 @@ async def create_zip_file(application: Application, spec) -> bytes:
 
             # Make a readme file
             readme_file = package_dir / "README.md"
-            readme_file.write_text(generate_readme(application))
+            readme_file.write_text(generate_readme(application, spec))
 
             dockerfile = package_dir / "Dockerfile"
             dockerfile.write_text(DOCKERFILE)
@@ -594,7 +594,7 @@ async def create_remote_repo(application: Application, spec: Specification) -> s
         raise e
 
 
-def generate_readme(application: Application) -> str:
+def generate_readme(application: Application, spec) -> str:
     """Generates a README for the application
 
     Params:
@@ -603,6 +603,10 @@ def generate_readme(application: Application) -> str:
     Returns:
         str: The README content
     """
+
+    features_string = "**Features**\n"
+    for feature in spec.Features:
+        features_string += f"\n- **{feature.name}** {feature.functionality}\n"
     content: str = ""
 
     # Header
@@ -617,6 +621,8 @@ author: {PROJECT_AUTHOR}
 # {application.completed_app.name}
 
 {application.completed_app.description}
+
+{features_string}
 
 ## What you'll need to run this
 * An unzipper (usually shipped with your OS)
