@@ -204,7 +204,9 @@ def print_api_route_details(spec: prisma.models.Specification):
                     click.echo(
                         f"      - {param.name}: {param.typeName}  - {param.description}"
                     )
+        click.echo("")
         click.echo("-" * 40)
+        click.echo("")
 
 
 def print_database_schema(spec: prisma.models.Specification):
