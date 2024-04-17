@@ -181,6 +181,45 @@ def print_spec_summary(spec: prisma.models.Specification):
         click.echo("-" * 40)
 
 
+def print_api_route_details(spec: prisma.models.Specification):
+    click.echo("-" * 40)
+    click.echo("\033[92mAPI Route Details\033[0m")
+    for module in spec.Modules:
+        click.echo(f"\033[93m- {module.name} -\033[0m {module.description}\n")
+        for route in module.ApiRouteSpecs:
+            click.echo(f"\n\033[93m  - {route.method}\033[0m {route.path}")
+            click.echo(f"\033[92m    Description:\033[0m {route.description}")
+            click.echo(
+                f"\033[92m    Allowed Access Roles:\033[0m {', '.join(route.AllowedAccessRoles).upper()}"
+            )
+            if route.RequestObject:
+                click.echo("\033[92m    Request Object:\033[0m")
+                for param in route.RequestObject.Fields:
+                    click.echo(
+                        f"      - {param.name}: {param.typeName}  - {param.description}"
+                    )
+            if route.ResponseObject:
+                click.echo("\033[92m    Response Object:\033[0m")
+                for param in route.ResponseObject.Fields:
+                    click.echo(
+                        f"      - {param.name}: {param.typeName}  - {param.description}"
+                    )
+        click.echo("-" * 40)
+
+
+def print_database_schema(spec: prisma.models.Specification):
+    click.echo("-" * 40)
+    click.echo("\033[92mDetailed Database Schema\033[0m")
+    for table in spec.DatabaseSchema.DatabaseTables:
+        click.echo(f"\n{table.definition}\n")
+    click.echo("-" * 40)
+    click.echo("\033[92mDatabase Schema Summary\033[0m")
+    for table in spec.DatabaseSchema.DatabaseTables:
+        click.echo(
+            f"{"\033[93m- Enum: " if table.isEnum else "\033[92m- Table:"}\033[0m {table.name}"
+        )
+
+
 async def explore_database(this: WhatToDebug):
     import codex.interview.database
     import codex.requirements.database
@@ -207,9 +246,19 @@ async def explore_database(this: WhatToDebug):
             )
             print_spec_summary(spec)
         case DebugObjects.API_ROUTE_SPEC:
-            pass
+            spec = await codex.requirements.database.get_specification(
+                this.app_ids.userId,
+                app_id=this.app_ids.applicationId,
+                spec_id=this.app_ids.specificationId,
+            )
+            print_api_route_details(spec)
         case DebugObjects.DATABASE_SCHEMA:
-            pass
+            spec = await codex.requirements.database.get_specification(
+                this.app_ids.userId,
+                app_id=this.app_ids.applicationId,
+                spec_id=this.app_ids.specificationId,
+            )
+            print_database_schema(spec)
         case DebugObjects.FUNCTION:
             pass
         case DebugObjects.COMPILED_ROUTE:
