@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 
 import aiohttp
-from git import GitCommandError, Actor
+from git import Actor, GitCommandError
 from git.repo import Repo
 from prisma.models import Specification
 
