@@ -76,6 +76,7 @@ async def create_specification(
                         "functionName": r.function_name,
                         "AllowedAccessRoles": r.allowed_access_roles,
                         "description": r.description,
+                        "AccessLevel": r.access_level,
                         "RequestObject": {
                             "connect": {"id": created_objects[r.request_model.name].id}
                         }
