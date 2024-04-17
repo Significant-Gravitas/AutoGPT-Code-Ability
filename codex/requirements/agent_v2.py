@@ -136,17 +136,18 @@ async def generate_requirements(ids: Identifiers, app: Application) -> Specifica
     spec_holder.db_response = db_response
 
     logger.info("Specifying Module API Routes")
+
     modules = await asyncio.gather(
         *[
             denfine_module_routes(
                 ids=ids,
                 app=app,
-                module_reqs=module,
+                module_reqs=m,
                 features=features_string,
                 roles=", ".join(module_response.access_roles),
                 db_response=db_response,
             )
-            for module in module_response.modules
+            for m in module_response.modules
         ]
     )
 
@@ -164,6 +165,10 @@ async def denfine_module_routes(
     roles: str,
     db_response: codex.requirements.model.DBResponse,
 ) -> Module:
+    logger.warning(
+        f"Defining API Routes for Module: {module_reqs.name} - {module_reqs.description}"
+    )
+
     block = codex.requirements.blocks.ai_module_routes.ModuleGenerationBlock()
 
     module_routes = await block.invoke(
@@ -171,11 +176,12 @@ async def denfine_module_routes(
         invoke_params={
             "poduct_name": app.name,
             "product_description": app.description,
-            "features": features,
             "module": f"{module_reqs.name} - {module_reqs.description}",
             "roles": roles,
         },
     )
+    for r in module_routes.routes:
+        logger.warning(f"Route: {r.http_verb} - {r.path} - {r.description}")
 
     endpoints = await asyncio.gather(
         *[
@@ -222,7 +228,7 @@ async def define_api_spec(
     endpoint: codex.requirements.model.EndpointSchemaRefinementResponse = await block.invoke(
         ids=ids,
         invoke_params={
-            "spec": f"{app.name} - {app.description}\nFeatures:\n{features}",
+            "spec": f"{app.name} - {app.description}",
             "db_models": db_response.database_schema.tables,
             "db_enums": db_response.database_schema.enums,
             "module_repr": f"{module_reqs.name} - {module_reqs.description}",
