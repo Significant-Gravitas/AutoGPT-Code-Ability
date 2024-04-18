@@ -11,7 +11,8 @@ class Module(pydantic.BaseModel):
     """
 
     name: str
-    description: str
+    functionality: str
+    interaction_with_other_modules: list[str]
 
 
 class ModuleResponse(pydantic.BaseModel):

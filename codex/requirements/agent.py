@@ -166,7 +166,7 @@ async def denfine_module_routes(
     db_response: codex.requirements.model.DBResponse,
 ) -> Module:
     logger.warning(
-        f"Defining API Routes for Module: {module_reqs.name} - {module_reqs.description}"
+        f"Defining API Routes for Module: {module_reqs.name} - {module_reqs.functionality}"
     )
 
     block = codex.requirements.blocks.ai_module_routes.ModuleGenerationBlock()
@@ -176,7 +176,8 @@ async def denfine_module_routes(
         invoke_params={
             "poduct_name": app.name,
             "product_description": app.description,
-            "module": f"{module_reqs.name} - {module_reqs.description}",
+            "module": f"{module_reqs.name} - {module_reqs.functionality}",
+            "interactions": "\n".join(module_reqs.interaction_with_other_modules),
             "roles": roles,
         },
     )
@@ -198,7 +199,9 @@ async def denfine_module_routes(
 
     module = Module(
         name=module_reqs.name,
-        description=module_reqs.description,
+        description=module_reqs.functionality
+        + " Module Interactions: "
+        + " ".join(module_reqs.interaction_with_other_modules),
         api_routes=endpoints,
     )
 
@@ -227,7 +230,7 @@ async def define_api_spec(
             "spec": f"{app.name} - {app.description}",
             "db_models": db_response.database_schema.tables,
             "db_enums": db_response.database_schema.enums,
-            "module_repr": f"{module_reqs.name} - {module_reqs.description}",
+            "module_repr": f"{module_reqs.name} - {module_reqs.functionality}",
             "endpoint_repr": f"{api_route.http_verb} - {api_route.path} - {api_route.description} \n Roles Allowed: {', '.join(api_route.allowed_access_roles)}",
             "allowed_types": allowed_types,
         },
