@@ -26,12 +26,12 @@ is_connected = False
 setup_logging()
 
 
-async def create_sample_app(user_id: str, cloud_id: str):
+async def create_sample_app(user_id: str, cloud_id: str, title: str, description: str):
     app = await create_app(
         user_id,
         ApplicationCreate(
-            name="TicTacToe Game",
-            description="A TicTacToe Game.",
+            name=title,
+            description=description,
         ),
     )
 
@@ -40,14 +40,14 @@ async def create_sample_app(user_id: str, cloud_id: str):
     spec = await create_spec(
         ids,
         spec=ApplicationRequirements(
-            name="TicTacToe Game",
-            context="A TicTacToe Game.",
+            name=title,
+            context=description,
             api_routes=[
                 APIRouteRequirement(
                     method="GET",
                     path="/",
                     function_name="main",
-                    description="A page that shows a TicTacToe Game board.",
+                    description="A page that renders " + description,
                     access_level=AccessLevel.PUBLIC,
                     request_model=ObjectTypeModel(
                         name="request",
@@ -83,12 +83,14 @@ async def with_db_connection(func: Callable):
 async def generate_function(
     user_id=user_id_1,
     cloud_id="",
+    title="",
+    description="",
 ) -> list[str] | None:
     if not OpenAIChatClient._configured:
         OpenAIChatClient.configure({})
 
     async def execute():
-        app_id, spec = await create_sample_app(user_id, cloud_id)
+        app_id, spec = await create_sample_app(user_id, cloud_id, title, description)
         ids = Identifiers(user_id=user_id, app_id=app_id, cloud_services_id=cloud_id)
         func = await agent.develop_application(ids=ids, spec=spec, lang="nicegui")
         return await get_compiled_code(func.id) if func else None
@@ -98,6 +100,18 @@ async def generate_function(
 
 @pytest.mark.asyncio
 @pytest.mark.integration_test
-async def test_simple_function():
-    func = await generate_function()
+async def test_tictactoe():
+    func = await generate_function(
+        title="TicTacToe Game",
+        description="A simple TicTacToe game",
+    )
+    assert func is not None
+
+@pytest.mark.asyncio
+@pytest.mark.integration_test
+async def test_tictactoe():
+    func = await generate_function(
+        title="TODO List",
+        description="A TODO List application that support Add, Delete and Update operations",
+    )
     assert func is not None

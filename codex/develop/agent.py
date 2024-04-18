@@ -227,7 +227,9 @@ async def develop_route(
     else:
         ai_block = DevelopAIBlock()
 
-    route_function = await ai_block.invoke(ids=ids, invoke_params=dev_invoke_params)
+    route_function = await ai_block.invoke(
+        ids=ids, invoke_params=dev_invoke_params, max_retries=3
+    )
 
     if route_function.ChildFunctions:
         logger.info(
