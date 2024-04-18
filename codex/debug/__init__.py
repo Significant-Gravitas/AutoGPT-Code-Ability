@@ -220,9 +220,8 @@ def print_database_schema(spec: prisma.models.Specification):
     click.echo("-" * 40)
     click.echo("\033[92mDatabase Schema Summary\033[0m")
     for table in spec.DatabaseSchema.DatabaseTables:
-        click.echo(
-            f"{"\033[93m- Enum: " if table.isEnum else "\033[92m- Table:"}\033[0m {table.name}"
-        )
+        prefix = "\033[93m- Enum: " if table.isEnum else "\033[92m- Table:"
+        click.echo(f"{prefix}\033[0m {table.name}")
 
 
 async def explore_database(this: WhatToDebug):
