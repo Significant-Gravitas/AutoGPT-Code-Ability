@@ -521,7 +521,7 @@ async def create_remote_repo(application: Application, spec: Specification) -> s
 
             # Make a readme file
             readme_file = package_dir / "README.md"
-            readme_file.write_text(generate_readme(application))
+            readme_file.write_text(generate_readme(application, spec))
 
             dockerfile = package_dir / "Dockerfile"
             dockerfile.write_text(DOCKERFILE)
