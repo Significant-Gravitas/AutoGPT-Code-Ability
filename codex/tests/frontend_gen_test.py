@@ -30,8 +30,8 @@ async def create_sample_app(user_id: str, cloud_id: str):
     app = await create_app(
         user_id,
         ApplicationCreate(
-            name="ToDoList App",
-            description="A todo-list where you can add and remove tasks.",
+            name="TicTacToe Game",
+            description="A TicTacToe Game.",
         ),
     )
 
@@ -40,14 +40,14 @@ async def create_sample_app(user_id: str, cloud_id: str):
     spec = await create_spec(
         ids,
         spec=ApplicationRequirements(
-            name="ToDo List App",
-            context="A todo-list where you can add and remove tasks.",
+            name="TicTacToe Game",
+            context="A TicTacToe Game.",
             api_routes=[
                 APIRouteRequirement(
                     method="GET",
                     path="/",
                     function_name="main",
-                    description="Show the single main page for the ToDo List application.",
+                    description="A page that shows a TicTacToe Game board.",
                     access_level=AccessLevel.PUBLIC,
                     request_model=ObjectTypeModel(
                         name="request",

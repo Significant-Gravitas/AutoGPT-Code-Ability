@@ -103,12 +103,12 @@ class DevelopAIBlock(AIBlock):
             code_blocks.pop(0)
             if len(code_blocks) == 0:
                 raise ValidationError("No code blocks found in the response")
-            elif len(code_blocks) != 1:
-                validation_errors.append_message(
+            elif len(code_blocks) > 1:
+                logger.warning(
                     f"There are {len(code_blocks)} code blocks in the response. "
-                    + "There should be exactly 1"
+                    + "Pick the last one"
                 )
-            code = code_blocks[0].split("```")[0]
+            code = code_blocks[-1].split("```")[0]
             route_errors_as_todo = not invoke_params.get("will_retry_on_failure", True)
             response.response = await CodeValidator(
                 compiled_route_id=invoke_params["compiled_route_id"],
@@ -116,6 +116,8 @@ class DevelopAIBlock(AIBlock):
                 function_name=invoke_params["function_name"],
                 available_objects=invoke_params["available_objects"],
                 available_functions=invoke_params["available_functions"],
+                use_prisma=(self.language == "python"),
+                use_nicegui=(self.language == "nicegui"),
             ).validate_code(
                 packages=packages,
                 raw_code=code,

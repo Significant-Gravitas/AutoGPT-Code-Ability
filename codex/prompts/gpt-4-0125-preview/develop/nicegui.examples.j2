@@ -1,0 +1,878 @@
+# Authentication
+
+shows how to use sessions to build a login screen
+
+```python
+#!/usr/bin/env python3
+"""This is just a simple authentication example.
+
+Please see the `OAuth2 example at FastAPI <https://fastapi.tiangolo.com/tutorial/security/simple-oauth2/>`_  or
+use the great `Authlib package <https://docs.authlib.org/en/v0.13/client/starlette.html#using-fastapi>`_ to implement a classing real authentication system.
+Here we just demonstrate the NiceGUI integration.
+"""
+from typing import Optional
+
+from fastapi import Request
+from fastapi.responses import RedirectResponse
+from starlette.middleware.base import BaseHTTPMiddleware
+
+from nicegui import Client, app, ui
+
+# in reality users passwords would obviously need to be hashed
+passwords = {'user1': 'pass1', 'user2': 'pass2'}
+
+unrestricted_page_routes = {'/login'}
+
+
+class AuthMiddleware(BaseHTTPMiddleware):
+    """This middleware restricts access to all NiceGUI pages.
+
+    It redirects the user to the login page if they are not authenticated.
+    """
+
+    async def dispatch(self, request: Request, call_next):
+        if not app.storage.user.get('authenticated', False):
+            if request.url.path in Client.page_routes.values() and request.url.path not in unrestricted_page_routes:
+                app.storage.user['referrer_path'] = request.url.path  # remember where the user wanted to go
+                return RedirectResponse('/login')
+        return await call_next(request)
+
+
+app.add_middleware(AuthMiddleware)
+
+
+@ui.page('/')
+def main_page() -> None:
+    with ui.column().classes('absolute-center items-center'):
+        ui.label(f'Hello {app.storage.user["username"]}!').classes('text-2xl')
+        ui.button(on_click=lambda: (app.storage.user.clear(), ui.navigate.to('/login')), icon='logout') \
+            .props('outline round')
+
+
+@ui.page('/subpage')
+def test_page() -> None:
+    ui.label('This is a sub page.')
+
+
+@ui.page('/login')
+def login() -> Optional[RedirectResponse]:
+    def try_login() -> None:  # local function to avoid passing username and password as arguments
+        if passwords.get(username.value) == password.value:
+            app.storage.user.update({'username': username.value, 'authenticated': True})
+            ui.navigate.to(app.storage.user.get('referrer_path', '/'))  # go back to where the user wanted to go
+        else:
+            ui.notify('Wrong username or password', color='negative')
+
+    if app.storage.user.get('authenticated', False):
+        return RedirectResponse('/')
+    with ui.card().classes('absolute-center'):
+        username = ui.input('Username').on('keydown.enter', try_login)
+        password = ui.input('Password', password=True, password_toggle_button=True).on('keydown.enter', try_login)
+        ui.button('Log in', on_click=try_login)
+    return None
+
+
+ui.run(storage_secret='THIS_NEEDS_TO_BE_CHANGED')
+
+```
+
+# Infinite Scroll
+
+presents an infinitely scrolling image gallery
+
+```python
+#!/usr/bin/env python3
+import time
+
+from nicegui import Client, ui
+
+
+@ui.page('/')
+async def page(client: Client):
+    async def check():
+        if await ui.run_javascript('window.pageYOffset >= document.body.offsetHeight - 2 * window.innerHeight'):
+            ui.image(f'https://picsum.photos/640/360?{time.time()}')
+    await client.connected()
+    ui.timer(0.1, check)
+
+
+ui.run()
+
+```
+
+# SVG Clock
+
+displays an analog clock by updating an SVG with `ui.timer`
+
+```python
+#!/usr/bin/env python3
+from datetime import datetime
+
+from nicegui import ui
+
+
+def build_svg() -> str:
+    """Returns an SVG showing the current time.
+
+        Original was borrowed from https://de.m.wikipedia.org/wiki/Datei:Station_Clock.svg.
+    """
+    now = datetime.now()
+    return f'''
+        <svg width="800" height="800" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+            <circle cx="400" cy="400" r="400" fill="#fff"/>
+            <use transform="matrix(-1,0,0,1,800,0)" xlink:href="#c"/>
+            <g id="c">
+                <g id="d">
+                    <path d="m400 40v107" stroke="#000" stroke-width="26.7"/>
+                    <g id="a">
+                        <path d="m580 88.233-42.5 73.612" stroke="#000" stroke-width="26.7"/>
+                        <g id="e">
+                            <path id="b" d="m437.63 41.974-3.6585 34.808" stroke="#000" stroke-width="13.6"/>
+                            <use transform="rotate(6 400 400)" xlink:href="#b"/>
+                        </g>
+                        <use transform="rotate(12 400 400)" xlink:href="#e"/>
+                    </g>
+                    <use transform="rotate(30 400 400)" xlink:href="#a"/>
+                    <use transform="rotate(60 400 400)" xlink:href="#a"/>
+                </g>
+                <use transform="rotate(90 400 400)" xlink:href="#d"/>
+            </g>
+            <g transform="rotate({250 + now.hour / 12 * 360} 400 400)">
+                <path d="m334.31 357.65-12.068 33.669 283.94 100.8 23.565-10.394-13.332-24.325z"/>
+            </g>
+            <g transform="rotate({117 + now.minute / 60 * 360} 400 400)">
+                <path d="m480.73 344.98 11.019 21.459-382.37 199.37-18.243-7.2122 4.768-19.029z"/>
+            </g>
+            <g transform="rotate({169 + now.second / 60 * 360} 400 400)">
+                <path d="m410.21 301.98-43.314 242.68a41.963 41.963 0 0 0-2.8605-0.091 41.963 41.963 0 0 0-41.865 42.059 41.963 41.963 0 0 0 30.073 40.144l-18.417 103.18 1.9709 3.9629 3.2997-2.9496 21.156-102.65a41.963 41.963 0 0 0 3.9771 0.1799 41.963 41.963 0 0 0 41.865-42.059 41.963 41.963 0 0 0-29.003-39.815l49.762-241.44zm-42.448 265.56a19.336 19.336 0 0 1 15.703 18.948 19.336 19.336 0 0 1-19.291 19.38 19.336 19.336 0 0 1-19.38-19.291 19.336 19.336 0 0 1 19.291-19.38 19.336 19.336 0 0 1 3.6752 0.3426z" fill="#a40000"/>
+            </g>
+        </svg>
+    '''
+
+
+clock = ui.html().classes('self-center')
+ui.timer(1, lambda: clock.set_content(build_svg()))
+
+ui.run()
+
+```
+
+# Progress
+
+demonstrates a progress bar for heavy computations
+
+```python
+#!/usr/bin/env python3
+import time
+from multiprocessing import Manager, Queue
+
+from nicegui import run, ui
+
+
+def heavy_computation(q: Queue) -> str:
+    """Run some heavy computation that updates the progress bar through the queue."""
+    n = 50
+    for i in range(n):
+        # Perform some heavy computation
+        time.sleep(0.1)
+
+        # Update the progress bar through the queue
+        q.put_nowait(i / n)
+    return 'Done!'
+
+
+@ui.page('/')
+def main_page():
+    async def start_computation():
+        progressbar.visible = True
+        result = await run.cpu_bound(heavy_computation, queue)
+        ui.notify(result)
+        progressbar.visible = False
+
+    # Create a queue to communicate with the heavy computation process
+    queue = Manager().Queue()
+    # Update the progress bar on the main process
+    ui.timer(0.1, callback=lambda: progressbar.set_value(queue.get() if not queue.empty() else progressbar.value))
+
+    # Create the UI
+    ui.button('compute', on_click=start_computation)
+    progressbar = ui.linear_progress(value=0).props('instant-feedback')
+    progressbar.visible = False
+
+
+ui.run()
+
+```
+
+# Global Worker
+
+demonstrates a global worker for heavy computations with progress feedback
+
+```python
+#!/usr/bin/env python3
+import asyncio
+import time
+from multiprocessing import Manager
+from queue import Empty, Queue
+from typing import Callable, Generator
+
+from nicegui import app, background_tasks, run, ui
+
+
+class Worker:
+
+    def __init__(self) -> None:
+        self._queue: Queue
+        self.progress: float = 0.0
+        self.is_running: bool = False
+
+        app.on_startup(self._create_queue)
+
+    async def run(self, func: Callable[..., Generator[float, None, None]]) -> None:
+        background_tasks.create(run.cpu_bound(self._run_generator, func, self._queue))
+        background_tasks.create(self._consume_queue())
+
+    @staticmethod
+    def _run_generator(func: Callable[..., Generator[float, None, None]], queue: Queue) -> None:
+        for progress in func():
+            queue.put({'progress': progress})
+        queue.put({'progress': 1.0})
+
+    def _create_queue(self) -> None:
+        self._queue = Manager().Queue()
+
+    async def _consume_queue(self) -> None:
+        self.is_running = True
+        self.progress = 0.0
+        while self.progress < 1.0:
+            try:
+                msg = self._queue.get_nowait()
+            except Empty:
+                await asyncio.sleep(0.1)
+                continue
+            self.progress = msg['progress']
+        self.is_running = False
+
+
+def heavy_computation() -> Generator[float, None, None]:
+    n = 50
+    for i in range(n):
+        time.sleep(0.1)
+        yield i / n
+
+
+worker = Worker()
+
+
+@ui.page('/')
+def main_page():
+    ui.button('compute', on_click=lambda: worker.run(heavy_computation))
+    ui.linear_progress().props('instant-feedback') \
+        .bind_value_from(worker, 'progress') \
+        .bind_visibility_from(worker, 'is_running')
+
+
+ui.run()
+
+```
+
+# Search as you type
+
+using public API of [thecocktaildb.com](https://www.thecocktaildb.com/) to search for cocktails
+
+```python
+#!/usr/bin/env python3
+import asyncio
+from typing import Optional
+
+import httpx
+
+from nicegui import events, ui
+
+api = httpx.AsyncClient()
+running_query: Optional[asyncio.Task] = None
+
+
+async def search(e: events.ValueChangeEventArguments) -> None:
+    """Search for cocktails as you type."""
+    global running_query  # pylint: disable=global-statement # noqa: PLW0603
+    if running_query:
+        running_query.cancel()  # cancel the previous query; happens when you type fast
+    search_field.classes('mt-2', remove='mt-24')  # move the search field up
+    results.clear()
+    # store the http coroutine in a task so we can cancel it later if needed
+    running_query = asyncio.create_task(api.get(f'https://www.thecocktaildb.com/api/json/v1/1/search.php?s={e.value}'))
+    response = await running_query
+    if response.text == '':
+        return
+    with results:  # enter the context of the the results row
+        for drink in response.json()['drinks'] or []:  # iterate over the response data of the api
+            with ui.image(drink['strDrinkThumb']).classes('w-64'):
+                ui.label(drink['strDrink']).classes('absolute-bottom text-subtitle2 text-center')
+    running_query = None
+
+# create a search field which is initially focused and leaves space at the top
+search_field = ui.input(on_change=search) \
+    .props('autofocus outlined rounded item-aligned input-class="ml-3"') \
+    .classes('w-96 self-center mt-24 transition-all')
+results = ui.row()
+
+ui.run()
+
+```
+
+# Menu and Tabs
+
+uses Quasar to create foldable menu and tabs inside a header bar
+
+```python
+#!/usr/bin/env python3
+from nicegui import ui
+
+with ui.header().classes(replace='row items-center') as header:
+    ui.button(on_click=lambda: left_drawer.toggle(), icon='menu').props('flat color=white')
+    with ui.tabs() as tabs:
+        ui.tab('A')
+        ui.tab('B')
+        ui.tab('C')
+
+with ui.footer(value=False) as footer:
+    ui.label('Footer')
+
+with ui.left_drawer().classes('bg-blue-100') as left_drawer:
+    ui.label('Side menu')
+
+with ui.page_sticky(position='bottom-right', x_offset=20, y_offset=20):
+    ui.button(on_click=footer.toggle, icon='contact_support').props('fab')
+
+with ui.tab_panels(tabs, value='A').classes('w-full'):
+    with ui.tab_panel('A'):
+        ui.label('Content of A')
+    with ui.tab_panel('B'):
+        ui.label('Content of B')
+    with ui.tab_panel('C'):
+        ui.label('Content of C')
+
+ui.run()
+
+```
+
+# Todo list
+
+shows a simple todo list with checkboxes and text input
+
+```python
+#!/usr/bin/env python3
+from dataclasses import dataclass, field
+from typing import Callable, List
+
+from nicegui import ui
+
+
+@dataclass
+class TodoItem:
+    name: str
+    done: bool = False
+
+
+@dataclass
+class ToDoList:
+    title: str
+    on_change: Callable
+    items: List[TodoItem] = field(default_factory=list)
+
+    def add(self, name: str, done: bool = False) -> None:
+        self.items.append(TodoItem(name, done))
+        self.on_change()
+
+    def remove(self, item: TodoItem) -> None:
+        self.items.remove(item)
+        self.on_change()
+
+
+@ui.refreshable
+def todo_ui():
+    if not todos.items:
+        ui.label('List is empty.').classes('mx-auto')
+        return
+    ui.linear_progress(sum(item.done for item in todos.items) / len(todos.items), show_value=False)
+    with ui.row().classes('justify-center w-full'):
+        ui.label(f'Completed: {sum(item.done for item in todos.items)}')
+        ui.label(f'Remaining: {sum(not item.done for item in todos.items)}')
+    for item in todos.items:
+        with ui.row().classes('items-center'):
+            ui.checkbox(value=item.done, on_change=todo_ui.refresh).bind_value(item, 'done')
+            ui.input(value=item.name).classes('flex-grow').bind_value(item, 'name')
+            ui.button(on_click=lambda item=item: todos.remove(item), icon='delete').props('flat fab-mini color=grey')
+
+
+todos = ToDoList('My Weekend', on_change=todo_ui.refresh)
+todos.add('Order pizza', done=True)
+todos.add('New NiceGUI Release')
+todos.add('Clean the house')
+todos.add('Call mom')
+
+with ui.card().classes('w-80 items-stretch'):
+    ui.label().bind_text_from(todos, 'title').classes('text-semibold text-2xl')
+    todo_ui()
+    add_input = ui.input('New item').classes('mx-12')
+    add_input.on('keydown.enter', lambda: (todos.add(add_input.value), add_input.set_value('')))
+
+ui.run()
+
+```
+
+# Slots
+
+shows how to use scoped slots to customize Quasar elements
+
+```python
+#!/usr/bin/env python3
+from nicegui import ui
+
+tree = ui.tree([
+    {'id': 'numbers', 'icon': 'tag', 'children': [{'id': '1'}, {'id': '2'}]},
+    {'id': 'letters', 'icon': 'text_fields', 'children': [{'id': 'A'}, {'id': 'B'}]},
+], label_key='id', on_select=lambda e: ui.notify(e.value))
+
+tree.add_slot('default-header', r'''
+    <div class="row items-center">
+        <q-icon :name="props.node.icon || 'share'" color="orange" size="28px" class="q-mr-sm" />
+        <div class="text-weight-bold text-primary">{% raw %}{{ props.node.id }}{% endraw %}</div>
+    </div>
+''')
+
+with tree.add_slot('default-body'):
+    ui.label('This is some default content.').classes('ml-8 text-weight-light text-black')
+
+ui.run()
+
+```
+
+# Table and slots
+
+shows how to use component slots in a table
+
+```python
+#!/usr/bin/env python3
+import time
+
+from nicegui import ui
+
+columns = [
+    {'name': 'name', 'label': 'Name', 'field': 'name', 'required': True},
+    {'name': 'age', 'label': 'Age', 'field': 'age', 'sortable': True},
+]
+rows = [
+    {'id': 0, 'name': 'Alice', 'age': 18},
+    {'id': 1, 'name': 'Bob', 'age': 21},
+    {'id': 2, 'name': 'Lionel', 'age': 19},
+    {'id': 3, 'name': 'Michael', 'age': 32},
+    {'id': 4, 'name': 'Julie', 'age': 12},
+    {'id': 5, 'name': 'Livia', 'age': 25},
+    {'id': 6, 'name': 'Carol'},
+]
+
+with ui.table(title='My Team', columns=columns, rows=rows, selection='multiple', pagination=10).classes('w-96') as table:
+    with table.add_slot('top-right'):
+        with ui.input(placeholder='Search').props('type=search').bind_value(table, 'filter').add_slot('append'):
+            ui.icon('search')
+    with table.add_slot('bottom-row'):
+        with table.row():
+            with table.cell():
+                ui.button(on_click=lambda: (
+                    table.add_rows({'id': time.time(), 'name': new_name.value, 'age': new_age.value}),
+                    new_name.set_value(None),
+                    new_age.set_value(None),
+                ), icon='add').props('flat fab-mini')
+            with table.cell():
+                new_name = ui.input('Name')
+            with table.cell():
+                new_age = ui.number('Age')
+
+ui.label().bind_text_from(table, 'selected', lambda val: f'Current selection: {val}')
+ui.button('Remove', on_click=lambda: table.remove_rows(*table.selected)) \
+    .bind_visibility_from(table, 'selected', backward=lambda val: bool(val))
+
+ui.run()
+
+```
+
+# Chat App
+
+a simple chat app
+
+```python
+#!/usr/bin/env python3
+from datetime import datetime
+from typing import List, Tuple
+from uuid import uuid4
+
+from nicegui import Client, ui
+
+messages: List[Tuple[str, str, str, str]] = []
+
+
+@ui.refreshable
+def chat_messages(own_id: str) -> None:
+    for user_id, avatar, text, stamp in messages:
+        ui.chat_message(text=text, stamp=stamp, avatar=avatar, sent=own_id == user_id)
+    ui.run_javascript('window.scrollTo(0, document.body.scrollHeight)')
+
+
+@ui.page('/')
+async def main(client: Client):
+    def send() -> None:
+        stamp = datetime.utcnow().strftime('%X')
+        messages.append((user_id, avatar, text.value, stamp))
+        text.value = ''
+        chat_messages.refresh()
+
+    user_id = str(uuid4())
+    avatar = f'https://robohash.org/{user_id}?bgset=bg2'
+
+    ui.add_css(r'a:link, a:visited {color: inherit !important; text-decoration: none; font-weight: 500}')
+    with ui.footer().classes('bg-white'), ui.column().classes('w-full max-w-3xl mx-auto my-6'):
+        with ui.row().classes('w-full no-wrap items-center'):
+            with ui.avatar().on('click', lambda: ui.navigate.to(main)):
+                ui.image(avatar)
+            text = ui.input(placeholder='message').on('keydown.enter', send) \
+                .props('rounded outlined input-class=mx-3').classes('flex-grow')
+        ui.markdown('simple chat app built with [NiceGUI](https://nicegui.io)') \
+            .classes('text-xs self-end mr-8 m-[-1em] text-primary')
+
+    await client.connected()  # chat_messages(...) uses run_javascript which is only possible after connecting
+    with ui.column().classes('w-full max-w-2xl mx-auto items-stretch'):
+        chat_messages(user_id)
+
+ui.run()
+
+```
+
+# Pandas DataFrame
+
+displays an editable [pandas](https://pandas.pydata.org) DataFrame
+
+```python
+#!/usr/bin/env python3
+import pandas as pd
+from pandas.api.types import is_bool_dtype, is_numeric_dtype
+
+from nicegui import ui
+
+df = pd.DataFrame(data={
+    'col1': [x for x in range(4)],
+    'col2': ['This', 'column', 'contains', 'strings.'],
+    'col3': [x / 4 for x in range(4)],
+    'col4': [True, False, True, False],
+})
+
+
+def update(*, df: pd.DataFrame, r: int, c: int, value):
+    df.iat[r, c] = value
+    ui.notify(f'Set ({r}, {c}) to {value}')
+
+
+with ui.grid(rows=len(df.index)+1).classes('grid-flow-col'):
+    for c, col in enumerate(df.columns):
+        ui.label(col).classes('font-bold')
+        for r, row in enumerate(df.loc[:, col]):
+            if is_bool_dtype(df[col].dtype):
+                cls = ui.checkbox
+            elif is_numeric_dtype(df[col].dtype):
+                cls = ui.number
+            else:
+                cls = ui.input
+            cls(value=row, on_change=lambda event, r=r, c=c: update(df=df, r=r, c=c, value=event.value))
+
+ui.run()
+
+```
+
+# Lightbox
+
+a thumbnail gallery where each image can be clicked to enlarge
+
+```python
+#!/usr/bin/env python3
+from typing import List
+
+import httpx
+
+from nicegui import events, ui
+
+
+class Lightbox:
+    """A thumbnail gallery where each image can be clicked to enlarge.
+    Inspired by https://lokeshdhakar.com/projects/lightbox2/.
+    """
+
+    def __init__(self) -> None:
+        with ui.dialog().props('maximized').classes('bg-black') as self.dialog:
+            ui.keyboard(self._handle_key)
+            self.large_image = ui.image().props('no-spinner fit=scale-down')
+        self.image_list: List[str] = []
+
+    def add_image(self, thumb_url: str, orig_url: str) -> ui.image:
+        """Place a thumbnail image in the UI and make it clickable to enlarge."""
+        self.image_list.append(orig_url)
+        with ui.button(on_click=lambda: self._open(orig_url)).props('flat dense square'):
+            return ui.image(thumb_url)
+
+    def _handle_key(self, event_args: events.KeyEventArguments) -> None:
+        if not event_args.action.keydown:
+            return
+        if event_args.key.escape:
+            self.dialog.close()
+        image_index = self.image_list.index(self.large_image.source)
+        if event_args.key.arrow_left and image_index > 0:
+            self._open(self.image_list[image_index - 1])
+        if event_args.key.arrow_right and image_index < len(self.image_list) - 1:
+            self._open(self.image_list[image_index + 1])
+
+    def _open(self, url: str) -> None:
+        self.large_image.set_source(url)
+        self.dialog.open()
+
+
+@ui.page('/')
+async def page():
+    lightbox = Lightbox()
+    async with httpx.AsyncClient() as client:  # using async httpx instead of sync requests to avoid blocking the event loop
+        images = await client.get('https://picsum.photos/v2/list?page=4&limit=30')
+    with ui.row().classes('w-full'):
+        for image in images.json():  # picsum returns a list of images as json data
+            # we can use the image ID to construct the image URLs
+            image_base_url = f'https://picsum.photos/id/{image["id"]}'
+            # the lightbox allows us to add images which can be opened in a full screen dialog
+            lightbox.add_image(
+                thumb_url=f'{image_base_url}/300/200',
+                orig_url=f'{image_base_url}/{image["width"]}/{image["height"]}',
+            ).classes('w-[300px] h-[200px]')
+
+ui.run()
+
+```
+
+# Download Text as File
+
+providing in-memory data like strings as file download
+
+```python
+#!/usr/bin/env python3
+import io
+import uuid
+
+from fastapi.responses import StreamingResponse
+
+from nicegui import Client, app, ui
+
+
+@ui.page('/')
+async def index(client: Client):
+    download_path = f'/download/{uuid.uuid4()}.txt'
+
+    @app.get(download_path)
+    def download():
+        string_io = io.StringIO(textarea.value)  # create a file-like object from the string
+        headers = {'Content-Disposition': 'attachment; filename=download.txt'}
+        return StreamingResponse(string_io, media_type='text/plain', headers=headers)
+
+    textarea = ui.textarea(value='Hello World!')
+    ui.button('Download', on_click=lambda: ui.download(download_path))
+
+    # cleanup the download route after the client disconnected
+    await client.disconnected()
+    app.routes[:] = [route for route in app.routes if route.path != download_path]
+
+ui.run()
+
+```
+
+# Custom Binding
+
+create a custom binding for a label with a bindable background color
+
+```python
+#!/usr/bin/env python3
+import random
+from typing import Optional, cast
+
+from typing_extensions import Self
+
+from nicegui import ui
+from nicegui.binding import BindableProperty, bind_from
+
+
+class colorful_label(ui.label):
+    """A label with a bindable background color."""
+
+    # This class variable defines what happens when the background property changes.
+    background = BindableProperty(
+        on_change=lambda sender, value: cast(Self, sender)._handle_background_change(value))
+
+    def __init__(self, text: str = '') -> None:
+        super().__init__(text)
+        self.background: Optional[str] = None  # initialize the background property
+
+    def _handle_background_change(self, bg_class: str) -> None:
+        """Update the classes of the label when the background property changes."""
+        self._classes = [c for c in self._classes if not c.startswith('bg-')]
+        self._classes.append(bg_class)
+        self.update()
+
+
+temperatures = {'Berlin': 5, 'New York': 15, 'Tokio': 25}
+ui.button(icon='refresh', on_click=lambda: temperatures.update({city: random.randint(0, 30) for city in temperatures}))
+
+
+for city in temperatures:
+    label = colorful_label().classes('w-48 text-center') \
+        .bind_text_from(temperatures, city, backward=lambda t, city=city: f'{city} ({t}°C)')
+    # Bind background color from temperature.
+    # There is also a bind_to method which would propagate changes from the label to the temperatures dictionary
+    # and a bind method which would propagate changes both ways.
+    bind_from(self_obj=label, self_name='background',
+              other_obj=temperatures, other_name=city,
+              backward=lambda t: 'bg-green' if t < 10 else 'bg-yellow' if t < 20 else 'bg-orange')
+
+ui.run()
+
+```
+
+# Editable table
+
+editable table allowing to add, edit, delete rows
+
+```python
+#!/usr/bin/env python3
+from nicegui import events, ui
+
+columns = [
+    {'name': 'name', 'label': 'Name', 'field': 'name', 'align': 'left'},
+    {'name': 'age', 'label': 'Age', 'field': 'age'},
+]
+rows = [
+    {'id': 0, 'name': 'Alice', 'age': 18},
+    {'id': 1, 'name': 'Bob', 'age': 21},
+    {'id': 2, 'name': 'Carol', 'age': 20},
+]
+
+
+def add_row() -> None:
+    new_id = max((dx['id'] for dx in rows), default=-1) + 1
+    rows.append({'id': new_id, 'name': 'New guy', 'age': 21})
+    ui.notify(f'Added new row with ID {new_id}')
+    table.update()
+
+
+def rename(e: events.GenericEventArguments) -> None:
+    for row in rows:
+        if row['id'] == e.args['id']:
+            row.update(e.args)
+    ui.notify(f'Updated rows to: {table.rows}')
+    table.update()
+
+
+def delete(e: events.GenericEventArguments) -> None:
+    rows[:] = [row for row in rows if row['id'] != e.args['id']]
+    ui.notify(f'Deleted row with ID {e.args["id"]}')
+    table.update()
+
+
+table = ui.table(columns=columns, rows=rows, row_key='name').classes('w-60')
+table.add_slot('header', r'''
+    <q-tr :props="props">
+        <q-th auto-width />
+        <q-th v-for="col in props.cols" :key="col.name" :props="props">
+            {% raw %}{{ col.label }}{% endraw %}
+        </q-th>
+    </q-tr>
+''')
+table.add_slot('body', r'''
+    <q-tr :props="props">
+        <q-td auto-width >
+            <q-btn size="sm" color="warning" round dense icon="delete"
+                @click="() => $parent.$emit('delete', props.row)"
+            />
+        </q-td>
+        <q-td key="name" :props="props">
+            {% raw %}{{ props.row.name }}{% endraw %}
+            <q-popup-edit v-model="props.row.name" v-slot="scope"
+                @update:model-value="() => $parent.$emit('rename', props.row)"
+            >
+                <q-input v-model="scope.value" dense autofocus counter @keyup.enter="scope.set" />
+            </q-popup-edit>
+        </q-td>
+        <q-td key="age" :props="props">
+            {% raw %}{{ props.row.age }}{% endraw %}
+            <q-popup-edit v-model="props.row.age" v-slot="scope"
+                @update:model-value="() => $parent.$emit('rename', props.row)"
+            >
+                <q-input v-model.number="scope.value" type="number" dense autofocus counter @keyup.enter="scope.set" />
+            </q-popup-edit>
+        </q-td>
+    </q-tr>
+''')
+with table.add_slot('bottom-row'):
+    with table.cell().props('colspan=3'):
+        ui.button('Add row', icon='add', color='accent', on_click=add_row).classes('w-full')
+table.on('rename', rename)
+table.on('delete', delete)
+
+ui.run()
+
+```
+
+# Editable AG Grid
+
+editable AG Grid allowing to add, edit, delete rows
+
+```python
+#!/usr/bin/env python3
+from nicegui import ui
+
+columns = [
+    {'field': 'name', 'editable': True, 'sortable': True},
+    {'field': 'age', 'editable': True},
+    {'field': 'id'},
+]
+rows = [
+    {'id': 0, 'name': 'Alice', 'age': 18},
+    {'id': 1, 'name': 'Bob', 'age': 21},
+    {'id': 2, 'name': 'Carol', 'age': 20},
+]
+
+
+def add_row():
+    new_id = max((dx['id'] for dx in rows), default=-1) + 1
+    rows.append({'id': new_id, 'name': 'New name', 'age': None})
+    ui.notify(f'Added row with ID {new_id}')
+    aggrid.update()
+
+
+def handle_cell_value_change(e):
+    new_row = e.args['data']
+    ui.notify(f'Updated row to: {e.args["data"]}')
+    rows[:] = [row | new_row if row['id'] == new_row['id'] else row for row in rows]
+
+
+async def delete_selected():
+    selected_id = [row['id'] for row in await aggrid.get_selected_rows()]
+    rows[:] = [row for row in rows if row['id'] not in selected_id]
+    ui.notify(f'Deleted row with ID {selected_id}')
+    aggrid.update()
+
+aggrid = ui.aggrid({
+    'columnDefs': columns,
+    'rowData': rows,
+    'rowSelection': 'multiple',
+    'stopEditingWhenCellsLoseFocus': True,
+}).on('cellValueChanged', handle_cell_value_change)
+
+ui.button('Delete selected', on_click=delete_selected)
+ui.button('New row', on_click=add_row)
+
+ui.run()
+
+```

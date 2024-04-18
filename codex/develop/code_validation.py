@@ -50,12 +50,16 @@ class CodeValidator:
         function_name: str | None = None,
         available_functions: dict[str, Function] | None = None,
         available_objects: dict[str, ObjectType] | None = None,
+        use_prisma: bool = True,
+        use_nicegui: bool = False,
     ):
         self.compiled_route_id: str = compiled_route_id
         self.db_schema: str = database_schema
         self.func_name: str = function_name or ""
         self.available_functions: dict[str, Function] = available_functions or {}
         self.available_objects: dict[str, ObjectType] = available_objects or {}
+        self.use_prisma: bool = use_prisma
+        self.use_nicegui: bool = use_nicegui
 
     async def reformat_code(
         self,
@@ -221,7 +225,9 @@ class CodeValidator:
         old_compiled_code = result.regenerate_compiled_code()
         validation_errors.extend(validate_normalize_prisma(result))
         validation_errors.extend(
-            await static_code_analysis(result, route_errors_as_todo)
+            await static_code_analysis(
+                result, route_errors_as_todo, self.use_prisma, self.use_nicegui
+            )
         )
         new_compiled_code = result.get_compiled_code()
 
@@ -282,6 +288,8 @@ class CodeValidator:
 async def static_code_analysis(
     func: GeneratedFunctionResponse,
     add_todo_on_error: bool,
+    use_prisma: bool,
+    use_nicegui: bool,
 ) -> list[ValidationError]:
     """
     Run static code analysis on the function code and mutate the function code to
@@ -294,7 +302,12 @@ async def static_code_analysis(
     """
     validation_errors = []
     validation_errors += await __execute_ruff(func, add_todo_on_error)
-    validation_errors += await __execute_pyright(func, add_todo_on_error)
+    validation_errors += await __execute_pyright(
+        func=func,
+        add_todo_on_error=add_todo_on_error,
+        use_prisma=use_prisma,
+        use_nicegui=use_nicegui,
+    )
 
     return validation_errors
 
@@ -430,6 +443,8 @@ def append_errors_as_todos(errors: list[ValidationError], code: str) -> str:
 async def __execute_pyright(
     func: GeneratedFunctionResponse,
     add_todo_on_error: bool,
+    use_prisma: bool,
+    use_nicegui: bool,
 ) -> list[ValidationError]:
     code = __pack_import_and_function_code(func)
     validation_errors: list[ValidationError] = []
@@ -470,17 +485,16 @@ async def __execute_pyright(
         for e in json_response:
             rule: str = e.get("rule", "")
             severity: str = e.get("severity", "")
-            excluded_rules = ["reportMissingImports"] if add_todo_on_error else []
-            if (
-                severity != "error"
-                or rule
-                in [
-                    "reportRedeclaration",
-                    "reportArgumentType",  # This breaks prisma query with dict
+            excluded_rules = ["reportRedeclaration"]
+            if add_todo_on_error:
+                excluded_rules += [
+                    "reportMissingImports",
+                    "reportOptional",  # TODO: improve prompt and enable this.
                 ]
-                + excluded_rules
-                or rule.startswith("reportOptional")  # TODO: improve prompt & enable
-            ):
+            if use_prisma:
+                excluded_rules += ["reportArgumentType"]
+
+            if severity != "error" or any([rule.startswith(r) for r in excluded_rules]):
                 continue
 
             # Grab any enhancements we can for the error
@@ -667,6 +681,23 @@ async def get_error_enhancements(
             else:
                 logger.warn(
                     f"Rule {rule} was not of format 'is not exported from module'"
+                )
+                return None
+
+        case "reportCallIssue":
+            if (
+                'No parameter named "style"' in error_message
+                or 'No parameter named "classes"' in error_message
+            ):
+                logger.info(f"Attempting to enhance error: {error_message}")
+                module = "nicegui"
+                enhancement_info = ErrorEnhancements(
+                    metadata=None,
+                    context="classes and style is not part of the property of the ui module but a function, it's not `ui.label('Hello', style='color: red')` but `ui.label('Hello').style('color: red')`",
+                )
+            else:
+                logger.debug(
+                    f"Rule: {rule} not found in fixes available for error message: {error_message}"
                 )
                 return None
 
