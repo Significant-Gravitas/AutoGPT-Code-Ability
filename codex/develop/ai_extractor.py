@@ -13,7 +13,7 @@ class DocumentationExtractor(AIBlock):
     # The name of the prompt template folder in codex/prompts/{model}
     prompt_template_name = "validate/documentation_extractor"
     # Model to use for the LLM
-    model = "gpt-4-0125-preview"
+    model = "gpt-4-turbo"
     # Should we force the LLM to reply in JSON
     is_json_response = False
 

@@ -29,7 +29,8 @@ async def create_deliverable(user_id: str, app_id: str, spec_id: str):
         user_id, app_id, spec_id
     )
     user = await codex.database.get_user(user_id)
-    logger.info(f"Creating deliverable for {specification.name}")
+    app = await codex.database.get_app_by_id(user_id, app_id)
+    logger.info(f"Creating deliverable for {app.name}")
     if specification:
         ids = Identifiers(
             user_id=user_id,

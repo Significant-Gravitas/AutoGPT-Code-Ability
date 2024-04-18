@@ -116,7 +116,8 @@ def example(port: int):
     case = int(input("Enter number of the case to run: "))
 
     task = examples[case - 1]
-    asyncio.get_event_loop().run_until_complete(
+    loop = asyncio.new_event_loop()
+    loop.run_until_complete(
         codex.runner.run_task(
             task_name=task.value,
             task_description=ExampleTask.get_task_description(task),
@@ -125,7 +126,7 @@ def example(port: int):
             base_url=base_url,
         )
     )
-    asyncio.get_event_loop().run_until_complete(prisma_client.disconnect())
+    loop.run_until_complete(prisma_client.disconnect())
 
 
 @cli.command()
@@ -164,7 +165,8 @@ def resume(port: int):
     base_url = f"http://127.0.0.1:{port}/api/v1"
     prisma_client = prisma.Prisma(auto_register=True)
     print("")
-    resume_points = asyncio.get_event_loop().run_until_complete(
+    loop = asyncio.new_event_loop()
+    resume_points = loop.run_until_complete(
         codex.debug.get_resume_points(prisma_client)
     )
     print("\n")
@@ -227,7 +229,7 @@ def resume(port: int):
         print("Resuming from compiled app - Downloading file again...")
         step = codex.runner.ResumeStep.DOWNLOAD
 
-    asyncio.get_event_loop().run_until_complete(
+    loop.run_until_complete(
         codex.runner.resume(
             step=step,
             resume_point=selected_resume_point,
@@ -235,7 +237,7 @@ def resume(port: int):
             base_url=base_url,
         )
     )
-    asyncio.get_event_loop().run_until_complete(prisma_client.disconnect())
+    loop.run_until_complete(prisma_client.disconnect())
 
 
 @cli.command()
@@ -249,7 +251,8 @@ def serve() -> None:
 
     logger.info("Setting up code analysis tools...")
     initial_setup = setup_if_required()
-    asyncio.get_event_loop().run_until_complete(initial_setup)
+    loop = asyncio.new_event_loop()
+    loop.run_until_complete(initial_setup)
 
     logger.info("Starting server...")
     uvicorn.run(
@@ -261,8 +264,6 @@ def serve() -> None:
 
 if __name__ == "__main__":
     from dotenv import load_dotenv
-
-    from codex.common.logging_config import setup_logging
 
     setup_logging()
     cli()

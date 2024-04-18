@@ -2,16 +2,15 @@ import logging
 import os
 import random
 import tempfile
-import zipfile
 import uuid
+import zipfile
 from datetime import datetime
-from typing import List
 from pathlib import Path
 
 import aiohttp
-from git import GitCommandError, Actor
+from git import Actor, GitCommandError
 from git.repo import Repo
-from prisma.models import DatabaseTable
+from prisma.models import Specification
 
 from codex.common.constants import PRISMA_FILE_HEADER
 from codex.common.exec_external_tool import execute_command
@@ -326,35 +325,10 @@ services:
     return docker_compose
 
 
-async def create_prisma_schema_file(application: Application) -> str:
-    tables = []
-    db_schema_id = None
-
-    if not (
-        application.completed_app.CompiledRoutes
-        and application.completed_app.CompiledRoutes
-    ):
-        raise ValueError("Application must have at least one compiled route")
-
-    for route in application.completed_app.CompiledRoutes:
-        if route.ApiRouteSpec and route.ApiRouteSpec.DatabaseSchema:
-            db_schema_id = route.ApiRouteSpec.DatabaseSchema.id
-            # the same schema is used for all routes
-            break
-
-    if not db_schema_id:
-        logger.warning("No database schema found")
-        return ""
-
-    tables: List[DatabaseTable] = await DatabaseTable.prisma().find_many(
-        where={"databaseSchemaId": db_schema_id}
-    )
-
+async def create_prisma_schema_file(spec: Specification) -> str:
     prisma_file = f"{PRISMA_FILE_HEADER}".lstrip()
-    if not tables:
-        return ""
 
-    for table in tables:
+    for table in spec.DatabaseSchema.DatabaseTables:
         prisma_file += table.definition
         prisma_file += "\n\n"
 
@@ -404,7 +378,7 @@ async def create_github_repo(application: Application) -> (str, str):
                 raise Exception(f"Failed to create repository: {response.text}")
 
 
-async def create_zip_file(application: Application) -> bytes:
+async def create_zip_file(application: Application, spec: Specification) -> bytes:
     """
     Creates a zip file from the application
     Args:
@@ -428,7 +402,7 @@ async def create_zip_file(application: Application) -> bytes:
 
             # Make a readme file
             readme_file = package_dir / "README.md"
-            readme_file.write_text(generate_readme(application))
+            readme_file.write_text(generate_readme(application, spec))
 
             dockerfile = package_dir / "Dockerfile"
             dockerfile.write_text(DOCKERFILE)
@@ -454,7 +428,7 @@ async def create_zip_file(application: Application) -> bytes:
 
             # Make a prisma schema file
             prisma_schema_file = package_dir / "schema.prisma"
-            prisma_schema = await create_prisma_schema_file(application)
+            prisma_schema = await create_prisma_schema_file(spec)
             if prisma_schema:
                 prisma_schema_file.write_text(prisma_schema)
 
@@ -557,7 +531,7 @@ def push_to_remote(repo: Repo, remote_name: str, remote_url: str):
         raise
 
 
-async def create_remote_repo(application: Application) -> str:
+async def create_remote_repo(application: Application, spec: Specification) -> str:
     """
     Creates and pushes to GitHub repo for application
     Args:
@@ -607,7 +581,7 @@ async def create_remote_repo(application: Application) -> str:
 
             # Make a prisma schema file
             prisma_schema_file = package_dir / "schema.prisma"
-            prisma_schema = await create_prisma_schema_file(application)
+            prisma_schema = await create_prisma_schema_file(spec)
             if prisma_schema:
                 prisma_schema_file.write_text(prisma_schema)
 
@@ -655,7 +629,7 @@ async def create_remote_repo(application: Application) -> str:
         raise e
 
 
-def generate_readme(application: Application) -> str:
+def generate_readme(application: Application, spec) -> str:
     """Generates a README for the application
 
     Params:
@@ -664,6 +638,10 @@ def generate_readme(application: Application) -> str:
     Returns:
         str: The README content
     """
+
+    features_string = "**Features**\n"
+    for feature in spec.Features:
+        features_string += f"\n- **{feature.name}** {feature.functionality}\n"
     content: str = ""
 
     # Header
@@ -678,6 +656,8 @@ author: {PROJECT_AUTHOR}
 # {application.completed_app.name}
 
 {application.completed_app.description}
+
+{features_string}
 
 ## What you'll need to run this
 * An unzipper (usually shipped with your OS)

@@ -1,8 +1,9 @@
+import base64
 import logging
 import os
+import uuid
 
-import base64
-from prisma.models import CompletedApp, Deployment
+from prisma.models import CompletedApp, Deployment, Specification
 from prisma.types import DeploymentCreateInput
 
 from codex.api_model import Identifiers
@@ -13,25 +14,27 @@ from codex.deploy.infrastructure import create_cloud_db
 logger = logging.getLogger(__name__)
 
 
-async def create_deployment(ids: Identifiers, completedApp: CompletedApp) -> Deployment:
+async def create_deployment(
+    ids: Identifiers, completedApp: CompletedApp, spec: Specification
+) -> Deployment:
     environment: str = os.getenv("RUN_ENV").lower()
     if environment == "local":
-        deployment = await create_local_deployment(ids, completedApp)
+        deployment = await create_local_deployment(ids, completedApp, spec)
         return deployment
 
-    deployment = await create_cloud_deployment(ids, completedApp)
+    deployment = await create_cloud_deployment(ids, completedApp, spec)
     return deployment
 
 
 async def create_local_deployment(
-    ids: Identifiers, completedApp: CompletedApp
+    ids: Identifiers, completedApp: CompletedApp, spec: Specification
 ) -> Deployment:
     if not ids.user_id:
         raise ValueError("User ID is required to create a deployment")
 
-    app = await create_server_code(completedApp)
+    app = await create_server_code(completedApp, spec)
 
-    zip_file = await create_zip_file(app)
+    zip_file = await create_zip_file(app, spec)
     file_name = completedApp.name.replace(" ", "_")
 
     try:
@@ -46,9 +49,11 @@ async def create_local_deployment(
                 fileSize=len(zip_file),
                 # I need to do this as the Base64 type in prisma is not working
                 fileBytes=encoded_file_bytes,  # type: ignore
-                repo="",
                 db_name="",
                 db_user="",
+                repo=str(
+                    uuid.uuid4()
+                ),  # repo has unique constraint so we need to generate a random string
             )
         )
     except Exception as e:
@@ -58,14 +63,14 @@ async def create_local_deployment(
 
 
 async def create_cloud_deployment(
-    ids: Identifiers, completedApp: CompletedApp
+    ids: Identifiers, completedApp: CompletedApp, spec: Specification
 ) -> Deployment:
     if not ids.user_id:
         raise ValueError("User ID is required to create a deployment")
 
-    app = await create_server_code(completedApp)
+    app = await create_server_code(completedApp, spec)
 
-    repo = await create_remote_repo(app)
+    repo = await create_remote_repo(app, spec)
     completedApp.name.replace(" ", "_")
     db_name, db_username = await create_cloud_db(repo)
 
