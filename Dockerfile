@@ -54,6 +54,8 @@ ENV PORT=8000
 # Just declare the variable, the value will be set when running the container
 ENV OPENAI_API_KEY=""
 ENV RUN_ENV=""
-
+ENV USER_DB_ADMIN=""
+ENV USER_DB_PASS=""
+ENV USER_DB_HOST=""
 # This will be the command to run the FastAPI server using uvicorn
 CMD ./run serve
