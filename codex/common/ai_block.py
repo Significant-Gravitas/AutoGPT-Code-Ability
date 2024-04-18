@@ -17,6 +17,7 @@ from pydantic import BaseModel, ConfigDict
 
 from codex.api_model import Identifiers
 from codex.common.ai_model import OpenAIChatClient
+from codex.develop.code_validation import ErrorEnhancements
 
 logger = logging.getLogger(__name__)
 
@@ -33,14 +34,20 @@ TODO_COMMENT = "# TODO(autogpt):"
 
 
 class ValidationError(Exception):
-    pass
+    enhancements: Optional[ErrorEnhancements] = None
+
+    def __init__(self, error: str, enhancements: Optional[ErrorEnhancements] = None):
+        super().__init__(error)
+        self.enhancements = enhancements
 
 
 class ValidationErrorWithContent(ValidationError):
     content: str
 
-    def __init__(self, error: str, content: str):
-        super().__init__(error)
+    def __init__(
+        self, error: str, content: str, enhancements: Optional[ErrorEnhancements] = None
+    ):
+        super().__init__(error=error, enhancements=enhancements)
         self.content = content
 
 
@@ -50,9 +57,14 @@ class LineValidationError(ValidationError):
     code: str
 
     def __init__(
-        self, error: str, code: str, line_from: int, line_to: int | None = None
+        self,
+        error: str,
+        code: str,
+        line_from: int,
+        line_to: int | None = None,
+        enhancements: Optional[ErrorEnhancements] = None,
     ):
-        super().__init__(error)
+        super().__init__(error=error, enhancements=enhancements)
         self.line_from = line_from
         self.line_to = line_to if line_to else line_from + 1
         self.code = code

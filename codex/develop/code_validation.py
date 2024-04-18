@@ -1,6 +1,4 @@
 import ast
-import collections
-import datetime
 import json
 import logging
 import pathlib
@@ -10,7 +8,6 @@ import uuid
 
 import black
 import isort
-import prisma
 from prisma.models import Function, ObjectType
 from pydantic import BaseModel
 
@@ -489,15 +486,16 @@ async def __execute_pyright(
             ids = await get_ids_from_function_id_and_compiled_route(
                 func.function_id, compiled_route_id=func.compiled_route_id
             )
-            if error_enhancements := await get_error_enhancements(
-                rule, error_message, py_path, ids=ids
-            ):
-                error_message += f"\n{error_enhancements}"
+
+            error_enhancements = await get_error_enhancements(
+                rule, error_message, py_path, ids
+            )
 
             e = LineValidationError(
                 error=error_message,
                 code=code,
                 line_from=e["range"]["start"]["line"] + 1,
+                enhancements=error_enhancements,
             )
             validation_errors.append(e)
 
@@ -554,6 +552,7 @@ async def find_module_dist_and_source(
 class ErrorEnhancements(BaseModel):
     metadata: typing.Optional[str]
     context: typing.Optional[str]
+    suggested_fix: typing.Optional[str] = None
 
 
 async def enhance_error(
@@ -591,7 +590,6 @@ async def enhance_error(
                 useful.append(pathlib.Path(_fuzzy_match))
 
         # Join the useful files
-        # TODO(ntindle): disable this for now, as we're not sure it's working as expected
         # matching_context = "\n".join(
         #     [f.read_text() for f in useful if f.exists() and f.is_file()]
         # )
@@ -607,7 +605,7 @@ async def enhance_error(
 
 async def get_error_enhancements(
     rule: str, error_message: str, py_path: pathlib.Path | str, ids: Identifiers
-) -> typing.Optional[str]:
+) -> typing.Optional[ErrorEnhancements]:
     enhancement_info: typing.Optional[ErrorEnhancements] = None
     # python match the rule and error message to a case
     match rule:
@@ -690,7 +688,12 @@ async def get_error_enhancements(
                     "context": context,
                 },
             )
-            return f"Found documentation for the module:\n {response}"
+            return ErrorEnhancements(
+                metadata=metadata_contents,
+                context=context,
+                suggested_fix=response,
+            )
+
         else:
             logger.warning(
                 f"Could not enhance error since metadata_contents and context was empty: {error_message}"
