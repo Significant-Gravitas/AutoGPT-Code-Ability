@@ -10,7 +10,7 @@ python = ">=3.11,<3.13"
 openai = "^1.6.0"
 pgvector = "^0.2.4"
 matplotlib = "^3.8.2"
-fastapi = "^0.108.0"
+fastapi = "^0.109.1"
 google-cloud-storage = "^2.14.0"
 uvicorn = "^0.25.0"
 click = "^8.1.7"
@@ -32,6 +32,7 @@ sentry-sdk = {extras = ["fast-api"], version = "^1.40.6"}
 pyright = "^1.1.354"
 packaging = ">=24.0"
 gitpython = "^3.1.42"
+nicegui = "^1.4.22"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.3"

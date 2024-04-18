@@ -132,7 +132,7 @@ class AIBlock:
 
     developement_phase = DevelopmentPhase.REQUIREMENTS
     prompt_template_name = ""
-    langauge = None
+    language = None
     model = ""
     is_json_response = False
     pydantic_object = None
@@ -185,8 +185,8 @@ class AIBlock:
             call_template (LLMCallTemplate): The stored call template object.
         """
         lang_str = ""
-        if self.langauge:
-            lang_str = f"{self.langauge}."
+        if self.language:
+            lang_str = f"{self.language}."
 
         prompts = {"system": "", "user": "", "retry": ""}
 
@@ -284,8 +284,8 @@ class AIBlock:
     def load_template(self, template: str, invoke_params: dict) -> str:
         try:
             lang_str = ""
-            if self.langauge:
-                lang_str = f"{self.langauge}."
+            if self.language:
+                lang_str = f"{self.language}."
             templates_env = Environment(loader=FileSystemLoader(self.templates_dir))
             prompt_template = templates_env.get_template(
                 f"{self.prompt_template_name}/{lang_str}{template}.j2"

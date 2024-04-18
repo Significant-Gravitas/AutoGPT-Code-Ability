@@ -10,6 +10,7 @@ import uuid
 
 import black
 import isort
+import nicegui
 import prisma
 from prisma.models import Function, ObjectType
 from pydantic import BaseModel
@@ -561,9 +562,7 @@ async def enhance_error(
 ) -> typing.Optional[ErrorEnhancements]:
     dist_info_path, module_path = await find_module_dist_and_source(module, py_path)
     if not dist_info_path and not module_path:
-        return ErrorEnhancements(
-            metadata="Could not find the module in the environment.", context=None
-        )
+        return None
 
     metadata_contents: typing.Optional[str] = None
     if dist_info_path:
@@ -707,6 +706,9 @@ AUTO_IMPORT_TYPES: dict[str, str] = {
     "BaseModel": "from pydantic import BaseModel",
     "Enum": "from enum import Enum",
     "UploadFile": "from fastapi import UploadFile",
+    "nicegui": "import nicegui",
+    "ui": "from nicegui import ui",
+    "Client": "from nicegui import Client",
 }
 for t in typing.__all__:
     AUTO_IMPORT_TYPES[t] = f"from typing import {t}"
@@ -716,6 +718,8 @@ for t in datetime.__all__:
     AUTO_IMPORT_TYPES[t] = f"from datetime import {t}"
 for t in collections.__all__:
     AUTO_IMPORT_TYPES[t] = f"from collections import {t}"
+for t in nicegui.ui.__all__:
+    AUTO_IMPORT_TYPES[t] = f"from typing import {t}"
 
 
 def __fix_missing_imports(

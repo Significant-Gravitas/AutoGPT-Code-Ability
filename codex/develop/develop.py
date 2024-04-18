@@ -72,7 +72,7 @@ class DevelopAIBlock(AIBlock):
     developement_phase: DevelopmentPhase = DevelopmentPhase.DEVELOPMENT
     prompt_template_name = "develop"
     model = "gpt-4-0125-preview"
-    langauge = "python"
+    language = "python"
 
     async def validate(
         self, invoke_params: dict, response: ValidatedResponse
@@ -223,3 +223,7 @@ class DevelopAIBlock(AIBlock):
         logger.info(f"✅ Updated Function: {func.functionName} - {func.id}")
 
         return func
+
+
+class NiceGUIDevelopAIBlock(DevelopAIBlock):
+    language = "nicegui"

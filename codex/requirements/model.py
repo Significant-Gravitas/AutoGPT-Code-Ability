@@ -526,8 +526,8 @@ class APIRouteRequirement(BaseModel):
     access_level: AccessLevel
 
     # This is the model for the request and response
-    request_model: ObjectTypeE
-    response_model: ObjectTypeE
+    request_model: Optional[ObjectTypeE] = None
+    response_model: Optional[ObjectTypeE] = None
 
     # This is the database schema this api route will use
     # I'm thinking it will be a prisma table schema or maybe a list of table schemas

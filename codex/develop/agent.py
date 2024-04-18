@@ -22,7 +22,7 @@ from codex.develop.compile import (
     get_object_type_deps,
 )
 from codex.develop.database import get_compiled_route
-from codex.develop.develop import DevelopAIBlock
+from codex.develop.develop import DevelopAIBlock, NiceGUIDevelopAIBlock
 from codex.develop.function import (
     construct_function,
     generate_object_template,
@@ -34,7 +34,7 @@ RECURSION_DEPTH_LIMIT = int(os.environ.get("RECURSION_DEPTH_LIMIT", 2))
 logger = logging.getLogger(__name__)
 
 
-async def process_api_route(api_route, ids, spec, app):
+async def process_api_route(api_route, ids, spec, app, lang="python"):
     if not api_route.RequestObject:
         types = []
         descs = {}
@@ -46,14 +46,19 @@ async def process_api_route(api_route, ids, spec, app):
         types = [("request", api_route.RequestObject.name)]
         descs = {"request": api_route.RequestObject.description or ""}
 
+    if not api_route.ResponseObject:
+        ret_type = None
+        ret_desc = ""
+    else:
+        ret_type = api_route.ResponseObject.name
+        ret_desc = api_route.ResponseObject.description or ""
+
     function_def = FunctionDef(
         name=api_route.functionName,
         arg_types=types,
         arg_descs=descs,
-        return_type=api_route.ResponseObject.name if api_route.ResponseObject else None,
-        return_desc=api_route.ResponseObject.description or ""
-        if api_route.ResponseObject
-        else None,
+        return_type=ret_type,
+        return_desc=ret_desc,
         is_implemented=False,
         function_desc=api_route.description,
         function_code="",
@@ -95,12 +100,15 @@ async def process_api_route(api_route, ids, spec, app):
         compiled_route_id=compiled_route.id,
         goal_description=spec.context,
         function=compiled_route.RootFunction,
+        lang=lang,
     )
     logger.info(f"Route function id: {route_root_func.id}")
     await compile_route(compiled_route.id, route_root_func)
 
 
-async def develop_application(ids: Identifiers, spec: Specification) -> CompletedApp:
+async def develop_application(
+    ids: Identifiers, spec: Specification, lang: str = "python"
+) -> CompletedApp:
     """
     Develops an application based on the given identifiers and specification.
 
@@ -118,7 +126,7 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
     if spec.ApiRouteSpecs:
         for api_route in spec.ApiRouteSpecs:
             # Schedule each API route for processing
-            task = process_api_route(api_route, ids, spec, app)
+            task = process_api_route(api_route, ids, spec, app, lang)
             tasks.append(task)
 
         # Run the tasks concurrently
@@ -132,6 +140,7 @@ async def develop_route(
     compiled_route_id: str,
     goal_description: str,
     function: Function,
+    lang: str,
     depth: int = 0,
 ) -> Function:
     """
@@ -213,9 +222,15 @@ async def develop_route(
         "allow_stub": depth < RECURSION_DEPTH_LIMIT,
     }
 
-    route_function = await DevelopAIBlock().invoke(
+    if lang == "nicegui":
+        ai_block = NiceGUIDevelopAIBlock()
+    else:
+        ai_block = DevelopAIBlock()
+
+    route_function = await ai_block.invoke(
         ids=ids,
         invoke_params=dev_invoke_params,
+        max_retries=2
     )
 
     if route_function.ChildFunctions:
@@ -228,6 +243,7 @@ async def develop_route(
                 compiled_route_id=compiled_route_id,
                 goal_description=goal_description,
                 function=child,
+                lang=lang,
                 depth=depth + 1,
             )
             for child in route_function.ChildFunctions

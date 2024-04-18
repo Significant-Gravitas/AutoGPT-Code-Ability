@@ -65,12 +65,6 @@ class FunctionVisitor(ast.NodeVisitor):
             normalize_type(ast.unparse(node.returns)) if node.returns else None
         )
 
-        # Raise validation error on nested functions
-        if any(isinstance(v, ast.FunctionDef) for v in node.body):
-            self.errors.append(
-                "Nested functions are not allowed in the code: " + node.name
-            )
-
         # Extract doc_string & function body
         if (
             node.body
@@ -144,7 +138,6 @@ class FunctionVisitor(ast.NodeVisitor):
             )
         )
         self.functionsIdx.append(node.lineno)
-        self.generic_visit(node)
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
         """

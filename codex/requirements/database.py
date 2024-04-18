@@ -29,8 +29,14 @@ async def create_spec(ids: Identifiers, spec: ApplicationRequirements) -> Specif
 
     # Persist all ObjectTypes from the spec
     all_models: list[ObjectTypeE] = [
-        route.request_model for route in spec.api_routes if route
-    ] + [route.response_model for route in spec.api_routes if route]
+        route.request_model
+        for route in spec.api_routes
+        if route and route.request_model
+    ] + [
+        route.response_model
+        for route in spec.api_routes
+        if route and route.response_model
+    ]
 
     created_objects = {}
     for model in all_models:

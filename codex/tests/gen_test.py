@@ -2,6 +2,7 @@ from typing import Callable
 
 import pytest
 from dotenv import load_dotenv
+load_dotenv()
 
 from codex.api_model import ApplicationCreate
 from codex.app import db_client
@@ -189,9 +190,9 @@ async def test_mismatching_return_type():
 @pytest.mark.integration_test
 async def test_nested_function():
     ai_block.MOCK_RESPONSE = WITH_NESTED_FUNCTION_RESPONSE
-    with pytest.raises(LLMFailure) as e:
-        await generate_function()
-    assert "Nested" in str(e.value)
+    func = await generate_function()
+    assert func is not None
+    assert "nested_function" in func[0]
 
 
 @pytest.mark.asyncio
