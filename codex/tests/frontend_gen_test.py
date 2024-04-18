@@ -109,7 +109,7 @@ async def test_tictactoe():
 
 @pytest.mark.asyncio
 @pytest.mark.integration_test
-async def test_tictactoe():
+async def test_todo_list():
     func = await generate_function(
         title="TODO List",
         description="A TODO List application that support Add, Delete and Update operations",
