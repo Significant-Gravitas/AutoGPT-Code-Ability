@@ -21,10 +21,10 @@ ALTER TABLE "Question" DROP COLUMN "answer",
 DROP COLUMN "interviewId",
 DROP COLUMN "question",
 DROP COLUMN "tool",
-ADD COLUMN     "functionality" TEXT NOT NULL,
-ADD COLUMN     "interviewStepId" TEXT,
-ADD COLUMN     "name" TEXT NOT NULL,
-ADD COLUMN     "reasoning" TEXT NOT NULL;
+ADD COLUMN     "functionality" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "interviewStepId" TEXT DEFAULT '',
+ADD COLUMN     "name" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "reasoning" TEXT NOT NULL DEFAULT '',
 
 -- CreateTable
 CREATE TABLE "InterviewStep" (
