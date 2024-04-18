@@ -7,13 +7,12 @@ Define the api endpponts required to deliver the desired features.
 
 {{ module }}
 
-# Available Access Access Roles
+# Available Access Roles
+Think carefully about which endpoints need to be accessed Publicly and which need to be protected.
 
 {{ roles }}
 
-IMPORTANT: The allowed_access_roles should be an empty list if the route is public.
-
-Examples of API routes:
+# Examples of API routes:
 
 For User Management
 
@@ -22,5 +21,4 @@ GET /users - Retrieve a list of users.
 GET /users/{userId} - Retrieve details of a specific user.
 PUT /users/{userId} - Update a user's details.
 DELETE /users/{userId} - Delete a user.
-
 

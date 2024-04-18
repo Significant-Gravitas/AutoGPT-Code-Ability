@@ -145,7 +145,6 @@ async def generate_requirements(ids: Identifiers, app: Application) -> Specifica
                 ids=ids,
                 app=app,
                 module_reqs=m,
-                features=features_string,
                 roles=", ".join(module_response.access_roles),
                 db_response=db_response,
             )
@@ -163,7 +162,6 @@ async def denfine_module_routes(
     ids: Identifiers,
     app: Application,
     module_reqs: codex.requirements.blocks.ai_module.Module,
-    features: str,
     roles: str,
     db_response: codex.requirements.model.DBResponse,
 ) -> Module:
@@ -190,7 +188,6 @@ async def denfine_module_routes(
             define_api_spec(
                 ids=ids,
                 app=app,
-                features=features,
                 module_reqs=module_reqs,
                 api_route=route,
                 db_response=db_response,
@@ -211,7 +208,6 @@ async def denfine_module_routes(
 async def define_api_spec(
     ids: Identifiers,
     app: Application,
-    features: str,
     module_reqs: codex.requirements.blocks.ai_module.Module,
     api_route: codex.requirements.blocks.ai_module_routes.APIRoute,
     db_response: codex.requirements.model.DBResponse,
@@ -248,7 +244,7 @@ async def define_api_spec(
 
     api_spec = APIRouteSpec(
         module_name=module_reqs.name,
-        access_level=endpoint.api_endpoint.access_level,
+        access_level=api_route.access_level,
         http_verb=api_route.http_verb,
         function_name=api_route.function_name,
         path=api_route.path,

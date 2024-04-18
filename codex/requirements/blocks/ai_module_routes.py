@@ -1,6 +1,7 @@
 import logging
 
 import prisma
+import prisma.enums
 import pydantic
 
 import codex.common.ai_block
@@ -15,6 +16,7 @@ class APIRoute(pydantic.BaseModel):
     function_name: str
     path: str
     description: str
+    access_level: prisma.enums.AccessLevel
     allowed_access_roles: list[str]
 
 
@@ -54,6 +56,10 @@ class ModuleGenerationBlock(codex.common.ai_block.AIBlock):
             model = ModuleApiRouteResponse.model_validate_json(
                 response.response, strict=False
             )
+            # Force set the allowed_access_roles to empty list for public routes
+            for route in model.routes:
+                if route.access_level == prisma.enums.AccessLevel.PUBLIC:
+                    route.allowed_access_roles = []
             response.response = model
         except Exception as e:
             raise codex.common.ai_block.ValidationError(

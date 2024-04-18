@@ -177,7 +177,9 @@ def print_spec_summary(spec: prisma.models.Specification):
     for module in spec.Modules:
         click.echo(f"\033[92m- {module.name} -\033[0m {module.description}")
         for route in module.ApiRouteSpecs:
-            click.echo(f"\033[92m  - {route.method}\033[0m {route.path}")
+            click.echo(
+                f"  - \033[93m[{route.AccessLevel}]\033[0m \033[92m{route.method}\033[0m {route.path}"
+            )
         click.echo("-" * 40)
 
 
