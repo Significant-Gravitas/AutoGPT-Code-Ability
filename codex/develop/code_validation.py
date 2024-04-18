@@ -107,8 +107,8 @@ class CodeValidator:
         self,
         packages: list[Package],
         raw_code: str,
-        route_errors_as_todo: bool = False,
-        raise_validation_error: bool = True,
+        route_errors_as_todo: bool,
+        raise_validation_error: bool,
         call_cnt: int = 0,
     ) -> GeneratedFunctionResponse:
         """

@@ -392,6 +392,7 @@ class AIBlock:
 
             # Increment it here so the first retry is 1
             retry_attempt += 1
+            invoke_params["will_retry_on_failure"] = retry_attempt < max_retries
 
             validated_response = await self.validate(invoke_params, presponse)
         except ValidationError as validation_error:

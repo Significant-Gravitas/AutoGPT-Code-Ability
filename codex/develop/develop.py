@@ -122,6 +122,7 @@ class DevelopAIBlock(AIBlock):
                 packages=packages,
                 raw_code=code,
                 route_errors_as_todo=route_errors_as_todo,
+                raise_validation_error=True,
             )
 
         except ValidationError as e:
