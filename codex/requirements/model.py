@@ -2,6 +2,8 @@ import logging
 from enum import Enum
 from typing import List
 
+import prisma
+import prisma.enums
 from pydantic import BaseModel
 
 import codex.common.test_const as test_consts
@@ -173,6 +175,7 @@ class DatabaseSchema(BaseModel):
 
 
 class APIEndpointWrapper(BaseModel):
+    access_level: prisma.enums.AccessLevel
     request_model: ObjectTypeE
     response_model: ObjectTypeE
 

@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 import prisma
+import prisma.enums
 import pydantic
 from prisma.models import Application, Specification
 
@@ -28,6 +29,7 @@ class APIRouteSpec(pydantic.BaseModel):
     function_name: str
     path: str
     description: str
+    access_level: prisma.enums.AccessLevel
     allowed_access_roles: list[str]
     request_model: codex.common.model.ObjectTypeModel
     response_model: codex.common.model.ObjectTypeModel
@@ -246,6 +248,7 @@ async def define_api_spec(
 
     api_spec = APIRouteSpec(
         module_name=module_reqs.name,
+        access_level=endpoint.api_endpoint.access_level,
         http_verb=api_route.http_verb,
         function_name=api_route.function_name,
         path=api_route.path,

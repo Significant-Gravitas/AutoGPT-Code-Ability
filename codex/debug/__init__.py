@@ -189,6 +189,7 @@ def print_api_route_details(spec: prisma.models.Specification):
         for route in module.ApiRouteSpecs:
             click.echo(f"\n\033[93m  - {route.method}\033[0m {route.path}")
             click.echo(f"\033[92m    Description:\033[0m {route.description}")
+            click.echo(f"\033[92m    Access Level:\033[0m {route.AccessLevel}")
             click.echo(
                 f"\033[92m    Allowed Access Roles:\033[0m {', '.join(route.AllowedAccessRoles).upper()}"
             )
