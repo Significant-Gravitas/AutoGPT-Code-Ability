@@ -108,9 +108,9 @@ model Feature {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   deleted         Boolean        @default(false)
-  name            String
-  reasoning       String
-  functionality   String
+  name            String         @default("")
+  reasoning       String         @default("")
+  functionality   String         @default("")
   InterviewStep   InterviewStep? @relation(fields: [interviewStepId], references: [id])
   interviewStepId String?
   Specification   Specification? @relation(fields: [specificationId], references: [id])
@@ -186,8 +186,8 @@ model APIRouteSpec {
   AccessLevel        AccessLevel?
   AllowedAccessRoles String[]
   CompiledRoutes     CompiledRoute[]
-  Module            Module?        @relation(fields: [moduleId], references: [id])
-  moduleId          String?
+  Module             Module?         @relation(fields: [moduleId], references: [id])
+  moduleId           String?
 
   ResponseObject   ObjectType? @relation("ResponseObjectForAPI", fields: [responseObjectId], references: [id], onDelete: Cascade)
   responseObjectId String?
