@@ -18,7 +18,6 @@ ALTER TABLE "APIRouteSpec" DROP COLUMN "databaseSchemaId",
 DROP COLUMN "specificationId",
 ADD COLUMN     "AllowedAccessRoles" TEXT[],
 ADD COLUMN     "moduleId" TEXT,
-ALTER COLUMN "AccessLevel" DROP NOT NULL;
 
 -- AlterTable
 ALTER TABLE "InterviewStep" ALTER COLUMN "updatedAt" DROP DEFAULT,

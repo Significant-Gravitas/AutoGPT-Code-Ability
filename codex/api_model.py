@@ -159,8 +159,6 @@ class SpecificationResponse(BaseModel):
                     APIRouteSpecModel(
                         id=route.id,
                         createdAt=route.createdAt,
-                        # if you've come here to fix this, talk to Nick. Something in the
-                        # system is misbehaving and treating this as if its a dict not an enum
                         method=str(route.method),
                         path=route.path,
                         description=route.description,
