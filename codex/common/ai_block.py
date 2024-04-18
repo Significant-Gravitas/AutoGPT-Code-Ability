@@ -428,7 +428,7 @@ class AIBlock:
                 except ValidationError as retry_error:
                     logger.error(
                         f"{retry_attempt}/{max_retries}"
-                        f" Failed validating response: {retry_error}"
+                        f" [{self.prompt_template_name}] Failed validating response: {retry_error}"
                         f" LLM Call ID: {first_llm_call_id} - retry attempt #{retry_attempt}"
                     )
                     error_message = retry_error

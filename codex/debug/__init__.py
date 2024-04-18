@@ -143,24 +143,127 @@ def print_app(
     click.echo("-" * 40)
 
 
+def print_interview(interview: prisma.models.InterviewStep):
+    """
+    Print the interview.
+    """
+    click.echo("-" * 40)
+    click.echo(f"\033[92mSay:\033[0m {interview.say}")
+    click.echo(f"\033[92mThoughts:\033[0m {interview.thoughts}")
+    click.echo(
+        f"\033[92mCreated At: {interview.createdAt.isoformat().split('.')[0]}\033[0m\n"
+    )
+    for feature in interview.Features:
+        click.echo(f"\033[93m{feature.name}\033[0m")
+        click.echo(f"\033[92mFunctionality:\033[0m {feature.functionality}")
+        click.echo(f"\033[92mReasoning:\033[0m {feature.reasoning}\n")
+    click.echo("-" * 40)
+
+
+def print_spec_summary(spec: prisma.models.Specification):
+    click.echo("-" * 40)
+    click.echo("\033[92mSpecification Summary\033[0m")
+    click.echo("\033[92mRequested Features:\33[0m")
+    for feature in spec.Features:
+        click.echo(f"- {feature.name}")
+
+    route_cout = sum([len(module.ApiRouteSpecs) for module in spec.Modules])
+    module_count = len(spec.Modules)
+    click.echo(
+        f"\n\033[92m{module_count} Modules\33[0m with \033[93m{route_cout} routes\33[0m\n"
+    )
+    click.echo("-" * 40)
+
+    for module in spec.Modules:
+        click.echo(f"\033[92m- {module.name} -\033[0m {module.description}")
+        for route in module.ApiRouteSpecs:
+            click.echo(
+                f"  - \033[93m[{route.AccessLevel}]\033[0m \033[92m{route.method}\033[0m {route.path}"
+            )
+        click.echo("-" * 40)
+
+
+def print_api_route_details(spec: prisma.models.Specification):
+    click.echo("-" * 40)
+    click.echo("\033[92mAPI Route Details\033[0m")
+    for module in spec.Modules:
+        click.echo(f"\033[93m- {module.name} -\033[0m {module.description}\n")
+        for route in module.ApiRouteSpecs:
+            click.echo(f"\n\033[93m  - {route.method}\033[0m {route.path}")
+            click.echo(f"\033[92m    Description:\033[0m {route.description}")
+            click.echo(f"\033[92m    Access Level:\033[0m {route.AccessLevel}")
+            click.echo(
+                f"\033[92m    Allowed Access Roles:\033[0m {', '.join(route.AllowedAccessRoles).upper()}"
+            )
+            if route.RequestObject:
+                click.echo("\033[92m    Request Object:\033[0m")
+                for param in route.RequestObject.Fields:
+                    click.echo(
+                        f"      - {param.name}: {param.typeName}  - {param.description}"
+                    )
+            if route.ResponseObject:
+                click.echo("\033[92m    Response Object:\033[0m")
+                for param in route.ResponseObject.Fields:
+                    click.echo(
+                        f"      - {param.name}: {param.typeName}  - {param.description}"
+                    )
+        click.echo("")
+        click.echo("-" * 40)
+        click.echo("")
+
+
+def print_database_schema(spec: prisma.models.Specification):
+    click.echo("-" * 40)
+    click.echo("\033[92mDetailed Database Schema\033[0m")
+    for table in spec.DatabaseSchema.DatabaseTables:
+        click.echo(f"\n{table.definition}\n")
+    click.echo("-" * 40)
+    click.echo("\033[92mDatabase Schema Summary\033[0m")
+    for table in spec.DatabaseSchema.DatabaseTables:
+        click.echo(
+            f"{"\033[93m- Enum: " if table.isEnum else "\033[92m- Table:"}\033[0m {table.name}"
+        )
+
+
 async def explore_database(this: WhatToDebug):
+    import codex.interview.database
+    import codex.requirements.database
+
     prisma_client = prisma.Prisma()
     await prisma_client.connect()
     match this.object:
         case DebugObjects.APP:
-            app = await prisma.models.Application.prisma().find_unique(
+            app = await prisma.models.Application.prisma().find_unique_or_raise(
                 where={"id": this.app_ids.applicationId}
             )
-            if app:
-                print_app(app, this.app_ids)
+            print_app(app, this.app_ids)
         case DebugObjects.INTERVIEW:
-            pass
+            click.echo(f"What to debug: {this.app_ids}")
+            interview_step = await codex.interview.database.get_last_interview_step(
+                interview_id=this.app_ids.interviewId, app_id=this.app_ids.applicationId
+            )
+            print_interview(interview_step)
         case DebugObjects.SPEC_SUMMARY:
-            pass
+            spec = await codex.requirements.database.get_specification(
+                this.app_ids.userId,
+                app_id=this.app_ids.applicationId,
+                spec_id=this.app_ids.specificationId,
+            )
+            print_spec_summary(spec)
         case DebugObjects.API_ROUTE_SPEC:
-            pass
+            spec = await codex.requirements.database.get_specification(
+                this.app_ids.userId,
+                app_id=this.app_ids.applicationId,
+                spec_id=this.app_ids.specificationId,
+            )
+            print_api_route_details(spec)
         case DebugObjects.DATABASE_SCHEMA:
-            pass
+            spec = await codex.requirements.database.get_specification(
+                this.app_ids.userId,
+                app_id=this.app_ids.applicationId,
+                spec_id=this.app_ids.specificationId,
+            )
+            print_database_schema(spec)
         case DebugObjects.FUNCTION:
             pass
         case DebugObjects.COMPILED_ROUTE:

@@ -8,10 +8,9 @@ from enum import Enum
 from prisma import Prisma
 from prisma.models import Application
 
-from codex.api_model import InterviewMessageWithResponse, InterviewResponse
 from codex.common.codex_client import CodexClient
 from codex.common.model import ResumePoint
-from codex.interview.model import InterviewMessage
+from codex.interview.model import InterviewResponse
 
 logger = logging.getLogger(__name__)
 
@@ -209,25 +208,10 @@ async def run_interview(
         )
 
         next_interview: InterviewResponse = start_interview
-        while not next_interview.finished:
-            logger.info(
-                f"[{task_name}] Interview: questions count {len(next_interview.uses)}"
+        while not next_interview.phase_completed:
+            next_interview = await codex_client.interview_next(
+                user_message="Thats great thanks, make the app please."
             )
-            answers: list[InterviewMessageWithResponse | InterviewMessage] = []
-            for question in next_interview.uses:
-                if question.tool == "search":
-                    continue
-
-                answers.append(
-                    InterviewMessage(
-                        id=question.id,
-                        tool=question.tool,
-                        content=question.question,
-                    )
-                )
-
-            # Send the interview questions
-            next_interview = await codex_client.interview_next(answers)
         logger.info(f"[{task_name}] Interview finished")
     except Exception as e:
         logger.exception(f"Error running interview: {e}")
