@@ -10,13 +10,13 @@ from prisma.types import (
 )
 
 from codex.common.ai_block import (
-    TODO_COMMENT,
     AIBlock,
     Identifiers,
     ListValidationError,
     ValidatedResponse,
     ValidationError,
 )
+from codex.common.constants import TODO_COMMENT
 from codex.common.database import INCLUDE_FUNC
 from codex.common.logging import log_event
 from codex.common.model import create_object_type
