@@ -1,0 +1,103 @@
+name: Benchmarks Workflow
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_USER: ${{ secrets.DB_USER }}
+          PGUSER: ${{ secrets.DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASS }}
+          POSTGRES_DB: ${{ secrets.DB_NAME }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.11
+
+    - name: Set up Python dependency cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pypoetry
+        key: ${{ runner.os }}-poetry-${{ hashFiles('pyproject.toml') }}-${{ steps.get_date.outputs.date }}
+
+    - name: Install Python dependencies
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        poetry install
+
+    - name: Install Dependencies
+      run: poetry install
+      if: steps.cache.outputs.cache-hit != 'true'
+
+    - name: Generate Prisma Client
+      run: poetry run prisma generate
+
+    - name: Run server
+      run: |
+        export DATABASE_URL="postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@localhost:5432/${{ secrets.DB_NAME }}"
+        ./run serve &
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        DB_USER: ${{ secrets.DB_USER }}
+        DB_PASS: ${{ secrets.DB_PASS }}
+        DB_NAME: ${{ secrets.DB_NAME }}
+        GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+        USER_DB_ADMIN: ${{ secrets.USER_DB_ADMIN }}
+        USER_DB_PASS: ${{ secrets.USER_DB_PASS }}
+        USER_DB_HOST: ${{ secrets.USER_DB_HOST }}
+        DB_PORT: 5432
+        RUN_ENV: ci
+        PORT: 8080
+
+    - name: Run Database Migrations
+      run: |
+        export DATABASE_URL="postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@localhost:5432/${{ secrets.DB_NAME }}"
+        poetry run prisma migrate dev --name updates
+
+    - name: Populate Database
+      run: |
+        export DATABASE_URL="postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@localhost:5432/${{ secrets.DB_NAME }}"
+        ./run populate-db
+
+    - name: Run Tests
+      run: |
+        export DATABASE_URL="postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@localhost:5432/${{ secrets.DB_NAME }}"
+        ./run benchmark
+
+    - name: Clean up
+      if: always()
+      run: |
+        docker stop codex
+        docker rm codex
+
+    env:
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASS: ${{ secrets.DB_PASS }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      DB_PORT: 5432
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      RUN_ENV: ci
+      PORT: 8080
