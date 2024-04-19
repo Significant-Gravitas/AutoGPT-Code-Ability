@@ -11,12 +11,19 @@ So this is the expected output format:
 
 [List of elements or component you would like to use, based on the provided documentation]
 
-```requirement
-list of added libraries
-```
-
 ```python-attempt-1
-the code that solves the problem
+<library imports>
+
+<global variables> # Don't forget to add the type hint and comments
+
+<your helper functions> # Don't forget the docstring
+
+@ui.page('/')
+async <requested_function_name>(ui: nicegui.Client):
+    """Fully describe the function signature and example here"""
+    <function body>
+
+ui.run()
 ````
 
 [Self-reflection on the code you write, what might be buggy, and how to fix it]

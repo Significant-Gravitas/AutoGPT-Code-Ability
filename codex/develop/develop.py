@@ -230,3 +230,4 @@ class DevelopAIBlock(AIBlock):
 
 class NiceGUIDevelopAIBlock(DevelopAIBlock):
     language = "nicegui"
+    model = "gpt-4-turbo"  # I'm passing huge context, need turbo for faster devloop

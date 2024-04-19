@@ -8,3 +8,10 @@ NOTE:
 * If the function is too complicated you can write the dependency function as a stub on the first ```python``` generation and try to implement it on the second write of the block.
 * Don't use HTML id for an object reference, NiceGUI doesn't work that way. You have to use the object reference (you can make it as a global variable) to access the ui object and mutate it.
 * Always assign ui object to a global variable or shared within the scope to make it accessible from another function, unless it won't be shared or mutated at all.
+* For refreshing/re-rendering the content of the ui object, after calling the clear function, you also need to pass the re-rendering logic using the `with` clause, e.g:
+    ```python
+    ui_component.clear() # Clear before re-rendering
+    with ui_component: # This is to avoid duplication of the render logic
+        # re-rendering logic
+    ```
+
