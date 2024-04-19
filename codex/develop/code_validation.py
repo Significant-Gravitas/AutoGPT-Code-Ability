@@ -1,4 +1,6 @@
 import ast
+import collections
+import datetime
 import json
 import logging
 import pathlib
@@ -8,18 +10,19 @@ import uuid
 
 import black
 import isort
+import prisma
 from prisma.models import Function, ObjectType
 from pydantic import BaseModel
 
 from codex.common.ai_block import (
-    TODO_COMMENT,
+    ErrorEnhancements,
     Identifiers,
     LineValidationError,
     ListValidationError,
     ValidationError,
     ValidationErrorWithContent,
 )
-from codex.common.constants import PRISMA_FILE_HEADER
+from codex.common.constants import PRISMA_FILE_HEADER, TODO_COMMENT
 from codex.common.exec_external_tool import (
     DEFAULT_DEPS,
     PROJECT_TEMP_DIR,
@@ -547,12 +550,6 @@ async def find_module_dist_and_source(
             break
 
     return dist_info_path, module_path
-
-
-class ErrorEnhancements(BaseModel):
-    metadata: typing.Optional[str]
-    context: typing.Optional[str]
-    suggested_fix: typing.Optional[str] = None
 
 
 async def enhance_error(
