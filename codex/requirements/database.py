@@ -8,7 +8,7 @@ from codex.api_model import (
     SpecificationResponse,
     SpecificationsListResponse,
 )
-from codex.common.database import INCLUDE_API_ROUTE, INCLUDE_FIELD
+from codex.common.database import INCLUDE_API_ROUTE
 from codex.common.model import create_object_type
 
 
@@ -36,91 +36,92 @@ async def create_specification(
     all_models = request_models + response_models
 
     created_objects = {}
+
     for model in all_models:
         created_objects = await create_object_type(model, created_objects)
 
-    create_db = prisma.types.DatabaseSchemaCreateInput(
-        name=spec_holder.db_response.database_schema.name,
-        description=spec_holder.db_response.database_schema.description,
-        DatabaseTables={
-            "create": [
-                {
-                    "name": table.name,
-                    "description": table.description,
-                    "definition": table.definition,
-                    "isEnum": False,
-                }
-                for table in spec_holder.db_response.database_schema.tables
-            ]
-            + [
-                {
-                    "name": enum.name,
-                    "description": enum.description,
-                    "definition": enum.definition,
-                    "isEnum": True,
-                }
-                for enum in spec_holder.db_response.database_schema.enums
-            ]
-        },
-    )
+    create_db: prisma.types.DatabaseSchemaCreateInput | None = None
 
-    create_modules = [
-        prisma.types.ModuleCreateInput(
-            name=m.name,
-            description=m.description,
-            ApiRouteSpecs={
-                "create": [
-                    {
-                        "method": r.http_verb,
-                        "path": r.path,
-                        "functionName": r.function_name,
-                        "AllowedAccessRoles": r.allowed_access_roles,
-                        "description": r.description,
-                        "AccessLevel": r.access_level,
-                        "RequestObject": {
-                            "connect": {"id": created_objects[r.request_model.name].id}
-                        }
-                        if r.request_model
-                        else None,
-                        "ResponseObject": {
-                            "connect": {"id": created_objects[r.response_model.name].id}
-                        }
-                        if r.response_model
-                        else None,
-                    }
-                    for r in m.api_routes
-                ]
-            },
+    if spec_holder.db_response and spec_holder.db_response.database_schema:
+        create_database_table = []
+        for table in spec_holder.db_response.database_schema.tables:
+            create_database_table.append(
+                prisma.types.DatabaseTableCreateInput(
+                    name=table.name,
+                    description=table.description,
+                    definition=table.definition,
+                )
+            )
+        for enum in spec_holder.db_response.database_schema.enums:
+            create_database_table.append(
+                prisma.types.DatabaseTableCreateInput(
+                    name=enum.name,
+                    description=enum.description,
+                    definition=enum.definition,
+                    isEnum=True,
+                )
+            )
+
+        create_db = prisma.types.DatabaseSchemaCreateInput(
+            name=spec_holder.db_response.database_schema.name,
+            description=spec_holder.db_response.database_schema.description,
+            DatabaseTables={"create": create_database_table},
         )
-        for m in spec_holder.modules
-    ]
 
-    create_spec = SpecificationCreateInput(
-        Features={"connect": [{"id": f.id} for f in spec_holder.features]},
-        DatabaseSchema={"create": create_db},
-        Modules={"create": create_modules},
-        User={"connect": {"id": spec_holder.ids.user_id}},
-        Application={"connect": {"id": spec_holder.ids.app_id}},
-        Interview={"connect": {"id": spec_holder.ids.interview_id}},
+    create_modules = []
+    for module in spec_holder.modules:
+        api_routes = []
+        for r in module.api_routes:
+            create_route = {
+                "method": r.http_verb,
+                "path": r.path,
+                "functionName": r.function_name,
+                "AllowedAccessRoles": r.allowed_access_roles,
+                "description": r.description,
+                "AccessLevel": r.access_level,
+            }
+
+            if r.request_model:
+                create_route["RequestObject"] = {
+                    "connect": {"id": created_objects[r.request_model.name].id}
+                }
+            if r.response_model:
+                create_route["ResponseObject"] = {
+                    "connect": {"id": created_objects[r.response_model.name].id}
+                }
+            api_routes.append(create_route)
+        create_modules.append(
+            prisma.types.ModuleCreateInput(
+                name=module.name,
+                description=module.description,
+                ApiRouteSpecs={"create": api_routes},
+            )
+        )
+
+    create_spec_dict = {
+        "Features": {"connect": [{"id": f.id} for f in spec_holder.features]},
+        "Modules": {"create": create_modules},
+    }
+    if create_db:
+        create_spec_dict["DatabaseSchema"] = create_db
+    if spec_holder.ids.user_id:
+        create_spec_dict["User"] = {"connect": {"id": spec_holder.ids.user_id}}
+    if spec_holder.ids.app_id:
+        create_spec_dict["Application"] = {"connect": {"id": spec_holder.ids.app_id}}
+    if spec_holder.ids.interview_id:
+        create_spec_dict["Interview"] = {
+            "connect": {"id": spec_holder.ids.interview_id}
+        }
+
+    create_spec = SpecificationCreateInput(**create_spec_dict)
+
+    include_objs = prisma.types.SpecificationInclude(
+        Features=True,
+        DatabaseSchema={"include": {"DatabaseTables": True}},
+        Modules={"include": {"ApiRouteSpecs": INCLUDE_API_ROUTE}},  # type: ignore
     )
 
-    spec = await Specification.prisma().create(
-        data=create_spec,
-        include={
-            "Features": True,
-            "DatabaseSchema": {"include": {"DatabaseTables": True}},
-            "Modules": {
-                "include": {
-                    "ApiRouteSpecs": {
-                        "include": {
-                            "RequestObject": INCLUDE_FIELD,
-                            "ResponseObject": INCLUDE_FIELD,
-                        }
-                    },
-                },
-            },
-        },
-    )
+    spec = await Specification.prisma().create(data=create_spec, include=include_objs)
 
     return spec
 
