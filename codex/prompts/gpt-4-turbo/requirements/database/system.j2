@@ -16,14 +16,28 @@ Examples of prisma schema language:
 ```prisma
 // Scalar fields example
 
-model Comment {
-  id      Int    @id @default(autoincrement())
-  title   String
-  content String
+model ScalarExamples {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  published Boolean  @default(false)
+  metadata  Json
 }
 
-model Tag {
-  name String @id
+// Enum Type
+
+enum Status {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+model EnumExample {
+  id        Int      @id
+  title     String
+  status    Status   @default(ACTIVE)
 }
 
 // One-to-one relations
