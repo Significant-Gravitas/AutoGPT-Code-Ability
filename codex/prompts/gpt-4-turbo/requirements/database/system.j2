@@ -17,12 +17,31 @@ Examples of prisma schema language:
 // Scalar fields example
 
 model ScalarExamples {
-  id        Int      @id @default(autoincrement())
-  title     String
+  //----
+  // COLUMNS
+  //----
+  /// Primary Key.
+  ///
+  /// @format uuid
+  id String @id @db.Uuid  title     String
+  
+  /// Content body of article.
   content   String
+
+  /// Creation time of record.
+  ///
+  /// It means creation time of the record
   createdAt DateTime @default(now())
+
+  /// Update time of record.
+  ///
+  /// The update time of the record
   updatedAt DateTime @updatedAt
+
+  /// Published status of the article.
   published Boolean  @default(false)
+
+  /// Article metadata
   metadata  Json
 }
 
