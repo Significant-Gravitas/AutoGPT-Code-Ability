@@ -2,28 +2,35 @@ from typing import Callable
 
 import pytest
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from codex.api_model import ApplicationCreate
+from codex.common.model import ObjectFieldModel, ObjectTypeModel
+from codex.database import get_app_by_id
+from codex.requirements.agent import APIRouteSpec, Module, SpecHolder
+from codex.requirements.database import create_specification
+from codex.requirements.model import (
+    DatabaseEnums,
+    DatabaseSchema,
+    DatabaseTable,
+    DBResponse,
+    PreAnswer,
+)
+
+load_dotenv()
+
+from prisma.enums import AccessLevel, HTTPVerb
+
+from codex.api import create_app
 from codex.app import db_client
 from codex.common import ai_block
 from codex.common.ai_block import TODO_COMMENT, LLMFailure
 from codex.common.ai_model import OpenAIChatClient
 from codex.common.logging_config import setup_logging
-from codex.common.model import ObjectFieldModel, ObjectTypeModel
 from codex.common.test_const import Identifiers, user_id_1
-from codex.database import create_app
 from codex.develop import agent
 from codex.develop.database import get_compiled_code
-from codex.requirements.database import create_spec
-from codex.requirements.model import (
-    AccessLevel,
-    APIRouteRequirement,
-    ApplicationRequirements,
-    DatabaseEnums,
-    DatabaseSchema,
-    DatabaseTable,
-)
 
 load_dotenv()
 is_connected = False
@@ -31,53 +38,74 @@ setup_logging()
 
 
 async def create_sample_app(user_id: str, cloud_id: str):
-    app = await create_app(
-        user_id,
-        ApplicationCreate(
-            name="TicTacToe Game",
-            description="Two Players TicTacToe Game communicate through an API.",
-        ),
-    )
+    app_id = (
+        await create_app(
+            user_id,
+            ApplicationCreate(
+                name="TicTacToe Game",
+                description="Two Players TicTacToe Game communicate through an API.",
+            ),
+        )
+    ).id
+
+    app = await get_app_by_id(user_id, app_id)
 
     ids = Identifiers(user_id=user_id, app_id=app.id, cloud_services_id=cloud_id)
 
-    spec = await create_spec(
-        ids,
-        spec=ApplicationRequirements(
-            name="TicTacToe Game",
-            context="Two Players TicTacToe Game communicate through an API.",
-            api_routes=[
-                APIRouteRequirement(
-                    method="POST",
-                    path="/make-turn",
-                    function_name="make_turn",
-                    description="Processes a player's move in the Tic-Tac-Toe game and returns the current state of the game.",
-                    access_level=AccessLevel.PUBLIC,
-                    request_model=ObjectTypeModel(
-                        name="MakeTurnRequest",
-                        Fields=[
-                            ObjectFieldModel(name="game_id", type="str"),
-                            ObjectFieldModel(name="row", type="int"),
-                            ObjectFieldModel(name="col", type="int"),
-                        ],
-                    ),
-                    response_model=ObjectTypeModel(
-                        name="GameStateResponse",
-                        Fields=[
-                            ObjectFieldModel(name="gameId", type="str"),
-                            ObjectFieldModel(name="turn", type="str"),
-                            ObjectFieldModel(name="state", type="str"),
-                            ObjectFieldModel(name="board", type="str"),
-                        ],
-                    ),
-                    database_schema=DatabaseSchema(
-                        name="TicTacToe DB",
-                        description="Database for TicTacToe Game",
-                        tables=[
-                            DatabaseTable(
-                                name="Game",
-                                description="Game state and board",
-                                definition="""
+    spec_holder = SpecHolder(
+        ids=ids,
+        app=app,
+        modules=[
+            Module(
+                name="TicTacToe Game",
+                description="Two Players TicTacToe Game communicate through an API.",
+                api_routes=[
+                    APIRouteSpec(
+                        module_name="Make Turn",
+                        http_verb=HTTPVerb.POST,
+                        function_name="make_turn",
+                        path="/make-turn",
+                        description="Processes a player's move in the Tic-Tac-Toe game and returns the current state of the game.",
+                        access_level=AccessLevel.PUBLIC,
+                        allowed_access_roles=[],
+                        request_model=ObjectTypeModel(
+                            name="MakeTurnRequest",
+                            Fields=[
+                                ObjectFieldModel(name="game_id", type="str"),
+                                ObjectFieldModel(name="row", type="int"),
+                                ObjectFieldModel(name="col", type="int"),
+                            ],
+                        ),
+                        response_model=ObjectTypeModel(
+                            name="GameStateResponse",
+                            Fields=[
+                                ObjectFieldModel(name="gameId", type="str"),
+                                ObjectFieldModel(name="turn", type="str"),
+                                ObjectFieldModel(name="state", type="str"),
+                                ObjectFieldModel(name="board", type="str"),
+                            ],
+                        ),
+                    )
+                ],
+            )
+        ],
+        db_response=DBResponse(
+            think="",
+            anti_think="",
+            plan="",
+            refine="",
+            pre_answer=PreAnswer(tables=[], enums=[]),
+            pre_answer_issues="",
+            conclusions="",
+            full_schema="",
+            database_schema=DatabaseSchema(
+                name="TicTacToe DB",
+                description="Database for TicTacToe Game",
+                tables=[
+                    DatabaseTable(
+                        name="Game",
+                        description="Game state and board",
+                        definition="""
                                 model Game {
                                     id String @id @default(uuid())
                                     gameId String
@@ -86,14 +114,14 @@ async def create_sample_app(user_id: str, cloud_id: str):
                                     board String
                                 }
                                 """,
-                            )
-                        ],
-                        enums=[
-                            DatabaseEnums(
-                                name="GameState",
-                                description="The current state of the game.",
-                                values=["Win", "Loss", "Draw", "In Progress"],
-                                definition="""
+                    )
+                ],
+                enums=[
+                    DatabaseEnums(
+                        name="GameState",
+                        description="The current state of the game.",
+                        values=["Win", "Loss", "Draw", "In Progress"],
+                        definition="""
                                 enum GameState {
                                     Win
                                     Loss
@@ -101,13 +129,13 @@ async def create_sample_app(user_id: str, cloud_id: str):
                                     InProgress
                                 }
                                 """,
-                            ),
-                        ],
                     ),
-                ),
-            ],
+                ],
+            ),
         ),
     )
+
+    spec = await create_specification(spec_holder)
 
     return app.id, spec
 

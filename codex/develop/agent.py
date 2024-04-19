@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 
+import prisma
 from prisma.enums import FunctionState
 from prisma.models import (
     CompiledRoute,
@@ -23,18 +24,20 @@ from codex.develop.compile import (
 )
 from codex.develop.database import get_compiled_route
 from codex.develop.develop import DevelopAIBlock, NiceGUIDevelopAIBlock
-from codex.develop.function import (
-    construct_function,
-    generate_object_template,
-    get_database_schema,
-)
+from codex.develop.function import construct_function, generate_object_template
 
 RECURSION_DEPTH_LIMIT = int(os.environ.get("RECURSION_DEPTH_LIMIT", 2))
 
 logger = logging.getLogger(__name__)
 
 
-async def process_api_route(api_route, ids, spec, app, lang="python"):
+async def process_api_route(
+    api_route: prisma.models.APIRouteSpec,
+    ids: Identifiers,
+    spec: prisma.models.Specification,
+    app: prisma.models.Application,
+    lang: str ="python"
+):
     if not api_route.RequestObject:
         types = []
         descs = {}
@@ -98,12 +101,13 @@ async def process_api_route(api_route, ids, spec, app, lang="python"):
     route_root_func = await develop_route(
         ids=ids,
         compiled_route_id=compiled_route.id,
-        goal_description=spec.context,
+        goal_description=app.description,
         function=compiled_route.RootFunction,
+        spec=spec,
         lang=lang,
     )
     logger.info(f"Route function id: {route_root_func.id}")
-    await compile_route(compiled_route.id, route_root_func)
+    await compile_route(compiled_route.id, route_root_func, spec)
 
 
 async def develop_application(
@@ -123,8 +127,9 @@ async def develop_application(
     app = await create_app(ids, spec, [])
     tasks = []
 
-    if spec.ApiRouteSpecs:
-        for api_route in spec.ApiRouteSpecs:
+    if spec.Modules:
+        api_routes = [r for m in spec.Modules for r in m.ApiRouteSpecs]
+        for api_route in api_routes:
             # Schedule each API route for processing
             task = process_api_route(api_route, ids, spec, app, lang)
             tasks.append(task)
@@ -140,6 +145,7 @@ async def develop_route(
     compiled_route_id: str,
     goal_description: str,
     function: Function,
+    spec: Specification,
     lang: str,
     depth: int = 0,
 ) -> Function:
@@ -198,7 +204,9 @@ async def develop_route(
         if func.functionName != function.functionName
     ] + [generate_object_template(f) for f in generated_objs.values()]
 
-    database_schema = get_database_schema(compiled_route)
+    database_schema = "\n\n".join(
+        [t.definition for t in spec.DatabaseSchema.DatabaseTables]
+    ) if spec.DatabaseSchema else ""
 
     dev_invoke_params = {
         "database_schema": database_schema,
@@ -239,6 +247,7 @@ async def develop_route(
                 compiled_route_id=compiled_route_id,
                 goal_description=goal_description,
                 function=child,
+                spec=spec,
                 lang=lang,
                 depth=depth + 1,
             )

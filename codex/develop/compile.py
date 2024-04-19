@@ -17,6 +17,7 @@ from prisma.models import (
 from prisma.types import CompiledRouteUpdateInput, CompletedAppCreateInput
 from pydantic import BaseModel
 
+import codex.database
 from codex.api_model import Identifiers
 from codex.common.database import INCLUDE_FIELD, INCLUDE_FUNC
 from codex.common.exec_external_tool import DEFAULT_DEPS
@@ -24,10 +25,7 @@ from codex.common.types import normalize_type
 from codex.deploy.model import Application
 from codex.develop.code_validation import CodeValidator
 from codex.develop.database import get_compiled_route
-from codex.develop.function import (
-    generate_object_template,
-    get_database_schema,
-)
+from codex.develop.function import generate_object_template
 from codex.develop.model import Package as PackageModel
 
 logger = logging.getLogger(__name__)
@@ -45,7 +43,7 @@ class ComplicationFailure(Exception):
 
 
 async def compile_route(
-    compiled_route_id: str, route_root_func: Function
+    compiled_route_id: str, route_root_func: Function, spec: Specification
 ) -> CompiledRoute:
     """
     Compiles a route by generating a CompiledRoute object.
@@ -73,8 +71,9 @@ async def compile_route(
     code += compiled_function.code
 
     compiled_route = await get_compiled_route(compiled_route_id)
-    database_schema = get_database_schema(compiled_route)
-
+    database_schema = "\n\n".join(
+        [t.definition for t in spec.DatabaseSchema.DatabaseTables]
+    ) if spec.DatabaseSchema else ""
     # Run the auto-fixers
     formatted_code = await CodeValidator(
         compiled_route_id=compiled_route_id,
@@ -443,15 +442,23 @@ async def create_app(
     Returns:
         CompletedApp: The completed app object.
     """
-    if spec.ApiRouteSpecs is None:
-        raise ValueError("Specification must have at least one API route.")
+    if spec.Modules is None:
+        raise ValueError("Specification must have at least one Module.")
 
     if not ids.user_id:
         raise ValueError("User ID is required.")
 
+    app = await codex.database.get_app_by_id(ids.user_id, ids.app_id)
+
+    completed_app_desc = app.description + "\n\nFeatures:"
+    for feature in spec.Features:
+        completed_app_desc += f"\n**{feature.name}:**"
+        completed_app_desc += f"\n\tFunctionality: {feature.functionality}"
+        completed_app_desc += "\n"
+
     data = CompletedAppCreateInput(
-        name=spec.name,
-        description=spec.context,
+        name=app.name,
+        description=app.description,
         User={"connect": {"id": ids.user_id}},
         CompiledRoutes={"connect": [{"id": route.id} for route in compiled_routes]},
         Specification={"connect": {"id": spec.id}},
@@ -461,7 +468,9 @@ async def create_app(
     return app
 
 
-async def create_server_code(completed_app: CompletedApp) -> Application:
+async def create_server_code(
+    completed_app: CompletedApp, spec: Specification
+) -> Application:
     """
     Args:
         application (Application): _description_
@@ -558,10 +567,9 @@ app = FastAPI(title="{name}", lifespan=lifespan, description='''{desc}''')
 
     # HACK: Database schema is duplicated across every route -> use first non-empty schema
     # TODO: Clean up DB schema so we don't have to do hacky hacky like this
-    db_schema: str = ""
-    for r in completed_app.CompiledRoutes:
-        if db_schema := get_database_schema(r):
-            break
+    db_schema: str = "\n\n".join(
+        [t.definition for t in spec.DatabaseSchema.DatabaseTables]
+    ) if spec.DatabaseSchema else ""
 
     # Update the application with the server code
     formatted_code = await CodeValidator(

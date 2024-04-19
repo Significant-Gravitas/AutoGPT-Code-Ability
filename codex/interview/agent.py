@@ -1,186 +1,125 @@
 # Task Breakdown Micro Agent
-import asyncio
 import logging
 
-from codex.common.ai_block import Identifiers, Tool
-from codex.interview.blocks.ai_interview import InterviewBlock
-from codex.interview.choose_tool import use_tool
-from codex.interview.model import (
-    InterviewMessage,
-    InterviewMessageOptionalId,
-    InterviewMessageUse,
-    InterviewMessageWithResponse,
-    InterviewMessageWithResponseOptionalId,
-    NextStepResponse,
-)
+import prisma
+
+from codex.common.ai_block import Identifiers
+from codex.deploy.model import Application
+from codex.interview.ai_interview import InterviewBlock
+from codex.interview.model import Feature, InterviewResponse
 
 logger = logging.getLogger(__name__)
 
 
-async def process_pending_questions_with_ids(
-    pending: list[InterviewMessage],
-    tools: list[Tool],
-    memory: list[InterviewMessageWithResponse],
-    ids: Identifiers,
-) -> list[InterviewMessageWithResponse]:
-    pending_with_ids = []
-    for i in pending:
-        pending_with_ids.append(
-            use_tool(
-                input=InterviewMessageOptionalId(
-                    id=i.id, tool=i.tool, content=i.content
-                ),
-                available_tools=tools,
-                ids=ids,
-                memory=memory,
-            )
-        )
-    return await asyncio.gather(*pending_with_ids)
+async def start_interview(ids: Identifiers, app: Application) -> InterviewResponse:
+    ai_block = InterviewBlock()
 
-
-async def next_step(
-    task: str,
-    ids: Identifiers,
-    memory: list[InterviewMessage | InterviewMessageWithResponse] = [],
-    tools: list[Tool] = [],
-) -> NextStepResponse:
-    # if there is pending questions, answer them using the blocks
-
-    ask_responses = await process_pending_questions_with_ids(
-        pending=[
-            i
-            for i in memory
-            if i.tool == "ask" and not isinstance(i, InterviewMessageWithResponse)
-        ],
-        tools=tools,
-        memory=[x for x in memory if isinstance(x, InterviewMessageWithResponse)],
-        ids=ids,
-    )
-
-    # remove all memory that was used to ask questions
-    memory_removals = [
-        i
-        for i in memory
-        if i.tool == "ask" and not isinstance(i, InterviewMessageWithResponse)
-    ]
-    for removal in memory_removals:
-        memory.remove(removal)
-    # add the responses to the memory
-    memory.extend(ask_responses)
-    search_responses = await process_pending_questions_with_ids(
-        pending=[
-            i
-            for i in memory
-            if i.tool == "search" and not isinstance(i, InterviewMessageWithResponse)
-        ],
-        tools=tools,
-        memory=[x for x in memory if isinstance(x, InterviewMessageWithResponse)],
-        ids=ids,
-    )
-
-    # remove all memory that was used to search
-    memory_removals = [
-        i
-        for i in memory
-        if i.tool == "search" and not isinstance(i, InterviewMessageWithResponse)
-    ]
-    for removal in memory_removals:
-        memory.remove(removal)
-    # add the responses to the memory
-    memory.extend(search_responses)
-
-    # all questions answered, start the interview
-    interview_start = InterviewBlock()
-    running_message: InterviewMessageUse = await interview_start.invoke(
+    ans = await ai_block.invoke(
         ids=ids,
         invoke_params={
-            "task": task,
-            "tools": {tool.name: tool.description for tool in tools},
-            "memory": memory,
-            "tech_stack": {
-                "programming_language": "Python",
-                "api_framework": "FastAPI",
-                "database": "PostgreSQL",
-                "orm": "Prisma",
-            },
+            "product_name": app.name,
+            "product_description": app.description,
         },
     )
 
-    # convert all InterviewMessageWithResponseOptionalId to InterviewMessageWithResponse
-    new_mem = []
-    for i in memory:
-        if isinstance(i, InterviewMessageWithResponseOptionalId):
-            new_mem.append(
-                InterviewMessageWithResponse(
-                    id=i.id, tool=i.tool, content=i.content, response=i.response
-                )
-            )
-        else:
-            new_mem.append(i)
-    memory = new_mem
+    interview = await prisma.models.Interview.prisma().create(
+        data={
+            "User": {"connect": {"id": ids.user_id}},
+            "Application": {"connect": {"id": ids.app_id}},
+            "name": app.name,
+            "task": app.description,
+        }
+    )
 
-    # if there is only a finished message, return next reponse with it set
-    if (
-        any(_.tool == "finished" for _ in running_message.uses)
-        and len(running_message.uses) == 1
-    ):
-        # TODO: insert the finished message into the memory? DB?
-        finished = [x for x in running_message.uses if x.tool == "finished"][0]
-        finish_response = await use_tool(
-            input=InterviewMessageOptionalId(
-                tool=finished.tool, content=finished.content, id=None
+    await prisma.models.InterviewStep.prisma().create(
+        data=prisma.types.InterviewStepCreateInput(
+            Interview={"connect": {"id": interview.id}},
+            Application={"connect": {"id": ids.app_id}},
+            phase_complete=ans.phase_completed,
+            say=ans.say_to_user,
+            thoughts=ans.thoughts,
+            Features=prisma.types.FeatureCreateManyNestedWithoutRelationsInput(
+                create=[
+                    prisma.types.FeatureCreateWithoutRelationsInput(
+                        name=f.name,
+                        reasoning=f.reasoning,
+                        functionality=f.functionality,
+                    )
+                    for f in ans.features
+                ]
             ),
-            available_tools=tools,
+        )
+    )
+
+    return InterviewResponse(
+        id=interview.id,
+        say_to_user=ans.say_to_user,
+        features=[
+            Feature(name=f.name, functionality=f.functionality) for f in ans.features
+        ],
+        phase_completed=ans.phase_completed,
+    )
+
+
+async def continue_interview(
+    ids: Identifiers, app: Application, user_message: str
+) -> InterviewResponse:
+    try:
+        last_step = await prisma.models.InterviewStep.prisma().find_first_or_raise(
+            where={
+                "interviewId": ids.interview_id,
+            },
+            include={
+                "Features": True,
+            },
+            order={
+                "createdAt": "desc",
+            },
+        )
+
+        ai_block = InterviewBlock()
+        features = "\n- ".join([f.name for f in last_step.Features])
+
+        ans = await ai_block.invoke(
             ids=ids,
-            memory=[x for x in memory if isinstance(x, InterviewMessageWithResponse)],
+            invoke_params={
+                "product_name": app.name,
+                "product_description": app.description,
+                "features": features,
+                "user_msg": user_message,
+            },
         )
 
-        # if there is a finished message, return the summary from that memory.content and the memory
-        return NextStepResponse(
-            memory=[x for x in memory if isinstance(x, InterviewMessageWithResponse)],
-            questions_to_ask=[],
-            finished=True,
-            # this should only ever be one message
-            finished_text=(finish_response.content, finish_response.response),
+        if ans.phase_completed:
+            ans.features = last_step.Features
+
+        await prisma.models.InterviewStep.prisma().create(
+            data=prisma.types.InterviewStepCreateInput(
+                phase_complete=ans.phase_completed,
+                say=ans.say_to_user,
+                thoughts=ans.thoughts,
+                Interview={"connect": {"id": last_step.interviewId}},
+                Application={"connect": {"id": ids.app_id}},
+                Features=prisma.types.FeatureCreateManyNestedWithoutRelationsInput(
+                    create=[
+                        prisma.types.FeatureCreateWithoutRelationsInput(
+                            name=f.name,
+                            reasoning=f.reasoning,
+                            functionality=f.functionality,
+                        )
+                        for f in ans.features
+                    ]
+                ),
+            )
         )
-    else:
-        # Filter out the finished message if it exists, because we clearly aren't
-        # finished if we have more questions to ask
-        if any(_.tool == "finish" for _ in running_message.uses):
-            # remove it from the list of tools
-            running_message.uses = [
-                use for use in running_message.uses if use.tool != "finish"
-            ]
-        # if there are questions to ask, return the questions and the memory
-        return NextStepResponse(
-            memory=[x for x in memory if isinstance(x, InterviewMessageWithResponse)],
-            questions_to_ask=running_message.uses,
-            finished=False,
+        return InterviewResponse(
+            id=last_step.interviewId,
+            say_to_user=ans.say_to_user,
+            features=[
+                Feature(name=f.name, functionality=f.functionality)
+                for f in ans.features
+            ],
+            phase_completed=ans.phase_completed,
         )
-
-
-# if __name__ == "__main__":
-#     from asyncio import run
-
-#     from openai import AsyncOpenAI
-#     from prisma import Prisma
-
-#     from codex.common.test_const import identifier_1
-
-#     ids = identifier_1
-#     db_client = Prisma(auto_register=True)
-#     oai = AsyncOpenAI()
-
-#     async def main():
-#         await db_client.connect()
-#         response, memory = await gather_task_info_loop(
-#             task="I need to make a website",
-#             ids=ids,
-#         )
-#         logger.info(response)
-#         await db_client.disconnect()
-#         return response, memory
-
-#     resp = run(main())
-#     logger.info(resp[0])
-#     logger.info(resp[1])
+    except Exception:
+        logger.exception("Error occured in inverview continue")

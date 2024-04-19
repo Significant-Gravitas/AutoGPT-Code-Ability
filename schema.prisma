@@ -37,6 +37,7 @@ model User {
   Deployments     Deployment[]
   CompletedApp    CompletedApp[]
   Interview       Interview[]
+  Modules         Module[]
 }
 
 enum Role {
@@ -59,6 +60,8 @@ model Application {
   User            User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId          String?
   Interviews      Interview[]
+  InterviewStep   InterviewStep[]
+  Modules         Module[]
 }
 
 // ------------------------- Interview Models ---------------------------- //
@@ -75,23 +78,45 @@ model Interview {
   task           String
   User           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId         String
-  Questions      Question[]
-  application    Application      @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  Application    Application      @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   applicationId  String
-  LLMCallAttempt LLMCallAttempt[]
   Specification  Specification[]
+  InterviewStep  InterviewStep[]
+  LLMCallAttempt LLMCallAttempt[]
 }
 
-model Question {
-  id          String    @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deleted     Boolean   @default(false)
-  question    String
-  tool        String
-  answer      String?
-  Interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-  interviewId String
+model InterviewStep {
+  id             String   @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deleted        Boolean  @default(false)
+  phase_complete Boolean  @default(false)
+
+  say      String
+  thoughts String
+  Features Feature[]
+
+  Interview      Interview        @relation(fields: [interviewId], references: [id])
+  interviewId    String
+  Application    Application      @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId  String
+  LLMCallAttempt LLMCallAttempt[]
+}
+
+model Feature {
+  id              String         @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deleted         Boolean        @default(false)
+  name            String         @default("")
+  reasoning       String         @default("")
+  functionality   String         @default("")
+  InterviewStep   InterviewStep? @relation(fields: [interviewStepId], references: [id])
+  interviewStepId String?
+  Specification   Specification? @relation(fields: [specificationId], references: [id])
+  specificationId String?
+
+  @@map("Question")
 }
 
 // ------------------------- Requirements Models ------------------------------ //
@@ -103,18 +128,35 @@ model Specification {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   deleted   Boolean  @default(false)
-  name      String
-  context   String
 
-  ApiRouteSpecs  APIRouteSpec[]
-  CompletedApps  CompletedApp[]
-  User           User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId         String?
-  Interview      Interview?       @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-  interviewId    String?
-  Application    Application?     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  applicationId  String?
-  LLMCallAttempt LLMCallAttempt[]
+  User             User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String?
+  Interview        Interview?       @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  interviewId      String?
+  Features         Feature[]
+  Application      Application?     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId    String?
+  CompletedApps    CompletedApp[]
+  DatabaseSchema   DatabaseSchema?  @relation(fields: [databaseSchemaId], references: [id], onDelete: Cascade)
+  databaseSchemaId String?
+  LLMCallAttempt   LLMCallAttempt[]
+  Modules          Module[]
+}
+
+model Module {
+  id              String         @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deleted         Boolean        @default(false)
+  name            String
+  description     String
+  ApiRouteSpecs   APIRouteSpec[]
+  Application     Application?   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId   String?
+  User            User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String?
+  Specification   Specification? @relation(fields: [specificationId], references: [id])
+  specificationId String?
 }
 
 enum AccessLevel {
@@ -135,23 +177,22 @@ enum HTTPVerb {
 }
 
 model APIRouteSpec {
-  id             String          @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt      DateTime        @default(now())
-  functionName   String
-  method         HTTPVerb
-  path           String
-  description    String
-  AccessLevel    AccessLevel
-  CompiledRoutes CompiledRoute[]
+  id                 String          @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt          DateTime        @default(now())
+  functionName       String
+  method             HTTPVerb
+  path               String
+  description        String
+  AccessLevel        AccessLevel?
+  AllowedAccessRoles String[]
+  CompiledRoutes     CompiledRoute[]
+  Module             Module?         @relation(fields: [moduleId], references: [id])
+  moduleId           String?
 
-  Specification    Specification?  @relation(fields: [specificationId], references: [id], onDelete: Cascade)
-  specificationId  String?
-  ResponseObject   ObjectType?     @relation("ResponseObjectForAPI", fields: [responseObjectId], references: [id], onDelete: Cascade)
+  ResponseObject   ObjectType? @relation("ResponseObjectForAPI", fields: [responseObjectId], references: [id], onDelete: Cascade)
   responseObjectId String?
-  RequestObject    ObjectType?     @relation("RequestObjectForAPI", fields: [requestObjectId], references: [id], onDelete: Cascade)
+  RequestObject    ObjectType? @relation("RequestObjectForAPI", fields: [requestObjectId], references: [id], onDelete: Cascade)
   requestObjectId  String?
-  DatabaseSchema   DatabaseSchema? @relation(fields: [databaseSchemaId], references: [id], onDelete: Cascade)
-  databaseSchemaId String?
 }
 
 model ObjectType {
@@ -205,7 +246,7 @@ model DatabaseSchema {
   description    String
   DatabaseTables DatabaseTable[]
   Functions      Function[]
-  ApiRouteSpecs  APIRouteSpec[]
+  Specification  Specification[]
 }
 
 // DatabaseTable represents a table within a database schema.
@@ -411,6 +452,8 @@ model LLMCallAttempt {
 
   LLMCallTemplate   LLMCallTemplate? @relation(fields: [llmCallTemplateId], references: [id], onDelete: Cascade)
   llmCallTemplateId String?
+  InterviewStep     InterviewStep?   @relation(fields: [interviewStepId], references: [id])
+  interviewStepId   String?
 }
 
 enum Status {

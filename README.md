@@ -36,23 +36,18 @@ Then input:
 And select the Poetry Python Interpreter.
 
 ### Step 2: Initialize Docker Containers
-Remember to remove the app service, if you want to run only the DB. 
+There are two ways you can run the containers: 
 
-Next, set up the Docker containers by executing:
-
+If you want only the DB running: 
 ```
-docker compose up
+docker compose -f docker-compose.yml up
 ```
-
-To have docker compose watch file changes and automatically rebuild, execute:
-
-```
-docker compose alpha watch 
-```
-
-This spins up the necessary Docker containers as defined in your `docker-compose.yml`, ensuring your environment is correctly isolated.
-
 > Take note of the **port** printed in the output. e.g: `listening on IPv4 address "0.0.0.0", port 5432`.
+
+If you want both the db and app running:
+```
+docker compose -f docker-compose.full.yml up
+```
 
 ### Step 3: Configure and Migrate Database
 

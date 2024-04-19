@@ -5,14 +5,13 @@ from fastapi import APIRouter, Query, Response
 from fastapi.responses import JSONResponse
 
 import codex.database
+import codex.requirements.agent
 import codex.requirements.database
 from codex.api_model import (
     Identifiers,
     SpecificationResponse,
     SpecificationsListResponse,
 )
-from codex.interview.database import get_interview
-from codex.requirements.agent import generate_requirements
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +34,7 @@ async def create_spec(
     """
     Create a new specification for a given application and user.
     """
-    await codex.database.get_app_by_id(user_id, app_id)
+    await codex.database.get_app_response_by_id(user_id, app_id)
     user = await codex.database.get_user(user_id)
     ids = Identifiers(
         user_id=user_id,
@@ -45,16 +44,16 @@ async def create_spec(
     )
     if not ids.user_id or not ids.app_id:
         raise ValueError("User ID and App ID are required")
-    interview = await get_interview(
-        user_id=ids.user_id, app_id=ids.app_id, interview_id=interview_id
-    )
-    if not interview:
-        return JSONResponse(
-            content=json.dumps({"error": "Interview not found"}),
-            status_code=404,
-        )
-    new_spec = await generate_requirements(ids, interview.task)
-    return SpecificationResponse.from_specification(new_spec)
+
+    app = await codex.database.get_app_by_id(user_id, app_id)
+
+    spec_holder = await codex.requirements.agent.generate_requirements(ids, app=app)
+    new_spec = await codex.requirements.database.create_specification(spec_holder)
+
+    spec_response = SpecificationResponse.from_specification(new_spec)
+    spec_response.name = app.name
+    spec_response.context = app.description or ""
+    return spec_response
 
 
 @spec_router.get(

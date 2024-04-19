@@ -1,0 +1,56 @@
+version: "3"
+services:
+  postgres:
+    image: ankane/pgvector:latest
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+      PGUSER: ${DB_USER}
+    healthcheck:
+      test: pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "${DB_PORT}:5432"
+    networks:
+      - codex_network
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    develop:
+      watch:
+        - action: rebuild
+          files:
+            - ./**/*.py
+          path: .
+    environment:
+      # Override DATABASE_URL from .env with host and port (db:5432) of DB service
+      DATABASE_URL: "postgresql://${DB_USER}:${DB_PASS}@postgres:${DB_PORT}/${DB_NAME}"
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      RUN_ENV: ${RUN_ENV}
+    ports:
+      - "${PORT:-8080}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - codex_network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:${PORT:-8000}/docs"
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  codex_network:
+    driver: bridge

@@ -1,3 +1,4 @@
+import codex.requirements.blocks.ai_endpoint
 from codex.common.model import ObjectFieldModel, ObjectTypeModel
 from codex.requirements.blocks.ai_endpoint import parse_object_model
 
@@ -5,6 +6,11 @@ from codex.requirements.blocks.ai_endpoint import parse_object_model
 def test_simple_fix_any_Any():
     database_models = ["User", "Appointment", "Invoice", "Payment", "Notification"]
     database_enums = ["UserRole", "AppointmentStatus", "InvoiceStatus", "PaymentStatus"]
+    allowed_types = (
+        database_enums
+        + database_models
+        + codex.requirements.blocks.ai_endpoint.ALLOWED_TYPES
+    )
 
     request_model = ObjectTypeModel(
         name="SignupWithOAuth2Request",
@@ -40,9 +46,7 @@ def test_simple_fix_any_Any():
         new_response_model,
         invalid_request_types,
         invalid_response_types,
-    ) = parse_object_model(
-        request_model, response_model, database_enums, database_models
-    )
+    ) = parse_object_model(request_model, response_model, allowed_types)
 
     assert len(request_types) == 4
     assert len(response_types) == 2
@@ -66,6 +70,11 @@ def test_simple_fix_any_Any():
 def test_using_model_not_in_db():
     database_models = ["User", "Appointment", "Invoice", "Payment", "Notification"]
     database_enums = ["UserRole", "AppointmentStatus", "InvoiceStatus", "PaymentStatus"]
+    allowed_types = (
+        database_enums
+        + database_models
+        + codex.requirements.blocks.ai_endpoint.ALLOWED_TYPES
+    )
 
     request_model = ObjectTypeModel(
         name="SignupWithOAuth2Request",
@@ -104,8 +113,7 @@ def test_using_model_not_in_db():
     ) = parse_object_model(
         request_model=request_model,
         response_model=response_model,
-        enum_names=database_enums,
-        table_names=database_models,
+        allowed_types=allowed_types,
     )
 
     assert len(request_types) == 2
@@ -130,6 +138,11 @@ def test_using_model_not_in_db():
 def test_filling_out_same_model_dict():
     database_models = ["User", "Appointment", "Invoice", "Payment", "Notification"]
     database_enums = ["UserRole", "AppointmentStatus", "InvoiceStatus", "PaymentStatus"]
+    allowed_types = (
+        database_enums
+        + database_models
+        + codex.requirements.blocks.ai_endpoint.ALLOWED_TYPES
+    )
 
     request_model = ObjectTypeModel(
         name="SignupWithOAuth2Request",
@@ -186,8 +199,7 @@ def test_filling_out_same_model_dict():
     ) = parse_object_model(
         request_model=request_model,
         response_model=response_model,
-        enum_names=database_enums,
-        table_names=database_models,
+        allowed_types=allowed_types,
     )
 
     assert len(request_types) == 4
@@ -229,6 +241,11 @@ def test_filling_out_same_model_dict():
 def test_filling_out_same_model_simple_model_first():
     database_models = ["User", "Appointment", "Invoice", "Payment", "Notification"]
     database_enums = ["UserRole", "AppointmentStatus", "InvoiceStatus", "PaymentStatus"]
+    allowed_types = (
+        database_enums
+        + database_models
+        + codex.requirements.blocks.ai_endpoint.ALLOWED_TYPES
+    )
 
     request_model = ObjectTypeModel(
         name="SignupWithOAuth2Request",
@@ -285,8 +302,7 @@ def test_filling_out_same_model_simple_model_first():
     ) = parse_object_model(
         request_model=request_model,
         response_model=response_model,
-        enum_names=database_enums,
-        table_names=database_models,
+        allowed_types=allowed_types,
     )
 
     assert len(request_types) == 3
@@ -328,6 +344,11 @@ def test_filling_out_same_model_simple_model_first():
 def test_filling_out_same_model_simple_model_last():
     database_models = ["User", "Appointment", "Invoice", "Payment", "Notification"]
     database_enums = ["UserRole", "AppointmentStatus", "InvoiceStatus", "PaymentStatus"]
+    allowed_types = (
+        database_enums
+        + database_models
+        + codex.requirements.blocks.ai_endpoint.ALLOWED_TYPES
+    )
 
     request_model = ObjectTypeModel(
         name="SignupWithOAuth2Request",
@@ -384,8 +405,7 @@ def test_filling_out_same_model_simple_model_last():
     ) = parse_object_model(
         request_model=request_model,
         response_model=response_model,
-        enum_names=database_enums,
-        table_names=database_models,
+        allowed_types=allowed_types,
     )
 
     assert len(request_types) == 3
@@ -427,6 +447,11 @@ def test_filling_out_same_model_simple_model_last():
 def test_cross_model():
     database_models = ["User", "Appointment", "Invoice", "Payment", "Notification"]
     database_enums = ["UserRole", "AppointmentStatus", "InvoiceStatus", "PaymentStatus"]
+    allowed_types = (
+        database_enums
+        + database_models
+        + codex.requirements.blocks.ai_endpoint.ALLOWED_TYPES
+    )
 
     request_model = ObjectTypeModel(
         name="SignupWithOAuth2Request",
@@ -474,9 +499,7 @@ def test_cross_model():
         new_response_model,
         invalid_request_types,
         invalid_response_types,
-    ) = parse_object_model(
-        request_model, response_model, database_enums, database_models
-    )
+    ) = parse_object_model(request_model, response_model, allowed_types)
 
     assert len(request_types) == 3
     assert len(response_types) == 3
@@ -513,6 +536,11 @@ def test_cross_model():
 def test_multilayer_type():
     database_models = ["User", "Appointment", "Invoice", "Payment", "Notification"]
     database_enums = ["UserRole", "AppointmentStatus", "InvoiceStatus", "PaymentStatus"]
+    allowed_types = (
+        database_enums
+        + database_models
+        + codex.requirements.blocks.ai_endpoint.ALLOWED_TYPES
+    )
 
     request_model = ObjectTypeModel(
         name="SignupWithOAuth2Request",
@@ -548,9 +576,7 @@ def test_multilayer_type():
         new_response_model,
         invalid_request_types,
         invalid_response_types,
-    ) = parse_object_model(
-        request_model, response_model, database_enums, database_models
-    )
+    ) = parse_object_model(request_model, response_model, allowed_types)
 
     assert len(request_types) == 5
     assert len(response_types) == 2
@@ -574,6 +600,11 @@ def test_multilayer_type():
 def test_multilayer_type_with_complexity():
     database_models = ["User", "Appointment", "Invoice", "Payment", "Notification"]
     database_enums = ["UserRole", "AppointmentStatus", "InvoiceStatus", "PaymentStatus"]
+    allowed_types = (
+        database_enums
+        + database_models
+        + codex.requirements.blocks.ai_endpoint.ALLOWED_TYPES
+    )
 
     request_model = ObjectTypeModel(
         name="SignupWithOAuth2Request",
@@ -609,9 +640,7 @@ def test_multilayer_type_with_complexity():
         new_response_model,
         invalid_request_types,
         invalid_response_types,
-    ) = parse_object_model(
-        request_model, response_model, database_enums, database_models
-    )
+    ) = parse_object_model(request_model, response_model, allowed_types)
 
     assert len(request_types) == 7
     assert len(response_types) == 2

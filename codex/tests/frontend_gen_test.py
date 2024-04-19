@@ -6,20 +6,22 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from codex.api_model import ApplicationCreate
+from codex.common.model import ObjectFieldModel, ObjectTypeModel
+from codex.database import create_app, get_app_by_id
+from codex.requirements.agent import APIRouteSpec, Module, SpecHolder
+from codex.requirements.database import create_specification
+
+load_dotenv()
+
+from prisma.enums import AccessLevel, HTTPVerb
+
+from codex.api import create_app
 from codex.app import db_client
 from codex.common.ai_model import OpenAIChatClient
 from codex.common.logging_config import setup_logging
-from codex.common.model import ObjectFieldModel, ObjectTypeModel
 from codex.common.test_const import Identifiers, user_id_1
-from codex.database import create_app
 from codex.develop import agent
 from codex.develop.database import get_compiled_code
-from codex.requirements.database import create_spec
-from codex.requirements.model import (
-    AccessLevel,
-    APIRouteRequirement,
-    ApplicationRequirements,
-)
 
 load_dotenv()
 is_connected = False
@@ -27,40 +29,50 @@ setup_logging()
 
 
 async def create_sample_app(user_id: str, cloud_id: str, title: str, description: str):
-    app = await create_app(
-        user_id,
-        ApplicationCreate(
-            name=title,
-            description=description,
-        ),
-    )
+    app_id = (
+        await create_app(
+            user_id,
+            ApplicationCreate(
+                name=title,
+                description=description,
+            ),
+        )
+    ).id
+
+    app = await get_app_by_id(user_id, app_id)
 
     ids = Identifiers(user_id=user_id, app_id=app.id, cloud_services_id=cloud_id)
 
-    spec = await create_spec(
-        ids,
-        spec=ApplicationRequirements(
-            name=title,
-            context=description,
-            api_routes=[
-                APIRouteRequirement(
-                    method="GET",
-                    path="/",
-                    function_name="main",
-                    description="A page that renders " + description,
-                    access_level=AccessLevel.PUBLIC,
-                    request_model=ObjectTypeModel(
-                        name="request",
-                        Fields=[
-                            ObjectFieldModel(name="client", type="nicegui.Client"),
-                        ],
-                    ),
-                    response_model=None,
-                    database_schema=None,
-                ),
-            ],
-        ),
+    spec_holder = SpecHolder(
+        ids=ids,
+        app=app,
+        modules=[
+            Module(
+                name=title,
+                description=description,
+                api_routes=[
+                    APIRouteSpec(
+                        module_name="Main Function",
+                        http_verb=HTTPVerb.POST,
+                        function_name="main",
+                        path="/",
+                        description="A page that renders " + description,
+                        access_level=AccessLevel.PUBLIC,
+                        allowed_access_roles=[],
+                        request_model=ObjectTypeModel(
+                            name="request",
+                            Fields=[
+                                ObjectFieldModel(name="client", type="nicegui.Client"),
+                            ],
+                        ),
+                        response_model=None,
+                    )
+                ],
+            )
+        ],
     )
+
+    spec = await create_specification(spec_holder)
 
     return app.id, spec
 
@@ -106,6 +118,7 @@ async def test_tictactoe():
         description="A simple TicTacToe game",
     )
     assert func is not None
+
 
 @pytest.mark.asyncio
 @pytest.mark.integration_test

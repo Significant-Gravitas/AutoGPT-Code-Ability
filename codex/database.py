@@ -119,7 +119,20 @@ async def list_users(page: int, page_size: int) -> UsersListResponse:
     return UsersListResponse(users=user_responses, pagination=pagination)
 
 
-async def get_app_by_id(user_id: str, app_id: str) -> ApplicationResponse:
+async def get_app_by_id(user_id: str, app_id: str) -> Application:
+    app = await Application.prisma().find_first_or_raise(
+        where={
+            "id": app_id,
+            "userId": user_id,
+            "deleted": False,
+        },
+        include={"User": True},
+    )
+
+    return app
+
+
+async def get_app_response_by_id(user_id: str, app_id: str) -> ApplicationResponse:
     app = await Application.prisma().find_first_or_raise(
         where={
             "id": app_id,
@@ -138,6 +151,7 @@ async def get_app_by_id(user_id: str, app_id: str) -> ApplicationResponse:
         name=app.name,
         userid=app.userId,
         cloud_services_id=app.User.cloudServicesId if app.User else "",
+        description=app.description,
     )
 
 

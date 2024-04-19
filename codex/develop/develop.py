@@ -71,7 +71,7 @@ def parse_requirements(requirements_str: str) -> List[Package]:
 class DevelopAIBlock(AIBlock):
     developement_phase: DevelopmentPhase = DevelopmentPhase.DEVELOPMENT
     prompt_template_name = "develop"
-    model = "gpt-4-0125-preview"
+    model = "gpt-4-turbo"
     language = "python"
 
     async def validate(
@@ -230,4 +230,3 @@ class DevelopAIBlock(AIBlock):
 
 class NiceGUIDevelopAIBlock(DevelopAIBlock):
     language = "nicegui"
-    model = "gpt-4-turbo"  # I'm passing huge context, need turbo for faster devloop

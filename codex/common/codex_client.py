@@ -12,15 +12,13 @@ from codex.api_model import (
     DeliverableResponse,
     DeploymentResponse,
     Identifiers,
-    InterviewCreate,
-    InterviewMessageWithResponse,
-    InterviewResponse,
+    InterviewNextRequest,
     SpecificationResponse,
     UserCreate,
     UserResponse,
 )
 from codex.common.logging_config import setup_logging
-from codex.interview.model import InterviewMessage
+from codex.interview.model import InterviewResponse
 
 logger = logging.getLogger(__name__)
 
@@ -207,13 +205,10 @@ class CodexClient:
         if not self.app_id:
             raise ValueError("You must create an app before starting an interview")
         url = f"{self.base_url}/user/{self.codex_user_id}/apps/{self.app_id}/interview/"
-        obj = InterviewCreate(name=name, task=task)
 
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    url, headers=self.headers, json=obj.model_dump()
-                ) as response:
+                async with session.post(url, headers=self.headers) as response:
                     if response.status != 200:
                         logger.error(f"Error starting interview: {response.status}")
                         logger.error(await response.text())
@@ -231,9 +226,7 @@ class CodexClient:
             logger.exception(f"Unknown Error when trying to start the interview: {e}")
             raise e
 
-    async def interview_next(
-        self, answers: list[InterviewMessageWithResponse | InterviewMessage]
-    ) -> InterviewResponse:
+    async def interview_next(self, user_message: str) -> InterviewResponse:
         """
         Answer the next question in the interview.
 
@@ -241,8 +234,7 @@ class CodexClient:
             user_id (int): The ID of the user for whom the interview is being answered.
             app_id (int): The ID of the app for which the interview is being answered.
             interview_id (int): The ID of the interview for which the question is being answered.
-            answers (List[InterviewMessageWithResponse | InterviewMessage]): The list of answers to the questions in the interview.
-
+            user_message (str): A message from the user
         Returns:
             InterviewResponse: The response from the server after attempting to answer the next question in the interview.
         """
@@ -252,12 +244,12 @@ class CodexClient:
             )
         url = f"{self.base_url}/user/{self.codex_user_id}/apps/{self.app_id}/interview/{self.interview_id}/next"
 
-        obj = [model.model_dump() for model in answers]
+        obj = InterviewNextRequest(msg=user_message)
 
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.post(
-                    url, headers=self.headers, json=obj
+                    url, headers=self.headers, json=obj.model_dump()
                 ) as response:
                     response.raise_for_status()
                     interview_response = InterviewResponse(**await response.json())

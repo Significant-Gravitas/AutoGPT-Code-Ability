@@ -6,7 +6,6 @@ INCLUDE_API_ROUTE = {
     "include": {
         "RequestObject": INCLUDE_FIELD,
         "ResponseObject": INCLUDE_FIELD,
-        "DatabaseSchema": {"include": {"DatabaseTables": True}},
     }
 }
 
