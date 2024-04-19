@@ -1,7 +1,6 @@
 from typing import Callable
 
 import pytest
-from dotenv import load_dotenv
 
 from codex.api_model import ApplicationCreate
 from codex.common.model import ObjectFieldModel, ObjectTypeModel
@@ -28,7 +27,6 @@ from codex.common.test_const import Identifiers, user_id_1
 from codex.develop import agent
 from codex.develop.database import get_compiled_code
 
-load_dotenv()
 is_connected = False
 setup_logging()
 

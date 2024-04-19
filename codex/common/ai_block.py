@@ -6,10 +6,8 @@ import pathlib
 from typing import Any, Callable, Optional, Type
 
 import prisma
+from dotenv import load_dotenv
 from jinja2 import Environment, FileSystemLoader
-from openai import AsyncOpenAI
-from openai.types import CompletionUsage
-from openai.types.chat import ChatCompletion
 from prisma.enums import DevelopmentPhase
 from prisma.fields import Json
 from prisma.models import LLMCallAttempt, LLMCallTemplate
@@ -18,7 +16,12 @@ from pydantic import BaseModel, ConfigDict
 from codex.api_model import Identifiers
 from codex.common.ai_model import OpenAIChatClient
 
+load_dotenv()
 logger = logging.getLogger(__name__)
+
+from openai import AsyncOpenAI  # noqa
+from openai.types import CompletionUsage  # noqa
+from openai.types.chat import ChatCompletion  # noqa
 
 
 class LLMFailure(Exception):

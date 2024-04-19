@@ -1,9 +1,11 @@
 import logging
 from typing import Optional
+from dotenv import load_dotenv
 
-from openai import AsyncOpenAI
-
+load_dotenv()
 logger = logging.getLogger(__name__)
+
+from openai import AsyncOpenAI  # noqa
 
 
 class OpenAIChatClient:
