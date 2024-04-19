@@ -36,7 +36,7 @@ async def process_api_route(
     ids: Identifiers,
     spec: prisma.models.Specification,
     app: prisma.models.Application,
-    lang: str ="python"
+    lang: str = "python",
 ):
     if not api_route.RequestObject:
         types = []
@@ -204,9 +204,11 @@ async def develop_route(
         if func.functionName != function.functionName
     ] + [generate_object_template(f) for f in generated_objs.values()]
 
-    database_schema = "\n\n".join(
-        [t.definition for t in spec.DatabaseSchema.DatabaseTables]
-    ) if spec.DatabaseSchema else ""
+    database_schema = (
+        "\n\n".join([t.definition for t in spec.DatabaseSchema.DatabaseTables])
+        if spec.DatabaseSchema
+        else ""
+    )
 
     dev_invoke_params = {
         "database_schema": database_schema,

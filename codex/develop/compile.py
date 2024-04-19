@@ -71,9 +71,11 @@ async def compile_route(
     code += compiled_function.code
 
     compiled_route = await get_compiled_route(compiled_route_id)
-    database_schema = "\n\n".join(
-        [t.definition for t in spec.DatabaseSchema.DatabaseTables]
-    ) if spec.DatabaseSchema else ""
+    database_schema = (
+        "\n\n".join([t.definition for t in spec.DatabaseSchema.DatabaseTables])
+        if spec.DatabaseSchema
+        else ""
+    )
     # Run the auto-fixers
     formatted_code = await CodeValidator(
         compiled_route_id=compiled_route_id,
@@ -567,9 +569,11 @@ app = FastAPI(title="{name}", lifespan=lifespan, description='''{desc}''')
 
     # HACK: Database schema is duplicated across every route -> use first non-empty schema
     # TODO: Clean up DB schema so we don't have to do hacky hacky like this
-    db_schema: str = "\n\n".join(
-        [t.definition for t in spec.DatabaseSchema.DatabaseTables]
-    ) if spec.DatabaseSchema else ""
+    db_schema: str = (
+        "\n\n".join([t.definition for t in spec.DatabaseSchema.DatabaseTables])
+        if spec.DatabaseSchema
+        else ""
+    )
 
     # Update the application with the server code
     formatted_code = await CodeValidator(

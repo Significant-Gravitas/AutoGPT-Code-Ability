@@ -3,8 +3,6 @@ from typing import Callable
 import pytest
 from dotenv import load_dotenv
 
-load_dotenv()
-
 from codex.api_model import ApplicationCreate
 from codex.common.model import ObjectFieldModel, ObjectTypeModel
 from codex.database import get_app_by_id
@@ -17,8 +15,6 @@ from codex.requirements.model import (
     DBResponse,
     PreAnswer,
 )
-
-load_dotenv()
 
 from prisma.enums import AccessLevel, HTTPVerb
 

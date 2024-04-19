@@ -5,7 +5,7 @@ from typing import Optional
 import prisma
 import prisma.enums
 import pydantic
-from prisma.models import Application, Specification
+from prisma.models import Application
 
 import codex.common.model
 import codex.common.types

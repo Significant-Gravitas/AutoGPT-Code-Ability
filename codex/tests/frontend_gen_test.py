@@ -3,19 +3,14 @@ from typing import Callable
 import pytest
 from dotenv import load_dotenv
 
-load_dotenv()
-
 from codex.api_model import ApplicationCreate
 from codex.common.model import ObjectFieldModel, ObjectTypeModel
 from codex.database import create_app, get_app_by_id
 from codex.requirements.agent import APIRouteSpec, Module, SpecHolder
 from codex.requirements.database import create_specification
 
-load_dotenv()
-
 from prisma.enums import AccessLevel, HTTPVerb
 
-from codex.api import create_app
 from codex.app import db_client
 from codex.common.ai_model import OpenAIChatClient
 from codex.common.logging_config import setup_logging
