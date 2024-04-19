@@ -1,3 +1,7 @@
+import asyncio
+import os
+import pickle
+
 import prisma
 from prisma.models import Specification
 from prisma.types import SpecificationCreateInput
@@ -94,10 +98,13 @@ async def create_specification(
             )
         )
 
-    create_spec_dict = {
-        "Features": {"connect": [{"id": f.id} for f in spec_holder.features]},
-        "Modules": {"create": create_modules},
-    }
+    create_spec_dict = {}
+    if spec_holder.features:
+        create_spec_dict["Features"] = {
+            "connect": [{"id": f.id} for f in spec_holder.features]
+        }
+    if create_modules:
+        create_spec_dict["Modules"] = {"create": create_modules}
     if create_db:
         create_spec_dict["DatabaseSchema"] = {"create": create_db}
     if spec_holder.ids.user_id:
@@ -234,3 +241,18 @@ async def list_specifications(
                 total_items=0, total_pages=0, current_page=0, page_size=0
             ),
         )
+
+
+async def main():
+    file_path = os.path.join(os.path.dirname(__file__), "spec_holder.pickle")
+    prisma_client = prisma.Prisma(auto_register=True)
+    await prisma_client.connect()
+    with open(file_path, "rb") as file:
+        spec_holder = pickle.load(file)
+
+    await create_specification(spec_holder)
+    await prisma_client.disconnect()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
