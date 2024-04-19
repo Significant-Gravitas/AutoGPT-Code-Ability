@@ -8,8 +8,32 @@ Your software architect has broken this down into the following modules:
 
 {{ modules }}
 
+{% if needed_auth_roles %}
 Your needed auth roles are:
+
 {{ needed_auth_roles }}
+
+When creating the Auth roles this is the recommended way to do it:
+
+```prisma
+
+model User {
+  id               Int               @id @default(autoincrement())
+  email            String            @unique
+  role             Role
+  ...
+}
+
+enum Role {
+  Admin
+  User
+  ...
+}
+```
+
+{% endif %}
+
+
 
 
 Relational data models will be needed to represent entities as well as defining relationships between them.
