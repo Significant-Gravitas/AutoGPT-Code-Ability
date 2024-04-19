@@ -10,10 +10,11 @@ datasource db {
 // generator db configures Prisma Client settings.
 // It is set up to use Prisma Client Python with asyncio interface and specific features.
 generator db {
-  provider             = "prisma-client-py"
-  interface            = "asyncio"
-  recursive_type_depth = 5
-  previewFeatures      = ["postgresqlExtensions"]
+  provider                    = "prisma-client-py"
+  interface                   = "asyncio"
+  recursive_type_depth        = 5
+  previewFeatures             = ["postgresqlExtensions"]
+  enable_experimental_decimal = true
 }
 
 """
