@@ -7,3 +7,12 @@
 {# Finally we include the incatations we use to try and get the LLM to do what we want #}
 {% include 'develop/python.system.incantations.j2' %}
 
+{% if enchancements%}
+You can utilize the following details to help your mission:
+{# for list of enhancement in enhancements #}
+{% for enhancement in enhancements %}
+{% with suggested_fix=enhancement.suggested_fix %}
+-     {% include 'develop/python.system.enchancements.j2' %}
+{%endwith%}
+{% endfor %}
+{% endif %}
