@@ -4,7 +4,7 @@ import logging
 import prisma
 import prisma.enums
 import pydantic
-from prisma.models import Application, Specification
+from prisma.models import Application
 
 import codex.common.model
 import codex.common.types
@@ -93,7 +93,7 @@ async def generate_requirements(ids: Identifiers, app: Application) -> SpecHolde
     logger.info("Spec Definition Started")
     if not ids.interview_id:
         raise ValueError("Interview ID is required")
-    
+
     # User Interview
     interview = await codex.interview.database.get_last_interview_step(
         interview_id=ids.interview_id, app_id=ids.app_id
@@ -101,7 +101,7 @@ async def generate_requirements(ids: Identifiers, app: Application) -> SpecHolde
 
     if not interview or not interview.Features:
         raise ValueError("Interview not found or no features defined")
-    
+
     spec_holder.features = interview.Features
 
     features_string = ""

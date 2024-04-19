@@ -3,6 +3,7 @@ import logging
 
 import prisma
 import prisma.models
+
 from codex.common.ai_block import Identifiers
 from codex.interview.ai_interview import InterviewBlock
 from codex.interview.model import Feature, InterviewResponse
@@ -10,7 +11,9 @@ from codex.interview.model import Feature, InterviewResponse
 logger = logging.getLogger(__name__)
 
 
-async def start_interview(ids: Identifiers, app: prisma.models.Application) -> InterviewResponse:
+async def start_interview(
+    ids: Identifiers, app: prisma.models.Application
+) -> InterviewResponse:
     ai_block = InterviewBlock()
 
     ans = await ai_block.invoke(
@@ -26,7 +29,7 @@ async def start_interview(ids: Identifiers, app: prisma.models.Application) -> I
         raise AssertionError("Application ID not found")
     if not app.description:
         raise AssertionError("Application description not found")
-    
+
     interview = await prisma.models.Interview.prisma().create(
         data={
             "User": {"connect": {"id": ids.user_id}},
@@ -72,7 +75,7 @@ async def continue_interview(
     try:
         if not ids.interview_id:
             raise AssertionError("Interview id not found")
-        
+
         last_step = await prisma.models.InterviewStep.prisma().find_first_or_raise(
             where={
                 "interviewId": ids.interview_id,
@@ -86,10 +89,10 @@ async def continue_interview(
         )
 
         ai_block = InterviewBlock()
-        
+
         if not last_step.Features:
             raise AssertionError("Features not found in the last step")
-        
+
         features = "\n- ".join([f.name for f in last_step.Features])
 
         ans = await ai_block.invoke(
