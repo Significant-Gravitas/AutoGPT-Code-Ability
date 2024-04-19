@@ -17,3 +17,5 @@ generator db {
 }
 
 """
+
+TODO_COMMENT = "# TODO(autogpt):"
