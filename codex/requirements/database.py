@@ -18,9 +18,6 @@ async def create_specification(
     if spec_holder.ids.user_id is None:
         raise ValueError("User ID is required")
 
-    if spec_holder.ids.app_id is None:
-        raise ValueError("App ID is required")
-
     request_models = [
         r.request_model
         for m in spec_holder.modules
@@ -36,7 +33,6 @@ async def create_specification(
     all_models = request_models + response_models
 
     created_objects = {}
-
     for model in all_models:
         created_objects = await create_object_type(model, created_objects)
 
@@ -103,7 +99,7 @@ async def create_specification(
         "Modules": {"create": create_modules},
     }
     if create_db:
-        create_spec_dict["DatabaseSchema"] = create_db
+        create_spec_dict["DatabaseSchema"] = {"create": create_db}
     if spec_holder.ids.user_id:
         create_spec_dict["User"] = {"connect": {"id": spec_holder.ids.user_id}}
     if spec_holder.ids.app_id:
@@ -121,7 +117,10 @@ async def create_specification(
         Modules={"include": {"ApiRouteSpecs": INCLUDE_API_ROUTE}},  # type: ignore
     )
 
-    spec = await Specification.prisma().create(data=create_spec, include=include_objs)
+    spec = await Specification.prisma().create(
+        data=create_spec,
+        include=include_objs,
+    )
 
     return spec
 
