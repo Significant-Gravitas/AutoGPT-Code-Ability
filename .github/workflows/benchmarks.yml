@@ -55,9 +55,11 @@ jobs:
     - name: Generate Prisma Client
       run: poetry run prisma generate
 
+    - name: Set DB URL
+      run: echo "DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@localhost:5432/${{ secrets.DB_NAME }}" >> $GITHUB_ENV
+
     - name: Run server
       run: |
-        export DATABASE_URL="postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@localhost:5432/${{ secrets.DB_NAME }}"
         ./run serve &
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -74,17 +76,14 @@ jobs:
 
     - name: Run Database Migrations
       run: |
-        export DATABASE_URL="postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@localhost:5432/${{ secrets.DB_NAME }}"
         poetry run prisma migrate dev --name updates
 
     - name: Populate Database
       run: |
-        export DATABASE_URL="postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@localhost:5432/${{ secrets.DB_NAME }}"
         ./run populate-db
 
     - name: Run Tests
       run: |
-        export DATABASE_URL="postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@localhost:5432/${{ secrets.DB_NAME }}"
         ./run benchmark
 
     - name: Clean up
