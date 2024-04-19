@@ -1,3 +1,4 @@
+import prisma
 from prisma.enums import Role
 from prisma.models import Application, User
 from prisma.types import UserCreateWithoutRelationsInput
@@ -119,7 +120,7 @@ async def list_users(page: int, page_size: int) -> UsersListResponse:
     return UsersListResponse(users=user_responses, pagination=pagination)
 
 
-async def get_app_by_id(user_id: str, app_id: str) -> ApplicationResponse:
+async def get_app_by_id(user_id: str, app_id: str) -> prisma.models.Application:
     app = await Application.prisma().find_first_or_raise(
         where={
             "id": app_id,
