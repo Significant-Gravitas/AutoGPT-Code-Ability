@@ -46,6 +46,8 @@ async def create_spec(
         raise ValueError("User ID and App ID are required")
 
     app = await codex.database.get_app_by_id(user_id, app_id)
+    if not app.description:
+        raise ValueError("Application description is required")
 
     spec_holder = await codex.requirements.agent.generate_requirements(ids, app=app)
     new_spec = await codex.requirements.database.create_specification(spec_holder)
