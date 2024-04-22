@@ -12,7 +12,6 @@ import black
 import isort
 import prisma
 from prisma.models import Function, ObjectType
-from pydantic import BaseModel
 
 from codex.common.ai_block import (
     ErrorEnhancements,
@@ -632,7 +631,7 @@ async def get_error_enhancements(
                     attempted_attribute=attempted_attribute,
                 )
             else:
-                logger.warn(
+                logger.debug(
                     f"Rule {rule} was not of format 'is not a known member of module'"
                 )
                 return None
@@ -661,7 +660,7 @@ async def get_error_enhancements(
                     attempted_attribute=attempted_attribute,
                 )
             else:
-                logger.warn(
+                logger.debug(
                     f"Rule {rule} was not of format 'is not exported from module'"
                 )
                 return None
