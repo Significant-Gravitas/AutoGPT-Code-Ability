@@ -48,13 +48,12 @@ def populate_db(database):
 
 @cli.command()
 @click.option(
-    "--port",
-    "-p",
-    default=os.getenv("PORT"),
-    help="Port number of the Codex server",
-    type=int,
+    "-u",
+    "--base-url",
+    default="http://127.0.0.1:8080/api/v1",
+    help="Base URL of the Codex server",
 )
-def benchmark(port: int = 8080):
+def benchmark(base_url: str):
     """Run the benchmark tests"""
     import prisma
 
@@ -62,7 +61,6 @@ def benchmark(port: int = 8080):
     import codex.runner
     from codex.requirements.model import ExampleTask
 
-    base_url = f"http://127.0.0.1:{port}/api/v1"
     prisma_client = prisma.Prisma(auto_register=True)
     tasks = list(ExampleTask)
 
@@ -90,20 +88,18 @@ def benchmark(port: int = 8080):
 
 @cli.command()
 @click.option(
-    "-p",
-    "--port",
-    default=os.getenv("PORT"),
-    help="Port number of the Codex server",
-    type=int,
+    "-u",
+    "--base-url",
+    default="http://127.0.0.1:8080/api/v1",
+    help="Base URL of the Codex server",
 )
-def example(port: int):
+def example(base_url: str):
     import prisma
 
     import codex.common.test_const
     import codex.runner
     from codex.requirements.model import ExampleTask
 
-    base_url = f"http://127.0.0.1:{port}/api/v1"
     prisma_client = prisma.Prisma(auto_register=True)
     i = 1
     click.echo("Select a test case:")
@@ -150,19 +146,17 @@ def costs():
 
 @cli.command()
 @click.option(
-    "--port",
-    "-p",
-    default=os.getenv("PORT"),
-    help="Port number of the Codex server",
-    type=int,
+    "-u",
+    "--base-url",
+    default="http://127.0.0.1:8080/api/v1",
+    help="Base URL of the Codex server",
 )
-def resume(port: int):
+def resume(base_url: str):
     import prisma
 
     import codex.debug
     import codex.runner
 
-    base_url = f"http://127.0.0.1:{port}/api/v1"
     prisma_client = prisma.Prisma(auto_register=True)
     print("")
     loop = asyncio.new_event_loop()
@@ -241,13 +235,22 @@ def resume(port: int):
 
 
 @cli.command()
-def serve() -> None:
+@click.option("-g", "--groq", default=False, help="Run a GROQ query")
+def serve(groq: bool) -> None:
     import uvicorn
 
     from codex.common.ai_model import OpenAIChatClient
     from codex.common.exec_external_tool import setup_if_required
 
-    OpenAIChatClient.configure({})
+    if groq:
+        OpenAIChatClient.configure(
+            {
+                "api_key": os.getenv("GROQ_API_KEY="),
+                "base_url": "https://api.groq.com/openai/v1",
+            }
+        )
+    else:
+        OpenAIChatClient.configure({})
 
     logger.info("Setting up code analysis tools...")
     initial_setup = setup_if_required()
