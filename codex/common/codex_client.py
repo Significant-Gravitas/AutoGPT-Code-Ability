@@ -526,7 +526,10 @@ async def from_existing(db_client: Prisma, identifier: Identifiers) -> TestModel
         deployment=deployment,
         deliverable=deliverable,
         interview=InterviewResponse(
-            id=identifier.interview_id or "", finished=True, uses=[]
+            id=identifier.interview_id or "",
+            say_to_user="Test Interview",
+            features=[],
+            phase_completed=True,
         ),
         spec=SpecificationResponse(
             id=identifier.spec_id or "",
@@ -560,8 +563,8 @@ async def partial(db_client: Prisma, identifier: Identifiers) -> TestModel:
     )
     logger.info(f"Interview: {interview.id}")
     while True:
-        interview_next = await codex_client.interview_next(answers=[])
-        if interview_next.finished:
+        interview_next = await codex_client.interview_next("Make it please")
+        if interview_next.phase_completed:
             break
     spec = await codex_client.generate_spec()
     logger.info(f"Spec: {spec.id}")
