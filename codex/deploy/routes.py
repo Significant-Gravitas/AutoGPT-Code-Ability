@@ -15,6 +15,7 @@ from prisma.types import (
 import codex.database
 import codex.deploy.agent as deploy_agent
 import codex.deploy.database
+import codex.requirements.database
 from codex.api_model import DeploymentResponse, DeploymentsListResponse, Identifiers
 from codex.common.database import INCLUDE_API_ROUTE, INCLUDE_FUNC
 
@@ -75,9 +76,7 @@ async def create_deployment(
     return DeploymentResponse(
         id=deployment.id,
         created_at=deployment.createdAt,
-        repo=deployment.repo,
-        file_name=deployment.fileName,
-        file_size=deployment.fileSize,
+        repo=deployment.repo if deployment.repo else "",
     )
 
 
@@ -96,9 +95,7 @@ async def get_deployment(
     return DeploymentResponse(
         id=deployment.id,
         created_at=deployment.createdAt,
-        repo=deployment.repo,
-        file_name=deployment.fileName,
-        file_size=deployment.fileSize,
+        repo=deployment.repo if deployment.repo else "",
     )
 
 

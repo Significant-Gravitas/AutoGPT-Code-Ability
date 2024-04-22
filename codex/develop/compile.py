@@ -71,9 +71,7 @@ async def compile_route(
     code += compiled_function.code
 
     compiled_route = await get_compiled_route(compiled_route_id)
-    database_schema = "\n\n".join(
-        [t.definition for t in spec.DatabaseSchema.DatabaseTables]
-    )
+    database_schema = codex.common.database.get_database_schema(spec)
     # Run the auto-fixers
     formatted_code = await CodeValidator(
         compiled_route_id=compiled_route_id,

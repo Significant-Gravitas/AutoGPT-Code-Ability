@@ -123,7 +123,7 @@ async def generate_function(
         OpenAIChatClient.configure({})
 
     async def execute():
-        app_id, spec = await create_sample_app(user_id, cloud_id)
+        app_id, spec = await create_sample_app(user_id, cloud_id)  # type: ignore
         ids = Identifiers(user_id=user_id, app_id=app_id, cloud_services_id=cloud_id)
         func = await agent.develop_application(ids=ids, spec=spec)
         return await get_compiled_code(func.id) if func else None

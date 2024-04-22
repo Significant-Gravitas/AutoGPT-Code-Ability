@@ -150,56 +150,59 @@ class SpecificationResponse(BaseModel):
     def from_specification(specification: Specification) -> "SpecificationResponse":
         logger.debug(specification.model_dump_json())
         routes = []
-        modules: list[prisma.models.Module] = specification.Modules
+        modules: list[prisma.models.Module] | None = (
+            specification.Modules if specification.Modules else None
+        )
         if modules is None:
             raise ValueError("No routes found for the specification")
         for module in modules:
-            for route in module.ApiRouteSpecs:
-                routes.append(
-                    APIRouteSpecModel(
-                        id=route.id,
-                        createdAt=route.createdAt,
-                        method=str(route.method),
-                        path=route.path,
-                        description=route.description,
-                        requestObject=RequestObjectModel(
-                            id=route.RequestObject.id,
-                            createdAt=route.RequestObject.createdAt,
-                            name=route.RequestObject.name,
-                            description=route.RequestObject.description or "",
-                            params=[
-                                ParamModel(
-                                    id=param.id,
-                                    createdAt=param.createdAt,
-                                    name=param.name,
-                                    description=param.description or "",
-                                    param_type=param.typeName,
-                                )
-                                for param in route.RequestObject.Fields or []
-                            ],
+            if module.ApiRouteSpecs:
+                for route in module.ApiRouteSpecs:
+                    routes.append(
+                        APIRouteSpecModel(
+                            id=route.id,
+                            createdAt=route.createdAt,
+                            method=str(route.method),
+                            path=route.path,
+                            description=route.description,
+                            requestObject=RequestObjectModel(
+                                id=route.RequestObject.id,
+                                createdAt=route.RequestObject.createdAt,
+                                name=route.RequestObject.name,
+                                description=route.RequestObject.description or "",
+                                params=[
+                                    ParamModel(
+                                        id=param.id,
+                                        createdAt=param.createdAt,
+                                        name=param.name,
+                                        description=param.description or "",
+                                        param_type=param.typeName,
+                                    )
+                                    for param in route.RequestObject.Fields or []
+                                ],
+                            )
+                            if route.RequestObject
+                            else None,
+                            responseObject=ResponseObjectModel(
+                                id=route.ResponseObject.id,
+                                createdAt=route.ResponseObject.createdAt,
+                                name=route.ResponseObject.name,
+                                description=route.ResponseObject.description or "",
+                                params=[
+                                    ParamModel(
+                                        id=param.id,
+                                        createdAt=param.createdAt,
+                                        name=param.name,
+                                        description=param.description or "",
+                                        param_type=param.typeName,
+                                    )
+                                    for param in route.ResponseObject.Fields or []
+                                ],
+                            )
+                            if route.ResponseObject
+                            else None,
                         )
-                        if route.RequestObject
-                        else None,
-                        responseObject=ResponseObjectModel(
-                            id=route.ResponseObject.id,
-                            createdAt=route.ResponseObject.createdAt,
-                            name=route.ResponseObject.name,
-                            description=route.ResponseObject.description or "",
-                            params=[
-                                ParamModel(
-                                    id=param.id,
-                                    createdAt=param.createdAt,
-                                    name=param.name,
-                                    description=param.description or "",
-                                    param_type=param.typeName,
-                                )
-                                for param in route.ResponseObject.Fields or []
-                            ],
-                        )
-                        if route.ResponseObject
-                        else None,
                     )
-                )
 
         ret_obj = SpecificationResponse(
             id=specification.id,
