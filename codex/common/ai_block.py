@@ -7,7 +7,6 @@ from typing import Any, Callable, Optional, Type
 
 import prisma
 from jinja2 import Environment, FileSystemLoader
-from openai import AsyncOpenAI
 from openai.types import CompletionUsage
 from openai.types.chat import ChatCompletion
 from prisma.enums import DevelopmentPhase
@@ -146,7 +145,7 @@ class AIBlock:
             oai_client (AsyncOpenAI): The OpenAI client
             db_client (Prisma): The Prisma Database client
         """
-        self.oai_client: AsyncOpenAI = OpenAIChatClient.get_instance().openai
+        self.oai_client = OpenAIChatClient.get_instance()
         self.template_base_path_with_model = pathlib.Path(
             os.path.join(
                 os.path.dirname(__file__),
@@ -453,7 +452,7 @@ class AIBlock:
                 ),
                 message=MOCK_RESPONSE,
             )
-        response = await self.oai_client.chat.completions.create(**request_params)
+        response = await self.oai_client.chat(request_params)
         return self.parse(response)
 
     async def create_item(

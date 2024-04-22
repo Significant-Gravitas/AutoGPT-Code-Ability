@@ -235,22 +235,26 @@ def resume(base_url: str):
 
 
 @cli.command()
-@click.option("-g", "--groq", default=False, help="Run a GROQ query")
-def serve(groq: bool) -> None:
+@click.option("-g", "--groq", is_flag=True, default=False, help="Run a GROQ query")
+@click.option("-m", "--model", default=None, help="Override LLM to use")
+def serve(groq: bool, model: str) -> None:
     import uvicorn
 
     from codex.common.ai_model import OpenAIChatClient
     from codex.common.exec_external_tool import setup_if_required
 
+    config = {}
+    if model:
+        config["model"] = model
     if groq:
-        OpenAIChatClient.configure(
-            {
-                "api_key": os.getenv("GROQ_API_KEY="),
-                "base_url": "https://api.groq.com/openai/v1",
-            }
-        )
+        print("Setting up GROQ API client...")
+        if not model:
+            config["model"] = "llama3-70b-8192"
+        config["api_key"] = os.getenv("GROQ_API_KEY")
+        config["base_url"] = "https://api.groq.com/openai/v1"
+        OpenAIChatClient.configure(config)
     else:
-        OpenAIChatClient.configure({})
+        OpenAIChatClient.configure(config)
 
     logger.info("Setting up code analysis tools...")
     initial_setup = setup_if_required()

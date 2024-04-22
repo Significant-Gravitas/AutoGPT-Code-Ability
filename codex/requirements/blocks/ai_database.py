@@ -71,7 +71,9 @@ class DatabaseGenerationBlock(AIBlock):
             schema_blocks.pop(0)
             if len(schema_blocks) != 1:
                 if len(schema_blocks) == 0:
-                    raise ValidationError("No ```prisma blocks found in the response")
+                    raise ValidationError(
+                        "No ```prisma blocks found in the response. Make your code block start with ```prisma"
+                    )
         except Exception as e:
             raise ValidationError(f"Error parsing the response: {e}")
 
