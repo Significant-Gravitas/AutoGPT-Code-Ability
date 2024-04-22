@@ -153,6 +153,7 @@ def print_interview(interview: prisma.models.InterviewStep):
     click.echo(
         f"\033[92mCreated At: {interview.createdAt.isoformat().split('.')[0]}\033[0m\n"
     )
+    assert interview.Features, "Features is None"
     for feature in interview.Features:
         click.echo(f"\033[93m{feature.name}\033[0m")
         click.echo(f"\033[92mFunctionality:\033[0m {feature.functionality}")
@@ -164,10 +165,12 @@ def print_spec_summary(spec: prisma.models.Specification):
     click.echo("-" * 40)
     click.echo("\033[92mSpecification Summary\033[0m")
     click.echo("\033[92mRequested Features:\33[0m")
+    assert spec.Features, "Features is None"
     for feature in spec.Features:
         click.echo(f"- {feature.name}")
 
-    route_cout = sum([len(module.ApiRouteSpecs) for module in spec.Modules])
+    assert spec.Modules, "Modules is None"
+    route_cout = sum([len(module.ApiRouteSpecs) for module in spec.Modules])  # type: ignore
     module_count = len(spec.Modules)
     click.echo(
         f"\n\033[92m{module_count} Modules\33[0m with \033[93m{route_cout} routes\33[0m\n"
@@ -176,6 +179,7 @@ def print_spec_summary(spec: prisma.models.Specification):
 
     for module in spec.Modules:
         click.echo(f"\033[92m- {module.name} -\033[0m {module.description}")
+        assert module.ApiRouteSpecs, "ApiRouteSpecs is None"
         for route in module.ApiRouteSpecs:
             click.echo(
                 f"  - \033[93m[{route.AccessLevel}]\033[0m \033[92m{route.method}\033[0m {route.path}"
@@ -186,8 +190,12 @@ def print_spec_summary(spec: prisma.models.Specification):
 def print_api_route_details(spec: prisma.models.Specification):
     click.echo("-" * 40)
     click.echo("\033[92mAPI Route Details\033[0m")
+    assert spec.Modules, "Modules is None"
+
     for module in spec.Modules:
         click.echo(f"\033[93m- {module.name} -\033[0m {module.description}\n")
+
+        assert module.ApiRouteSpecs, "ApiRouteSpecs is None"
         for route in module.ApiRouteSpecs:
             click.echo(f"\n\033[93m  - {route.method}\033[0m {route.path}")
             click.echo(f"\033[92m    Description:\033[0m {route.description}")
@@ -197,12 +205,14 @@ def print_api_route_details(spec: prisma.models.Specification):
             )
             if route.RequestObject:
                 click.echo("\033[92m    Request Object:\033[0m")
+                assert route.RequestObject.Fields, "Fields is None"
                 for param in route.RequestObject.Fields:
                     click.echo(
                         f"      - {param.name}: {param.typeName}  - {param.description}"
                     )
             if route.ResponseObject:
                 click.echo("\033[92m    Response Object:\033[0m")
+                assert route.ResponseObject.Fields, "Fields is None"
                 for param in route.ResponseObject.Fields:
                     click.echo(
                         f"      - {param.name}: {param.typeName}  - {param.description}"
@@ -215,6 +225,8 @@ def print_api_route_details(spec: prisma.models.Specification):
 def print_database_schema(spec: prisma.models.Specification):
     click.echo("-" * 40)
     click.echo("\033[92mDetailed Database Schema\033[0m")
+    assert spec.DatabaseSchema, "DatabaseSchema is None"
+    assert spec.DatabaseSchema.DatabaseTables, "DatabaseTables is None"
     for table in spec.DatabaseSchema.DatabaseTables:
         click.echo(f"\n{table.definition}\n")
     click.echo("-" * 40)
@@ -230,6 +242,9 @@ async def explore_database(this: WhatToDebug):
 
     prisma_client = prisma.Prisma()
     await prisma_client.connect()
+
+    assert this.app_ids.applicationId, "Application ID is None"
+
     match this.object:
         case DebugObjects.APP:
             app = await prisma.models.Application.prisma().find_unique_or_raise(
@@ -237,12 +252,15 @@ async def explore_database(this: WhatToDebug):
             )
             print_app(app, this.app_ids)
         case DebugObjects.INTERVIEW:
+            assert this.app_ids.interviewId, "Interview ID is None"
             click.echo(f"What to debug: {this.app_ids}")
             interview_step = await codex.interview.database.get_last_interview_step(
                 interview_id=this.app_ids.interviewId, app_id=this.app_ids.applicationId
             )
             print_interview(interview_step)
         case DebugObjects.SPEC_SUMMARY:
+            assert this.app_ids.specificationId, "Specification ID is None"
+            assert this.app_ids.userId, "User ID is None"
             spec = await codex.requirements.database.get_specification(
                 this.app_ids.userId,
                 app_id=this.app_ids.applicationId,
@@ -250,6 +268,8 @@ async def explore_database(this: WhatToDebug):
             )
             print_spec_summary(spec)
         case DebugObjects.API_ROUTE_SPEC:
+            assert this.app_ids.specificationId, "Specification ID is None"
+            assert this.app_ids.userId, "User ID is None"
             spec = await codex.requirements.database.get_specification(
                 this.app_ids.userId,
                 app_id=this.app_ids.applicationId,
@@ -257,6 +277,8 @@ async def explore_database(this: WhatToDebug):
             )
             print_api_route_details(spec)
         case DebugObjects.DATABASE_SCHEMA:
+            assert this.app_ids.specificationId, "Specification ID is None"
+            assert this.app_ids.userId, "User ID is None"
             spec = await codex.requirements.database.get_specification(
                 this.app_ids.userId,
                 app_id=this.app_ids.applicationId,

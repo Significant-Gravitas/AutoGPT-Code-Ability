@@ -27,7 +27,7 @@ async def start_interview(
     """
     Create a new Interview for a given application and user.
     """
-    app = await codex.database.get_app_response_by_id(user_id, app_id)
+    app = await codex.database.get_app_by_id(user_id, app_id)
     user = await codex.database.get_user(user_id)
     ids = Identifiers(
         user_id=user_id,
@@ -52,7 +52,7 @@ async def take_next_step(
     """
     user_message = next_request.msg
     logger.info(f"Interview: {interview_id} Next request recieved: {user_message}")
-    app = await codex.database.get_app_response_by_id(user_id, app_id)
+    app = await codex.database.get_app_by_id(user_id, app_id)
     user = await codex.database.get_user(user_id)
     ids = Identifiers(
         user_id=user_id,
