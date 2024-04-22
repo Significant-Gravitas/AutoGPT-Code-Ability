@@ -252,7 +252,7 @@ def serve(groq: bool, model: str) -> None:
             config["model"] = "llama3-70b-8192"
         config["api_key"] = os.getenv("GROQ_API_KEY")
         config["base_url"] = "https://api.groq.com/openai/v1"
-        OpenAIChatClient.configure(config)
+        OpenAIChatClient.configure(config, max_requests_per_min=1_000)
     else:
         OpenAIChatClient.configure(config)
 
