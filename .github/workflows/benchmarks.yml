@@ -1,15 +1,12 @@
 name: Benchmarks Workflow
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  issue_comment:
+    types: [created]
 
 jobs:
   build-and-test:
+    if: github.event.issue.pull_request && contains(github.event.comment.body, '/benchmark')
     runs-on: ubuntu-latest
 
     services:
