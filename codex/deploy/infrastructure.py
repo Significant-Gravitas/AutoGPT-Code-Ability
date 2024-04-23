@@ -1,6 +1,8 @@
 from google.auth import default
 from googleapiclient.discovery import build
 import logging
+from urllib.parse import quote
+
 
 import string
 import random
@@ -11,6 +13,12 @@ from github import Github
 import os
 
 logger = logging.getLogger(__name__)
+
+def generate_db_credentials(username_prefix="user", password_length=16):
+    username = f"{username_prefix}{random.randint(1000, 9999)}"
+    characters = string.ascii_letters + string.digits + "!@#$%^&*()"
+    password = "".join(random.choice(characters) for i in range(password_length))
+    return username, password
 
 
 def create_postgres_database(db_name):
@@ -24,15 +32,15 @@ def create_postgres_database(db_name):
     if not DB_PASS:
         raise EnvironmentError("USER_DB_PASS not found in environment variables.")
 
-    DB_HOST = os.getenv("USER_DB_HOST")
-    if not DB_HOST:
-        raise EnvironmentError("USER_DB_HOST not found in environment variables.")
+    DB_CONN = os.getenv("USER_CONN_NAME")
+    if not DB_CONN:
+        raise EnvironmentError("USER_CONN_NAME not found in environment variables.")
 
     conn = psycopg2.connect(
-        dbname="postgres",  # connect to the default database to create a new database
+        dbname="postgres",
         user=DB_USER,
         password=DB_PASS,
-        host=DB_HOST,
+        host=DB_CONN,
     )
     conn.autocommit = True  # Necessary to execute a create database command
     cur = conn.cursor()
@@ -43,13 +51,6 @@ def create_postgres_database(db_name):
     cur.close()
     conn.close()
     logger.info(f"Database {db_name} created successfully.")
-
-
-def generate_db_credentials(username_prefix="user", password_length=16):
-    username = f"{username_prefix}{random.randint(1000, 9999)}"
-    characters = string.ascii_letters + string.digits + "!@#$%^&*()"
-    password = "".join(random.choice(characters) for i in range(password_length))
-    return username, password
 
 
 def setup_cloudsql_db(db_username, db_password):
@@ -79,6 +80,7 @@ def setup_cloudsql_db(db_username, db_password):
 
 def grant_permissions_postgres(db_name, new_user):
     logger.info(f"Attempting to grant user {new_user} permissions on {db_name}")
+
     DB_USER: str | None = os.getenv("USER_DB_ADMIN", default="postgres")
     if not DB_USER:
         raise EnvironmentError("USER_DB_ADMIN not found in environment variables.")
@@ -87,18 +89,21 @@ def grant_permissions_postgres(db_name, new_user):
     if not DB_PASS:
         raise EnvironmentError("USER_DB_PASS not found in environment variables.")
 
-    DB_HOST = os.getenv("USER_DB_HOST")
-    if not DB_HOST:
-        raise EnvironmentError("USER_DB_HOST not found in environment variables.")
+    DB_CONN = os.getenv("USER_CONN_NAME")
+    if not DB_CONN:
+        raise EnvironmentError("USER_CONN_NAME not found in environment variables.")
 
     conn = psycopg2.connect(
-        dbname=db_name, user=DB_USER, password=DB_PASS, host=DB_HOST
+        dbname="postgres",
+        user=DB_USER,
+        password=DB_PASS,
+        host=DB_CONN,
     )
-    conn.autocommit = (
-        True  # Ensure commands are committed without a separate commit statement
-    )
+
+    conn.autocommit = True  # Ensure commands are committed without a separate commit statement
     cur = conn.cursor()
 
+    # Grant permissions
     cur.execute(
         sql.SQL(
             """
@@ -106,7 +111,7 @@ def grant_permissions_postgres(db_name, new_user):
         GRANT USAGE, CREATE ON SCHEMA public TO {user};
         GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO {user};
         ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON TABLES TO {user};
-    """
+        """
         ).format(db=sql.Identifier(db_name), user=sql.Identifier(new_user))
     )
     logger.info(f"Permissions successfully granted to {new_user} on {db_name}.")
