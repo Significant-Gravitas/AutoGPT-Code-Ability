@@ -41,6 +41,21 @@ generator db {
 """
 
 
+def extract_prisma_errors(error_message: str) -> set[str]:
+    """
+    Extracts the error messages from the prisma output
+    """
+
+    split_text = error_message.split("[1;91merror[0m: \x1b[1m")
+
+    # Extract error messages by taking the portion up to the next reset ANSI code sequence
+    errors = [
+        part.split("[0m")[0] for part in split_text[1:]
+    ]  # Skip the first split as it's before the first error
+
+    return set(errors)
+
+
 class DatabaseGenerationBlock(AIBlock):
     """
     This is a block that handles, calling the LLM, validating the response,
@@ -64,20 +79,27 @@ class DatabaseGenerationBlock(AIBlock):
         are just validating the response is a Clarification model. However, in the other
         blocks this is much more complex. If validation failes it triggers a retry.
         """
-        validation_errors = []
+        validation_errors = set()
         logger.warning(f"Validating response:\n{response.response}")
+        text_schema = ""
         try:
             schema_blocks = response.response.split("```prisma")
             schema_blocks.pop(0)
             if len(schema_blocks) != 1:
                 if len(schema_blocks) == 0:
-                    raise ValidationError(
-                        "No ```prisma blocks found in the response. Make your code block start with ```prisma"
-                    )
+                    # If there are no prisma blocks, then check for plain code blocks
+                    schema_blocks = response.response.split("```")
+                    if len(schema_blocks) != 3:
+                        raise ValidationError(
+                            "No ```prisma blocks found in the response. Make your code block start with ```prisma"
+                        )
+                    else:
+                        text_schema = schema_blocks[1]
+            else:
+                text_schema = schema_blocks[0].split("```")[0]
         except Exception as e:
             raise ValidationError(f"Error parsing the response: {e}")
 
-        text_schema = schema_blocks[0].split("```")[0]
         if "datasource db {" not in text_schema:
             unparsed = PRISMA_FILE_HEADER + text_schema
         else:
@@ -89,7 +111,7 @@ class DatabaseGenerationBlock(AIBlock):
                 output_type=OutputType.STD_ERR,
             )
         except ValidationError as e:
-            validation_errors.append(str(e))
+            validation_errors = validation_errors.union(extract_prisma_errors(str(e)))
 
         try:
             unparsed = await exec_external_on_contents(
@@ -98,13 +120,12 @@ class DatabaseGenerationBlock(AIBlock):
                 output_type=OutputType.STD_ERR,
             )
         except ValidationError as e:
-            if str(e) not in validation_errors:
-                validation_errors.append(str(e))
+            validation_errors = validation_errors.union(extract_prisma_errors(str(e)))
 
         parsed_prisma = parse_prisma_schema(unparsed)
 
         if validation_errors:
-            raise ValidationError("\n".join(validation_errors))
+            raise ValidationError("\n- ".join(validation_errors))
 
         enums_objs = []
         for name, details in parsed_prisma.enums.items():
