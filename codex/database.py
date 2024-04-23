@@ -1,3 +1,4 @@
+import prisma
 from prisma.enums import Role
 from prisma.models import Application, User
 from prisma.types import UserCreateWithoutRelationsInput

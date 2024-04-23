@@ -13,6 +13,9 @@ from prisma.models import (
 )
 from prisma.types import CompiledRouteCreateInput
 
+import codex
+import codex.common
+import codex.common.database
 from codex.api_model import Identifiers
 from codex.common.database import INCLUDE_FUNC
 from codex.common.model import FunctionDef
@@ -35,7 +38,7 @@ async def process_api_route(
     api_route: prisma.models.APIRouteSpec,
     ids: Identifiers,
     spec: prisma.models.Specification,
-    app: prisma.models.Application,
+    completed_app: prisma.models.CompletedApp,
     lang: str = "python",
 ):
     if not api_route.RequestObject:
@@ -85,7 +88,7 @@ async def process_api_route(
             RootFunction={
                 "create": await construct_function(function_def, available_types)
             },
-            CompletedApp={"connect": {"id": app.id}},
+            CompletedApp={"connect": {"id": completed_app.id}},
             ApiRouteSpec={"connect": {"id": api_route.id}},
         ),
         include={"RootFunction": INCLUDE_FUNC},  # type: ignore
@@ -101,7 +104,7 @@ async def process_api_route(
     route_root_func = await develop_route(
         ids=ids,
         compiled_route_id=compiled_route.id,
-        goal_description=app.description,
+        goal_description=completed_app.description if completed_app.description else "",
         function=compiled_route.RootFunction,
         spec=spec,
         lang=lang,
@@ -124,20 +127,25 @@ async def develop_application(
         CompletedApp: The completed application.
 
     """
-    app = await create_app(ids, spec, [])
+    completed_app = await create_app(ids, spec, [])
+
     tasks = []
 
     if spec.Modules:
-        api_routes = [r for m in spec.Modules for r in m.ApiRouteSpecs]
+        api_routes = []
+        for module in spec.Modules:
+            if module.ApiRouteSpecs:
+                api_routes.extend(module.ApiRouteSpecs)
+
         for api_route in api_routes:
             # Schedule each API route for processing
-            task = process_api_route(api_route, ids, spec, app, lang)
+            task = process_api_route(api_route, ids, spec, completed_app, lang)
             tasks.append(task)
 
         # Run the tasks concurrently
         await asyncio.gather(*tasks)
 
-    return app
+    return completed_app
 
 
 async def develop_route(
@@ -204,11 +212,7 @@ async def develop_route(
         if func.functionName != function.functionName
     ] + [generate_object_template(f) for f in generated_objs.values()]
 
-    database_schema = (
-        "\n\n".join([t.definition for t in spec.DatabaseSchema.DatabaseTables])
-        if spec.DatabaseSchema
-        else ""
-    )
+    database_schema = codex.common.database.get_database_schema(spec)
 
     dev_invoke_params = {
         "database_schema": database_schema,

@@ -71,6 +71,8 @@ if __name__ == "__main__":
         product_name, product_description, features, user_msg
     ) -> dict[str, InterviewBlock]:
         await db_client.connect()
+        if not ids.user_id:
+            raise AssertionError("User ID not found")
         app = await prisma.models.Application.prisma().create(
             data={
                 "name": product_name,
