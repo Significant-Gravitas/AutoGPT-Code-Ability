@@ -1,0 +1,178 @@
+[config]
+model="gpt-4-turbo-2024-04-09"
+model_turbo="gpt-4-turbo-2024-04-09"
+fallback_models=["gpt-4-0125-preview"]
+git_provider="github"
+publish_output=true
+publish_output_progress=true
+verbosity_level=0 # 0,1,2
+use_extra_bad_extensions=false
+use_wiki_settings_file=true
+use_repo_settings_file=true
+use_global_settings_file=true
+ai_timeout=120 # 2minutes
+max_description_tokens = 500
+max_commits_tokens = 500
+max_model_tokens = 32000 # Limits the maximum number of tokens that can be used by any model, regardless of the model's default capabilities.
+patch_extra_lines = 3
+# secret_provider="google_cloud_storage"
+cli_mode=false
+# ai_disclaimer_title=""  # Pro feature, title for a collapsible disclaimer to AI outputs
+# ai_disclaimer=""  # Pro feature, full text for the AI disclaimer
+
+[pr_reviewer] # /review #
+# enable/disable features
+require_score_review=true
+require_tests_review=true
+require_estimate_effort_to_review=true
+require_can_be_split_review=true
+# soc2
+require_soc2_ticket=true
+soc2_ticket_prompt="Does the PR description include a link to ticket in a project management system (e.g., GitHub Issues, Linear) ?"
+# general options
+num_code_suggestions=4
+inline_code_comments = true
+ask_and_reflect=false
+#automatic_review=true
+persistent_comment=true
+# extra_instructions = ""
+final_update_message = true
+# review labels
+enable_review_labels_security=true
+enable_review_labels_effort=true
+# specific configurations for incremental review (/review -i)
+require_all_thresholds_for_incremental_review=false
+minimal_commits_for_incremental_review=0
+minimal_minutes_for_incremental_review=0
+enable_help_text=true # Determines whether to include help text in the PR review. Enabled by default.
+# auto approval
+enable_auto_approval=true
+maximal_review_effort=5
+
+
+[pr_description] # /describe #
+publish_labels=true
+add_original_user_description=true
+generate_ai_title=false
+use_bullet_points=true
+extra_instructions = ""
+enable_pr_type=true
+final_update_message = true
+enable_help_text=false
+enable_help_comment=true
+# describe as comment
+publish_description_as_comment=false
+publish_description_as_comment_persistent=true
+## changes walkthrough section
+enable_semantic_files_types=true
+collapsible_file_list='adaptive' # true, false, 'adaptive'
+inline_file_summary='table' # false, true, 'table'
+# markers
+use_description_markers=false
+include_generated_by_header=true
+
+custom_labels = ['bug', 'duplicate', 'enhancement', 'documentation', 'question']
+
+[pr_questions] # /ask #
+enable_help_text=true
+
+
+[pr_code_suggestions] # /improve #
+max_context_tokens=8000
+num_code_suggestions=4
+commitable_code_suggestions = true
+extra_instructions = ""
+rank_suggestions = false
+enable_help_text=true
+persistent_comment=false
+# params for '/improve --extended' mode
+auto_extended_mode=true
+num_code_suggestions_per_chunk=4
+max_number_of_calls = 5
+parallel_calls = true
+rank_extended_suggestions = true
+final_clip_factor = 0.8
+
+[pr_add_docs] # /add_docs #
+extra_instructions = ""
+docs_style = "Sphinx Style" # "Google Style with Args, Returns, Attributes...etc", "Numpy Style", "Sphinx Style", "PEP257", "reStructuredText"
+
+[pr_update_changelog] # /update_changelog #
+push_changelog_changes=true
+extra_instructions = ""
+
+[pr_analyze] # /analyze #
+
+[pr_test] # /test #
+extra_instructions = ""
+testing_framework = "pytest" # specify the testing framework you want to use
+num_tests=5            # number of tests to generate. max 5.
+avoid_mocks=true       # if true, the generated tests will prefer to use real objects instead of mocks
+#file = ""              # in case there are several components with the same name, you can specify the relevant file
+#class_name = ""        # in case there are several methods with the same name in the same file, you can specify the relevant class name
+enable_help_text=true
+
+[pr_improve_component] # /improve_component #
+num_code_suggestions=4
+# extra_instructions = ""
+# file = ""              # in case there are several components with the same name, you can specify the relevant file
+# class_name = ""
+
+[checks] # /checks (pro feature) # CI Feedback
+enable_auto_checks_feedback=true
+excluded_checks_list=["lint"] # list of checks to exclude, for example: ["check1", "check2"]
+persistent_comment=true
+enable_help_text=true
+
+[pr_help] # /help #
+
+[pr_config] # /config #
+
+[github]
+# The type of deployment to create. Valid values are 'app' or 'user'.
+deployment_type = "user"
+ratelimit_retries = 5
+base_url = "https://api.github.com"
+publish_inline_comments_fallback_with_verification = true
+try_fix_invalid_inline_comments = true
+
+[github_action_config]
+# auto_review = true    # set as env var in .github/workflows/pr-agent.yaml
+# auto_describe = true  # set as env var in .github/workflows/pr-agent.yaml
+# auto_improve = true   # set as env var in .github/workflows/pr-agent.yaml
+# enable_output = true   # set as env var in .github/workflows/pr-agent.yaml
+
+# [github_app]
+# these toggles allows running the github app from custom deployments
+# override_deployment_type = true
+# settings for "pull_request" event
+# handle_pr_actions = ['opened', 'reopened', 'ready_for_review']
+# pr_commands = [
+#    "/describe",
+#    "/review --pr_reviewer.num_code_suggestions=0",
+#    "/improve",
+# ]
+# settings for "pull_request" event with "synchronize" action - used to detect and handle push triggers for new commits
+# handle_push_trigger = true
+# push_trigger_ignore_bot_commits = true
+# push_trigger_ignore_merge_commits = true
+# push_trigger_wait_for_initial_review = true
+# push_trigger_pending_tasks_backlog = true
+# push_trigger_pending_tasks_ttl = 300
+# push_commands = [
+#    "/describe",
+#    "/review --pr_reviewer.num_code_suggestions=0",
+# ]
+# ignore_pr_title = []
+# ignore_bot_pr = true
+
+
+[pr_similar_issue]
+skip_comments = false
+force_update_dataset = false
+max_issues_to_scan = 500
+vectordb = "lancedb"
+
+
+[lancedb]
+uri = "./lancedb"
