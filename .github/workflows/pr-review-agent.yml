@@ -5,13 +5,14 @@
 name: PR-Agent
 
 on:
-# pull_request:
-# issue_comment:
+  pull_request:
+  issue_comment:
   workflow_dispatch:
 
 permissions:
   issues: write
   pull-requests: write
+  contents: write
 
 jobs:
   pr_agent_job:
@@ -28,5 +29,6 @@ jobs:
           GITHUB_ACTION_CONFIG.AUTO_DESCRIBE: true
           GITHUB_ACTION_CONFIG.AUTO_REVIEW: true
           GITHUB_ACTION_CONFIG.AUTO_IMPROVE: true
+          GITHUB_ACTION_CONFIG.ENABLE_OUTPUT: "true"
 
 
