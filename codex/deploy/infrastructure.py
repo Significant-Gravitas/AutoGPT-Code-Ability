@@ -1,7 +1,6 @@
 from google.auth import default
 from googleapiclient.discovery import build
 import logging
-from urllib.parse import quote
 
 
 import string
@@ -13,6 +12,7 @@ from github import Github
 import os
 
 logger = logging.getLogger(__name__)
+
 
 def generate_db_credentials(username_prefix="user", password_length=16):
     username = f"{username_prefix}{random.randint(1000, 9999)}"
@@ -100,7 +100,9 @@ def grant_permissions_postgres(db_name, new_user):
         host=DB_CONN,
     )
 
-    conn.autocommit = True  # Ensure commands are committed without a separate commit statement
+    conn.autocommit = (
+        True  # Ensure commands are committed without a separate commit statement
+    )
     cur = conn.cursor()
 
     # Grant permissions
