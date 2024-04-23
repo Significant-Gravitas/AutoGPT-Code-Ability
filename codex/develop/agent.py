@@ -17,6 +17,7 @@ import codex
 import codex.common
 import codex.common.database
 from codex.api_model import Identifiers
+from codex.common.ai_block import LLMFailure
 from codex.common.database import INCLUDE_FUNC
 from codex.common.model import FunctionDef
 from codex.develop.compile import (
@@ -134,7 +135,21 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
             tasks.append(task)
 
         # Run the tasks concurrently
-        await asyncio.gather(*tasks)
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        if any(isinstance(r, Exception) for r in results):
+            exceptions = [r for r in results if isinstance(r, Exception)]
+            # if the only exceptions are LLMFailures, we can continue
+            if all(isinstance(r, LLMFailure) for r in exceptions):
+                logger.warning(
+                    f"App Id: {ids.app_id} Eating Errors developing API routes: {exceptions}"
+                )
+                pass
+            else:
+                raise ValueError(
+                    f"App Id: {ids.app_id} Error developing API routes: {exceptions}"
+                )
+        else:
+            logger.info("🚀 All API routes developed successfully")
 
     return completed_app
 
