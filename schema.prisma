@@ -385,6 +385,8 @@ model Deployment {
   path      String?
   fileBytes Bytes?
   repo      String?  @unique
+  dbName    String?  @unique
+  dbUser    String?  @unique
 
   User           User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId         String?

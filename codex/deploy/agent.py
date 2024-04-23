@@ -9,6 +9,7 @@ from prisma.types import DeploymentCreateInput
 from codex.api_model import Identifiers
 from codex.deploy.packager import create_remote_repo, create_zip_file
 from codex.develop.compile import create_server_code
+from codex.deploy.infrastructure import create_cloud_db
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,8 @@ async def create_local_deployment(
                 fileSize=len(zip_file),
                 # I need to do this as the Base64 type in prisma is not working
                 fileBytes=encoded_file_bytes,  # type: ignore
+                dbName="",
+                dbUser="",
                 repo=str(
                     uuid.uuid4()
                 ),  # repo has unique constraint so we need to generate a random string
@@ -69,6 +72,7 @@ async def create_cloud_deployment(
 
     repo = await create_remote_repo(app, spec)
     completedApp.name.replace(" ", "_")
+    db_name, db_username = await create_cloud_db(repo)
 
     try:
         logger.info(f"Creating deployment for {completedApp.name}")
@@ -77,6 +81,8 @@ async def create_cloud_deployment(
                 CompletedApp={"connect": {"id": completedApp.id}},
                 User={"connect": {"id": ids.user_id}},
                 repo=repo,
+                dbName=db_name,
+                dbUser=db_username,
             )
         )
     except Exception as e:
