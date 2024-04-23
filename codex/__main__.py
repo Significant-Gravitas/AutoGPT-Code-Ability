@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 
 import codex.debug
 from codex.common.logging_config import setup_logging
+from codex.tests.frontend_gen_test import generate_function
 
 logger = logging.getLogger(__name__)
 
@@ -260,6 +261,40 @@ def serve() -> None:
         host="0.0.0.0",
         port=int(os.environ.get("PORT", 8000)),
     )
+
+
+@cli.command()
+@click.option(
+    "--description",
+    "-d",
+    default="A fully working to-do list application",
+    help="Description of the app",
+    type=str,
+)
+@click.option(
+    "--title",
+    "-t",
+    default="Test Front-End application",
+    help="Title of the app",
+    type=str,
+)
+def frontend(description: str, title: str):
+    """Generate a simple front-end app"""
+
+    async def run_tasks():
+        func = await generate_function(
+            title=title,
+            description=description,
+        )
+        assert func is not None
+        print("-------- CODE START --------")
+        print("\n".join(func))
+        print("\nui.run()")
+        print("-------- CODE END --------")
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(run_tasks())
 
 
 if __name__ == "__main__":
