@@ -8,7 +8,12 @@ Also define the access_roles we need to implement to be able to deliver the desi
 
 {{ features }}
 
-
 **interaction_with_other_modules** field needs to describe exactly how the module interacts with other modules.
 Each entry in the list is to describe a different interaction and should clearly state which module it is interacting with and how.
 
+The software modules should not be exposed to the user or api directly.
+ALWAYS add a user managment module unless the application is stateless and does not require authentication.
+
+
+# IMPORTANT
+**Don't duplicate functionality between modules. Make sure each modules has a clear and distinct purpose.**
