@@ -132,7 +132,10 @@ async def generate_requirements(ids: Identifiers, app: Application) -> SpecHolde
     db_invoke_params = {
         "product_spec": product_spec_str,
         "needed_auth_roles": ", ".join(a for a in module_response.access_roles),
-        "modules": ", ".join(module.name for module in module_response.modules),
+        "modules": ", ".join(
+            f"- {module.name} - Functionality: {module.functionality}"
+            for module in module_response.modules
+        ),
     }
 
     db_response: codex.requirements.model.DBResponse = await database_block.invoke(
