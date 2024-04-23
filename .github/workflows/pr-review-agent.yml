@@ -5,13 +5,14 @@
 name: PR-Agent
 
 on:
-# pull_request:
-# issue_comment:
+  pull_request:
+  issue_comment:
   workflow_dispatch:
 
 permissions:
   issues: write
   pull-requests: write
+  contents: write
 
 jobs:
   pr_agent_job:
