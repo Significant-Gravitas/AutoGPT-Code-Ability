@@ -59,7 +59,7 @@ if __name__ == "__main__":
     import prisma
     from openai import AsyncOpenAI
 
-    from codex.common.ai_model import OpenAIChatClient
+    from codex.common.ai_model import AIChatClient
     from codex.common.test_const import identifier_1
 
     class Colors:
@@ -112,7 +112,7 @@ if __name__ == "__main__":
                 output += "\n"
         print(output)
 
-    OpenAIChatClient.configure(openai_config={})
+    AIChatClient.configure(openai_config={})
     ids = identifier_1
     db_client = prisma.Prisma(auto_register=True)
     oai = AsyncOpenAI()

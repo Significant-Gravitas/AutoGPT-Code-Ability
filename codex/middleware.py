@@ -5,7 +5,7 @@ from prisma.enums import DevelopmentPhase
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from codex.api_model import Identifiers
-from codex.common.logging import execute_and_log
+from codex.common.codex_logging import execute_and_log
 
 
 class RouterLoggingMiddleware(BaseHTTPMiddleware):

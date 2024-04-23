@@ -6,7 +6,7 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
-from codex.common.ai_model import OpenAIChatClient
+from codex.common.ai_model import AIChatClient
 from codex.common.exec_external_tool import OutputType, exec_external_on_contents
 from codex.common.logging_config import setup_logging
 from codex.common.parse_prisma import parse_prisma_schema
@@ -194,7 +194,7 @@ if __name__ == "__main__":
 
     setup_logging()
 
-    OpenAIChatClient.configure({})
+    AIChatClient.configure({})
     db_client = prisma.Prisma(auto_register=True)
     logging.info("Running block")
 

@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from codex.app import db_client
 from codex.common import ai_block
 from codex.common.ai_block import TODO_COMMENT, LLMFailure
-from codex.common.ai_model import OpenAIChatClient
+from codex.common.ai_model import AIChatClient
 from codex.common.logging_config import setup_logging
 from codex.common.test_const import Identifiers, user_id_1
 from codex.develop import agent
@@ -119,8 +119,8 @@ async def generate_function(
     user_id=user_id_1,
     cloud_id="",
 ) -> list[str] | None:
-    if not OpenAIChatClient._configured:
-        OpenAIChatClient.configure({})
+    if not AIChatClient._configured:
+        AIChatClient.configure({})
 
     async def execute():
         app_id, spec = await create_sample_app(user_id, cloud_id)  # type: ignore

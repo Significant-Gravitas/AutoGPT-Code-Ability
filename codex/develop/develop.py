@@ -17,8 +17,8 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
+from codex.common.codex_logging import log_event
 from codex.common.database import INCLUDE_FUNC
-from codex.common.logging import log_event
 from codex.common.model import create_object_type
 from codex.develop.code_validation import CodeValidator
 from codex.develop.function import construct_function

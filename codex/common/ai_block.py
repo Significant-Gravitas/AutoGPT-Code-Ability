@@ -3,19 +3,18 @@ import hashlib
 import logging
 import os
 import pathlib
-from typing import Any, Callable, Optional, Type
+from typing import Any
 
+import litellm
 import prisma
 from jinja2 import Environment, FileSystemLoader
-from openai.types import CompletionUsage
-from openai.types.chat import ChatCompletion
 from prisma.enums import DevelopmentPhase
 from prisma.fields import Json
 from prisma.models import LLMCallAttempt, LLMCallTemplate
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
 from codex.api_model import Identifiers
-from codex.common.ai_model import OpenAIChatClient
+from codex.common.ai_model import AIChatClient
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +93,7 @@ class PromptTemplateInvocationError(Exception):
 
 class ValidatedResponse(BaseModel):
     response: Any
-    usage_statistics: CompletionUsage
+    usage_statistics: litellm.Usage
     message: str
 
     class config:
@@ -145,7 +144,6 @@ class AIBlock:
             oai_client (AsyncOpenAI): The OpenAI client
             db_client (Prisma): The Prisma Database client
         """
-        self.oai_client = OpenAIChatClient.get_instance()
         self.template_base_path_with_model = pathlib.Path(
             os.path.join(
                 os.path.dirname(__file__),
@@ -301,9 +299,9 @@ class AIBlock:
             prompt += f"### {message['role']}\n\n {message['content']}\n\n"
         return prompt
 
-    def parse(self, response: ChatCompletion) -> ValidatedResponse:
+    def parse(self, response: litellm.ModelResponse) -> ValidatedResponse:
         usage_statistics = response.usage
-        message = response.choices[0].message
+        message = response.choices[0].message  # type: ignore
 
         if message.tool_calls is not None:
             raise NotImplementedError("Tool calls are not supported")
@@ -447,12 +445,12 @@ class AIBlock:
         if MOCK_RESPONSE:
             return ValidatedResponse(
                 response=MOCK_RESPONSE,
-                usage_statistics=CompletionUsage(
+                usage_statistics=litellm.Usage(
                     completion_tokens=0, prompt_tokens=0, total_tokens=0
                 ),
                 message=MOCK_RESPONSE,
             )
-        response = await self.oai_client.chat(request_params)
+        response = await AIChatClient.chat(request_params)
         return self.parse(response)
 
     async def create_item(
@@ -501,11 +499,3 @@ class AIBlock:
             query_params (dict): _description_
         """
         raise NotImplementedError("List Items Method not implemented")
-
-
-class Tool(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    name: str
-    description: str
-    func: Optional[Callable[..., str]] = None
-    block: Type[AIBlock]

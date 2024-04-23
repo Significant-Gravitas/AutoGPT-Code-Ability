@@ -258,11 +258,11 @@ if __name__ == "__main__":
     import prisma
 
     import codex.common.test_const as test_consts
-    from codex.common.ai_model import OpenAIChatClient
+    from codex.common.ai_model import AIChatClient
     from codex.common.logging_config import setup_logging
     from codex.requirements.database import get_latest_specification
 
-    OpenAIChatClient.configure({})
+    AIChatClient.configure({})
     setup_logging()
     client = prisma.Prisma(auto_register=True)
 
