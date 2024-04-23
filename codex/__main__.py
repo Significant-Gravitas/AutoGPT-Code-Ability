@@ -13,6 +13,8 @@ logger = logging.getLogger(__name__)
 
 load_dotenv()
 
+from codex.app import db_client as prisma_client
+
 
 @click.group()
 def cli():
@@ -32,12 +34,10 @@ def populate_db(database):
     """Populate the database with test data"""
     import os
 
-    from prisma import Prisma
-
     from codex.database import create_test_data
 
     os.environ["DATABASE_URL"] = os.environ["DATABASE_URL"] or database
-    db = Prisma(auto_register=True)
+    db = prisma_client
 
     async def popdb():
         await db.connect()
@@ -57,14 +57,12 @@ def populate_db(database):
 )
 def benchmark(port: int = 8080):
     """Run the benchmark tests"""
-    import prisma
 
     import codex.common.test_const
     import codex.runner
     from codex.requirements.model import ExampleTask
 
     base_url = f"http://127.0.0.1:{port}/api/v1"
-    prisma_client = prisma.Prisma(auto_register=True)
     tasks = list(ExampleTask)
 
     async def run_tasks():
@@ -98,14 +96,11 @@ def benchmark(port: int = 8080):
     type=int,
 )
 def example(port: int):
-    import prisma
-
     import codex.common.test_const
     import codex.runner
     from codex.requirements.model import ExampleTask
 
     base_url = f"http://127.0.0.1:{port}/api/v1"
-    prisma_client = prisma.Prisma(auto_register=True)
     i = 1
     click.echo("Select a test case:")
     examples = list(ExampleTask)
@@ -158,13 +153,10 @@ def costs():
     type=int,
 )
 def resume(port: int):
-    import prisma
-
     import codex.debug
     import codex.runner
 
     base_url = f"http://127.0.0.1:{port}/api/v1"
-    prisma_client = prisma.Prisma(auto_register=True)
     print("")
     loop = asyncio.new_event_loop()
     resume_points = loop.run_until_complete(
