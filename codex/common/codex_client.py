@@ -103,7 +103,7 @@ class CodexClient:
             discord_id (str): the discord id of the user
         """
         url = f"{self.base_url}/user"
-        obj = UserCreate(cloudServicesId=cloud_services_id, discord_id=discord_id)
+        obj = UserCreate(cloud_services_id=cloud_services_id, discord_id=discord_id)
 
         try:
             async with aiohttp.ClientSession() as session:
