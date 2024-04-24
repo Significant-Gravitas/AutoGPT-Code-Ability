@@ -170,15 +170,11 @@ class AIBlock:
         self.templates_dir = self.template_base_path_with_model
         self.call_template_id = None
         self.load_pydantic_format_instructions()
-        self.verbose = os.getenv("VERBOSE_LOGGING", "true").lower() in (
+        self.verbose: bool = os.getenv("VERBOSE_LOGGING", "true").lower() in (
             "true",
             "1",
             "t",
         )
-        if not self.verbose:
-            raise EnvironmentError(
-                "VERBOSE_LOGGING not found in environment variables."
-            )
 
     def load_pydantic_format_instructions(self):
         if self.pydantic_object:
