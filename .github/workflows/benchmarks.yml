@@ -1,4 +1,4 @@
-name: Benchmarks Workflow
+name: Benchmarks Workflow.
 
 on:
   issue_comment:
