@@ -11,10 +11,10 @@ import aiohttp
 from git import Actor, GitCommandError
 from git.repo import Repo
 from prisma.models import Specification
-
 from codex.common.constants import PRISMA_FILE_HEADER
 from codex.common.exec_external_tool import execute_command
 from codex.deploy.model import Application
+from codex.deploy.actions_workflows import manual_deploy, auto_deploy
 
 
 logger = logging.getLogger(__name__)
@@ -180,7 +180,7 @@ __pycache__/
 """.lstrip()
 
 
-def generate_actions_workflow(application: Application) -> str:
+def generate_actions_workflow(application: Application, hostApp: bool) -> str:
     """
     Generates a deploy.yml file for the application
     Args:
@@ -196,84 +196,9 @@ def generate_actions_workflow(application: Application) -> str:
     if not application.completed_app.CompiledRoutes:
         raise ValueError("Application must have at least one compiled route")
 
-    deploy_file = """
-name: cloudrun-deploy
-#on:
-#  push:
-#    branches:
-#      - master
-on: workflow_dispatch
-jobs:
-  setup-build-publish-deploy:
-    name: Setup, Build, Publish, and Deploy
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout
-      uses: actions/checkout@master
-
-    - name: Authenticate to Google Cloud with token exchange
-      uses: google-github-actions/auth@v1
-      with:
-        token_format: 'access_token'
-        create_credentials_file: 'true'
-        service_account: ${{ secrets.GCP_EMAIL }}
-        credentials_json: ${{ secrets.GCP_CREDENTIALS }}
-        
-    # Configure Docker with Credentials
-    - name: Configure Docker
-      run: |
-        gcloud auth configure-docker
-    
-    - name: Install Cloud SQL Proxy
-      run: |
-        wget https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 -O cloud_sql_proxy
-        chmod +x cloud_sql_proxy
-
-    - name: Start Cloud SQL Proxy
-      run: |
-        ./cloud_sql_proxy -instances=${{ secrets.CLOUD_SQL_CONNECTION_NAME }}=tcp:5432 &
-        sleep 10  # Wait for the Cloud SQL Proxy to be fully ready
-    
-    - name: Run Migrations
-      run: |
-        export DATABASE_URL="postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@localhost:5432/${{ secrets.DB_NAME }}"
-        npm install prisma -g
-        prisma migrate deploy
-
-    # Build the Docker image
-    - name: Build & Publish
-      run: |
-        # Set the Google Cloud project
-        gcloud config set project ${{ secrets.GCP_PROJECT }}
-        
-        REPO_NAME="${{ github.event.repository.name }}"
-        REPO_NAME="${REPO_NAME,,}"
-
-        IMAGE_TAG="gcr.io/${{ secrets.GCP_PROJECT }}/${REPO_NAME}:${GITHUB_RUN_NUMBER}"
-    
-        # Submit the build to Google Cloud Build
-        gcloud builds submit --tag $IMAGE_TAG
-    
-        # Set the default region for Google Cloud Run deployments
-        gcloud config set run/region us-central1
-        
-    - name: Deploy to Google Cloud Run
-      run: |
-        REPO_NAME="${{ github.event.repository.name }}"
-        REPO_NAME="${REPO_NAME,,}"  
-        IMAGE_NAME="gcr.io/${{ secrets.GCP_PROJECT }}/${REPO_NAME}:${{ github.run_number }}"
-        
-        gcloud run deploy ${REPO_NAME} \
-          --image $IMAGE_NAME \
-          --platform managed \
-          --allow-unauthenticated \
-          --memory 512M \
-          --port 8000 \
-          --add-cloudsql-instances ${{ secrets.CLOUD_SQL_CONNECTION_NAME }} \
-          --set-env-vars "DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@localhost/${{ secrets.DB_NAME }}?host=/cloudsql/${{ secrets.GCP_PROJECT }}:us-central1:${{ secrets.SQL_INSTANCE_NAME }}" \
-          --set-env-vars "INSTANCE_CONNECTION_NAME=${{ secrets.CLOUD_SQL_CONNECTION_NAME }}"
-
-""".lstrip()
+    deploy_file = manual_deploy
+    if hostApp:
+        deploy_file = auto_deploy
 
     return deploy_file
 
@@ -457,7 +382,7 @@ async def create_zip_file(application: Application, spec: Specification) -> byte
 
             github_deploy_workflow_path = github_workflows_directory / "deploy.yml"
             github_deploy_workflow_path.write_text(
-                generate_actions_workflow(application)
+                generate_actions_workflow(application, hostApp=False)
             )
 
             # Initialize a Git repository and commit everything
@@ -531,7 +456,7 @@ def push_to_remote(repo: Repo, remote_name: str, remote_url: str):
         raise
 
 
-async def create_remote_repo(application: Application, spec: Specification) -> str:
+async def create_remote_repo(application: Application, spec: Specification, hostApp: bool) -> str:
     """
     Creates and pushes to GitHub repo for application
     Args:
@@ -610,7 +535,7 @@ async def create_remote_repo(application: Application, spec: Specification) -> s
 
             github_deploy_workflow_path = github_workflows_directory / "deploy.yml"
             github_deploy_workflow_path.write_text(
-                generate_actions_workflow(application)
+                generate_actions_workflow(application, hostApp)
             )
 
             # Initialize a Git repository and commit everything

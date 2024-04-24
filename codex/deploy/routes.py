@@ -3,6 +3,7 @@ import io
 import json
 import logging
 
+from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse, StreamingResponse
 from prisma.models import CompletedApp
@@ -16,8 +17,14 @@ import codex.database
 import codex.deploy.agent as deploy_agent
 import codex.deploy.database
 import codex.requirements.database
-from codex.api_model import DeploymentResponse, DeploymentsListResponse, Identifiers
+from codex.api_model import (
+    DeploymentResponse,
+    DeploymentsListResponse,
+    Identifiers,
+    DeploymentRequest,
+)
 from codex.common.database import INCLUDE_API_ROUTE, INCLUDE_FUNC
+from codex.deploy.model import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +42,7 @@ async def create_deployment(
     app_id: str,
     spec_id: str,
     deliverable_id: str,
+    deployment_details: Optional[DeploymentRequest] = None,
 ):
     """
     Create a new deployment with the provided zip file.
@@ -71,7 +79,22 @@ async def create_deployment(
         user_id=user_id, app_id=app_id, spec_id=spec_id
     )
 
-    deployment = await deploy_agent.create_deployment(ids, completedApp, spec)
+    if deployment_details is None:
+        logger.info(f"No deployment settings provided for app {app_id}")
+        deployment_settings = Settings(
+            zipfile=False,
+            githubRepo=True,
+            hosted=True,
+        )
+    else:
+        deployment_settings = Settings(
+            zipfile=deployment_details.zip_file,
+            githubRepo=deployment_details.githubRepo,
+            hosted=deployment_details.hosted,
+        )
+    deployment = await deploy_agent.create_deployment(
+        ids, completedApp, spec, deployment_settings
+    )
 
     return DeploymentResponse(
         id=deployment.id,

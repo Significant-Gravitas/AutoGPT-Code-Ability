@@ -387,6 +387,9 @@ model Deployment {
   repo      String?  @unique
   dbName    String?  @unique
   dbUser    String?  @unique
+  zipFile   Boolean          @default(false)
+  githubRepo     Boolean          @default(true)
+  hosted         Boolean          @default(true)
 
   User           User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId         String?

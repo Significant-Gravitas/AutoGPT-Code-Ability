@@ -10,19 +10,22 @@ from codex.api_model import Identifiers
 from codex.deploy.packager import create_remote_repo, create_zip_file
 from codex.develop.compile import create_server_code
 from codex.deploy.infrastructure import create_cloud_db
+from codex.deploy.model import Settings
 
 logger = logging.getLogger(__name__)
 
 
 async def create_deployment(
-    ids: Identifiers, completedApp: CompletedApp, spec: Specification
+    ids: Identifiers,
+    completedApp: CompletedApp,
+    spec: Specification,
+    settings: Settings,
 ) -> Deployment:
-    environment: str = os.getenv("RUN_ENV").lower()
-    if environment == "local":
+    if os.getenv("RUN_ENV", default="local") == "local" or settings.zipfile:
         deployment = await create_local_deployment(ids, completedApp, spec)
         return deployment
 
-    deployment = await create_cloud_deployment(ids, completedApp, spec)
+    deployment = await create_cloud_deployment(ids, completedApp, spec, settings)
     return deployment
 
 
@@ -36,7 +39,7 @@ async def create_local_deployment(
 
     zip_file = await create_zip_file(app, spec)
     file_name = completedApp.name.replace(" ", "_")
-
+    repo = str(uuid.uuid4())
     try:
         base64.b64encode(zip_file)
         logger.info(f"Creating deployment for {completedApp.name}")
@@ -49,11 +52,9 @@ async def create_local_deployment(
                 fileSize=len(zip_file),
                 # I need to do this as the Base64 type in prisma is not working
                 fileBytes=encoded_file_bytes,  # type: ignore
-                dbName="",
-                dbUser="",
-                repo=str(
-                    uuid.uuid4()
-                ),  # repo has unique constraint so we need to generate a random string
+                dbName=repo,
+                dbUser=repo,
+                repo=repo,
             )
         )
     except Exception as e:
@@ -63,16 +64,27 @@ async def create_local_deployment(
 
 
 async def create_cloud_deployment(
-    ids: Identifiers, completedApp: CompletedApp, spec: Specification
+    ids: Identifiers,
+    completedApp: CompletedApp,
+    spec: Specification,
+    settings: Settings,
 ) -> Deployment:
     if not ids.user_id:
         raise ValueError("User ID is required to create a deployment")
 
     app = await create_server_code(completedApp, spec)
 
-    repo = await create_remote_repo(app, spec)
+    repo = await create_remote_repo(app, spec, settings.hosted)
     completedApp.name.replace(" ", "_")
-    db_name, db_username = await create_cloud_db(repo)
+    file_name = completedApp.name.replace(" ", "_")
+    trunc_user_id = ids.user_id[-6:]
+    trunc_deliverable_id = ids.completed_app_id[-6:]
+    unique_prefix = f"{trunc_user_id}_{file_name}_{trunc_deliverable_id}"
+    db_name = f"{unique_prefix}_db"
+    db_username = f"{unique_prefix}_user"
+
+    if settings.hosted:
+        db_name, db_username = await create_cloud_db(repo)
 
     try:
         logger.info(f"Creating deployment for {completedApp.name}")
