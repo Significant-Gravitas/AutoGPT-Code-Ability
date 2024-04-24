@@ -170,6 +170,16 @@ class AIBlock:
         self.templates_dir = self.template_base_path_with_model
         self.call_template_id = None
         self.load_pydantic_format_instructions()
+        self.verbose = os.getenv("VERBOSE_LOGGING", "true").lower() in (
+            "true",
+            "1",
+            "t",
+        )
+        if not self.verbose:
+            raise EnvironmentError(
+                "VERBOSE_LOGGING not found in environment variables."
+            )
+
 
     def load_pydantic_format_instructions(self):
         if self.pydantic_object:
@@ -480,11 +490,13 @@ class AIBlock:
                 message=MOCK_RESPONSE,
             )
           
-        logger.info(
-            f"📤 Calling LLM {request_params["model"]} with the following input:\n {request_params["messages"]}"
-        )
+        if self.verbose:
+            logger.info(
+                f"📤 Calling LLM {request_params['model']} with the following input:\n {request_params['messages']}"
+            )
         response = await self.oai_client.chat(request_params)
-        logger.info(f"📥 LLM response: {response}")
+        if self.verbose and response:
+            logger.info(f"📥 LLM response: {response}")
         return self.parse(response)
 
     async def create_item(
