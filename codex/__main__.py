@@ -65,11 +65,13 @@ def benchmark(base_url: str):
     tasks = list(ExampleTask)
 
     async def run_tasks():
+        user = await codex.runner.create_benchmark_user(prisma_client, base_url)
+
         awaitables = [
             codex.runner.run_task(
                 task_name=task.value,
                 task_description=ExampleTask.get_task_description(task),
-                user_id=codex.common.test_const.user_id_1,
+                user_id=user.id,
                 prisma_client=prisma_client,
                 base_url=base_url,
             )

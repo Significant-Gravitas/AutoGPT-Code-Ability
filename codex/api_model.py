@@ -38,10 +38,9 @@ class UserBase(BaseModel):
     discord_id: Optional[str] = Field(
         None, description="The unique Discord ID of the user"
     )
-    cloudServicesId: str = Field(
+    cloud_services_id: str = Field(
         ..., description="The unique identifier of the user in cloud services"
     )
-    role: Role = Field(default=Role.USER, description="The role of the user")
 
 
 class UserCreate(UserBase):
