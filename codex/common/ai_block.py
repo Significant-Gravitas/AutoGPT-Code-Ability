@@ -180,7 +180,6 @@ class AIBlock:
                 "VERBOSE_LOGGING not found in environment variables."
             )
 
-
     def load_pydantic_format_instructions(self):
         if self.pydantic_object:
             schema = self.pydantic_object.schema_json()
@@ -489,7 +488,7 @@ class AIBlock:
                 ),
                 message=MOCK_RESPONSE,
             )
-          
+
         if self.verbose:
             logger.info(
                 f"📤 Calling LLM {request_params['model']} with the following input:\n {request_params['messages']}"
