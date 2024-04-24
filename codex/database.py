@@ -77,6 +77,14 @@ async def get_user(user_id: str) -> User:
     return user
 
 
+async def get_user_with_settings(user_id: str) -> User:
+    user = await User.prisma().find_unique_or_raise(
+        where={"id": user_id}, include={"settings": True}
+    )
+
+    return user
+
+
 async def list_users(page: int, page_size: int) -> UsersListResponse:
     # Calculate the number of items to skip
     skip = (page - 1) * page_size

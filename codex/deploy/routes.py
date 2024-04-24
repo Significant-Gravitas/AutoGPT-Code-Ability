@@ -71,7 +71,9 @@ async def create_deployment(
         user_id=user_id, app_id=app_id, spec_id=spec_id
     )
 
-    deployment = await deploy_agent.create_deployment(ids, completedApp, spec)
+    settings = await codex.settings.database.get_settings(user_id)
+
+    deployment = await deploy_agent.create_deployment(ids, completedApp, spec, settings)
 
     return DeploymentResponse(
         id=deployment.id,

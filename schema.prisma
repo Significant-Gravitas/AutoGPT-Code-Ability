@@ -30,6 +30,7 @@ model User {
   lastSeen        DateTime?
   role            Role      @default(USER)
   deleted         Boolean   @default(false)
+  settings        Settings?
 
   Applications    Application[]
   Specifications  Specification[]
@@ -38,6 +39,16 @@ model User {
   CompletedApp    CompletedApp[]
   Interview       Interview[]
   Modules         Module[]
+}
+
+model Settings {
+  id             String           @id @default(dbgenerated("gen_random_uuid()"))
+  zipFile        Boolean          @default(true)
+  githubRepo     Boolean          @default(false)
+  hosted         Boolean          @default(true)
+
+  User            User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String?          @unique
 }
 
 enum Role {

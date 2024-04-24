@@ -1,9 +1,8 @@
 import base64
 import logging
-import os
 import uuid
 
-from prisma.models import CompletedApp, Deployment, Specification
+from prisma.models import CompletedApp, Deployment, Specification, Settings
 from prisma.types import DeploymentCreateInput
 
 from codex.api_model import Identifiers
@@ -15,14 +14,17 @@ logger = logging.getLogger(__name__)
 
 
 async def create_deployment(
-    ids: Identifiers, completedApp: CompletedApp, spec: Specification
+    ids: Identifiers,
+    completedApp: CompletedApp,
+    spec: Specification,
+    settings: Settings,
 ) -> Deployment:
-    environment: str = os.getenv("RUN_ENV").lower()
-    if environment == "local":
+    if settings.zipFile:
         deployment = await create_local_deployment(ids, completedApp, spec)
         return deployment
 
-    deployment = await create_cloud_deployment(ids, completedApp, spec)
+    hostApp = settings.hosted
+    deployment = await create_cloud_deployment(ids, completedApp, spec, hostApp)
     return deployment
 
 
@@ -36,7 +38,7 @@ async def create_local_deployment(
 
     zip_file = await create_zip_file(app, spec)
     file_name = completedApp.name.replace(" ", "_")
-
+    repo = str(uuid.uuid4())
     try:
         base64.b64encode(zip_file)
         logger.info(f"Creating deployment for {completedApp.name}")
@@ -49,11 +51,9 @@ async def create_local_deployment(
                 fileSize=len(zip_file),
                 # I need to do this as the Base64 type in prisma is not working
                 fileBytes=encoded_file_bytes,  # type: ignore
-                dbName="",
-                dbUser="",
-                repo=str(
-                    uuid.uuid4()
-                ),  # repo has unique constraint so we need to generate a random string
+                dbName=repo,
+                dbUser=repo,
+                repo=repo,
             )
         )
     except Exception as e:
@@ -63,17 +63,22 @@ async def create_local_deployment(
 
 
 async def create_cloud_deployment(
-    ids: Identifiers, completedApp: CompletedApp, spec: Specification
+    ids: Identifiers,
+    completedApp: CompletedApp,
+    spec: Specification,
+    settings: Settings,
 ) -> Deployment:
     if not ids.user_id:
         raise ValueError("User ID is required to create a deployment")
 
     app = await create_server_code(completedApp, spec)
 
-    repo = await create_remote_repo(app, spec)
+    repo = await create_remote_repo(app, spec, settings)
     completedApp.name.replace(" ", "_")
-    db_name, db_username = await create_cloud_db(repo)
-
+    if settings.hosted:
+        db_name, db_username = await create_cloud_db(repo)
+    else:
+        db_name, db_username = repo
     try:
         logger.info(f"Creating deployment for {completedApp.name}")
         deployment = await Deployment.prisma().create(
@@ -81,7 +86,7 @@ async def create_cloud_deployment(
                 CompletedApp={"connect": {"id": completedApp.id}},
                 User={"connect": {"id": ids.user_id}},
                 repo=repo,
-                dbName=db_name,
+                dbName=db_name,  # unique constraint so will use repo names as placeholder
                 dbUser=db_username,
             )
         )

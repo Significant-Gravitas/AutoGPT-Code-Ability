@@ -10,7 +10,7 @@ from pathlib import Path
 import aiohttp
 from git import Actor, GitCommandError
 from git.repo import Repo
-from prisma.models import Specification
+from prisma.models import Specification, Settings
 
 from codex.common.constants import PRISMA_FILE_HEADER
 from codex.common.exec_external_tool import execute_command
@@ -180,7 +180,7 @@ __pycache__/
 """.lstrip()
 
 
-def generate_actions_workflow(application: Application) -> str:
+def generate_actions_workflow(application: Application, settings: Settings) -> str:
     """
     Generates a deploy.yml file for the application
     Args:
@@ -196,13 +196,17 @@ def generate_actions_workflow(application: Application) -> str:
     if not application.completed_app.CompiledRoutes:
         raise ValueError("Application must have at least one compiled route")
 
-    deploy_file = """
-name: cloudrun-deploy
-#on:
-#  push:
-#    branches:
-#      - master
-on: workflow_dispatch
+    deploy_block = "on: workflow_dispatch"
+    if settings.hosted:
+        deploy_block = """
+on:
+ push:
+   branches:
+     - master        
+"""
+
+    deploy_template = """
+{on_block}
 jobs:
   setup-build-publish-deploy:
     name: Setup, Build, Publish, and Deploy
@@ -273,8 +277,8 @@ jobs:
           --set-env-vars "DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@localhost/${{ secrets.DB_NAME }}?host=/cloudsql/${{ secrets.GCP_PROJECT }}:us-central1:${{ secrets.SQL_INSTANCE_NAME }}" \
           --set-env-vars "INSTANCE_CONNECTION_NAME=${{ secrets.CLOUD_SQL_CONNECTION_NAME }}"
 
-""".lstrip()
-
+"""
+    deploy_file = deploy_template.format(on_block=deploy_block).strip()
     return deploy_file
 
 
@@ -531,7 +535,9 @@ def push_to_remote(repo: Repo, remote_name: str, remote_url: str):
         raise
 
 
-async def create_remote_repo(application: Application, spec: Specification) -> str:
+async def create_remote_repo(
+    application: Application, spec: Specification, settings: Settings
+) -> str:
     """
     Creates and pushes to GitHub repo for application
     Args:
