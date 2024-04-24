@@ -3,6 +3,7 @@ import hashlib
 import logging
 import os
 import pathlib
+import typing
 from typing import Any, Callable, Optional, Type
 
 import prisma
@@ -28,18 +29,27 @@ class ParsingError(Exception):
     pass
 
 
-TODO_COMMENT = "# TODO(autogpt):"
+class ErrorEnhancements(BaseModel):
+    metadata: typing.Optional[str]
+    context: typing.Optional[str]
+    suggested_fix: typing.Optional[str] = None
 
 
 class ValidationError(Exception):
-    pass
+    enhancements: Optional[ErrorEnhancements] = None
+
+    def __init__(self, error: str, enhancements: Optional[ErrorEnhancements] = None):
+        super().__init__(error)
+        self.enhancements = enhancements
 
 
 class ValidationErrorWithContent(ValidationError):
     content: str
 
-    def __init__(self, error: str, content: str):
-        super().__init__(error)
+    def __init__(
+        self, error: str, content: str, enhancements: Optional[ErrorEnhancements] = None
+    ):
+        super().__init__(error=error, enhancements=enhancements)
         self.content = content
 
 
@@ -49,9 +59,14 @@ class LineValidationError(ValidationError):
     code: str
 
     def __init__(
-        self, error: str, code: str, line_from: int, line_to: int | None = None
+        self,
+        error: str,
+        code: str,
+        line_from: int,
+        line_to: int | None = None,
+        enhancements: Optional[ErrorEnhancements] = None,
     ):
-        super().__init__(error)
+        super().__init__(error=error, enhancements=enhancements)
         self.line_from = line_from
         self.line_to = line_to if line_to else line_from + 1
         self.code = code
@@ -405,6 +420,18 @@ class AIBlock:
                     else:
                         invoke_params["generation"] = "Error generating response"
                     invoke_params["error"] = str(error_message)
+
+                    # Collect the enhancements from all the errors
+                    all_enhancements: list[ErrorEnhancements] = []
+                    if isinstance(error_message, ListValidationError):
+                        all_enhancements = [
+                            error_message.enhancements
+                            for error_message in error_message.errors
+                            if error_message.enhancements
+                        ]
+                    elif error_message.enhancements:
+                        all_enhancements = [error_message.enhancements]
+                    invoke_params["enhancements"] = all_enhancements
 
                     retry_prompt = self.load_template("retry", invoke_params)
                     request_params["messages"] = [

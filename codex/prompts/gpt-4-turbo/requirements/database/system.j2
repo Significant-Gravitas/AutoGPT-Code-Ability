@@ -11,376 +11,186 @@ NO NOT INLCUDE THE datasource or generator blocks.
 ```
 
 
-An example of a good response:
+Examples of prisma schema language:
 
 ```prisma
+// Scalar fields example
+
+model ScalarExamples {
+  id String @id @db.Uuid  title     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  published Boolean  @default(false)
+  metadata  Json
+}
+
+// Enum Type
+
+enum Status {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+model EnumExample {
+  id        Int      @id
+  title     String
+  status    Status   @default(ACTIVE)
+}
+
+// One-to-one relations
 
 model User {
-  id              String    @id @default(dbgenerated("gen_random_uuid()"))
-  // This should probably have a shared id with Cloud Services so that we can look up users across them
-  cloudServicesId String    @unique
-  discordId       String    @unique
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  lastSeen        DateTime?
-  role            Role      @default(USER)
-  deleted         Boolean   @default(false)
-
-  Applications    Application[]
-  Specifications  Specification[]
-  LLMCallAttempts LLMCallAttempt[]
-  Deployments     Deployment[]
-  CompletedApp    CompletedApp[]
-  Interview       Interview[]
-  ResumePoint     ResumePoint[]
+  id      Int      @id @default(autoincrement())
+  profile Profile?
 }
 
-enum Role {
-  USER
-  ADMIN
+model Profile {
+  id     Int  @id @default(autoincrement())
+  user   User @relation(fields: [userId], references: [id])
+  userId Int  @unique // relation scalar field (used in the `@relation` attribute above)
 }
 
-model Application {
-  id          String   @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  name        String
-  description String?
-  deleted     Boolean  @default(false)
+// One-to-many relations
 
-  Specifications  Specification[]
-  CompletedApps   CompletedApp[]
-  Deployments     Deployment[]
-  LLMCallAttempts LLMCallAttempt[]
-  User            User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId          String?
-  Interviews      Interview[]
-  ResumePoint     ResumePoint[]
+model User {
+  id    Int    @id @default(autoincrement())
+  email String @unique // <-- add unique attribute
+  posts Post[]
 }
 
-
-model Interview {
-  id            String        @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  deleted       Boolean       @default(false)
-  finished      Boolean       @default(false)
-  name          String
-  task          String
-  User          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId        String
-  Questions     Question[]
-  application   Application   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  applicationId String
-  ResumePoint   ResumePoint[]
+model Post {
+  id          Int    @id @default(autoincrement())
+  authorEmail String
+  author      User   @relation(fields: [authorEmail], references: [email])
 }
 
-model Question {
-  id          String    @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deleted     Boolean   @default(false)
-  question    String
-  tool        String
-  answer      String?
-  Interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-  interviewId String
+// Explicit Many-to-many relations
+
+model Post {
+  id         Int                 @id @default(autoincrement())
+  title      String
+  categories CategoriesOnPosts[]
 }
 
-model Specification {
-  id        String   @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deleted   Boolean  @default(false)
-  name      String
-  context   String
-
-  ApiRouteSpecs APIRouteSpec[]
-  CompletedApps CompletedApp[]
-  User          User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId        String?
-  Application   Application?   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  applicationId String?
-  ResumePoint   ResumePoint[]
+model Category {
+  id    Int                 @id @default(autoincrement())
+  name  String
+  posts CategoriesOnPosts[]
 }
 
-enum AccessLevel {
-  PUBLIC
-  PROTECTED
+model CategoriesOnPosts {
+  post       Post     @relation(fields: [postId], references: [id])
+  postId     Int // relation scalar field (used in the `@relation` attribute above)
+  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId Int // relation scalar field (used in the `@relation` attribute above)
+  assignedAt DateTime @default(now())
+  assignedBy String
+
+  @@id([postId, categoryId])
 }
 
-enum HTTPVerb {
-  GET
-  POST
-  PUT
-  PATCH
-  DELETE
-  OPTIONS
-  HEAD
-  CONNECT
-  TRACE
+// Implicit Many-to-many relations
+
+model Post {
+  id         Int        @id @default(autoincrement())
+  title      String
+  categories Category[]
 }
 
-model APIRouteSpec {
-  id             String          @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt      DateTime        @default(now())
-  functionName   String
-  method         HTTPVerb
-  path           String
-  description    String
-  AccessLevel    AccessLevel
-  CompiledRoutes CompiledRoute[]
-
-  Specification    Specification?  @relation(fields: [specificationId], references: [id], onDelete: Cascade)
-  specificationId  String?
-  ResponseObject   ObjectType?     @relation("ResponseObjectForAPI", fields: [responseObjectId], references: [id], onDelete: Cascade)
-  responseObjectId String?
-  RequestObject    ObjectType?     @relation("RequestObjectForAPI", fields: [requestObjectId], references: [id], onDelete: Cascade)
-  requestObjectId  String?
-  DatabaseSchema   DatabaseSchema? @relation(fields: [databaseSchemaId], references: [id], onDelete: Cascade)
-  databaseSchemaId String?
+model Category {
+  id    Int    @id @default(autoincrement())
+  name  String
+  posts Post[]
 }
 
-model ObjectType {
-  id          String   @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt   DateTime @default(now())
-  name        String
-  description String?
-  code        String?
-  isPydantic  Boolean  @default(true)
-  isEnum      Boolean  @default(false)
+// One-to-one self-relations
 
-  Fields ObjectField[] @relation("ObjectTypeFields")
-
-  importStatements String[]
-
-  DatabaseTable   DatabaseTable? @relation(fields: [databaseTableId], references: [id], onDelete: Cascade)
-  databaseTableId String?
-
-  // Reverse relations
-  ReferredRequestAPIRoutes  APIRouteSpec[] @relation("RequestObjectForAPI")
-  ReferredResponseAPIRoutes APIRouteSpec[] @relation("ResponseObjectForAPI")
-  ReferredObjectFields      ObjectField[]  @relation("ObjectFieldTypes")
-}
-
-model ObjectField {
-  id          String   @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt   DateTime @default(now())
-  name        String
-  description String?
-  value       String?
-
-  RelatedTypes ObjectType[] @relation("ObjectFieldTypes")
-  typeName     String // list,dict,etc for primitive types, Type.name for composite types.
-
-  // Reverse relations
-  ReferredFunctionReturns Function[]  @relation("FunctionReturns")
-  ReferredFunctionArgs    Function[]  @relation("FunctionArgs")
-  ReferredObjectType      ObjectType? @relation("ObjectTypeFields", fields: [referredObjectTypeId], references: [id])
-  referredObjectTypeId    String?
-}
-
-// DatabaseSchema represents the schema of a database.
-// It includes a description and relationships to database tables and code graphs.
-model DatabaseSchema {
-  id             String                       @id @default(dbgenerated("gen_random_uuid()"))
-  name           String?
-  createdAt      DateTime                     @default(now())
-  embedding      Unsupported("vector(1536)")?
-  description    String
-  DatabaseTables DatabaseTable[]
-  Functions      Function[]
-  ApiRouteSpecs  APIRouteSpec[]
-}
-
-// DatabaseTable represents a table within a database schema.
-// It includes details about the table and relationships to schemas and other tables.
-model DatabaseTable {
-  id          String                       @id @default(dbgenerated("gen_random_uuid()"))
+model User {
+  id          Int     @id @default(autoincrement())
   name        String?
-  createdAt   DateTime                     @default(now())
-  embedding   Unsupported("vector(1536)")?
-  description String
-  definition  String
-  isEnum      Boolean                      @default(false)
-
-  // This seems like its gonna be a nightmare to keep track of for 1-1 1-M and M-M relationships
-  RelatedFromTables DatabaseTable[] @relation("TableRelations")
-  RelatedToTables   DatabaseTable[] @relation("TableRelations")
-  DatabaseSchema    DatabaseSchema? @relation(fields: [databaseSchemaId], references: [id])
-  databaseSchemaId  String?
-  ObjectType        ObjectType[]
+  successorId Int?    @unique
+  successor   User?   @relation("BlogOwnerHistory", fields: [successorId], references: [id])
+  predecessor User?   @relation("BlogOwnerHistory")
 }
 
+// One-to-many self-relations
 
-enum FunctionState {
-  DEFINITION
-  WRITTEN
-  VERIFIED
+model User {
+  id        Int     @id @default(autoincrement())
+  name      String?
+  teacherId Int?
+  teacher   User?   @relation("TeacherStudents", fields: [teacherId], references: [id])
+  students  User[]  @relation("TeacherStudents")
 }
 
-// CodeGraph represents a graph-based representation of code or logic.
-// It is associated with function definitions and can be linked to a database schema.
-model Function {
-  id        String   @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// Implicit Many-to-many self-relations
 
-  functionName String
-  description  String?
-  template     String // This is the template of the function along with the docstring
-  state        FunctionState
-
-  Packages         Package[]
-  rawCode          String? // This is the unpocessed code returned form the llm
-  importStatements String[] // These are the import statements for the function
-  functionCode     String? // This is the code of the function being written
-
-  FunctionArgs           ObjectField[] @relation("FunctionArgs") // Function Args need name-type pairs
-  FunctionReturn         ObjectField?  @relation("FunctionReturns", fields: [functionReturnObjectId], references: [id], onDelete: Cascade)
-  functionReturnObjectId String?
-
-  ParentFunction   Function?  @relation("ParentFunction", fields: [parentFunctionId], references: [id], onDelete: Cascade)
-  parentFunctionId String?
-  ChildFunctions   Function[] @relation("ParentFunction")
-
-  DatabaseSchema   DatabaseSchema? @relation(fields: [databaseSchemaId], references: [id], onDelete: Cascade)
-  databaseSchemaId String?
-  CompiledRoute    CompiledRoute?  @relation("CompiledRouteFunctions", fields: [compiledRouteId], references: [id], onDelete: Cascade)
-  compiledRouteId  String?
-
-  // Reverse relations
-  ReferredFunctionRootCompiledRoute CompiledRoute? @relation("RootFunction")
+model User {
+  id         Int     @id @default(autoincrement())
+  name       String?
+  followedBy User[]  @relation("UserFollows")
+  following  User[]  @relation("UserFollows")
 }
 
-model Package {
-  id             String          @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt      DateTime        @default(now())
-  packageName    String
-  version        String
-  specifier      String
-  Functions      Function[]
-  CompiledRoutes CompiledRoute[]
+// Explicit Many-to-many self-relations
+
+model User {
+  id         Int       @id @default(autoincrement())
+  name       String?
+  followedBy Follows[] @relation("followedBy")
+  following  Follows[] @relation("following")
 }
 
-// CompiledRoute represents a version of a route that has been processed or compiled.
-// It links to its source code graph and associated functions and applications.
-model CompiledRoute {
-  id          String                       @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt   DateTime                     @default(now())
-  embedding   Unsupported("vector(1536)")?
-  description String
-  Packages    Package[]
+model Follows {
+  followedBy   User @relation("followedBy", fields: [followedById], references: [id])
+  followedById Int
+  following    User @relation("following", fields: [followingId], references: [id])
+  followingId  Int
 
-  fileName         String
-  mainFunctionName String
-  compiledCode     String
-
-  CompletedApp   CompletedApp @relation(fields: [completedAppId], references: [id], onDelete: Cascade)
-  completedAppId String
-
-  Functions      Function[] @relation("CompiledRouteFunctions")
-  RootFunction   Function   @relation("RootFunction", fields: [rootFunctionId], references: [id], onDelete: Cascade)
-  rootFunctionId String     @unique
-
-  ApiRouteSpec   APIRouteSpec? @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
-  apiRouteSpecId String?
+  @@id([followingId, followedById])
 }
 
-// Application represents the main software application entity.
-// It includes basic metadata and has relationships with compiled routes.
-model CompletedApp {
-  id          String   @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  deleted     Boolean  @default(false)
-  name        String
-  description String
+// Referential actions
 
-  User            User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId          String?
-  CompiledRoutes  CompiledRoute[]
-  Deployments     Deployment[]
-  Specification   Specification?  @relation(fields: [specificationId], references: [id], onDelete: Cascade)
-  specificationId String?
-  Application     Application?    @relation(fields: [applicationId], references: [id])
-  applicationId   String?
-  ResumePoint     ResumePoint[]
+model Post {
+  id       Int    @id @default(autoincrement())
+  title    String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId Int
 }
 
-model Deployment {
-  id        String   @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deleted   Boolean  @default(false)
-  fileName  String
-  fileSize  Int
-  path      String?
-  fileBytes Bytes?
-
-  User           User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId         String?
-  Application    Application?  @relation(fields: [applicationId], references: [id])
-  applicationId  String?
-  CompletedApp   CompletedApp? @relation(fields: [completedAppId], references: [id], onDelete: Cascade)
-  completedAppId String?
-  ResumePoint    ResumePoint[]
+model User {
+  id    Int    @id @default(autoincrement())
+  posts Post[]
 }
 
-model LLMCallTemplate {
-  id               String           @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt        DateTime         @default(now())
-  developmentPhase DevelopmentPhase
-  templateName     String
-  fileHash         String
-  systemPrompt     String
-  userPrompt       String
-  retryPrompt      String
+// Relation model
 
-  Uses LLMCallAttempt[]
+model Post {
+  id       Int    @id @default(autoincrement())
+  title    String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  authorId Int
 }
 
-enum DevelopmentPhase {
-  REQUIREMENTS
-  DEVELOPMENT
-  DEPLOYMENT
+model User {
+  id    Int    @id @default(autoincrement())
+  posts Post[]
 }
 
-model LLMCallAttempt {
-  id               String   @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt        DateTime @default(now())
-  model            String
-  completionTokens Int
-  promptTokens     Int
-  totalTokens      Int
-  attempt          Int
-  prompt           Json
-  response         String
+// Indexes
 
-  User              User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId            String?
-  Application       Application?     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  applicationId     String?
-  LLMCallTemplate   LLMCallTemplate? @relation(fields: [llmCallTemplateId], references: [id], onDelete: Cascade)
-  llmCallTemplateId String?
+model Post {
+  title      String   @db.VarChar(300)
+  abstract   String   @db.VarChar(3000)
+  slug       String   @unique(sort: Desc, length: 42) @db.VarChar(3000)
+  author     String
+  created_at DateTime
+
+  @@id([title(length: 100, sort: Desc), abstract(length: 10)])
+  @@index([author, created_at(sort: Desc)])
 }
 
-model ResumePoint {
-  id              String         @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @default(now()) @updatedAt
-  name            String
-  User            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId          String
-  Application     Application?   @relation(fields: [applicationId], references: [id])
-  applicationId   String?
-  Interview       Interview?     @relation(fields: [interviewId], references: [id])
-  interviewId     String?
-  Specification   Specification? @relation(fields: [specificationId], references: [id])
-  specificationId String?
-  CompletedApp    CompletedApp?  @relation(fields: [completedAppId], references: [id])
-  completedAppId  String?
-  Deployment      Deployment?    @relation(fields: [deploymentId], references: [id])
-  deploymentId    String?
-}
 ```
