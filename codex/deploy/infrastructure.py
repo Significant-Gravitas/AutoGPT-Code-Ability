@@ -3,22 +3,15 @@ from googleapiclient.discovery import build
 import logging
 
 
-import string
-import random
 import psycopg2
 from psycopg2 import sql
 
 from github import Github
 import os
 
+import codex.common.utils
+
 logger = logging.getLogger(__name__)
-
-
-def generate_db_credentials(username_prefix="user", password_length=16):
-    username = f"{username_prefix}{random.randint(1000, 9999)}"
-    characters = string.ascii_letters + string.digits + "!@#$%^&*()"
-    password = "".join(random.choice(characters) for i in range(password_length))
-    return username, password
 
 
 def create_postgres_database(db_name):
@@ -157,7 +150,7 @@ async def create_cloud_db(repo_url: str) -> (str, str):
         create_postgres_database(db_name)
 
         # create db credentials
-        user, password = generate_db_credentials()
+        user, password = codex.common.utils.generate_db_credentials()
 
         # create user in cloudsql
         setup_cloudsql_db(user, password)
