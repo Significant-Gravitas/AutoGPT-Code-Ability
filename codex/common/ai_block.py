@@ -480,7 +480,9 @@ class AIBlock:
                 ),
                 message=MOCK_RESPONSE,
             )
+        logger.info(f"📤 Calling LLM {**request_params["model"]} with the following input:\n {**request_params["messages"]}")
         response = await self.oai_client.chat.completions.create(**request_params)
+        logger.info(f"📥 LLM response: {response}")
         return self.parse(response)
 
     async def create_item(
