@@ -48,13 +48,22 @@ def populate_db(database):
 
 @cli.command()
 @click.option(
-    "--port",
-    "-p",
-    default=os.getenv("PORT"),
-    help="Port number of the Codex server",
-    type=int,
+    "-u",
+    "--base-url",
+    default="http://127.0.0.1:8080/api/v1",
+    help="Base URL of the Codex server",
 )
-def benchmark(port: int = 8080):
+@click.option(
+    "-r",
+    "--requirements-only",
+    is_flag=True,
+    default=False,
+    help="Run only the requirements generation",
+)
+@click.option(
+    "-c", "--count", default=0, help="Number of examples to run from the benchmark"
+)
+def benchmark(base_url: str, requirements_only: bool, count: int):
     """Run the benchmark tests"""
     import prisma
 
@@ -62,18 +71,31 @@ def benchmark(port: int = 8080):
     import codex.runner
     from codex.requirements.model import ExampleTask
 
-    base_url = f"http://127.0.0.1:{port}/api/v1"
     prisma_client = prisma.Prisma(auto_register=True)
     tasks = list(ExampleTask)
+    if count > 0 and count < len(tasks):
+        tasks = tasks[:count]
+        click.echo(f"Running {count} examples from the benchmark")
+
+    if count > len(tasks):
+        click.echo(
+            f"Count {count} is greater than the number of examples in the benchmark. Running all examples."
+        )
+
+    if requirements_only:
+        click.echo("Running requirements generation only")
 
     async def run_tasks():
+        user = await codex.runner.create_benchmark_user(prisma_client, base_url)
+
         awaitables = [
             codex.runner.run_task(
                 task_name=task.value,
                 task_description=ExampleTask.get_task_description(task),
-                user_id=codex.common.test_const.user_id_1,
+                user_id=user.id,
                 prisma_client=prisma_client,
                 base_url=base_url,
+                requirements_only=requirements_only,
             )
             for task in tasks
         ]
@@ -90,20 +112,25 @@ def benchmark(port: int = 8080):
 
 @cli.command()
 @click.option(
-    "-p",
-    "--port",
-    default=os.getenv("PORT"),
-    help="Port number of the Codex server",
-    type=int,
+    "-u",
+    "--base-url",
+    default="http://127.0.0.1:8080/api/v1",
+    help="Base URL of the Codex server",
 )
-def example(port: int):
+@click.option(
+    "-r",
+    "--requirements-only",
+    is_flag=True,
+    default=False,
+    help="Run only the requirements generation",
+)
+def example(base_url: str, requirements_only: bool):
     import prisma
 
     import codex.common.test_const
     import codex.runner
     from codex.requirements.model import ExampleTask
 
-    base_url = f"http://127.0.0.1:{port}/api/v1"
     prisma_client = prisma.Prisma(auto_register=True)
     i = 1
     click.echo("Select a test case:")
@@ -116,6 +143,8 @@ def example(port: int):
     case = int(input("Enter number of the case to run: "))
 
     task = examples[case - 1]
+    if requirements_only:
+        click.echo("Running requirements generation only")
     loop = asyncio.new_event_loop()
     loop.run_until_complete(
         codex.runner.run_task(
@@ -124,6 +153,7 @@ def example(port: int):
             user_id=codex.common.test_const.user_id_1,
             prisma_client=prisma_client,
             base_url=base_url,
+            requirements_only=requirements_only,
         )
     )
     loop.run_until_complete(prisma_client.disconnect())
@@ -150,19 +180,17 @@ def costs():
 
 @cli.command()
 @click.option(
-    "--port",
-    "-p",
-    default=os.getenv("PORT"),
-    help="Port number of the Codex server",
-    type=int,
+    "-u",
+    "--base-url",
+    default="http://127.0.0.1:8080/api/v1",
+    help="Base URL of the Codex server",
 )
-def resume(port: int):
+def resume(base_url: str):
     import prisma
 
     import codex.debug
     import codex.runner
 
-    base_url = f"http://127.0.0.1:{port}/api/v1"
     prisma_client = prisma.Prisma(auto_register=True)
     print("")
     loop = asyncio.new_event_loop()
@@ -241,13 +269,29 @@ def resume(port: int):
 
 
 @cli.command()
-def serve() -> None:
+@click.option("-g", "--groq", is_flag=True, default=False, help="Run a GROQ query")
+@click.option("-m", "--model", default=None, help="Override LLM to use")
+def serve(groq: bool, model: str) -> None:
     import uvicorn
 
     from codex.common.ai_model import OpenAIChatClient
     from codex.common.exec_external_tool import setup_if_required
 
-    OpenAIChatClient.configure({})
+    config = {}
+    if model:
+        config["model"] = model
+    if groq:
+        print("Setting up GROQ API client...")
+        if not model:
+            config["model"] = "llama3-70b-8192"
+        config["api_key"] = os.getenv("GROQ_API_KEY")
+        config["base_url"] = "https://api.groq.com/openai/v1"
+        # Current limits for llama3-70b-8192 on groq
+        OpenAIChatClient.configure(
+            config, max_requests_per_min=1_000, max_tokens_per_min=30_000
+        )
+    else:
+        OpenAIChatClient.configure(config)
 
     logger.info("Setting up code analysis tools...")
     initial_setup = setup_if_required()
