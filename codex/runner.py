@@ -55,6 +55,7 @@ async def run_task(
     user_id: str,
     prisma_client: Prisma,
     base_url: str,
+    requirements_only: bool = False,
 ):
     """
     Runs a task end-to-end.
@@ -97,16 +98,20 @@ async def run_task(
         await run_specification(
             codex_client=codex_client, task_name=task_name, resume_point=resume_point
         )
+        if not requirements_only:
+            await run_development(
+                codex_client=codex_client,
+                task_name=task_name,
+                resume_point=resume_point,
+            )
 
-        await run_development(
-            codex_client=codex_client, task_name=task_name, resume_point=resume_point
-        )
+            await run_compile(
+                codex_client=codex_client,
+                task_name=task_name,
+                resume_point=resume_point,
+            )
 
-        await run_compile(
-            codex_client=codex_client, task_name=task_name, resume_point=resume_point
-        )
-
-        await get_deployment(codex_client=codex_client, task_name=task_name)
+            await get_deployment(codex_client=codex_client, task_name=task_name)
     except Exception as e:
         logger.exception(f"Error running task: {e}")
 

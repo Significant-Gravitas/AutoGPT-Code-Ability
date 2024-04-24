@@ -53,7 +53,17 @@ def populate_db(database):
     default="http://127.0.0.1:8080/api/v1",
     help="Base URL of the Codex server",
 )
-def benchmark(base_url: str):
+@click.option(
+    "-r",
+    "--requirements-only",
+    is_flag=True,
+    default=False,
+    help="Run only the requirements generation",
+)
+@click.option(
+    "-c", "--count", default=0, help="Number of examples to run from the benchmark"
+)
+def benchmark(base_url: str, requirements_only: bool, count: int):
     """Run the benchmark tests"""
     import prisma
 
@@ -63,6 +73,17 @@ def benchmark(base_url: str):
 
     prisma_client = prisma.Prisma(auto_register=True)
     tasks = list(ExampleTask)
+    if count > 0 and count < len(tasks):
+        tasks = tasks[:count]
+        click.echo(f"Running {count} examples from the benchmark")
+
+    if count > len(tasks):
+        click.echo(
+            f"Count {count} is greater than the number of examples in the benchmark. Running all examples."
+        )
+
+    if requirements_only:
+        click.echo("Running requirements generation only")
 
     async def run_tasks():
         user = await codex.runner.create_benchmark_user(prisma_client, base_url)
@@ -74,6 +95,7 @@ def benchmark(base_url: str):
                 user_id=user.id,
                 prisma_client=prisma_client,
                 base_url=base_url,
+                requirements_only=requirements_only,
             )
             for task in tasks
         ]
@@ -95,7 +117,14 @@ def benchmark(base_url: str):
     default="http://127.0.0.1:8080/api/v1",
     help="Base URL of the Codex server",
 )
-def example(base_url: str):
+@click.option(
+    "-r",
+    "--requirements-only",
+    is_flag=True,
+    default=False,
+    help="Run only the requirements generation",
+)
+def example(base_url: str, requirements_only: bool):
     import prisma
 
     import codex.common.test_const
@@ -114,6 +143,8 @@ def example(base_url: str):
     case = int(input("Enter number of the case to run: "))
 
     task = examples[case - 1]
+    if requirements_only:
+        click.echo("Running requirements generation only")
     loop = asyncio.new_event_loop()
     loop.run_until_complete(
         codex.runner.run_task(
@@ -122,6 +153,7 @@ def example(base_url: str):
             user_id=codex.common.test_const.user_id_1,
             prisma_client=prisma_client,
             base_url=base_url,
+            requirements_only=requirements_only,
         )
     )
     loop.run_until_complete(prisma_client.disconnect())
