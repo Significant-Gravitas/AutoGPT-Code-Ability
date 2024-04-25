@@ -232,7 +232,26 @@ class DevelopAIBlock(AIBlock):
         return func
 
     async def on_failed(self, ids: Identifiers, invoke_params: dict):
+        function_name = (
+            invoke_params["function_name"]
+            if "function_name" in invoke_params
+            else "Unknown"
+        )
+        function_signature = (
+            invoke_params["function_signature"]
+            if "function_signature" in invoke_params
+            else "Unknown"
+        )
+        function_id = (
+            invoke_params["function_id"]
+            if "function_id" in invoke_params
+            else "id not found"
+        )
         try:
+            logger.error(
+                f"AI Failed to write the function {function_name}. Signiture of failed function:\n{function_signature}",
+                extra={"function_id": function_id},
+            )
             await Function.prisma().update(
                 where={"id": ids.function_id},
                 data={"state": FunctionState.FAILED},
@@ -241,6 +260,13 @@ class DevelopAIBlock(AIBlock):
             logger.exception(
                 "Prisma error updating function state to FAILED.",
                 pe,
-                extra={"function_id": invoke_params["function_id"]},
+                extra={"function_id": function_id},
             )
             raise pe
+        except Exception as e:
+            logger.exception(
+                "Unexpected error updating function state to FAILED.",
+                e,
+                extra={"function_id": function_id},
+            )
+            raise e
