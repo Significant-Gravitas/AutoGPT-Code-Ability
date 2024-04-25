@@ -38,6 +38,7 @@ async def create_local_deployment(
     file_name = completedApp.name.replace(" ", "_")
     trunc_user_id = ids.user_id[-6:]
     trunc_deliverable_id = ids.completed_app_id[-6:]
+    unique_prefix = f"{trunc_user_id}_{file_name}_{trunc_deliverable_id}"
     try:
         base64.b64encode(zip_file)
         logger.info(f"Creating deployment for {completedApp.name}")
@@ -50,9 +51,9 @@ async def create_local_deployment(
                 fileSize=len(zip_file),
                 # I need to do this as the Base64 type in prisma is not working
                 fileBytes=encoded_file_bytes,  # type: ignore
-                dbName=f"{trunc_user_id}_{zip_file}_{trunc_deliverable_id}_db",
-                dbUser=f"{trunc_user_id}_{zip_file}_{trunc_deliverable_id}_user",
-                repo=f"{trunc_user_id}_{zip_file}_{trunc_deliverable_id}_db_user",  # repo has unique constraint so we need to generate a random string
+                dbName=f"{unique_prefix}_db",
+                dbUser=f"{unique_prefix}_user",
+                repo=f"{unique_prefix}_repo",
             )
         )
     except Exception as e:
