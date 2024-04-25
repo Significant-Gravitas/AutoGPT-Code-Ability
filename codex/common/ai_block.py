@@ -504,7 +504,11 @@ class AIBlock:
             invoke_params (dict): The invoke parameters
         """
         # We just pass here as we want implementing this to be optional
-        logger.error(f"Failed to generate response for {self.prompt_template_name}")
+
+        logger.error(
+            f"Failed to generate response for {self.prompt_template_name}",
+            extra=ids.model_dump(),
+        )
         pass
 
     async def create_item(
