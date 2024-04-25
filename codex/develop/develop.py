@@ -2,6 +2,7 @@ import logging
 from typing import List
 
 from prisma.enums import DevelopmentPhase, FunctionState
+from prisma.errors import PrismaError
 from prisma.models import Function
 from prisma.types import (
     FunctionCreateInput,
@@ -129,7 +130,8 @@ class DevelopAIBlock(AIBlock):
             # This is not a validation error we want to the agent to fix
             # it is a code bug in the validation logic
             logger.exception(
-                f"Unexpected error during validation for function id: {invoke_params['function_id']}"
+                "Unexpected error during validation",
+                extra={"function_id": invoke_params["function_id"]},
             )
             raise e
 
@@ -232,8 +234,15 @@ class DevelopAIBlock(AIBlock):
                 where={"id": ids.function_id},
                 data={"state": FunctionState.FAILED},
             )
-        except Exception as e:
+        except PrismaError as pe:
             logger.exception(
-                f"Error updating function state to FAILED. function_id: {ids.function_id}"
+                f"Prisma error updating function state to FAILED. function_id: {ids.function_id}",
+                pe,
             )
-            raise e
+            raise pe
+        except Exception as ve:
+            logger.exception(
+                f"Unkwon error during updating function state to FAILED. function_id: {ids.function_id}",
+                ve,
+            )
+            raise ve
