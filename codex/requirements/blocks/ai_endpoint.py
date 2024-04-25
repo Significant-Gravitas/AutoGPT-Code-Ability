@@ -2,6 +2,8 @@ import logging
 import typing
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+import prisma.enums
+
 from codex.common.ai_block import (
     AIBlock,
     Identifiers,
@@ -87,6 +89,8 @@ ALLOWED_TYPES = sorted(typing.__all__) + [
     "PosixPath",
     "WindowsPath",
     "UploadFile",
+    "Annotated",
+    "Depends"
 ]
 
 
@@ -506,6 +510,20 @@ class EndpointSchemaRefinementBlock(AIBlock):
                     response.response, strict=False
                 )
             )
+
+            # Add the Dependency Injection here for Auth, Database, etc
+            if "access_level" in invoke_params:
+                access_level: prisma.enums.AccessLevel = invoke_params["access_level"]
+                # if protected endpoint, inject the commons
+                if access_level == prisma.enums.AccessLevel.PROTECTED:
+                    model.api_endpoint.request_model.Fields.append(
+                        ObjectFieldModel(
+                            name="current_user",
+                            description="The commons object used to add the user_id, check dependencies, and validate roles",
+                            # FastAPI commons object
+                            type="Annotated[User, Depends(get_current_active_user)]",
+                        )
+                    )
             # Perform additional validation
             # 0. check that all the ObjectTypes are valid python using the pydantic model and only typing
             # 1. Check that all the ObjectTypes have definitions or a matching enum or table in the database schema

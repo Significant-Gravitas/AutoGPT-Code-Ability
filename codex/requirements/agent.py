@@ -149,7 +149,7 @@ async def generate_requirements(ids: Identifiers, app: Application) -> SpecHolde
 
     modules = await asyncio.gather(
         *[
-            denfine_module_routes(
+            define_module_routes(
                 ids=ids,
                 app=app,
                 module_reqs=m,
@@ -166,7 +166,7 @@ async def generate_requirements(ids: Identifiers, app: Application) -> SpecHolde
     return spec_holder
 
 
-async def denfine_module_routes(
+async def define_module_routes(
     ids: Identifiers,
     app: Application,
     module_reqs: codex.requirements.blocks.ai_module.Module,
@@ -179,15 +179,17 @@ async def denfine_module_routes(
 
     block = codex.requirements.blocks.ai_module_routes.ModuleGenerationBlock()
 
-    module_routes = await block.invoke(
-        ids=ids,
-        invoke_params={
-            "poduct_name": app.name,
-            "product_description": app.description,
-            "module": f"{module_reqs.name} - {module_reqs.functionality}",
-            "interactions": "\n".join(module_reqs.interaction_with_other_modules),
-            "roles": roles,
-        },
+    module_routes: codex.requirements.blocks.ai_module_routes.ModuleApiRouteResponse = (
+        await block.invoke(
+            ids=ids,
+            invoke_params={
+                "poduct_name": app.name,
+                "product_description": app.description,
+                "module": f"{module_reqs.name} - {module_reqs.functionality}",
+                "interactions": "\n".join(module_reqs.interaction_with_other_modules),
+                "roles": roles,
+            },
+        )
     )
     for r in module_routes.routes:
         logger.warning(f"Route: {r.http_verb} - {r.path} - {r.description}")
@@ -241,9 +243,9 @@ async def define_api_spec(
             "module_repr": f"{module_reqs.name} - {module_reqs.functionality}",
             "endpoint_repr": f"{api_route.http_verb} - {api_route.path} - {api_route.description} \n Roles Allowed: {', '.join(api_route.allowed_access_roles)}",
             "allowed_types": allowed_types,
+            "access_level": api_route.access_level,
         },
     )
-
     assert endpoint.api_endpoint.request_model is not None, "Request Model is None"
     assert endpoint.api_endpoint.response_model is not None, "Response Model is None"
     assert (
