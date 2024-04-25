@@ -86,9 +86,9 @@ jobs:
     - name: Clean up
       if: always()
       run: |
+        lsof -ti:8080 | xargs kill -9
         docker stop codex
         docker rm codex
-
     env:
       DB_USER: ${{ secrets.DB_USER }}
       DB_PASS: ${{ secrets.DB_PASS }}
