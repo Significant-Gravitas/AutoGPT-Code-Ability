@@ -1,6 +1,5 @@
 import logging
 import os
-import random
 import tempfile
 import uuid
 import zipfile
@@ -12,6 +11,7 @@ from git import Actor, GitCommandError
 from git.repo import Repo
 from prisma.models import Specification
 
+import codex.common.utils
 from codex.common.constants import PRISMA_FILE_HEADER
 from codex.common.exec_external_tool import execute_command
 from codex.deploy.model import Application
@@ -78,10 +78,7 @@ def generate_dotenv_example_file(application: Application) -> str:
     if not application.completed_app.CompiledRoutes:
         raise ValueError("Application must have at least one compiled route")
 
-    # Generate a random password
-    random_password = "".join(
-        random.choice("abcdefghijklmnopqrstuvwxyz0123456789") for i in range(20)
-    )
+    random_username, random_password = codex.common.utils.generate_db_credentials()
     # normalized app name. keeping only a-z and _
     db_name: str = (
         application.completed_app.name.lower().replace(" ", "_").replace("-", "_")
@@ -92,14 +89,18 @@ def generate_dotenv_example_file(application: Application) -> str:
 # Example .env file
 # Copy this file to .env and fill in the values for the environment variables
 # The .env file should not be committed to version control
-DB_USER="codexrulesman"
+DB_USER={random_username}
 DB_PASS="{random_password}"
 DB_HOST="localhost"
 DB_PORT="5432"
 DB_NAME="{db_name}"
 DATABASE_URL="postgresql://${{DB_USER}}:${{DB_PASS}}@${{DB_HOST}}:${{DB_PORT}}/${{DB_NAME}}"
 """.lstrip()
-    env_example = env_example.format(random_password=random_password, db_name=db_name)
+    env_example = env_example.format(
+        random_username=random_username,
+        random_password=random_password,
+        db_name=db_name,
+    )
 
     # env_example = ""
     # for compiled_route in application.completed_app.CompiledRoutes:
