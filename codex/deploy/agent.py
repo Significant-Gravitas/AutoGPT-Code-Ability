@@ -40,7 +40,7 @@ async def create_local_deployment(
     unique_prefix = f"{trunc_user_id}_{file_name}_{trunc_deliverable_id}"
     try:
         base64.b64encode(zip_file)
-        logger.info(f"Creating deployment for {completedApp.name}")
+        logger.info(f"Creating deployment for {completedApp.name} with repo ID {repo_uuid}")
         encoded_file_bytes = base64.b64encode(zip_file).decode("utf-8")
         deployment = await Deployment.prisma().create(
             data=DeploymentCreateInput(
