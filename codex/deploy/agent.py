@@ -1,7 +1,6 @@
 import base64
 import logging
 import os
-import uuid
 
 from prisma.models import CompletedApp, Deployment, Specification
 from prisma.types import DeploymentCreateInput
