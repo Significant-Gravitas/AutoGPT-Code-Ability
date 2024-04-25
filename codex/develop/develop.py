@@ -224,7 +224,10 @@ class DevelopAIBlock(AIBlock):
                 f"Function with id {generated_response.function_id} not found"
             )
 
-        logger.info(f"✅ Updated Function: {func.functionName} - {func.id}")
+        logger.info(
+            f"✅ Updated Function: {func.functionName} - {func.id}",
+            extra={"function_id": func.id},
+        )
 
         return func
 
@@ -236,13 +239,8 @@ class DevelopAIBlock(AIBlock):
             )
         except PrismaError as pe:
             logger.exception(
-                f"Prisma error updating function state to FAILED. function_id: {ids.function_id}",
+                "Prisma error updating function state to FAILED.",
                 pe,
+                extra={"function_id": invoke_params["function_id"]},
             )
             raise pe
-        except Exception as ve:
-            logger.exception(
-                f"Unkwon error during updating function state to FAILED. function_id: {ids.function_id}",
-                ve,
-            )
-            raise ve
