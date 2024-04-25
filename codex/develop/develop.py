@@ -128,7 +128,9 @@ class DevelopAIBlock(AIBlock):
         except Exception as e:
             # This is not a validation error we want to the agent to fix
             # it is a code bug in the validation logic
-            logger.exception(e)
+            logger.exception(
+                f"Unexpected error during validation for function id: {invoke_params['function_id']}"
+            )
             raise e
 
         validation_errors.raise_if_errors()
@@ -223,3 +225,15 @@ class DevelopAIBlock(AIBlock):
         logger.info(f"✅ Updated Function: {func.functionName} - {func.id}")
 
         return func
+
+    async def on_failed(self, ids: Identifiers, invoke_params: dict):
+        try:
+            await Function.prisma().update(
+                where={"id": ids.function_id},
+                data={"state": FunctionState.FAILED},
+            )
+        except Exception as e:
+            logger.exception(
+                f"Error updating function state to FAILED. function_id: {ids.function_id}"
+            )
+            raise e

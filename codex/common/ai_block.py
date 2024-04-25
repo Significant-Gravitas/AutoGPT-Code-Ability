@@ -467,6 +467,7 @@ class AIBlock:
                     invoke_params["will_retry_on_failure"] = retry_attempt < max_retries
                     continue
             if not validated_response:
+                await self.on_failed(ids, invoke_params)
                 raise LLMFailure(f"Error validating response: {validation_error}")
         except Exception as unkown_error:
             logger.exception(f"Error invoking AIBlock: {unkown_error}", unkown_error)
@@ -493,6 +494,17 @@ class AIBlock:
         if self.verbose and response:
             logger.info(f"📥 LLM response: {response}")
         return self.parse(response)
+
+    async def on_failed(self, ids: Identifiers, invoke_params: dict):
+        """
+        Called when the LLM call fails
+
+        Args:
+            ids (Identifiers): The identifiers for the call
+            invoke_params (dict): The invoke parameters
+        """
+        # We just pass here as we want implementing this to be optional
+        pass
 
     async def create_item(
         self, ids: Identifiers, validated_response: ValidatedResponse
