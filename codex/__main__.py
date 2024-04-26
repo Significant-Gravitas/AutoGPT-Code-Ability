@@ -23,6 +23,55 @@ cli.add_command(cmd=codex.debug.debug)  # type: ignore
 
 @cli.command()
 @click.option(
+    "-u",
+    "--base-url",
+    default="http://127.0.0.1:8080/api/v1",
+    help="Base URL of the Codex server",
+)
+@click.option(
+    "-t",
+    "--task-name",
+    required=True,
+    default="Chat with Codex",
+    help="Name of the task",
+)
+@click.option(
+    "-d",
+    "--desc",
+    required=True,
+    default="A chat with Codex",
+    help="Description of the task",
+)
+def chat(base_url: str, task_name: str, desc: str) -> None:
+    import prisma
+
+    import codex.common.test_const
+    import codex.runner
+
+    prisma_client = prisma.Prisma(auto_register=True)
+    loop = asyncio.new_event_loop()
+    codex_client = loop.run_until_complete(
+        codex.runner.start_chat_with_codex(
+            user_id=codex.common.test_const.user_id_1,
+            prisma_client=prisma_client,
+            base_url=base_url,
+            task_name=task_name,
+            task_description=desc,
+        ),
+    )
+    loop.run_until_complete(
+        codex.runner.chat_with_codex(codex_client=codex_client, message=desc)
+    )
+    while True:
+        message = input("\U0001F4AC\033[92m You: \033[0m")
+
+        loop.run_until_complete(
+            codex.runner.chat_with_codex(codex_client=codex_client, message=message)
+        )
+
+
+@cli.command()
+@click.option(
     "--database",
     "-d",
     default=os.getenv("DATABASE_URL"),

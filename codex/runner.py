@@ -5,10 +5,14 @@ import os
 import shutil
 import zipfile
 from enum import Enum
+from io import BytesIO
+from typing import List
 
+from fastapi import UploadFile
 from prisma import Prisma
 from prisma.models import Application
 
+import codex.chat.model
 from codex.common.codex_client import CodexClient
 from codex.common.model import ResumePoint
 from codex.interview.model import InterviewResponse
@@ -22,6 +26,30 @@ class ResumeStep(Enum):
     DEVELOPMENT = 3
     COMPILE = 4
     DOWNLOAD = 4
+
+
+def load_files_as_uploadfiles(file_names: List[str]) -> List[UploadFile]:
+    """
+    Load files from the specified paths and create a list of FastAPI UploadFile objects.
+
+    Args:
+    - file_names (List[str]): A list of file paths.
+
+    Returns:
+    - List[UploadFile]: A list of UploadFile objects containing the loaded files.
+    """
+    files: List[UploadFile] = []
+    for file_name in file_names:
+        # Open the file in binary mode
+        with open(file_name, "rb") as file:
+            # Create a BytesIO object
+            memory_file = BytesIO(file.read())
+
+            # Create an UploadFile object
+            upload_file = UploadFile(filename=file_name, file=memory_file)
+            files.append(upload_file)
+
+    return files
 
 
 async def create_benchmark_user(prisma_client: Prisma, base_url: str):
@@ -46,6 +74,46 @@ async def create_benchmark_user(prisma_client: Prisma, base_url: str):
         return user
     except Exception as e:
         logger.exception(f"Error creating benchmark user: {e}")
+        raise e
+
+
+async def start_chat_with_codex(
+    user_id: str,
+    prisma_client: Prisma,
+    base_url: str,
+    task_name: str,
+    task_description: str,
+):
+    """
+    Sends a message to Codex and receives a response.
+    """
+    if not prisma_client.is_connected():
+        await prisma_client.connect()
+    try:
+        codex_client = CodexClient(client=prisma_client, base_url=base_url)
+        await codex_client.init(codex_user_id=user_id)
+
+        await codex_client.create_app(
+            app_name=task_name, app_description=task_description
+        )
+
+        return codex_client
+    except Exception as e:
+        logger.exception(f"Error chatting with Codex: {e}")
+        raise e
+
+
+async def chat_with_codex(
+    codex_client: CodexClient, message: str, file_names: list[str] = []
+):
+    try:
+        files = load_files_as_uploadfiles(file_names)
+        chat_request = codex.chat.model.ChatRequest(message=message)
+        response = await codex_client.chat(chat_request=chat_request)
+        print(f"🤖 \033[34mCodex\033[0m: {response.message}")
+        return response
+    except Exception as e:
+        logger.exception(f"Error chatting with Codex: {e}")
         raise e
 
 

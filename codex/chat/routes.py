@@ -4,6 +4,7 @@ from fastapi import APIRouter, Response
 
 import codex.chat.agent
 import codex.chat.model
+import codex.common.ai_model
 import codex.database
 from codex.api_model import Identifiers
 
@@ -17,7 +18,7 @@ chat_router = APIRouter(
 @chat_router.post(
     "/user/{user_id}/apps/{app_id}/chat/", response_model=codex.chat.model.ChatResponse
 )
-async def start_chat(
+async def chat(
     user_id: str, app_id: str, request: codex.chat.model.ChatRequest
 ) -> Response | codex.chat.model.ChatResponse:
     """
@@ -40,6 +41,7 @@ async def start_chat(
         cloud_services_id=user.cloudServicesId if user else "",
     )
     chat = await codex.chat.agent.start_chat(ids, app, request)
+
     return codex.chat.model.ChatResponse(
         id="",
         message=chat,

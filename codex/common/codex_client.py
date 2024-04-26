@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import Optional, Tuple
 
 import aiohttp
-from aiohttp import FormData
 from prisma import Prisma
 from pydantic import BaseModel, ValidationError
 
@@ -209,21 +208,10 @@ class CodexClient:
 
         url = f"{self.base_url}/user/{self.codex_user_id}/apps/{self.app_id}/chat/"
 
-        # Prepare FormData
-        data = FormData()
-        data.add_field("message", chat_request.message)
-        for file in chat_request.files:
-            data.add_field(
-                "files",
-                file.file,
-                filename=file.filename,
-                content_type=file.content_type,
-            )
-
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.post(
-                    url, headers=self.headers, data=data
+                    url, headers=self.headers, json=chat_request.model_dump()
                 ) as response:
                     if response.status != 200:
                         logger.error(f"Error starting chat: {response.status}")
