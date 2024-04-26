@@ -10,4 +10,5 @@ class ChatRequest(pydantic.BaseModel):
 
 
 class ChatResponse(pydantic.BaseModel):
+    id: str
     message: str

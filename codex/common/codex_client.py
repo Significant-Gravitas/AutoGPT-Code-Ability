@@ -3,9 +3,13 @@ from datetime import datetime
 from typing import Optional, Tuple
 
 import aiohttp
+from aiohttp import FormData
 from prisma import Prisma
 from pydantic import BaseModel, ValidationError
 
+import codex
+import codex.chat
+import codex.chat.model
 from codex.api_model import (
     ApplicationCreate,
     ApplicationResponse,
@@ -192,6 +196,49 @@ class CodexClient:
             raise e
         except Exception as e:
             logger.exception(f"Unknown Error when trying to get app: {e}")
+            raise e
+
+    async def chat(self, chat_request: codex.chat.model.ChatRequest):
+        """
+        Start a chat for the app including file uploads.
+
+        :param chat_request: ChatRequest object containing chat initiation data.
+        """
+        if not self.app_id:
+            raise ValueError("You must create an app before starting a chat")
+
+        url = f"{self.base_url}/user/{self.codex_user_id}/apps/{self.app_id}/chat/"
+
+        # Prepare FormData
+        data = FormData()
+        data.add_field("message", chat_request.message)
+        for file in chat_request.files:
+            data.add_field(
+                "files",
+                file.file,
+                filename=file.filename,
+                content_type=file.content_type,
+            )
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    url, headers=self.headers, data=data
+                ) as response:
+                    if response.status != 200:
+                        logger.error(f"Error starting chat: {response.status}")
+                        logger.error(await response.text())
+                    response.raise_for_status()
+                    chat_response = codex.chat.model.ChatResponse(
+                        **await response.json()
+                    )
+                    self.chat_id = chat_response.id
+                    return chat_response
+        except ValidationError as e:
+            logger.exception("Error parsing chat response")
+            raise e
+        except Exception as e:
+            logger.exception("Unknown error when trying to start the chat")
             raise e
 
     async def start_interview(
