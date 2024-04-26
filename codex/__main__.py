@@ -3,14 +3,13 @@ import logging
 import os
 
 import click
-from dotenv import load_dotenv
 
 import codex.debug
+from codex.app import db_client as prisma_client
 from codex.common.logging_config import setup_logging
+from codex.tests.frontend_gen_test import generate_user_interface
 
 logger = logging.getLogger(__name__)
-
-load_dotenv()
 
 
 @click.group()
@@ -31,12 +30,10 @@ def populate_db(database):
     """Populate the database with test data"""
     import os
 
-    from prisma import Prisma
-
     from codex.database import create_test_data
 
     os.environ["DATABASE_URL"] = os.environ["DATABASE_URL"] or database
-    db = Prisma(auto_register=True)
+    db = prisma_client
 
     async def popdb():
         await db.connect()
@@ -65,13 +62,11 @@ def populate_db(database):
 )
 def benchmark(base_url: str, requirements_only: bool, count: int):
     """Run the benchmark tests"""
-    import prisma
 
     import codex.common.test_const
     import codex.runner
     from codex.requirements.model import ExampleTask
 
-    prisma_client = prisma.Prisma(auto_register=True)
     tasks = list(ExampleTask)
     if count > 0 and count < len(tasks):
         tasks = tasks[:count]
@@ -125,13 +120,10 @@ def benchmark(base_url: str, requirements_only: bool, count: int):
     help="Run only the requirements generation",
 )
 def example(base_url: str, requirements_only: bool):
-    import prisma
-
     import codex.common.test_const
     import codex.runner
     from codex.requirements.model import ExampleTask
 
-    prisma_client = prisma.Prisma(auto_register=True)
     i = 1
     click.echo("Select a test case:")
     examples = list(ExampleTask)
@@ -186,12 +178,9 @@ def costs():
     help="Base URL of the Codex server",
 )
 def resume(base_url: str):
-    import prisma
-
     import codex.debug
     import codex.runner
 
-    prisma_client = prisma.Prisma(auto_register=True)
     print("")
     loop = asyncio.new_event_loop()
     resume_points = loop.run_until_complete(
@@ -306,8 +295,26 @@ def serve(groq: bool, model: str) -> None:
     )
 
 
-if __name__ == "__main__":
-    from dotenv import load_dotenv
+@cli.command()
+@click.option(
+    "--deliverableid",
+    "-d",
+    default="e3a6252d-2dec-45ad-b226-b668cb05bb0c",
+    help="cloud id",
+    type=str,
+)
+def frontend(deliverableid: str):
+    """Generate a simple front-end app"""
 
+    async def run_tasks():
+        func = await generate_user_interface(deliverableid)
+        assert func is not None
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(run_tasks())
+
+
+if __name__ == "__main__":
     setup_logging()
     cli()

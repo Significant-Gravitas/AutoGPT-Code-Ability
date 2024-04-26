@@ -3,6 +3,7 @@ import os
 from contextlib import asynccontextmanager
 
 import sentry_sdk
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from prisma import Prisma
 from sentry_sdk.integrations.aiohttp import AioHttpIntegration
@@ -17,6 +18,7 @@ from codex.interview.routes import interview_router
 from codex.middleware import RouterLoggingMiddleware
 from codex.requirements.routes import spec_router
 
+load_dotenv()
 logger = logging.getLogger(__name__)
 
 db_client = Prisma(auto_register=True)

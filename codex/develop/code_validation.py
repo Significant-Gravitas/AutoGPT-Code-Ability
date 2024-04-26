@@ -10,6 +10,7 @@ import uuid
 
 import black
 import isort
+import nicegui
 import prisma
 from prisma.models import Function, ObjectType
 
@@ -48,12 +49,16 @@ class CodeValidator:
         function_name: str | None = None,
         available_functions: dict[str, Function] | None = None,
         available_objects: dict[str, ObjectType] | None = None,
+        use_prisma: bool = True,
+        use_nicegui: bool = False,
     ):
         self.compiled_route_id: str = compiled_route_id
         self.db_schema: str = database_schema
         self.func_name: str = function_name or ""
         self.available_functions: dict[str, Function] = available_functions or {}
         self.available_objects: dict[str, ObjectType] = available_objects or {}
+        self.use_prisma: bool = use_prisma
+        self.use_nicegui: bool = use_nicegui
 
     async def reformat_code(
         self,
@@ -75,6 +80,7 @@ class CodeValidator:
                     packages=packages,
                     route_errors_as_todo=True,
                     raise_validation_error=False,
+                    add_code_stubs=False,
                 )
             ).get_compiled_code()
         except Exception as e:
@@ -82,6 +88,7 @@ class CodeValidator:
             logger.warning(
                 f"Error formatting code for route #{self.compiled_route_id}: {e}"
             )
+            raise e
 
         for formatter in [
             lambda code: isort.code(code),
@@ -101,8 +108,9 @@ class CodeValidator:
         self,
         packages: list[Package],
         raw_code: str,
-        route_errors_as_todo: bool = False,
-        raise_validation_error: bool = True,
+        route_errors_as_todo: bool,
+        raise_validation_error: bool,
+        add_code_stubs: bool = True,
         call_cnt: int = 0,
     ) -> GeneratedFunctionResponse:
         """
@@ -125,6 +133,10 @@ class CodeValidator:
         except Exception as e:
             # parse invalid code line and add it to the error message
             error = f"Error parsing code: {e}"
+
+            if "async lambda" in raw_code:
+                error += "\nAsync lambda is not supported in Python. Please use async def instead."
+
             if line := re.search(r"line (\d+)", error):
                 raise LineValidationError(
                     error=error, code=raw_code, line_from=int(line.group(1))
@@ -216,10 +228,13 @@ class CodeValidator:
         )
 
         # Execute static validators and fixers.
-        old_compiled_code = result.regenerate_compiled_code()
+        # print('old compiled code import ---->', result.imports)
+        old_compiled_code = result.regenerate_compiled_code(add_code_stubs)
         validation_errors.extend(validate_normalize_prisma(result))
         validation_errors.extend(
-            await static_code_analysis(result, route_errors_as_todo)
+            await static_code_analysis(
+                result, route_errors_as_todo, self.use_prisma, self.use_nicegui
+            )
         )
         new_compiled_code = result.get_compiled_code()
 
@@ -230,6 +245,7 @@ class CodeValidator:
                 raw_code=new_compiled_code,
                 route_errors_as_todo=route_errors_as_todo,
                 raise_validation_error=raise_validation_error,
+                add_code_stubs=add_code_stubs,
                 call_cnt=call_cnt + 1,
             )
 
@@ -280,6 +296,8 @@ class CodeValidator:
 async def static_code_analysis(
     func: GeneratedFunctionResponse,
     add_todo_on_error: bool,
+    use_prisma: bool,
+    use_nicegui: bool,
 ) -> list[ValidationError]:
     """
     Run static code analysis on the function code and mutate the function code to
@@ -292,7 +310,12 @@ async def static_code_analysis(
     """
     validation_errors = []
     validation_errors += await __execute_ruff(func, add_todo_on_error)
-    validation_errors += await __execute_pyright(func, add_todo_on_error)
+    validation_errors += await __execute_pyright(
+        func=func,
+        add_todo_on_error=add_todo_on_error,
+        use_prisma=use_prisma,
+        use_nicegui=use_nicegui,
+    )
 
     return validation_errors
 
@@ -328,6 +351,8 @@ async def __execute_ruff(
                 "F841",
                 "--ignore",
                 "E402",
+                "--ignore",
+                "F811",  # Redefinition of unused '...' from line ...
             ],
             file_contents=code,
             suffix=".py",
@@ -428,12 +453,14 @@ def append_errors_as_todos(errors: list[ValidationError], code: str) -> str:
 async def __execute_pyright(
     func: GeneratedFunctionResponse,
     add_todo_on_error: bool,
+    use_prisma: bool,
+    use_nicegui: bool,
 ) -> list[ValidationError]:
     code = __pack_import_and_function_code(func)
     validation_errors: list[ValidationError] = []
 
     # Create temporary directory under the TEMP_DIR with random name
-    temp_dir = PROJECT_TEMP_DIR / func.compiled_route_id
+    temp_dir = PROJECT_TEMP_DIR / (func.function_id or func.compiled_route_id)
     py_path = await setup_if_required(temp_dir)
 
     async def __execute_pyright_commands(code: str) -> list[ValidationError]:
@@ -468,30 +495,30 @@ async def __execute_pyright(
         for e in json_response:
             rule: str = e.get("rule", "")
             severity: str = e.get("severity", "")
-            excluded_rules = ["reportMissingImports"] if add_todo_on_error else []
-            if (
-                severity != "error"
-                or rule
-                in [
-                    "reportRedeclaration",
-                    "reportArgumentType",  # This breaks prisma query with dict
+            excluded_rules = ["reportRedeclaration"]
+            if add_todo_on_error:
+                excluded_rules += [
+                    "reportMissingImports",
+                    "reportOptional",  # TODO: improve prompt and enable this.
                 ]
-                + excluded_rules
-                or rule.startswith("reportOptional")  # TODO: improve prompt & enable
-            ):
+            if use_prisma:
+                excluded_rules += ["reportArgumentType"]
+
+            if severity != "error" or any([rule.startswith(r) for r in excluded_rules]):
                 continue
 
             # Grab any enhancements we can for the error
             error_message: str = f"{e['message']}. {e.get('rule', '')}"
             if not func.function_id:
-                raise ValueError("Could not get function_id!")
-            ids = await get_ids_from_function_id_and_compiled_route(
-                func.function_id, compiled_route_id=func.compiled_route_id
-            )
-
-            error_enhancements = await get_error_enhancements(
-                rule, error_message, py_path, ids
-            )
+                logger.warning("Skip add enhancements, function_id is not available")
+                error_enhancements = None
+            else:
+                ids = await get_ids_from_function_id_and_compiled_route(
+                    func.function_id, compiled_route_id=func.compiled_route_id
+                )
+                error_enhancements = await get_error_enhancements(
+                    rule, error_message, py_path, ids
+                )
 
             e = LineValidationError(
                 error=error_message,
@@ -556,9 +583,7 @@ async def enhance_error(
 ) -> typing.Optional[ErrorEnhancements]:
     dist_info_path, module_path = await find_module_dist_and_source(module, py_path)
     if not dist_info_path and not module_path:
-        return ErrorEnhancements(
-            metadata="Could not find the module in the environment.", context=None
-        )
+        return None
 
     metadata_contents: typing.Optional[str] = None
     if dist_info_path:
@@ -665,6 +690,23 @@ async def get_error_enhancements(
                 )
                 return None
 
+        case "reportCallIssue":
+            if (
+                'No parameter named "style"' in error_message
+                or 'No parameter named "classes"' in error_message
+            ):
+                logger.info(f"Attempting to enhance error: {error_message}")
+                module = "nicegui"
+                enhancement_info = ErrorEnhancements(
+                    metadata=None,
+                    context="classes and style is not part of the property of the ui module but a function, it's not `ui.label('Hello', style='color: red')` but `ui.label('Hello').style('color: red')`",
+                )
+            else:
+                logger.debug(
+                    f"Rule: {rule} not found in fixes available for error message: {error_message}"
+                )
+                return None
+
         case _:
             logger.debug(
                 f"Rule: {rule} not found in fixes available for error message: {error_message}"
@@ -706,6 +748,10 @@ AUTO_IMPORT_TYPES: dict[str, str] = {
     "BaseModel": "from pydantic import BaseModel",
     "Enum": "from enum import Enum",
     "UploadFile": "from fastapi import UploadFile",
+    "nicegui": "import nicegui",
+    "ui": "from nicegui import ui",
+    "Client": "from nicegui import Client",
+    "array": "from array import array",
 }
 for t in typing.__all__:
     AUTO_IMPORT_TYPES[t] = f"from typing import {t}"
@@ -715,6 +761,8 @@ for t in datetime.__all__:
     AUTO_IMPORT_TYPES[t] = f"from datetime import {t}"
 for t in collections.__all__:
     AUTO_IMPORT_TYPES[t] = f"from collections import {t}"
+for t in nicegui.ui.__all__:
+    AUTO_IMPORT_TYPES[t] = f"from typing import {t}"
 
 
 def __fix_missing_imports(
@@ -750,6 +798,8 @@ def __fix_missing_imports(
             missing_imports.append(schema_imports[missing_type])
         elif missing_type in AUTO_IMPORT_TYPES:
             missing_imports.append(AUTO_IMPORT_TYPES[missing_type])
+        elif missing_type in func.available_functions:
+            missing_imports.append(f"from project.{missing_type}_service import *")
         else:
             filtered_errors.append(error)
 

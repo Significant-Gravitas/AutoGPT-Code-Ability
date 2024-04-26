@@ -1,11 +1,14 @@
 import asyncio
 import logging
 from typing import Optional
+from dotenv import load_dotenv
 
 import tiktoken
-from openai import AsyncOpenAI
 
+load_dotenv()
 logger = logging.getLogger(__name__)
+
+from openai import AsyncOpenAI  # noqa
 
 
 def num_tokens_from_messages(messages):

@@ -73,13 +73,18 @@ class DevelopAIBlock(AIBlock):
     developement_phase: DevelopmentPhase = DevelopmentPhase.DEVELOPMENT
     prompt_template_name = "develop"
     model = "gpt-4-turbo"
-    langauge = "python"
+    language = "python"
 
     async def validate(
-        self, invoke_params: dict, response: ValidatedResponse
+        self,
+        invoke_params: dict,
+        response: ValidatedResponse,
+        validation_errors: ListValidationError | None = None,
     ) -> ValidatedResponse:
         func_name = invoke_params.get("function_name", "")
-        validation_errors = ListValidationError(f"Error developing `{func_name}`")
+        validation_errors = validation_errors or ListValidationError(
+            f"Error developing `{func_name}`"
+        )
         try:
             text = response.response
 
@@ -104,12 +109,12 @@ class DevelopAIBlock(AIBlock):
             code_blocks.pop(0)
             if len(code_blocks) == 0:
                 raise ValidationError("No code blocks found in the response")
-            elif len(code_blocks) != 1:
-                validation_errors.append_message(
+            elif len(code_blocks) > 1:
+                logger.warning(
                     f"There are {len(code_blocks)} code blocks in the response. "
-                    + "There should be exactly 1"
+                    + "Pick the last one"
                 )
-            code = code_blocks[0].split("```")[0]
+            code = code_blocks[-1].split("```")[0]
             route_errors_as_todo = not invoke_params.get("will_retry_on_failure", True)
             response.response = await CodeValidator(
                 compiled_route_id=invoke_params["compiled_route_id"],
@@ -117,10 +122,13 @@ class DevelopAIBlock(AIBlock):
                 function_name=invoke_params["function_name"],
                 available_objects=invoke_params["available_objects"],
                 available_functions=invoke_params["available_functions"],
+                use_prisma=(self.language == "python"),
+                use_nicegui=(self.language == "nicegui"),
             ).validate_code(
                 packages=packages,
                 raw_code=code,
                 route_errors_as_todo=route_errors_as_todo,
+                raise_validation_error=True,
             )
 
         except ValidationError as e:
@@ -257,3 +265,28 @@ class DevelopAIBlock(AIBlock):
                 extra=ids.model_dump(),
             )
             raise e
+
+
+class NiceGUIDevelopAIBlock(DevelopAIBlock):
+    language = "nicegui"
+
+    async def validate(
+        self,
+        invoke_params: dict,
+        response: ValidatedResponse,
+        validation_errors: ListValidationError | None = None,
+    ) -> ValidatedResponse:
+        function_name = invoke_params.get("function_name")
+        route_path = invoke_params.get("route_path")
+
+        response_text: str = response.response
+        list_validation_error = validation_errors or ListValidationError(
+            f"Error developing `{function_name}`"
+        )
+
+        if f"@ui.page('{route_path}')" not in response_text:
+            list_validation_error.append_message(
+                f"Missing @ui.page('{route_path}') decorator in the requested function {function_name}"
+            )
+
+        return await super().validate(invoke_params, response, list_validation_error)

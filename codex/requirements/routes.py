@@ -54,7 +54,7 @@ async def create_spec(
 
     spec_response = SpecificationResponse.from_specification(new_spec)
     spec_response.name = app.name
-    spec_response.context = app.description
+    spec_response.context = app.description or ""
     return spec_response
 
 

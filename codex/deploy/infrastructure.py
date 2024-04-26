@@ -1,16 +1,15 @@
-from google.auth import default
-from googleapiclient.discovery import build
 import logging
-
+import os
 
 import psycopg2
+from dotenv import load_dotenv
+from google.auth import default
+from googleapiclient.discovery import build
 from psycopg2 import sql
-
-from github import Github
-import os
 
 import codex.common.utils
 
+load_dotenv()
 logger = logging.getLogger(__name__)
 
 
@@ -116,6 +115,8 @@ def grant_permissions_postgres(db_name, new_user):
 
 
 def add_secret_to_repo(repo_name: str, secret_name: str, secret_value: str):
+    from github import Github  # noqa
+
     """Add a secret to the GitHub repository."""
 
     logger.info(f"Attempting to add secret {secret_name} on {repo_name}")
@@ -132,7 +133,7 @@ def add_secret_to_repo(repo_name: str, secret_name: str, secret_value: str):
     )
 
 
-async def create_cloud_db(repo_url: str) -> (str, str):
+async def create_cloud_db(repo_url: str) -> tuple[str, str]:
     """
     Creates CloudSQL DB for users
     Args:

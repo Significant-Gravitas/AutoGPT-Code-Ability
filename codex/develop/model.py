@@ -1,8 +1,7 @@
 from typing import List
 
-from prisma.models import Function
+from prisma.models import Function, ObjectType
 from prisma.models import Function as FunctionDBModel
-from prisma.models import ObjectType
 from pydantic import BaseModel
 
 from codex.common.model import FunctionDef
@@ -44,7 +43,7 @@ class GeneratedFunctionResponse(BaseModel):
     def get_compiled_code(self) -> str:
         return "\n".join(self.imports) + "\n\n" + self.rawCode.strip()
 
-    def regenerate_compiled_code(self) -> str:
+    def regenerate_compiled_code(self, add_code_stubs: bool = True) -> str:
         """
         Regenerate imports & raw code using the available objects and functions.
         """
@@ -53,7 +52,7 @@ class GeneratedFunctionResponse(BaseModel):
             imports.extend(obj.importStatements)
         self.imports = sorted(set(imports))
 
-        def __append_comment(code_block: str, comment="noqa") -> str:
+        def __append_comment(code_block: str, comment: str) -> str:
             """
             Append `# noqa` to the first line of the code block.
             This is to suppress flake8 warnings for redefined names.
@@ -70,40 +69,43 @@ class GeneratedFunctionResponse(BaseModel):
             else:
                 return f"class {name}(BaseModel):\n    pass"
 
+        stub_objects = self.available_objects if add_code_stubs else {}
+        stub_functions = self.available_functions if add_code_stubs else {}
+
         object_stubs_code = "\n\n".join(
             [
-                __generate_stub(obj.name, obj.isEnum)
-                for obj in self.available_objects.values()
+                __append_comment(__generate_stub(obj.name, obj.isEnum), "type: ignore")
+                for obj in stub_objects.values()
             ]
             + [
-                __generate_stub(obj.name, obj.is_enum)
+                __append_comment(__generate_stub(obj.name, obj.is_enum), "type: ignore")
                 for obj in self.objects
-                if obj.name not in self.available_objects
+                if obj.name not in stub_objects
             ]
         )
 
         objects_code = "\n\n".join(
             [
-                __append_comment(generate_object_template(obj))
-                for obj in self.available_objects.values()
+                __append_comment(generate_object_template(obj), "noqa")
+                for obj in stub_objects.values()
             ]
             + [
-                __append_comment(generate_object_code(obj))
+                __append_comment(generate_object_code(obj), "noqa")
                 for obj in self.objects
-                if obj.name not in self.available_objects
+                if obj.name not in stub_objects
             ]
         )
 
         functions_code = "\n\n".join(
             [
-                f.template.strip()
-                for f in self.available_functions.values()
+                __append_comment(f.template.strip(), "type: ignore")
+                for f in stub_functions.values()
                 if f.functionName != self.function_name
             ]
             + [
-                f.function_template.strip()
+                __append_comment(f.function_template.strip(), "type: ignore")
                 for f in self.functions
-                if f.name not in self.available_functions and f.function_template
+                if f.name not in stub_functions and f.function_template
             ]
         )
 
