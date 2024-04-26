@@ -10,6 +10,7 @@ from sentry_sdk.integrations.asyncio import AsyncioIntegration
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.starlette import StarletteIntegration
 
+import codex.chat.routes
 from codex.api import core_routes
 from codex.deploy.routes import deployment_router
 from codex.develop.routes import delivery_router
@@ -63,5 +64,6 @@ app.include_router(interview_router, prefix="/api/v1")
 app.include_router(spec_router, prefix="/api/v1")
 app.include_router(delivery_router, prefix="/api/v1")
 app.include_router(deployment_router, prefix="/api/v1")
+app.include_router(codex.chat.routes.chat_router, prefix="/api/v1")
 
 app.add_middleware(RouterLoggingMiddleware)
