@@ -2,7 +2,6 @@ from typing import List, Optional
 
 from pydantic import BaseModel, model_validator, ValidationError
 from prisma.models import CompiledRoute, CompletedApp, Package
-from pydantic import BaseModel
 
 
 class Application(BaseModel):
