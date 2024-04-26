@@ -456,7 +456,9 @@ def push_to_remote(repo: Repo, remote_name: str, remote_url: str):
         raise
 
 
-async def create_remote_repo(application: Application, spec: Specification, hostApp: bool) -> str:
+async def create_remote_repo(
+    application: Application, spec: Specification, hostApp: bool
+) -> str:
     """
     Creates and pushes to GitHub repo for application
     Args:
