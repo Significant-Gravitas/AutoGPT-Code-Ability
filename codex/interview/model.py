@@ -7,7 +7,7 @@ class AppFeature(BaseModel):
     functionality: str
 
 
-class UndestandRequest(BaseModel):
+class UnderstandRequest(BaseModel):
     thoughts: str
     features: list[AppFeature] | None = None
     say_to_user: str
