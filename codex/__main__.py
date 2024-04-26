@@ -297,31 +297,17 @@ def serve(groq: bool, model: str) -> None:
 
 @cli.command()
 @click.option(
-    "--userid",
-    "-u",
-    default="123e4567-e89b-12d3-a456-426614174000",
-    help="user id",
-    type=str,
-)
-@click.option(
-    "--appid",
-    "-a",
-    default="7828540b-e126-49c8-8ddf-e515ddf006d8",
-    help="app id",
-    type=str,
-)
-@click.option(
     "--deliverableid",
     "-d",
     default="e3a6252d-2dec-45ad-b226-b668cb05bb0c",
     help="cloud id",
     type=str,
 )
-def frontend(userid: str, appid: str, deliverableid: str):
+def frontend(deliverableid: str):
     """Generate a simple front-end app"""
 
     async def run_tasks():
-        func = await generate_user_interface(userid, appid, deliverableid)
+        func = await generate_user_interface(deliverableid)
         assert func is not None
 
     loop = asyncio.new_event_loop()

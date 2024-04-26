@@ -127,14 +127,16 @@ async def test_todo_list():
 
 
 @pytest.mark.skip  # This is a manual run for testing
-async def generate_user_interface(user_id: str, app_id: str, completed_app_id: str):
+async def generate_user_interface(completed_app_id: str):
     if not OpenAIChatClient._configured:
         OpenAIChatClient.configure({})
 
+    completed_app = await with_db_connection(lambda: get_deliverable(completed_app_id))
+
     ids = Identifiers(
-        user_id=user_id,
-        app_id=app_id,
-        completed_app_id=completed_app_id,
+        user_id=completed_app.userId,
+        app_id=completed_app.applicationId,
+        completed_app_id=completed_app.id,
     )
 
     async def develop_app() -> object:
@@ -152,8 +154,8 @@ async def generate_user_interface(user_id: str, app_id: str, completed_app_id: s
     assert app is not None
 
     ids = Identifiers(
-        user_id=user_id,
-        app_id=app_id,
+        user_id=app.userId,
+        app_id=app.applicationId,
         completed_app_id=app.id,
     )
 

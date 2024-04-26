@@ -510,14 +510,15 @@ async def __execute_pyright(
             # Grab any enhancements we can for the error
             error_message: str = f"{e['message']}. {e.get('rule', '')}"
             if not func.function_id:
-                raise ValueError("Could not get function_id!")
-            ids = await get_ids_from_function_id_and_compiled_route(
-                func.function_id, compiled_route_id=func.compiled_route_id
-            )
-
-            error_enhancements = await get_error_enhancements(
-                rule, error_message, py_path, ids
-            )
+                logger.warning("Skip add enhancements, function_id is not available")
+                error_enhancements = None
+            else:
+                ids = await get_ids_from_function_id_and_compiled_route(
+                    func.function_id, compiled_route_id=func.compiled_route_id
+                )
+                error_enhancements = await get_error_enhancements(
+                    rule, error_message, py_path, ids
+                )
 
             e = LineValidationError(
                 error=error_message,

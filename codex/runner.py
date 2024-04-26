@@ -356,5 +356,3 @@ async def get_deployment(codex_client: CodexClient, task_name: str):
     except Exception as e:
         logger.exception(f"Error downloading the file: {e}")
         raise e
-        logger.exception(f"Error downloading the file: {e}")
-        raise e
