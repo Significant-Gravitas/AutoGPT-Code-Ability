@@ -14,17 +14,15 @@ from prisma.models import (
     Package,
     Specification,
 )
-from prisma.types import CompiledRouteUpdateInput, CompletedAppCreateInput
+from prisma.types import CompiledRouteUpdateInput
 from pydantic import BaseModel
 
-import codex.database
-from codex.api_model import Identifiers
-from codex.common.database import INCLUDE_FIELD, INCLUDE_FUNC
+from codex.common.database import INCLUDE_FIELD, INCLUDE_FUNC, get_database_schema
 from codex.common.exec_external_tool import DEFAULT_DEPS
 from codex.common.types import normalize_type
 from codex.deploy.model import Application
 from codex.develop.code_validation import CodeValidator
-from codex.develop.database import get_compiled_route
+from codex.develop.database import get_compiled_route, get_deliverable
 from codex.develop.function import generate_object_template
 from codex.develop.model import Package as PackageModel
 
@@ -43,7 +41,11 @@ class ComplicationFailure(Exception):
 
 
 async def compile_route(
-    compiled_route_id: str, route_root_func: Function, spec: Specification
+    compiled_route_id: str,
+    route_root_func: Function,
+    spec: Specification,
+    available_functions: dict[str, Function] = {},
+    available_objects: dict[str, ObjectType] = {},
 ) -> CompiledRoute:
     """
     Compiles a route by generating a CompiledRoute object.
@@ -71,14 +73,15 @@ async def compile_route(
     code += compiled_function.code
 
     compiled_route = await get_compiled_route(compiled_route_id)
-    database_schema = codex.common.database.get_database_schema(spec)
+    database_schema = get_database_schema(spec)
+    available_functions[route_root_func.functionName] = route_root_func
     # Run the auto-fixers
     formatted_code = await CodeValidator(
         compiled_route_id=compiled_route_id,
         function_name=route_root_func.functionName,
         database_schema=database_schema,
-        available_functions={route_root_func.functionName: route_root_func},
-        available_objects={},
+        available_functions=available_functions,
+        available_objects=available_objects,
     ).reformat_code(
         code,
         list(unique_packages.values()),
@@ -304,8 +307,8 @@ def create_server_route_code(compiled_route: CompiledRoute) -> str:
         raise ValueError("Compiled route must have a root function.")
 
     return_type = main_function.FunctionReturn
-    if return_type is None:
-        raise AssertionError("Compiled route must have a return type.")
+    # if return_type is None:
+    #     raise AssertionError("Compiled route must have a return type.")
 
     args = main_function.FunctionArgs
     if args is None:
@@ -321,13 +324,14 @@ def create_server_route_code(compiled_route: CompiledRoute) -> str:
     response_model = "Response"
     route_response_annotation = "Response"
     if (
-        return_type.RelatedTypes
+        return_type
+        and return_type.RelatedTypes
         and return_type.RelatedTypes[0]
         and return_type.RelatedTypes[0].Fields
         and return_type.RelatedTypes[0].Fields[0].typeName == "bytes"
     ):
         is_file_response = True
-    else:
+    elif return_type:
         if return_type.typeName is not None:
             response_model = f"{module_name}.{return_type.typeName} | Response"
             route_response_annotation = return_type.typeName
@@ -426,48 +430,21 @@ def extract_path_params(path: str) -> List[str]:
     return matches
 
 
-async def create_app(
-    ids: Identifiers, spec: Specification, compiled_routes: List[CompiledRoute]
-) -> CompletedApp:
-    """
-    Create an app using the given identifiers, specification, and compiled routes.
-
-    Args:
-        ids (Identifiers): The identifiers for the app.
-        spec (Specification): The specification for the app.
-        compiled_routes (List[CompiledRoute]): The compiled routes for the app.
-
-    Returns:
-        CompletedApp: The completed app object.
-    """
-    if spec.Modules is None:
-        raise ValueError("Specification must have at least one Module.")
-
-    if not ids.user_id:
-        raise ValueError("User ID is required.")
-
-    app = await codex.database.get_app_by_id(ids.user_id, ids.app_id)
-
-    completed_app_desc = app.description + "\n\nFeatures:"
-    for feature in spec.Features:
-        completed_app_desc += f"\n**{feature.name}:**"
-        completed_app_desc += f"\n\tFunctionality: {feature.functionality}"
-        completed_app_desc += "\n"
-
-    data = CompletedAppCreateInput(
-        name=app.name,
-        description=app.description,
-        User={"connect": {"id": ids.user_id}},
-        CompiledRoutes={"connect": [{"id": route.id} for route in compiled_routes]},
-        Specification={"connect": {"id": spec.id}},
-        Application={"connect": {"id": ids.app_id}},
+DEFAULT_LIBRARIES = [
+    Package(
+        packageName=lib,
+        specifier="",
+        version="",
+        id=lib,
+        createdAt=datetime.now(),
     )
-    app = await CompletedApp.prisma().create(data)
-    return app
+    for lib in ["fastapi", "pydantic", "uvicorn", "prisma"]
+]
 
 
-async def create_server_code(
-    completed_app: CompletedApp, spec: Specification
+async def create_bundle_code(
+    completed_app: CompletedApp,
+    spec: Specification,
 ) -> Application:
     """
     Args:
@@ -476,6 +453,50 @@ async def create_server_code(
     Returns:
         Application: _description_
     """
+    if not completed_app.companionCompletedAppId:
+        return await create_server_code(completed_app, spec)
+
+    server_completed_app = await get_deliverable(completed_app.companionCompletedAppId)
+    libraries = DEFAULT_LIBRARIES + [
+        Package(
+            packageName="nicegui",
+            specifier=">=",
+            version="1.4.22",
+            id="nicegui",
+            createdAt=datetime.now(),
+        )
+    ]
+
+    app = await create_server_code(server_completed_app, spec, libraries)
+    app.app_code = await create_ui_code(completed_app)
+    app.companion_completed_app = completed_app
+    return app
+
+
+async def create_ui_code(completed_app: CompletedApp) -> str:
+    code_imports = [
+        "import asyncio",
+        "from nicegui import ui",
+        "from prisma import Prisma",
+    ] + [
+        f"from project.{compiled_route.fileName.replace('.py', '')} import *"
+        for compiled_route in completed_app.CompiledRoutes or []
+    ]
+
+    code_content = [
+        "db_client = Prisma(auto_register=True)",
+        "asyncio.get_event_loop().run_until_complete(db_client.connect())",
+        "ui.run(dark=True)",
+    ]
+
+    return "\n".join(code_imports) + "\n\n" + "\n\n".join(code_content)
+
+
+async def create_server_code(
+    completed_app: CompletedApp,
+    spec: Specification,
+    libraries: List[Package] = DEFAULT_LIBRARIES,
+) -> Application:
     name = completed_app.name
     desc = completed_app.description
 
@@ -507,43 +528,12 @@ app = FastAPI(title="{name}", lifespan=lifespan, description='''{desc}''')
     if completed_app.CompiledRoutes is None:
         raise ValueError("Application must have at least one compiled route.")
 
-    packages = [
-        Package(
-            packageName="fastapi",
-            specifier="",
-            version="",
-            id="fastapi",
-            createdAt=datetime.now(),
-        ),
-        Package(
-            packageName="pydantic",
-            specifier="",
-            version="",
-            id="pydantic",
-            createdAt=datetime.now(),
-        ),
-        Package(
-            packageName="uvicorn",
-            specifier="",
-            version="",
-            id="uvicorn",
-            createdAt=datetime.now(),
-        ),
-        Package(
-            packageName="prisma",
-            specifier="",
-            version="",
-            id="prisma",
-            createdAt=datetime.now(),
-        ),
-    ]
-
     for compiled_route in completed_app.CompiledRoutes:
         if compiled_route.ApiRouteSpec is None:
             raise ValueError(f"Compiled route {compiled_route.id} has no APIRouteSpec")
 
         if compiled_route.Packages:
-            packages.extend(compiled_route.Packages)
+            libraries.extend(compiled_route.Packages)
 
         if compiled_route.RootFunction is None:
             raise ValueError(f"Compiled route {compiled_route.id} has no root function")
@@ -554,7 +544,7 @@ app = FastAPI(title="{name}", lifespan=lifespan, description='''{desc}''')
 
         service_routes_code.append(create_server_route_code(compiled_route))
 
-    packages = resolve_package_requirements(packages)
+    packages = resolve_package_requirements(libraries)
 
     # Compile the server code
     server_code = "\n".join(server_code_imports)
@@ -563,13 +553,7 @@ app = FastAPI(title="{name}", lifespan=lifespan, description='''{desc}''')
     server_code += "\n\n"
     server_code += "\n\n".join(service_routes_code)
 
-    # HACK: Database schema is duplicated across every route -> use first non-empty schema
-    # TODO: Clean up DB schema so we don't have to do hacky hacky like this
-    db_schema: str = (
-        "\n\n".join([t.definition for t in spec.DatabaseSchema.DatabaseTables])
-        if spec.DatabaseSchema
-        else ""
-    )
+    db_schema: str = get_database_schema(spec)
 
     # Update the application with the server code
     formatted_code = await CodeValidator(

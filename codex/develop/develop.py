@@ -75,10 +75,15 @@ class DevelopAIBlock(AIBlock):
     language = "python"
 
     async def validate(
-        self, invoke_params: dict, response: ValidatedResponse
+        self,
+        invoke_params: dict,
+        response: ValidatedResponse,
+        validation_errors: ListValidationError | None = None,
     ) -> ValidatedResponse:
         func_name = invoke_params.get("function_name", "")
-        validation_errors = ListValidationError(f"Error developing `{func_name}`")
+        validation_errors = validation_errors or ListValidationError(
+            f"Error developing `{func_name}`"
+        )
         try:
             text = response.response
 
@@ -230,3 +235,24 @@ class DevelopAIBlock(AIBlock):
 
 class NiceGUIDevelopAIBlock(DevelopAIBlock):
     language = "nicegui"
+
+    async def validate(
+        self,
+        invoke_params: dict,
+        response: ValidatedResponse,
+        validation_errors: ListValidationError | None = None,
+    ) -> ValidatedResponse:
+        function_name = invoke_params.get("function_name")
+        route_path = invoke_params.get("route_path")
+
+        response_text: str = response.response
+        list_validation_error = validation_errors or ListValidationError(
+            f"Error developing `{function_name}`"
+        )
+
+        if f"@ui.page('{route_path}')" not in response_text:
+            list_validation_error.append_message(
+                f"Missing @ui.page('{route_path}') decorator in the requested function {function_name}"
+            )
+
+        return await super().validate(invoke_params, response, list_validation_error)

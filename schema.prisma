@@ -368,6 +368,8 @@ model CompletedApp {
   Application     Application?    @relation(fields: [applicationId], references: [id])
   applicationId   String?
 
+  companionCompletedAppId String?
+
   LLMCallAttempt LLMCallAttempt[]
 }
 

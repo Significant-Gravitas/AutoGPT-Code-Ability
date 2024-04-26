@@ -13,6 +13,7 @@ from git.repo import Repo
 from prisma.models import Specification
 
 from codex.common.constants import PRISMA_FILE_HEADER
+from codex.common.database import get_database_schema
 from codex.common.exec_external_tool import execute_command
 from codex.deploy.model import Application
 
@@ -293,11 +294,7 @@ services:
 
 async def create_prisma_schema_file(spec: Specification) -> str:
     prisma_file = f"{PRISMA_FILE_HEADER}".lstrip()
-
-    for table in spec.DatabaseSchema.DatabaseTables:
-        prisma_file += table.definition
-        prisma_file += "\n\n"
-
+    prisma_file += get_database_schema(spec)
     return prisma_file
 
 
@@ -381,8 +378,13 @@ async def create_zip_file(application: Application, spec: Specification) -> byte
             server_file = app_dir / "server.py"
             server_file.write_text(application.server_code)
 
+            # Make a app.py file
+            if application.app_code:
+                app_file = app_dir / "app.py"
+                app_file.write_text(application.app_code)
+
             # Make all the service files
-            for compiled_route in application.completed_app.CompiledRoutes:
+            for compiled_route in application.get_compiled_routes():
                 service_file = app_dir / compiled_route.fileName
                 service_file.write_text(compiled_route.compiledCode)
 
@@ -534,8 +536,13 @@ async def create_remote_repo(application: Application, spec: Specification) -> s
             server_file = app_dir / "server.py"
             server_file.write_text(application.server_code)
 
+            # Make a app.py file
+            if application.app_code:
+                app_file = app_dir / "app.py"
+                app_file.write_text(application.app_code)
+
             # Make all the service files
-            for compiled_route in application.completed_app.CompiledRoutes:
+            for compiled_route in application.get_compiled_routes():
                 service_file = app_dir / compiled_route.fileName
                 service_file.write_text(compiled_route.compiledCode)
 
@@ -684,7 +691,7 @@ async def create_pyproject(application: Application, package_dir: Path) -> None:
             f"--name={app_name_slug}",
             f"--description={app_description}",
             f"--author={PROJECT_AUTHOR}",
-            "--python=>=3.11",
+            "--python=>=3.11,<4.0",
             *dependency_args,
             "--no-interaction",
         ],

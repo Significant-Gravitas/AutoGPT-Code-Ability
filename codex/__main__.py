@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 import codex.debug
 from codex.common.logging_config import setup_logging
-from codex.tests.frontend_gen_test import generate_function
+from codex.tests.frontend_gen_test import generate_user_interface
 
 logger = logging.getLogger(__name__)
 
@@ -257,32 +257,32 @@ def serve() -> None:
 
 @cli.command()
 @click.option(
-    "--description",
-    "-d",
-    default="A fully working to-do list application",
-    help="Description of the app",
+    "--userid",
+    "-u",
+    default="123e4567-e89b-12d3-a456-426614174000",
+    help="user id",
     type=str,
 )
 @click.option(
-    "--title",
-    "-t",
-    default="Test Front-End application",
-    help="Title of the app",
+    "--appid",
+    "-a",
+    default="7828540b-e126-49c8-8ddf-e515ddf006d8",
+    help="app id",
     type=str,
 )
-def frontend(description: str, title: str):
+@click.option(
+    "--deliverableid",
+    "-d",
+    default="e3a6252d-2dec-45ad-b226-b668cb05bb0c",
+    help="cloud id",
+    type=str,
+)
+def frontend(userid: str, appid: str, deliverableid: str):
     """Generate a simple front-end app"""
 
     async def run_tasks():
-        func = await generate_function(
-            title=title,
-            description=description,
-        )
+        func = await generate_user_interface(userid, appid, deliverableid)
         assert func is not None
-        print("-------- CODE START --------")
-        print("\n".join(func))
-        print("\nui.run()")
-        print("-------- CODE END --------")
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)

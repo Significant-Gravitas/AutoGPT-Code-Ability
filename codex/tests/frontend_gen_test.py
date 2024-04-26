@@ -1,24 +1,25 @@
+import logging
 from typing import Callable
 
 import pytest
-
-from codex.api_model import ApplicationCreate
-from codex.common.model import ObjectFieldModel, ObjectTypeModel
-from codex.database import create_app, get_app_by_id
-from codex.requirements.agent import APIRouteSpec, Module, SpecHolder
-from codex.requirements.database import create_specification
-
 from prisma.enums import AccessLevel, HTTPVerb
 
+from codex.api_model import ApplicationCreate
 from codex.app import db_client
 from codex.common.ai_model import OpenAIChatClient
 from codex.common.logging_config import setup_logging
+from codex.common.model import ObjectFieldModel, ObjectTypeModel
 from codex.common.test_const import Identifiers, user_id_1
+from codex.database import create_app, get_app_by_id
+from codex.deploy import agent as deploy_agent
 from codex.develop import agent
-from codex.develop.database import get_compiled_code
+from codex.develop.database import get_compiled_code, get_deliverable
+from codex.requirements.agent import APIRouteSpec, Module, SpecHolder
+from codex.requirements.database import create_specification, get_specification
 
 is_connected = False
 setup_logging()
+logger = logging.getLogger(__name__)
 
 
 async def create_sample_app(user_id: str, cloud_id: str, title: str, description: str):
@@ -121,3 +122,66 @@ async def test_todo_list():
         description="A TODO List application that support Add, Delete and Update operations",
     )
     assert func is not None
+
+
+async def generate_user_interface(user_id: str, app_id: str, completed_app_id: str):
+    if not OpenAIChatClient._configured:
+        OpenAIChatClient.configure({})
+
+    ids = Identifiers(
+        user_id=user_id,
+        app_id=app_id,
+        completed_app_id=completed_app_id,
+    )
+
+    async def develop_app() -> object:
+        assert ids.completed_app_id
+        app = await get_deliverable(ids.completed_app_id)
+        if app.companionCompletedAppId is not None:
+            logger.warn("Skip generating the UI, the provided app is already a UI app")
+            return app
+
+        completed_app = await agent.develop_user_interface(ids)
+        assert completed_app
+        return completed_app
+
+    app = await with_db_connection(develop_app)
+    assert app is not None
+
+    ids = Identifiers(
+        user_id=user_id,
+        app_id=app_id,
+        completed_app_id=app.id,
+    )
+
+    async def deploy_app() -> object:
+        assert ids.completed_app_id
+        assert ids.user_id
+        assert ids.app_id
+        completed_app = await get_deliverable(ids.completed_app_id)
+
+        assert completed_app
+        assert completed_app.specificationId
+        spec = await get_specification(
+            ids.user_id, ids.app_id, completed_app.specificationId
+        )
+
+        deployment = await deploy_agent.create_deployment(ids, completed_app, spec)
+        assert deployment
+        return deployment
+
+    deployment = await with_db_connection(deploy_app)
+    assert deployment is not None
+    logger.info("Deployment completed, ID: " + deployment.id)
+    return deployment
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration_test
+async def test_frontend():
+    res = await generate_user_interface(
+            "123e4567-e89b-12d3-a456-426614174000",
+            "7828540b-e126-49c8-8ddf-e515ddf006d8",
+            "93b30f05-0304-42eb-8ddb-52b3095956c4",
+    )
+    assert res is not None

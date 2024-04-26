@@ -81,6 +81,7 @@ class CodeValidator:
                     packages=packages,
                     route_errors_as_todo=True,
                     raise_validation_error=False,
+                    add_code_stubs=False,
                 )
             ).get_compiled_code()
         except Exception as e:
@@ -109,6 +110,7 @@ class CodeValidator:
         raw_code: str,
         route_errors_as_todo: bool,
         raise_validation_error: bool,
+        add_code_stubs: bool = True,
         call_cnt: int = 0,
     ) -> GeneratedFunctionResponse:
         """
@@ -131,6 +133,10 @@ class CodeValidator:
         except Exception as e:
             # parse invalid code line and add it to the error message
             error = f"Error parsing code: {e}"
+
+            if "async lambda" in raw_code:
+                error += "\nAsync lambda is not supported in Python. Please use async def instead."
+
             if line := re.search(r"line (\d+)", error):
                 raise LineValidationError(
                     error=error, code=raw_code, line_from=int(line.group(1))
@@ -222,7 +228,7 @@ class CodeValidator:
         )
 
         # Execute static validators and fixers.
-        old_compiled_code = result.regenerate_compiled_code()
+        old_compiled_code = result.regenerate_compiled_code(add_code_stubs)
         validation_errors.extend(validate_normalize_prisma(result))
         validation_errors.extend(
             await static_code_analysis(
@@ -238,6 +244,7 @@ class CodeValidator:
                 raw_code=new_compiled_code,
                 route_errors_as_todo=route_errors_as_todo,
                 raise_validation_error=raise_validation_error,
+                add_code_stubs=add_code_stubs,
                 call_cnt=call_cnt + 1,
             )
 
@@ -343,6 +350,8 @@ async def __execute_ruff(
                 "F841",
                 "--ignore",
                 "E402",
+                "--ignore",
+                "F811",  # Redefinition of unused '...' from line ...
             ],
             file_contents=code,
             suffix=".py",
@@ -450,7 +459,7 @@ async def __execute_pyright(
     validation_errors: list[ValidationError] = []
 
     # Create temporary directory under the TEMP_DIR with random name
-    temp_dir = PROJECT_TEMP_DIR / func.compiled_route_id
+    temp_dir = PROJECT_TEMP_DIR / func.function_id
     py_path = await setup_if_required(temp_dir)
 
     async def __execute_pyright_commands(code: str) -> list[ValidationError]:
@@ -740,6 +749,7 @@ AUTO_IMPORT_TYPES: dict[str, str] = {
     "nicegui": "import nicegui",
     "ui": "from nicegui import ui",
     "Client": "from nicegui import Client",
+    "array": "from array import array",
 }
 for t in typing.__all__:
     AUTO_IMPORT_TYPES[t] = f"from typing import {t}"
@@ -786,6 +796,8 @@ def __fix_missing_imports(
             missing_imports.append(schema_imports[missing_type])
         elif missing_type in AUTO_IMPORT_TYPES:
             missing_imports.append(AUTO_IMPORT_TYPES[missing_type])
+        elif missing_type in func.available_functions:
+            missing_imports.append(f"from project.{missing_type}_service import *")
         else:
             filtered_errors.append(error)
 

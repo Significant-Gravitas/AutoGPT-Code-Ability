@@ -8,7 +8,7 @@ from prisma.types import DeploymentCreateInput
 
 from codex.api_model import Identifiers
 from codex.deploy.packager import create_remote_repo, create_zip_file
-from codex.develop.compile import create_server_code
+from codex.develop.compile import create_bundle_code
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ async def create_local_deployment(
     if not ids.user_id:
         raise ValueError("User ID is required to create a deployment")
 
-    app = await create_server_code(completedApp, spec)
+    app = await create_bundle_code(completedApp, spec)
 
     zip_file = await create_zip_file(app, spec)
     file_name = completedApp.name.replace(" ", "_")
@@ -65,7 +65,7 @@ async def create_cloud_deployment(
     if not ids.user_id:
         raise ValueError("User ID is required to create a deployment")
 
-    app = await create_server_code(completedApp, spec)
+    app = await create_bundle_code(completedApp, spec)
 
     repo = await create_remote_repo(app, spec)
     completedApp.name.replace(" ", "_")
