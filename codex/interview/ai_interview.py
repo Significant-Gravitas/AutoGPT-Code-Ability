@@ -6,7 +6,7 @@ from codex.common.ai_block import (
     ValidatedResponse,
     ValidationError,
 )
-from codex.interview.model import UndestandRequest
+from codex.interview.model import UnderstandRequest
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class InterviewBlock(AIBlock):
     prompt_template_name = "interview/understand"
     model = "gpt-4-turbo"
     is_json_response = True
-    pydantic_object = UndestandRequest
+    pydantic_object = UnderstandRequest
 
     async def validate(
         self, invoke_params: dict, response: ValidatedResponse
@@ -32,7 +32,7 @@ class InterviewBlock(AIBlock):
         blocks this is much more complex. If validation failes it triggers a retry.
         """
         try:
-            model = UndestandRequest.model_validate_json(response.response)
+            model = UnderstandRequest.model_validate_json(response.response)
             response.response = model
         except Exception as e:
             raise ValidationError(f"Error validating response: {e}")
