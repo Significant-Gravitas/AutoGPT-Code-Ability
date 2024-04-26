@@ -87,11 +87,15 @@ async def create_deployment(
             hosted=True,
         )
     else:
-        deployment_settings = Settings(
-            zipfile=deployment_details.zip_file,
-            githubRepo=deployment_details.githubRepo,
-            hosted=deployment_details.hosted,
-        )
+        try:
+            deployment_settings = Settings(
+                zipfile=deployment_details.zip_file,
+                githubRepo=deployment_details.githubRepo,
+                hosted=deployment_details.hosted,
+            )
+        except Exception as e:
+            log.error("error in deployment settings: %s", e)
+
     deployment = await deploy_agent.create_deployment(
         ids, completedApp, spec, deployment_settings
     )
