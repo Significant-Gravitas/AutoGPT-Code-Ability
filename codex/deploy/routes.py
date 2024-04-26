@@ -90,7 +90,7 @@ async def create_deployment(
         try:
             deployment_settings = Settings(
                 zipfile=deployment_details.zip_file,
-                githubRepo=deployment_details.githubRepo,
+                githubRepo=deployment_details.github_repo,
                 hosted=deployment_details.hosted,
             )
         except Exception as e:
