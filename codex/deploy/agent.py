@@ -9,19 +9,22 @@ from codex.api_model import Identifiers
 from codex.deploy.packager import create_remote_repo, create_zip_file
 from codex.develop.compile import create_bundle_code
 from codex.deploy.infrastructure import create_cloud_db
+from codex.deploy.model import Settings
 
 logger = logging.getLogger(__name__)
 
 
 async def create_deployment(
-    ids: Identifiers, completedApp: CompletedApp, spec: Specification
+    ids: Identifiers,
+    completedApp: CompletedApp,
+    spec: Specification,
+    settings: Settings,
 ) -> Deployment:
-    environment: str = os.getenv("RUN_ENV").lower()
-    if environment == "local":
+    if os.getenv("RUN_ENV", default="local") == "local" or settings.zipfile:
         deployment = await create_local_deployment(ids, completedApp, spec)
         return deployment
 
-    deployment = await create_cloud_deployment(ids, completedApp, spec)
+    deployment = await create_cloud_deployment(ids, completedApp, spec, settings)
     return deployment
 
 
@@ -64,16 +67,27 @@ async def create_local_deployment(
 
 
 async def create_cloud_deployment(
-    ids: Identifiers, completedApp: CompletedApp, spec: Specification
+    ids: Identifiers,
+    completedApp: CompletedApp,
+    spec: Specification,
+    settings: Settings,
 ) -> Deployment:
     if not ids.user_id:
         raise ValueError("User ID is required to create a deployment")
 
     app = await create_bundle_code(completedApp, spec)
 
-    repo = await create_remote_repo(app, spec)
+    repo = await create_remote_repo(app, spec, settings.hosted)
     completedApp.name.replace(" ", "_")
-    db_name, db_username = await create_cloud_db(repo)
+    file_name = completedApp.name.replace(" ", "_")
+    trunc_user_id = ids.user_id[-6:]
+    trunc_deliverable_id = ids.completed_app_id[-6:]
+    unique_prefix = f"{trunc_user_id}_{file_name}_{trunc_deliverable_id}"
+    db_name = f"{unique_prefix}_db"
+    db_username = f"{unique_prefix}_user"
+
+    if settings.hosted:
+        db_name, db_username = await create_cloud_db(repo)
 
     try:
         logger.info(f"Creating deployment for {completedApp.name}")

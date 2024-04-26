@@ -250,6 +250,12 @@ class DeploymentMetadata(BaseModel):
     repo: str
 
 
+class DeploymentRequest(BaseModel):
+    zip_file: bool
+    github_repo: bool
+    hosted: bool
+
+
 class DeploymentResponse(DeploymentMetadata):
     pass
 
