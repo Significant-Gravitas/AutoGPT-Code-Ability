@@ -94,7 +94,7 @@ async def create_deployment(
                 hosted=deployment_details.hosted,
             )
         except Exception as e:
-            log.error("error in deployment settings: %s", e)
+            logger.error("error in deployment settings: %s", e)
 
     deployment = await deploy_agent.create_deployment(
         ids, completedApp, spec, deployment_settings
