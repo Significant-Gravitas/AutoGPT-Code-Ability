@@ -32,6 +32,13 @@ sentry-sdk = {extras = ["fast-api"], version = "^1.40.6"}
 pyright = "^1.1.354"
 packaging = ">=24.0"
 gitpython = "^3.1.42"
+tiktoken = "^0.6.0"
+google-cloud = "^0.34.0"
+google-auth = "^2.29.0"
+pygithub = "^2.3.0"
+google-api-python-client = "^2.126.0"
+google-auth-httplib2 = "^0.2.0"
+google-auth-oauthlib = "^1.2.0"
 nicegui = "^1.4.22"
 
 [tool.poetry.group.dev.dependencies]

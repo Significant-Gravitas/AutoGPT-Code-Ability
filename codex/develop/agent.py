@@ -17,6 +17,7 @@ import codex
 import codex.common
 import codex.common.database
 from codex.api_model import Identifiers
+from codex.common.ai_block import LLMFailure
 from codex.common.database import INCLUDE_FUNC
 from codex.common.model import FunctionDef
 from codex.database import create_completed_app
@@ -175,7 +176,10 @@ async def develop_user_interface(ids: Identifiers) -> CompletedApp:
 
 
 async def develop_application(
-    ids: Identifiers, spec: Specification, lang: str = "python"
+    ids: Identifiers,
+    spec: Specification,
+    lang: str = "python",
+    eat_errors: bool = True,
 ) -> CompletedApp:
     """
     Develops an application based on the given identifiers and specification.
@@ -224,7 +228,22 @@ async def develop_application(
             tasks.append(task)
 
         # Run the tasks concurrently
-        await asyncio.gather(*tasks)
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        if any(isinstance(r, Exception) for r in results):
+            exceptions = [r for r in results if isinstance(r, Exception)]
+            # if the only exceptions are LLMFailures, we can continue
+            if eat_errors and all(isinstance(r, LLMFailure) for r in exceptions):
+                logger.warning(
+                    f"App Id: {ids.app_id} Eating Errors developing API routes: {exceptions}"
+                )
+                pass
+            else:
+                error_message = "".join(f"\n* {e}" for e in exceptions)
+                raise LLMFailure(
+                    f"App Id: {ids.app_id} Error developing API routes: \n{error_message}"
+                )
+        else:
+            logger.info("🚀 All API routes developed successfully")
 
     return completed_app
 

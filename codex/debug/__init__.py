@@ -204,19 +204,19 @@ def print_api_route_details(spec: prisma.models.Specification):
                 f"\033[92m    Allowed Access Roles:\033[0m {', '.join(route.AllowedAccessRoles).upper()}"
             )
             if route.RequestObject:
-                click.echo("\033[92m    Request Object:\033[0m")
-                assert route.RequestObject.Fields, "Fields is None"
-                for param in route.RequestObject.Fields:
-                    click.echo(
-                        f"      - {param.name}: {param.typeName}  - {param.description}"
-                    )
+                click.echo(message="\033[92m    Request Object:\033[0m")
+                if route.RequestObject.Fields is not None:
+                    for param in route.RequestObject.Fields:
+                        click.echo(
+                            f"      - {param.name}: {param.typeName}  - {param.description}"
+                        )
             if route.ResponseObject:
                 click.echo("\033[92m    Response Object:\033[0m")
-                assert route.ResponseObject.Fields, "Fields is None"
-                for param in route.ResponseObject.Fields:
-                    click.echo(
-                        f"      - {param.name}: {param.typeName}  - {param.description}"
-                    )
+                if route.ResponseObject.Fields is not None:
+                    for param in route.ResponseObject.Fields:
+                        click.echo(
+                            f"      - {param.name}: {param.typeName}  - {param.description}"
+                        )
         click.echo("")
         click.echo("-" * 40)
         click.echo("")

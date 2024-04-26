@@ -2,6 +2,7 @@ import logging
 from typing import List
 
 from prisma.enums import DevelopmentPhase, FunctionState
+from prisma.errors import PrismaError
 from prisma.models import Function
 from prisma.types import (
     FunctionCreateInput,
@@ -10,13 +11,13 @@ from prisma.types import (
 )
 
 from codex.common.ai_block import (
-    TODO_COMMENT,
     AIBlock,
     Identifiers,
     ListValidationError,
     ValidatedResponse,
     ValidationError,
 )
+from codex.common.constants import TODO_COMMENT
 from codex.common.database import INCLUDE_FUNC
 from codex.common.logging import log_event
 from codex.common.model import create_object_type
@@ -136,7 +137,10 @@ class DevelopAIBlock(AIBlock):
         except Exception as e:
             # This is not a validation error we want to the agent to fix
             # it is a code bug in the validation logic
-            logger.exception(e)
+            logger.exception(
+                "Unexpected error during validation",
+                extra={"function_id": invoke_params["function_id"]},
+            )
             raise e
 
         validation_errors.raise_if_errors()
@@ -228,9 +232,39 @@ class DevelopAIBlock(AIBlock):
                 f"Function with id {generated_response.function_id} not found"
             )
 
-        logger.info(f"✅ Updated Function: {func.functionName} - {func.id}")
+        logger.info(
+            f"✅ Updated Function: {func.functionName} - {func.id}",
+            extra=ids.model_dump(),
+        )
 
         return func
+
+    async def on_failed(self, ids: Identifiers, invoke_params: dict):
+        function_name = invoke_params.get("function_name", "Unknown")
+        function_signature = invoke_params.get("function_signature", "Unknown")
+        try:
+            logger.error(
+                f"AI Failed to write the function {function_name}. Signiture of failed function:\n{function_signature}",
+                extra=ids.model_dump(),
+            )
+            await Function.prisma().update(
+                where={"id": ids.function_id},
+                data={"state": FunctionState.FAILED},
+            )
+        except PrismaError as pe:
+            logger.exception(
+                "Prisma error updating function state to FAILED.",
+                pe,
+                extra=ids.model_dump(),
+            )
+            raise pe
+        except Exception as e:
+            logger.exception(
+                "Unexpected error updating function state to FAILED.",
+                e,
+                extra=ids.model_dump(),
+            )
+            raise e
 
 
 class NiceGUIDevelopAIBlock(DevelopAIBlock):

@@ -1,10 +1,21 @@
 from typing import Callable
 
 import pytest
+from prisma.enums import AccessLevel, HTTPVerb
 
+from codex.api import create_app
 from codex.api_model import ApplicationCreate
+from codex.app import db_client
+from codex.common import ai_block
+from codex.common.ai_block import LLMFailure
+from codex.common.ai_model import OpenAIChatClient
+from codex.common.constants import TODO_COMMENT
+from codex.common.logging_config import setup_logging
 from codex.common.model import ObjectFieldModel, ObjectTypeModel
+from codex.common.test_const import Identifiers, user_id_1
 from codex.database import get_app_by_id
+from codex.develop import agent
+from codex.develop.database import get_compiled_code
 from codex.requirements.agent import APIRouteSpec, Module, SpecHolder
 from codex.requirements.database import create_specification
 from codex.requirements.model import (
@@ -14,18 +25,6 @@ from codex.requirements.model import (
     DBResponse,
     PreAnswer,
 )
-
-from prisma.enums import AccessLevel, HTTPVerb
-
-from codex.api import create_app
-from codex.app import db_client
-from codex.common import ai_block
-from codex.common.ai_block import TODO_COMMENT, LLMFailure
-from codex.common.ai_model import OpenAIChatClient
-from codex.common.logging_config import setup_logging
-from codex.common.test_const import Identifiers, user_id_1
-from codex.develop import agent
-from codex.develop.database import get_compiled_code
 
 is_connected = False
 setup_logging()
@@ -159,7 +158,7 @@ async def generate_function(
     async def execute():
         app_id, spec = await create_sample_app(user_id, cloud_id)  # type: ignore
         ids = Identifiers(user_id=user_id, app_id=app_id, cloud_services_id=cloud_id)
-        func = await agent.develop_application(ids=ids, spec=spec)
+        func = await agent.develop_application(ids=ids, spec=spec, eat_errors=False)
         return await get_compiled_code(func.id) if func else None
 
     return await with_db_connection(execute)

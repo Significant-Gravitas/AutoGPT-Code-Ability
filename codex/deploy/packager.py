@@ -1,6 +1,5 @@
 import logging
 import os
-import random
 import tempfile
 import uuid
 import zipfile
@@ -12,10 +11,12 @@ from git import Actor, GitCommandError
 from git.repo import Repo
 from prisma.models import Specification
 
+import codex.common.utils
 from codex.common.constants import PRISMA_FILE_HEADER
 from codex.common.database import get_database_schema
 from codex.common.exec_external_tool import execute_command
 from codex.deploy.model import Application
+
 
 logger = logging.getLogger(__name__)
 
@@ -78,10 +79,7 @@ def generate_dotenv_example_file(application: Application) -> str:
     if not application.completed_app.CompiledRoutes:
         raise ValueError("Application must have at least one compiled route")
 
-    # Generate a random password
-    random_password = "".join(
-        random.choice("abcdefghijklmnopqrstuvwxyz0123456789") for i in range(20)
-    )
+    random_username, random_password = codex.common.utils.generate_db_credentials()
     # normalized app name. keeping only a-z and _
     db_name: str = (
         application.completed_app.name.lower().replace(" ", "_").replace("-", "_")
@@ -92,14 +90,18 @@ def generate_dotenv_example_file(application: Application) -> str:
 # Example .env file
 # Copy this file to .env and fill in the values for the environment variables
 # The .env file should not be committed to version control
-DB_USER="codexrulesman"
+DB_USER={random_username}
 DB_PASS="{random_password}"
 DB_HOST="localhost"
 DB_PORT="5432"
 DB_NAME="{db_name}"
 DATABASE_URL="postgresql://${{DB_USER}}:${{DB_PASS}}@${{DB_HOST}}:${{DB_PORT}}/${{DB_NAME}}"
 """.lstrip()
-    env_example = env_example.format(random_password=random_password, db_name=db_name)
+    env_example = env_example.format(
+        random_username=random_username,
+        random_password=random_password,
+        db_name=db_name,
+    )
 
     # env_example = ""
     # for compiled_route in application.completed_app.CompiledRoutes:
@@ -211,35 +213,68 @@ jobs:
     - name: Checkout
       uses: actions/checkout@master
 
-      # Set up auth service account with Credentials
-    - name: Set up auth service account
-      uses: google-github-actions/auth@v2
+    - name: Authenticate to Google Cloud with token exchange
+      uses: google-github-actions/auth@v1
       with:
-        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-
-    # Setup gcloud CLI
-    - name: Set up gcloud
-      uses: google-github-actions/setup-gcloud@v2
-      with:
-        service_account_email: ${{ secrets.GCP_EMAIL }}
-        service_account_key: ${{ secrets.GCP_CREDENTIALS }}
-        export_default_credentials: true
-    
+        token_format: 'access_token'
+        create_credentials_file: 'true'
+        service_account: ${{ secrets.GCP_EMAIL }}
+        credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+        
     # Configure Docker with Credentials
     - name: Configure Docker
       run: |
         gcloud auth configure-docker
-      
+    
+    - name: Install Cloud SQL Proxy
+      run: |
+        wget https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 -O cloud_sql_proxy
+        chmod +x cloud_sql_proxy
+
+    - name: Start Cloud SQL Proxy
+      run: |
+        ./cloud_sql_proxy -instances=${{ secrets.CLOUD_SQL_CONNECTION_NAME }}=tcp:5432 &
+        sleep 10  # Wait for the Cloud SQL Proxy to be fully ready
+    
+    - name: Run Migrations
+      run: |
+        export DATABASE_URL="postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@localhost:5432/${{ secrets.DB_NAME }}"
+        npm install prisma -g
+        prisma migrate deploy
+
     # Build the Docker image
     - name: Build & Publish
       run: |
+        # Set the Google Cloud project
         gcloud config set project ${{ secrets.GCP_PROJECT }}
-        gcloud builds submit --tag gcr.io/${{ secrets.GCP_PROJECT }}/${{ secrets.GCP_APPLICATION }}
+        
+        REPO_NAME="${{ github.event.repository.name }}"
+        REPO_NAME="${REPO_NAME,,}"
+
+        IMAGE_TAG="gcr.io/${{ secrets.GCP_PROJECT }}/${REPO_NAME}:${GITHUB_RUN_NUMBER}"
+    
+        # Submit the build to Google Cloud Build
+        gcloud builds submit --tag $IMAGE_TAG
+    
+        # Set the default region for Google Cloud Run deployments
         gcloud config set run/region us-central1
         
-    - name: Deploy
+    - name: Deploy to Google Cloud Run
       run: |
-        gcloud run deploy ${{ secrets.GCP_APPLICATION }} --image gcr.io/${{ secrets.GCP_PROJECT }}/${{ secrets.GCP_APPLICATION }} --platform managed --allow-unauthenticated --memory 512M
+        REPO_NAME="${{ github.event.repository.name }}"
+        REPO_NAME="${REPO_NAME,,}"  
+        IMAGE_NAME="gcr.io/${{ secrets.GCP_PROJECT }}/${REPO_NAME}:${{ github.run_number }}"
+        
+        gcloud run deploy ${REPO_NAME} \
+          --image $IMAGE_NAME \
+          --platform managed \
+          --allow-unauthenticated \
+          --memory 512M \
+          --port 8000 \
+          --add-cloudsql-instances ${{ secrets.CLOUD_SQL_CONNECTION_NAME }} \
+          --set-env-vars "DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@localhost/${{ secrets.DB_NAME }}?host=/cloudsql/${{ secrets.GCP_PROJECT }}:us-central1:${{ secrets.SQL_INSTANCE_NAME }}" \
+          --set-env-vars "INSTANCE_CONNECTION_NAME=${{ secrets.CLOUD_SQL_CONNECTION_NAME }}"
+
 """.lstrip()
 
     return deploy_file

@@ -1,3 +1,4 @@
+import datetime
 import io
 import logging
 import os
@@ -23,12 +24,38 @@ class ResumeStep(Enum):
     DOWNLOAD = 4
 
 
+async def create_benchmark_user(prisma_client: Prisma, base_url: str):
+    """
+    Creates a benchmark user in the database.
+
+    Args:
+        prisma_client (Prisma): The Prisma client used for database operations.
+        base_url (str): The base URL for the Codex client.
+
+    Returns:
+        str: The ID of the user.
+    """
+    if not prisma_client.is_connected():
+        await prisma_client.connect()
+    try:
+        codex_client = CodexClient(client=prisma_client, base_url=base_url)
+        timestamp = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d %H:%M:%S")
+        user = await codex_client.create_or_get_codex_user(
+            f"BM {timestamp}", f"BM {timestamp}"
+        )
+        return user
+    except Exception as e:
+        logger.exception(f"Error creating benchmark user: {e}")
+        raise e
+
+
 async def run_task(
     task_name: str,
     task_description: str,
     user_id: str,
     prisma_client: Prisma,
     base_url: str,
+    requirements_only: bool = False,
 ):
     """
     Runs a task end-to-end.
@@ -71,16 +98,20 @@ async def run_task(
         await run_specification(
             codex_client=codex_client, task_name=task_name, resume_point=resume_point
         )
+        if not requirements_only:
+            await run_development(
+                codex_client=codex_client,
+                task_name=task_name,
+                resume_point=resume_point,
+            )
 
-        await run_development(
-            codex_client=codex_client, task_name=task_name, resume_point=resume_point
-        )
+            await run_compile(
+                codex_client=codex_client,
+                task_name=task_name,
+                resume_point=resume_point,
+            )
 
-        await run_compile(
-            codex_client=codex_client, task_name=task_name, resume_point=resume_point
-        )
-
-        await get_deployment(codex_client=codex_client, task_name=task_name)
+            await get_deployment(codex_client=codex_client, task_name=task_name)
     except Exception as e:
         logger.exception(f"Error running task: {e}")
 

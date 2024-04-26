@@ -51,7 +51,7 @@ async def take_next_step(
     Keep working through the interview until it is finished
     """
     user_message = next_request.msg
-    logger.info(f"Next request recieved {user_message}")
+    logger.info(f"Interview: {interview_id} Next request recieved: {user_message}")
     app = await codex.database.get_app_by_id(user_id, app_id)
     user = await codex.database.get_user(user_id)
     ids = Identifiers(

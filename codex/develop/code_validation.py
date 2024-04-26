@@ -13,17 +13,16 @@ import isort
 import nicegui
 import prisma
 from prisma.models import Function, ObjectType
-from pydantic import BaseModel
 
 from codex.common.ai_block import (
-    TODO_COMMENT,
+    ErrorEnhancements,
     Identifiers,
     LineValidationError,
     ListValidationError,
     ValidationError,
     ValidationErrorWithContent,
 )
-from codex.common.constants import PRISMA_FILE_HEADER
+from codex.common.constants import PRISMA_FILE_HEADER, TODO_COMMENT
 from codex.common.exec_external_tool import (
     DEFAULT_DEPS,
     PROJECT_TEMP_DIR,
@@ -89,6 +88,7 @@ class CodeValidator:
             logger.warning(
                 f"Error formatting code for route #{self.compiled_route_id}: {e}"
             )
+            raise e
 
         for formatter in [
             lambda code: isort.code(code),
@@ -228,6 +228,7 @@ class CodeValidator:
         )
 
         # Execute static validators and fixers.
+        # print('old compiled code import ---->', result.imports)
         old_compiled_code = result.regenerate_compiled_code(add_code_stubs)
         validation_errors.extend(validate_normalize_prisma(result))
         validation_errors.extend(
@@ -459,7 +460,7 @@ async def __execute_pyright(
     validation_errors: list[ValidationError] = []
 
     # Create temporary directory under the TEMP_DIR with random name
-    temp_dir = PROJECT_TEMP_DIR / func.function_id
+    temp_dir = PROJECT_TEMP_DIR / (func.function_id or func.compiled_route_id)
     py_path = await setup_if_required(temp_dir)
 
     async def __execute_pyright_commands(code: str) -> list[ValidationError]:
@@ -513,15 +514,16 @@ async def __execute_pyright(
             ids = await get_ids_from_function_id_and_compiled_route(
                 func.function_id, compiled_route_id=func.compiled_route_id
             )
-            if error_enhancements := await get_error_enhancements(
-                rule, error_message, py_path, ids=ids
-            ):
-                error_message += f"\n{error_enhancements}"
+
+            error_enhancements = await get_error_enhancements(
+                rule, error_message, py_path, ids
+            )
 
             e = LineValidationError(
                 error=error_message,
                 code=code,
                 line_from=e["range"]["start"]["line"] + 1,
+                enhancements=error_enhancements,
             )
             validation_errors.append(e)
 
@@ -575,11 +577,6 @@ async def find_module_dist_and_source(
     return dist_info_path, module_path
 
 
-class ErrorEnhancements(BaseModel):
-    metadata: typing.Optional[str]
-    context: typing.Optional[str]
-
-
 async def enhance_error(
     module: str, module_full: str, py_path: str | pathlib.Path, attempted_attribute: str
 ) -> typing.Optional[ErrorEnhancements]:
@@ -613,7 +610,6 @@ async def enhance_error(
                 useful.append(pathlib.Path(_fuzzy_match))
 
         # Join the useful files
-        # TODO(ntindle): disable this for now, as we're not sure it's working as expected
         # matching_context = "\n".join(
         #     [f.read_text() for f in useful if f.exists() and f.is_file()]
         # )
@@ -629,7 +625,7 @@ async def enhance_error(
 
 async def get_error_enhancements(
     rule: str, error_message: str, py_path: pathlib.Path | str, ids: Identifiers
-) -> typing.Optional[str]:
+) -> typing.Optional[ErrorEnhancements]:
     enhancement_info: typing.Optional[ErrorEnhancements] = None
     # python match the rule and error message to a case
     match rule:
@@ -659,7 +655,7 @@ async def get_error_enhancements(
                     attempted_attribute=attempted_attribute,
                 )
             else:
-                logger.warn(
+                logger.debug(
                     f"Rule {rule} was not of format 'is not a known member of module'"
                 )
                 return None
@@ -688,7 +684,7 @@ async def get_error_enhancements(
                     attempted_attribute=attempted_attribute,
                 )
             else:
-                logger.warn(
+                logger.debug(
                     f"Rule {rule} was not of format 'is not exported from module'"
                 )
                 return None
@@ -729,7 +725,12 @@ async def get_error_enhancements(
                     "context": context,
                 },
             )
-            return f"Found documentation for the module:\n {response}"
+            return ErrorEnhancements(
+                metadata=metadata_contents,
+                context=context,
+                suggested_fix=response,
+            )
+
         else:
             logger.warning(
                 f"Could not enhance error since metadata_contents and context was empty: {error_message}"

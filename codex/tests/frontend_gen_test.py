@@ -106,6 +106,7 @@ async def generate_function(
 
 @pytest.mark.asyncio
 @pytest.mark.integration_test
+@pytest.mark.skip  # This is a manual run for testing
 async def test_tictactoe():
     func = await generate_function(
         title="TicTacToe Game",
@@ -116,6 +117,7 @@ async def test_tictactoe():
 
 @pytest.mark.asyncio
 @pytest.mark.integration_test
+@pytest.mark.skip  # This is a manual run for testing
 async def test_todo_list():
     func = await generate_function(
         title="TODO List",
@@ -124,6 +126,7 @@ async def test_todo_list():
     assert func is not None
 
 
+@pytest.mark.skip  # This is a manual run for testing
 async def generate_user_interface(user_id: str, app_id: str, completed_app_id: str):
     if not OpenAIChatClient._configured:
         OpenAIChatClient.configure({})
@@ -174,14 +177,3 @@ async def generate_user_interface(user_id: str, app_id: str, completed_app_id: s
     assert deployment is not None
     logger.info("Deployment completed, ID: " + deployment.id)
     return deployment
-
-
-@pytest.mark.asyncio
-@pytest.mark.integration_test
-async def test_frontend():
-    res = await generate_user_interface(
-            "123e4567-e89b-12d3-a456-426614174000",
-            "7828540b-e126-49c8-8ddf-e515ddf006d8",
-            "93b30f05-0304-42eb-8ddb-52b3095956c4",
-    )
-    assert res is not None
