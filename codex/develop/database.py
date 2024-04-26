@@ -6,12 +6,18 @@ from codex.api_model import Identifiers, Pagination
 from codex.common.database import INCLUDE_API_ROUTE, INCLUDE_FUNC
 
 
-async def get_deliverable(
-    user_id: str, app_id: str, spec_id: str, deliverable_id: str
-) -> CompletedApp:
+async def get_deliverable(deliverable_id: str) -> CompletedApp:
     completed_app = await CompletedApp.prisma().find_unique_or_raise(
         where={"id": deliverable_id, "deleted": False},
-        include={"CompiledRoutes": True},
+        include={
+            "CompiledRoutes": {
+                "include": {
+                    "RootFunction": INCLUDE_FUNC,  # type: ignore
+                    "Functions": INCLUDE_FUNC,
+                    "ApiRouteSpec": INCLUDE_API_ROUTE,
+                }
+            }
+        },
     )
 
     return completed_app

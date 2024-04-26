@@ -1,24 +1,16 @@
-from google.auth import default
-from googleapiclient.discovery import build
 import logging
-
-
-import string
-import random
-import psycopg2
-from psycopg2 import sql
-
-from github import Github
 import os
 
+import psycopg2
+from dotenv import load_dotenv
+from google.auth import default
+from googleapiclient.discovery import build
+from psycopg2 import sql
+
+import codex.common.utils
+
+load_dotenv()
 logger = logging.getLogger(__name__)
-
-
-def generate_db_credentials(username_prefix="user", password_length=16):
-    username = f"{username_prefix}{random.randint(1000, 9999)}"
-    characters = string.ascii_letters + string.digits + "!@#$%^&*()"
-    password = "".join(random.choice(characters) for i in range(password_length))
-    return username, password
 
 
 def create_postgres_database(db_name):
@@ -123,6 +115,8 @@ def grant_permissions_postgres(db_name, new_user):
 
 
 def add_secret_to_repo(repo_name: str, secret_name: str, secret_value: str):
+    from github import Github  # noqa
+
     """Add a secret to the GitHub repository."""
 
     logger.info(f"Attempting to add secret {secret_name} on {repo_name}")
@@ -139,7 +133,7 @@ def add_secret_to_repo(repo_name: str, secret_name: str, secret_value: str):
     )
 
 
-async def create_cloud_db(repo_url: str) -> (str, str):
+async def create_cloud_db(repo_url: str) -> tuple[str, str]:
     """
     Creates CloudSQL DB for users
     Args:
@@ -157,7 +151,7 @@ async def create_cloud_db(repo_url: str) -> (str, str):
         create_postgres_database(db_name)
 
         # create db credentials
-        user, password = generate_db_credentials()
+        user, password = codex.common.utils.generate_db_credentials()
 
         # create user in cloudsql
         setup_cloudsql_db(user, password)

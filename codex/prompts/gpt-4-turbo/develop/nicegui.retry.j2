@@ -1,0 +1,16 @@
+{% include 'develop/nicegui.user.j2' %}
+
+You have provided a wrong or an error code. Please revise the answer.
+
+Your previous response:
+    
+{{ generation }}
+
+Error: 
+
+{{ error }}
+
+This error is evaluated from your latest ```python``` block from the response.
+Explain each error and the step to fix it before proceeding on writing the code.
+You have to rewrite the generated code from the response above with the fixes applied after the explanation.
+Also try to implement the fixes and improvement ideas that you have in mind or already stated in the previous response.

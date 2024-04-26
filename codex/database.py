@@ -1,12 +1,12 @@
-import prisma
 from prisma.enums import Role
-from prisma.models import Application, User
-from prisma.types import UserCreateWithoutRelationsInput
+from prisma.models import Application, CompiledRoute, CompletedApp, Specification, User
+from prisma.types import CompletedAppCreateInput, UserCreateWithoutRelationsInput
 
 from codex.api_model import (
     ApplicationCreate,
     ApplicationResponse,
     ApplicationsListResponse,
+    Identifiers,
     Pagination,
     UserResponse,
     UsersListResponse,
@@ -128,7 +128,7 @@ async def list_users(page: int, page_size: int) -> UsersListResponse:
     return UsersListResponse(users=user_responses, pagination=pagination)
 
 
-async def get_app_by_id(user_id: str, app_id: str) -> prisma.models.Application:
+async def get_app_by_id(user_id: str, app_id: str) -> Application:
     app = await Application.prisma().find_first_or_raise(
         where={
             "id": app_id,
@@ -242,3 +242,46 @@ async def list_apps(
                 total_items=0, total_pages=0, current_page=0, page_size=0
             ),
         )
+
+
+async def create_completed_app(
+    ids: Identifiers, spec: Specification, compiled_routes: list[CompiledRoute] = []
+) -> CompletedApp:
+    """
+    Create an app using the given identifiers, specification, and compiled routes.
+
+    Args:
+        ids (Identifiers): The identifiers for the app.
+        spec (Specification): The specification for the app.
+        compiled_routes (List[CompiledRoute]): The compiled routes for the app.
+
+    Returns:
+        CompletedApp: The completed app object.
+    """
+    if spec.Modules is None:
+        raise ValueError("Specification must have at least one Module.")
+
+    if not ids.user_id:
+        raise ValueError("User ID is required.")
+    if not ids.app_id:
+        raise ValueError("App ID is required.")
+
+    app = await get_app_by_id(ids.user_id, ids.app_id)
+
+    completed_app_desc = app.description or "" + "\n\nFeatures:"
+    for feature in spec.Features or []:
+        completed_app_desc += f"\n**{feature.name}:**"
+        completed_app_desc += f"\n\tFunctionality: {feature.functionality}"
+        completed_app_desc += "\n"
+
+    data = CompletedAppCreateInput(
+        name=app.name,
+        companionCompletedAppId=ids.completed_app_id,
+        description=app.description or "",
+        User={"connect": {"id": ids.user_id}},
+        CompiledRoutes={"connect": [{"id": route.id} for route in compiled_routes]},
+        Specification={"connect": {"id": spec.id}},
+        Application={"connect": {"id": ids.app_id}},
+    )
+    app = await CompletedApp.prisma().create(data)
+    return app

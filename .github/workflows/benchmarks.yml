@@ -68,7 +68,7 @@ jobs:
         USER_DB_PASS: ${{ secrets.USER_DB_PASS }}
         USER_DB_HOST: ${{ secrets.USER_DB_HOST }}
         DB_PORT: 5432
-        RUN_ENV: ci
+        RUN_ENV: local
         PORT: 8080
 
     - name: Run Database Migrations
@@ -86,8 +86,7 @@ jobs:
     - name: Clean up
       if: always()
       run: |
-        docker stop codex
-        docker rm codex
+        lsof -ti:8080 | grep LISTEN | xargs --no-run-if-empty kill -9
 
     env:
       DB_USER: ${{ secrets.DB_USER }}
@@ -95,5 +94,5 @@ jobs:
       DB_NAME: ${{ secrets.DB_NAME }}
       DB_PORT: 5432
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      RUN_ENV: ci
+      RUN_ENV: local
       PORT: 8080

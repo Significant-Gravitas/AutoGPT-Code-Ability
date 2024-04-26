@@ -1,0 +1,26 @@
+Create a page that will be part of an app: "{{ goal }}".
+
+The main function will be called: {{ function_name }}
+
+{% if function_signature %}
+With this function signature:
+```python
+@ui.page('{{route_path}}')
+{{ function_signature }}
+```
+{% endif %}
+
+{% if provided_functions %}
+----
+You have already implemented these functions that are already available in the code, you can use it in your function, and no need to re-implement it. Here are the provided functions that you can use:
+```python
+{% for function in provided_functions %}
+{{ function }}
+{% endfor %}
+```
+
+NOTE:
+DO NOT RE-WRITE THESE FUNCTIONS & CLASSES. JUST CALL IT IN THE FUNCTION THAT YOU WRITE (IF NEEDED).
+YOU SHOULD ONLY PRODUCE THE REQUIRED FUNCTION AND THE NEW STUBS (IF THERE IS ANY).
+----
+{% endif %}

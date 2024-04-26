@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from typing import Optional
 
 import prisma
 import prisma.enums
@@ -31,8 +32,8 @@ class APIRouteSpec(pydantic.BaseModel):
     description: str
     access_level: prisma.enums.AccessLevel
     allowed_access_roles: list[str]
-    request_model: codex.common.model.ObjectTypeModel
-    response_model: codex.common.model.ObjectTypeModel
+    request_model: Optional[codex.common.model.ObjectTypeModel]
+    response_model: Optional[codex.common.model.ObjectTypeModel]
 
 
 class Module(pydantic.BaseModel):

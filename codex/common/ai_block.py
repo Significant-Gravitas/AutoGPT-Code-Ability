@@ -7,9 +7,8 @@ import typing
 from typing import Any, Callable, Optional, Type
 
 import prisma
+from dotenv import load_dotenv
 from jinja2 import Environment, FileSystemLoader
-from openai.types import CompletionUsage
-from openai.types.chat import ChatCompletion
 from prisma.enums import DevelopmentPhase
 from prisma.fields import Json
 from prisma.models import LLMCallAttempt, LLMCallTemplate
@@ -18,7 +17,12 @@ from pydantic import BaseModel, ConfigDict
 from codex.api_model import Identifiers
 from codex.common.ai_model import OpenAIChatClient
 
+load_dotenv()
 logger = logging.getLogger(__name__)
+
+from openai import AsyncOpenAI  # noqa
+from openai.types import CompletionUsage  # noqa
+from openai.types.chat import ChatCompletion  # noqa
 
 
 class LLMFailure(Exception):
@@ -146,7 +150,7 @@ class AIBlock:
 
     developement_phase = DevelopmentPhase.REQUIREMENTS
     prompt_template_name = ""
-    langauge = None
+    language = None
     model = ""
     is_json_response = False
     pydantic_object = None
@@ -204,8 +208,8 @@ class AIBlock:
             call_template (LLMCallTemplate): The stored call template object.
         """
         lang_str = ""
-        if self.langauge:
-            lang_str = f"{self.langauge}."
+        if self.language:
+            lang_str = f"{self.language}."
 
         prompts = {"system": "", "user": "", "retry": ""}
 
@@ -303,8 +307,8 @@ class AIBlock:
     def load_template(self, template: str, invoke_params: dict) -> str:
         try:
             lang_str = ""
-            if self.langauge:
-                lang_str = f"{self.langauge}."
+            if self.language:
+                lang_str = f"{self.language}."
             templates_env = Environment(loader=FileSystemLoader(self.templates_dir))
             prompt_template = templates_env.get_template(
                 f"{self.prompt_template_name}/{lang_str}{template}.j2"
@@ -411,6 +415,7 @@ class AIBlock:
 
             # Increment it here so the first retry is 1
             retry_attempt += 1
+            invoke_params["will_retry_on_failure"] = retry_attempt < max_retries
 
             validated_response = await self.validate(invoke_params, presponse)
         except ValidationError as validation_error:
@@ -467,6 +472,7 @@ class AIBlock:
                     invoke_params["will_retry_on_failure"] = retry_attempt < max_retries
                     continue
             if not validated_response:
+                await self.on_failed(ids, invoke_params)
                 raise LLMFailure(f"Error validating response: {validation_error}")
         except Exception as unkown_error:
             logger.exception(f"Error invoking AIBlock: {unkown_error}", unkown_error)
@@ -493,6 +499,22 @@ class AIBlock:
         if self.verbose and response:
             logger.info(f"📥 LLM response: {response}")
         return self.parse(response)
+
+    async def on_failed(self, ids: Identifiers, invoke_params: dict):
+        """
+        Called when the LLM call fails
+
+        Args:
+            ids (Identifiers): The identifiers for the call
+            invoke_params (dict): The invoke parameters
+        """
+        # We just pass here as we want implementing this to be optional
+
+        logger.error(
+            f"Failed to generate response for {self.prompt_template_name}",
+            extra=ids.model_dump(),
+        )
+        pass
 
     async def create_item(
         self, ids: Identifiers, validated_response: ValidatedResponse

@@ -55,6 +55,27 @@ async def create_deliverable(user_id: str, app_id: str, spec_id: str):
         )
 
 
+@delivery_router.post(
+    "/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}",
+    response_model=DeliverableResponse,
+    tags=["deliverables"],
+)
+async def create_user_interface(
+    user_id: str, app_id: str, spec_id: str, deliverable_id: str
+):
+    """
+    Create a user interface from the existing back-end deliverable.
+    """
+    ids = Identifiers(user_id=user_id, app_id=app_id, spec_id=spec_id)
+    user_interface = await architect_agent.develop_user_interface(ids)
+    return DeliverableResponse(
+        id=user_interface.id,
+        created_at=user_interface.createdAt,
+        name=user_interface.name,
+        description=user_interface.description,
+    )
+
+
 @delivery_router.get(
     "/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/{deliverable_id}",
     response_model=DeliverableResponse,
@@ -64,9 +85,7 @@ async def get_deliverable(user_id: str, app_id: str, spec_id: str, deliverable_i
     """
     Retrieve a specific deliverable (completed app) including its compiled routes by ID.
     """
-    deliverable = await codex.develop.database.get_deliverable(
-        user_id, app_id, spec_id, deliverable_id
-    )
+    deliverable = await codex.develop.database.get_deliverable(deliverable_id)
     return DeliverableResponse(
         id=deliverable.id,
         created_at=deliverable.createdAt,

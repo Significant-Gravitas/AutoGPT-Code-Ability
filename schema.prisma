@@ -275,6 +275,7 @@ enum FunctionState {
   DEFINITION
   WRITTEN
   VERIFIED
+  FAILED
 }
 
 // CodeGraph represents a graph-based representation of code or logic.
@@ -367,6 +368,8 @@ model CompletedApp {
   specificationId String?
   Application     Application?    @relation(fields: [applicationId], references: [id])
   applicationId   String?
+
+  companionCompletedAppId String?
 
   LLMCallAttempt LLMCallAttempt[]
 }

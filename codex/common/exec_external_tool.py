@@ -95,7 +95,7 @@ async def exec_external_on_contents(
 FOLDER_NAME = "codex-static-code-analysis"
 PROJECT_PARENT_DIR = Path(__file__).resolve().parent.parent.parent / f".{FOLDER_NAME}"
 PROJECT_TEMP_DIR = Path(tempfile.gettempdir()) / FOLDER_NAME
-DEFAULT_DEPS = ["prisma", "pyright", "pydantic", "virtualenv-clone"]
+DEFAULT_DEPS = ["prisma", "pyright", "pydantic", "virtualenv-clone", "nicegui"]
 
 
 def is_env_exists(path: Path):

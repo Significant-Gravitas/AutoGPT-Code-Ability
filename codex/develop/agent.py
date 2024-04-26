@@ -20,15 +20,17 @@ from codex.api_model import Identifiers
 from codex.common.ai_block import LLMFailure
 from codex.common.database import INCLUDE_FUNC
 from codex.common.model import FunctionDef
+from codex.database import create_completed_app
 from codex.develop.compile import (
     compile_route,
-    create_app,
     get_object_field_deps,
     get_object_type_deps,
 )
-from codex.develop.database import get_compiled_route
-from codex.develop.develop import DevelopAIBlock
+from codex.develop.database import get_compiled_route, get_deliverable
+from codex.develop.develop import DevelopAIBlock, NiceGUIDevelopAIBlock
 from codex.develop.function import construct_function, generate_object_template
+from codex.requirements.blocks.ai_page_decompose import PageDecompositionBlock
+from codex.requirements.database import get_specification
 
 RECURSION_DEPTH_LIMIT = int(os.environ.get("RECURSION_DEPTH_LIMIT", 2))
 
@@ -40,6 +42,8 @@ async def process_api_route(
     ids: Identifiers,
     spec: prisma.models.Specification,
     completed_app: prisma.models.CompletedApp,
+    extra_functions: list[Function] = [],
+    lang: str = "python",
 ):
     if not api_route.RequestObject:
         types = []
@@ -52,14 +56,19 @@ async def process_api_route(
         types = [("request", api_route.RequestObject.name)]
         descs = {"request": api_route.RequestObject.description or ""}
 
+    if not api_route.ResponseObject:
+        ret_type = None
+        ret_desc = ""
+    else:
+        ret_type = api_route.ResponseObject.name
+        ret_desc = api_route.ResponseObject.description or ""
+
     function_def = FunctionDef(
         name=api_route.functionName,
         arg_types=types,
         arg_descs=descs,
-        return_type=api_route.ResponseObject.name if api_route.ResponseObject else None,
-        return_desc=api_route.ResponseObject.description or ""
-        if api_route.ResponseObject
-        else None,
+        return_type=ret_type,
+        return_desc=ret_desc,
         is_implemented=False,
         function_desc=api_route.description,
         function_code="",
@@ -74,10 +83,17 @@ async def process_api_route(
     if api_route.RequestObject and api_route.RequestObject.Fields:
         # RequestObject is unwrapped, so remove it from the available types
         available_types.pop(api_route.RequestObject.name, None)
+
+    file_name = (
+        api_route.functionName + "_service.py"
+        if lang == "python"
+        else "ui_" + api_route.functionName + ".py"
+    )
+
     compiled_route = await CompiledRoute.prisma().create(
         data=CompiledRouteCreateInput(
             description=api_route.description,
-            fileName=api_route.functionName + "_service.py",
+            fileName=file_name,
             mainFunctionName=api_route.functionName,
             compiledCode="",  # This will be updated by compile_route
             RootFunction={
@@ -98,16 +114,73 @@ async def process_api_route(
 
     route_root_func = await develop_route(
         ids=ids,
-        compiled_route_id=compiled_route.id,
-        goal_description=completed_app.description if completed_app.description else "",
+        goal_description=completed_app.description or "",
         function=compiled_route.RootFunction,
         spec=spec,
+        lang=lang,
+        extra_functions=extra_functions,
     )
     logger.info(f"Route function id: {route_root_func.id}")
-    await compile_route(compiled_route.id, route_root_func, spec)
+    available_funcs, available_objs = await populate_available_functions_objects(
+        extra_functions
+    )
+    await compile_route(
+        compiled_route.id, route_root_func, spec, available_funcs, available_objs
+    )
 
 
-async def develop_application(ids: Identifiers, spec: Specification) -> CompletedApp:
+async def develop_user_interface(ids: Identifiers) -> CompletedApp:
+    if not ids.user_id or not ids.app_id or not ids.completed_app_id:
+        raise ValueError("user_id, app_id, and completed_app_id are required")
+
+    completed_app = await get_deliverable(ids.completed_app_id)
+    available_functions = [
+        route.RootFunction
+        for route in completed_app.CompiledRoutes or []
+        if route.RootFunction
+    ]
+
+    functions_code = []
+    for func in available_functions:
+        if func.FunctionReturn and func.FunctionReturn.RelatedTypes:
+            functions_code += [
+                generate_object_template(t) for t in func.FunctionReturn.RelatedTypes
+            ]
+
+        if func.FunctionArgs:
+            functions_code += [
+                generate_object_template(t)
+                for arg in func.FunctionArgs
+                for t in arg.RelatedTypes or []
+            ]
+
+        functions_code.append(func.template)
+
+    ai_block = PageDecompositionBlock()
+    frontend_spec = await ai_block.invoke(
+        ids=ids,
+        invoke_params={
+            "available_functions": {f.functionName: f for f in available_functions},
+            "functions_code": functions_code,
+        },
+    )
+
+    # Connect db table from the existing spec to the new spec
+    if completed_app.specificationId:
+        backend_spec = await get_specification(
+            ids.user_id, ids.app_id, completed_app.specificationId
+        )
+        frontend_spec.DatabaseSchema = backend_spec.DatabaseSchema
+
+    return await develop_application(ids, frontend_spec, lang="nicegui")
+
+
+async def develop_application(
+    ids: Identifiers,
+    spec: Specification,
+    lang: str = "python",
+    eat_errors: bool = True,
+) -> CompletedApp:
     """
     Develops an application based on the given identifiers and specification.
 
@@ -119,7 +192,20 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
         CompletedApp: The completed application.
 
     """
-    completed_app = await create_app(ids, spec, [])
+    completed_app = await create_completed_app(ids, spec)
+
+    # If the completed app is defined, use the functions from the provided completed app as already implemented functions.
+    # This flow is used for developing the user interface.
+    if ids.completed_app_id:
+        existing_completed_app = await get_deliverable(ids.completed_app_id)
+        extra_functions = [
+            route.RootFunction
+            for route in existing_completed_app.CompiledRoutes or []
+            if route.RootFunction
+        ]
+
+    else:
+        extra_functions = []
 
     tasks = []
 
@@ -131,7 +217,14 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
 
         for api_route in api_routes:
             # Schedule each API route for processing
-            task = process_api_route(api_route, ids, spec, completed_app)
+            task = process_api_route(
+                api_route,
+                ids,
+                spec,
+                completed_app,
+                extra_functions,
+                lang,
+            )
             tasks.append(task)
 
         # Run the tasks concurrently
@@ -139,14 +232,15 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
         if any(isinstance(r, Exception) for r in results):
             exceptions = [r for r in results if isinstance(r, Exception)]
             # if the only exceptions are LLMFailures, we can continue
-            if all(isinstance(r, LLMFailure) for r in exceptions):
+            if eat_errors and all(isinstance(r, LLMFailure) for r in exceptions):
                 logger.warning(
                     f"App Id: {ids.app_id} Eating Errors developing API routes: {exceptions}"
                 )
                 pass
             else:
-                raise ValueError(
-                    f"App Id: {ids.app_id} Error developing API routes: {exceptions}"
+                error_message = "".join(f"\n* {e}" for e in exceptions)
+                raise LLMFailure(
+                    f"App Id: {ids.app_id} Error developing API routes: \n{error_message}"
                 )
         else:
             logger.info("🚀 All API routes developed successfully")
@@ -154,12 +248,36 @@ async def develop_application(ids: Identifiers, spec: Specification) -> Complete
     return completed_app
 
 
+async def populate_available_functions_objects(
+    functions: list[Function],
+) -> tuple[dict[str, Function], dict[str, ObjectType]]:
+    generated_func: dict[str, Function] = {}
+    generated_objs: dict[str, ObjectType] = {}
+
+    object_ids = set()
+    for func in functions:
+        generated_func[func.functionName] = func
+
+        # Populate generated request objects from the LLM
+        for arg in func.FunctionArgs or []:
+            for type in await get_object_field_deps(arg, object_ids):
+                generated_objs[type.name] = type
+
+        # Populate generated response objects from the LLM
+        if func.FunctionReturn:
+            for type in await get_object_field_deps(func.FunctionReturn, object_ids):
+                generated_objs[type.name] = type
+
+    return generated_func, generated_objs
+
+
 async def develop_route(
     ids: Identifiers,
-    compiled_route_id: str,
     goal_description: str,
     function: Function,
     spec: Specification,
+    lang: str,
+    extra_functions: list[Function] = [],
     depth: int = 0,
 ) -> Function:
     """
@@ -168,7 +286,6 @@ async def develop_route(
 
     Args:
         ids (Identifiers): The identifiers for the function.
-        compiled_route_id (str): The id of the compiled route.
         goal_description (str): The high-level goal of the function to create.
         function (Function): The function to develop.
         depth (int): The depth of the recursion.
@@ -178,48 +295,42 @@ async def develop_route(
     """
     logger.info(
         f"Developing for compiled route: "
-        f"{compiled_route_id} - Func: {function.functionName}, depth: {depth}"
+        f"{ids.compiled_route_id} - Func: {function.functionName}, depth: {depth}"
     )
+    if not ids.compiled_route_id:
+        raise ValueError("ids.compiled_route_id is required for developing a function")
 
     # Set the function id for logging
     ids.function_id = function.id
-    ids.compiled_route_id = compiled_route_id
 
     if depth > RECURSION_DEPTH_LIMIT:
         raise ValueError("Recursion depth exceeded")
 
-    compiled_route = await get_compiled_route(compiled_route_id)
+    compiled_route = await get_compiled_route(ids.compiled_route_id)
     functions = []
-    generated_func: dict[str, Function] = {}
-    generated_objs: dict[str, ObjectType] = {}
     if compiled_route.Functions:
         functions += compiled_route.Functions
     if compiled_route.RootFunction:
         functions.append(compiled_route.RootFunction)
+    if extra_functions:
+        functions += extra_functions
 
-    object_ids = set()
-    for func in functions:
-        generated_func[func.functionName] = func
-
-        # Populate generated request objects from the LLM
-        for arg in func.FunctionArgs:
-            for type in await get_object_field_deps(arg, object_ids):
-                generated_objs[type.name] = type
-
-        # Populate generated response objects from the LLM
-        if func.FunctionReturn:
-            for type in await get_object_field_deps(func.FunctionReturn, object_ids):
-                generated_objs[type.name] = type
+    generated_func, generated_objs = await populate_available_functions_objects(
+        functions
+    )
 
     provided_functions = [
         func.template
-        for func in generated_func.values()
+        for func in list(generated_func.values()) + extra_functions
         if func.functionName != function.functionName
     ] + [generate_object_template(f) for f in generated_objs.values()]
 
     database_schema = codex.common.database.get_database_schema(spec)
 
     dev_invoke_params = {
+        "route_path": compiled_route.ApiRouteSpec.path
+        if compiled_route.ApiRouteSpec
+        else "/",
         "database_schema": database_schema,
         "function_name": function.functionName,
         "goal": goal_description,
@@ -232,7 +343,7 @@ async def develop_route(
         else None,
         "provided_functions": provided_functions,
         # compiled_route_id is not used by the prompt, but is used by the function
-        "compiled_route_id": compiled_route_id,
+        "compiled_route_id": ids.compiled_route_id,
         # available_objects is not used by the prompt, but is used by the function
         "available_objects": generated_objs,
         # function_id is used, so we can update the function with the implementation
@@ -241,10 +352,12 @@ async def develop_route(
         "allow_stub": depth < RECURSION_DEPTH_LIMIT,
     }
 
-    route_function = await DevelopAIBlock().invoke(
-        ids=ids,
-        invoke_params=dev_invoke_params,
-    )
+    if lang == "nicegui":
+        ai_block = NiceGUIDevelopAIBlock()
+    else:
+        ai_block = DevelopAIBlock()
+
+    route_function = await ai_block.invoke(ids=ids, invoke_params=dev_invoke_params)
 
     if route_function.ChildFunctions:
         logger.info(
@@ -253,10 +366,11 @@ async def develop_route(
         tasks = [
             develop_route(
                 ids=ids,
-                compiled_route_id=compiled_route_id,
                 goal_description=goal_description,
                 function=child,
                 spec=spec,
+                lang=lang,
+                extra_functions=extra_functions,
                 depth=depth + 1,
             )
             for child in route_function.ChildFunctions
