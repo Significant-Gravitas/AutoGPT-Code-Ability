@@ -2,6 +2,5 @@
 
 docker compose down
 docker compose up -d postgres
-rm -Rf migrations    
-poetry run prisma migrate dev --name updates    
+poetry run prisma migrate deploy
 ./run populate-db
