@@ -31,6 +31,9 @@ class Settings(BaseModel):
         githubRepo = self.githubRepo
         hosted = self.hosted
 
+        if not (self.zipfile or self.github_repo):
+            raise ValidationError("At least one deployment method must be selected")
+
         if zipfile:
             if githubRepo or hosted:
                 raise ValidationError("Cannot have cloud deliverables with zip files")
