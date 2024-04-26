@@ -133,7 +133,7 @@ def add_secret_to_repo(repo_name: str, secret_name: str, secret_value: str):
     )
 
 
-async def create_cloud_db(repo_url: str) -> (str, str):
+async def create_cloud_db(repo_url: str) -> tuple[str, str]:
     """
     Creates CloudSQL DB for users
     Args:
