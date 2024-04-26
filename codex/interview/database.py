@@ -21,8 +21,10 @@ async def create_interview(ids: Identifiers, name: str, description: str) -> Int
     return interview
 
 
-async def create_interview_steps(ids: Identifiers, ans: UnderstandRequest):
-    await prisma.models.InterviewStep.prisma().create(
+async def create_interview_steps(
+    ids: Identifiers, ans: UnderstandRequest
+) -> InterviewStep:
+    step = await prisma.models.InterviewStep.prisma().create(
         data=prisma.types.InterviewStepCreateInput(
             Interview={"connect": {"id": ids.interview_id}},
             Application={"connect": {"id": ids.app_id}},
@@ -41,6 +43,7 @@ async def create_interview_steps(ids: Identifiers, ans: UnderstandRequest):
             ),
         )
     )
+    return step
 
 
 async def delete_interview(interview_id: str) -> None:
