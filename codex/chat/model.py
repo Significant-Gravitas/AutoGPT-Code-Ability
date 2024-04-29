@@ -1,7 +1,6 @@
 import enum
 
 import pydantic
-from regex import P
 
 
 class ChatRequest(pydantic.BaseModel):
@@ -77,7 +76,7 @@ class AppStatus(pydantic.BaseModel):
             PhaseStates.NotStarted: "Add",
             PhaseStates.InProgress: "Check",
             PhaseStates.ErrorOccurred: "Retry",
-            PhaseStates.SuccessfullyCompleted: "Modify"
+            PhaseStates.SuccessfullyCompleted: "Modify",
         }
 
         actions = []
@@ -89,7 +88,7 @@ class AppStatus(pydantic.BaseModel):
             (self.api_routes, "API Routes"),
             (self.write_functions, "Functions"),
             (self.compile_app, "Compile App"),
-            (self.deploy_app, "Deploy App")
+            (self.deploy_app, "Deploy App"),
         ]
 
         for i, (phase, state) in enumerate(phases):
@@ -102,4 +101,3 @@ class AppStatus(pydantic.BaseModel):
                 break
 
         return actions
-                        

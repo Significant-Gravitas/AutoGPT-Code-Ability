@@ -22,8 +22,7 @@ class TestPossibleActions:
         # Assert the result
         assert isinstance(actions, list)
         assert len(actions) > 0
-        
-        
+
     def returns_next_step_if_phase_completed_1(self):
         # Initialize the class object
         app_status = AppStatus(
@@ -43,8 +42,7 @@ class TestPossibleActions:
         # Assert the result
         assert isinstance(actions, list)
         assert len(actions) == 2
-        
-        
+
     def returns_next_step_if_phase_completed_2(self):
         # Initialize the class object
         app_status = AppStatus(
@@ -64,7 +62,6 @@ class TestPossibleActions:
         # Assert the result
         assert isinstance(actions, list)
         assert len(actions) == 3
-
 
     # Returns a list of possible actions even if all phases have errors.
     def test_returns_list_of_possible_actions_with_errors(self):
@@ -108,7 +105,6 @@ class TestPossibleActions:
         assert isinstance(actions, list)
         assert len(actions) == 1
         assert actions[0] == "Check Features"
-
 
     # Returns only the first possible action if the first phase is not started.
     def test_returns_first_possible_action_if_first_phase_not_started(self):
