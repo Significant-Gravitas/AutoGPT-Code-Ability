@@ -1,6 +1,7 @@
 import enum
 
 import pydantic
+from regex import P
 
 
 class ChatRequest(pydantic.BaseModel):
@@ -72,51 +73,33 @@ class AppStatus(pydantic.BaseModel):
         return status_string
 
     def possible_actions(self):
+        phase_actions = {
+            PhaseStates.NotStarted: "Add",
+            PhaseStates.InProgress: "Check",
+            PhaseStates.ErrorOccurred: "Retry",
+            PhaseStates.SuccessfullyCompleted: "Modify"
+        }
+
         actions = []
 
-        # TODO - Add logic to determine possible actions based on the current state of the app
+        phases = [
+            (self.features, "Features"),
+            (self.modules, "Modules"),
+            (self.module_routes, "Module Routes"),
+            (self.api_routes, "API Routes"),
+            (self.write_functions, "Functions"),
+            (self.compile_app, "Compile App"),
+            (self.deploy_app, "Deploy App")
+        ]
 
-        if self.features == PhaseStates.NotStarted:
-            actions.append("Add Features")
+        for i, (phase, state) in enumerate(phases):
+            if phase == PhaseStates.SuccessfullyCompleted:
+                actions.append(f"{phase_actions[phase]} {state}")
+                if i == len(phases) - 1:
+                    break
+            else:
+                actions.append(f"{phase_actions[phase]} {state}")
+                break
 
-        if (
-            self.modules == PhaseStates.NotStarted
-            and self.features == PhaseStates.SuccessfullyCompleted
-        ):
-            actions.append("Add Modules")
-
-        if (
-            self.module_routes == PhaseStates.NotStarted
-            and self.modules == PhaseStates.SuccessfullyCompleted
-        ):
-            actions.append("Add Module Routes")
-
-        if (
-            self.api_routes == PhaseStates.NotStarted
-            and self.module_routes == PhaseStates.SuccessfullyCompleted
-        ):
-            actions.append("Add API Routes")
-
-        if (
-            self.write_functions == PhaseStates.NotStarted
-            and self.api_routes == PhaseStates.SuccessfullyCompleted
-        ):
-            actions.append("Write Functions")
-
-        if (
-            self.compile_app == PhaseStates.NotStarted
-            and self.write_functions == PhaseStates.SuccessfullyCompleted
-        ):
-            actions.append("Compile App")
-
-        if self.compile_app == PhaseStates.InProgress:
-            actions.append("Check Compile App Status")
-
-        if self.compile_app == PhaseStates.ErrorOccurred:
-            actions.append("Check Deploy App Status")
-
-        if (
-            self.deploy_app == PhaseStates.NotStarted
-            and self.compile_app == PhaseStates.SuccessfullyCompleted
-        ):
-            actions.append("Deploy App")
+        return actions
+                        
