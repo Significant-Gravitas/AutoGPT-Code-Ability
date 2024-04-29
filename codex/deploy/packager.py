@@ -237,7 +237,7 @@ services:
             timeout: 5s
             retries: 5
         ports:
-            - "${DB_PORT}:5432"
+            - "${DB_PORT:-5432}:5432"
     app:
         build:
             context: .
