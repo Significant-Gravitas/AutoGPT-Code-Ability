@@ -137,9 +137,9 @@ async def continue_interview(
             ],
             phase_completed=ans.phase_completed,
         )
-    except Exception:
-        logger.exception("Error occured in inverview continue")
-        raise AssertionError("Error occured in inverview continue")
+    except Exception as e:
+        logger.exception(f"Error occurred during interview continuation: {e}")
+        raise AssertionError(f"Error during interview continuation: {e}")
 
 
 def apply_feature_updates(
