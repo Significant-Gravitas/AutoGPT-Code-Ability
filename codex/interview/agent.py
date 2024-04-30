@@ -199,14 +199,27 @@ def apply_feature_updates(
         for i, f in enumerate(last_step.Features):
             if i in remove_set:
                 continue
-            updated_feature = update_map.get(i, f)
-            new_feature_list.append(
-                prisma.types.FeatureCreateWithoutRelationsInput(
-                    name=updated_feature.name or f.name,
-                    reasoning=updated_feature.reasoning or f.reasoning,
-                    functionality=updated_feature.functionality or f.functionality,
+            if i in update_map:
+                updated_feature = update_map[i]
+                new_feature_list.append(
+                    prisma.types.FeatureCreateWithoutRelationsInput(
+                        name=updated_feature.name if updated_feature.name else f.name,
+                        reasoning=updated_feature.reasoning
+                        if updated_feature.reasoning
+                        else f.reasoning,
+                        functionality=updated_feature.functionality
+                        if updated_feature.functionality
+                        else f.functionality,
+                    )
                 )
-            )
+            else:
+                new_feature_list.append(
+                    prisma.types.FeatureCreateWithoutRelationsInput(
+                        name=f.name,
+                        reasoning=f.reasoning,
+                        functionality=f.functionality,
+                    )
+                )
 
         return new_feature_list
     except Exception as e:
