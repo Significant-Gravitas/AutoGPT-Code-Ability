@@ -68,6 +68,12 @@ model Application {
 // Interview models for the interview process
 // ------------------------------------------------------------------------ //
 
+enum InterviewPhase {
+  FEATURES
+  ARCHITECT
+  COMPLETED
+}
+
 model Interview {
   id             String           @id @default(dbgenerated("gen_random_uuid()"))
   createdAt      DateTime         @default(now())
@@ -86,16 +92,17 @@ model Interview {
 }
 
 model InterviewStep {
-  id             String   @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  deleted        Boolean  @default(false)
-  phase_complete Boolean  @default(false)
+  id             String         @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  deleted        Boolean        @default(false)
+  phase          InterviewPhase @default(FEATURES)
+  phase_complete Boolean        @default(false)
 
-  say      String
-  thoughts String
-  Features Feature[]
-
+  say            String
+  thoughts       String
+  Features       Feature[]
+  Modules        Module[]
   Interview      Interview        @relation(fields: [interviewId], references: [id])
   interviewId    String
   Application    Application      @relation(fields: [applicationId], references: [id], onDelete: Cascade)
@@ -157,6 +164,8 @@ model Module {
   userId          String?
   Specification   Specification? @relation(fields: [specificationId], references: [id])
   specificationId String?
+  InterviewStep   InterviewStep? @relation(fields: [interviewStepId], references: [id])
+  interviewStepId String?
 }
 
 enum AccessLevel {
@@ -379,20 +388,20 @@ model CompletedApp {
 // ---------------------------------------------------------------------- //
 
 model Deployment {
-  id        String   @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deleted   Boolean  @default(false)
-  fileName  String?
-  fileSize  Int?
-  path      String?
-  fileBytes Bytes?
-  repo      String?  @unique
-  dbName    String?  @unique
-  dbUser    String?  @unique
-  zipFile   Boolean          @default(false)
-  githubRepo     Boolean          @default(true)
-  hosted         Boolean          @default(true)
+  id         String   @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  deleted    Boolean  @default(false)
+  fileName   String?
+  fileSize   Int?
+  path       String?
+  fileBytes  Bytes?
+  repo       String?  @unique
+  dbName     String?  @unique
+  dbUser     String?  @unique
+  zipFile    Boolean  @default(false)
+  githubRepo Boolean  @default(true)
+  hosted     Boolean  @default(true)
 
   User           User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId         String?

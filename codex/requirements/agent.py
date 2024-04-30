@@ -9,10 +9,10 @@ from prisma.models import Application
 
 import codex.common.model
 import codex.common.types
+import codex.interview.ai_module
 import codex.interview.database
 import codex.requirements.blocks.ai_database
 import codex.requirements.blocks.ai_endpoint
-import codex.requirements.blocks.ai_module
 import codex.requirements.blocks.ai_module_routes
 import codex.requirements.model
 from codex.api_model import Identifiers
@@ -114,13 +114,13 @@ async def generate_requirements(ids: Identifiers, app: Application) -> SpecHolde
 
     logger.info("Defining Modules from features")
 
-    module_block = codex.requirements.blocks.ai_module.ModuleGenerationBlock()
+    module_block = codex.interview.ai_module.ModuleGenerationBlock()
     module_response = await module_block.invoke(
         ids=ids,
         invoke_params={
             "poduct_name": app.name,
             "product_description": app.description,
-            "features": interview.Features,
+            "features": features_string,
         },
     )
 
@@ -170,7 +170,7 @@ async def generate_requirements(ids: Identifiers, app: Application) -> SpecHolde
 async def denfine_module_routes(
     ids: Identifiers,
     app: Application,
-    module_reqs: codex.requirements.blocks.ai_module.Module,
+    module_reqs: codex.interview.ai_module.Module,
     roles: str,
     db_response: codex.requirements.model.DBResponse,
 ) -> Module:
@@ -220,7 +220,7 @@ async def denfine_module_routes(
 async def define_api_spec(
     ids: Identifiers,
     app: Application,
-    module_reqs: codex.requirements.blocks.ai_module.Module,
+    module_reqs: codex.interview.ai_module.Module,
     api_route: codex.requirements.blocks.ai_module_routes.APIRoute,
     db_response: codex.requirements.model.DBResponse,
 ):

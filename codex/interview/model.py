@@ -45,5 +45,5 @@ class Feature(BaseModel):
 class InterviewResponse(BaseModel):
     id: str
     say_to_user: str
-    features: list[Feature] | None = None
+    phase: str
     phase_completed: bool
