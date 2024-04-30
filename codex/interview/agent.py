@@ -78,6 +78,21 @@ async def start_interview(
 async def continue_interview(
     ids: Identifiers, app: prisma.models.Application, user_message: str
 ) -> InterviewResponse:
+    """
+    Apply feature updates to the given InterviewStep based on the provided UpdateUnderstanding.
+
+    Args:
+        last_step (prisma.models.InterviewStep): The last step of the interview to update.
+        update (UpdateUnderstanding): The update containing information about the features to apply.
+
+    Returns:
+        list[prisma.types.FeatureCreateWithoutRelationsInput]: A list of updated features to be applied to the interview step.
+
+    Raises:
+        ValueError: If no features are found in the update or the last step.
+        TypeError: If the features in the update are not in the expected list format.
+    """
+
     try:
         if not ids.interview_id:
             raise AssertionError("Interview id not found")
@@ -145,6 +160,21 @@ async def continue_interview(
 def apply_feature_updates(
     last_step: prisma.models.InterviewStep, update: UpdateUnderstanding
 ) -> list[prisma.types.FeatureCreateWithoutRelationsInput]:
+    """
+    Apply feature updates to the given InterviewStep based on the provided UpdateUnderstanding.
+
+    Args:
+        last_step (prisma.models.InterviewStep): The last step of the interview to update.
+        update (UpdateUnderstanding): The update containing information about the features to apply.
+
+    Returns:
+        list[prisma.types.FeatureCreateWithoutRelationsInput]: A list of updated features to be applied to the interview step.
+
+    Raises:
+        ValueError: If no features are found in the update or the last step.
+        TypeError: If the features in the update are not in the expected list format.
+    """
+
     try:
         if update.features is None:
             raise ValueError("No features found in the update")

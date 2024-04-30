@@ -18,6 +18,15 @@ class InterviewUpdateBlock(AIBlock):
     This is a block that handles, calling the LLM, validating the response,
     storing llm calls, and returning the response to the user
 
+    :param prompt_template_name: The template name for the prompt.
+    :param model: The model used for processing.
+    :param is_json_response: A boolean indicating if the response is in JSON format.
+    :param pydantic_object: The Pydantic object associated with the block.
+
+    Methods:
+    - create_feature_list(features: list[prisma.models.Feature]): Create a list of features based on input.
+    - validate(invoke_params: dict, response: ValidatedResponse) -> ValidatedResponse: Validate the response.
+    - create_item(ids: Identifiers, validated_response: ValidatedResponse): Store the response in the database.
     """
 
     prompt_template_name = "interview/update"
