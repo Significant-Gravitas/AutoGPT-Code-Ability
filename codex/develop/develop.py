@@ -124,6 +124,8 @@ class DevelopAIBlock(AIBlock):
                 available_functions=invoke_params["available_functions"],
                 use_prisma=(self.language == "python"),
                 use_nicegui=(self.language == "nicegui"),
+                access_level=invoke_params["access_level"],
+                allowed_roles=invoke_params["allowed_roles"],
             ).validate_code(
                 packages=packages,
                 raw_code=code,

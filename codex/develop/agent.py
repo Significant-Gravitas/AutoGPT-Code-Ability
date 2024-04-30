@@ -3,7 +3,7 @@ import logging
 import os
 
 import prisma
-from prisma.enums import FunctionState
+from prisma.enums import AccessLevel, FunctionState
 from prisma.models import (
     CompiledRoute,
     CompletedApp,
@@ -28,7 +28,11 @@ from codex.develop.compile import (
 )
 from codex.develop.database import get_compiled_route, get_deliverable
 from codex.develop.develop import DevelopAIBlock, NiceGUIDevelopAIBlock
-from codex.develop.function import construct_function, generate_object_template
+from codex.develop.function import (
+    construct_function,
+    create_auth_functions,
+    generate_object_template,
+)
 from codex.requirements.blocks.ai_page_decompose import PageDecompositionBlock
 from codex.requirements.database import get_specification
 
@@ -214,6 +218,10 @@ async def develop_application(
         for module in spec.Modules:
             if module.ApiRouteSpecs:
                 api_routes.extend(module.ApiRouteSpecs)
+        # if any route has AccessLevel.PROTECTED, inject the extra functions for auth
+        if any(route.AccessLevel == AccessLevel.PROTECTED for route in api_routes):
+            auth_functions = await create_auth_functions()
+            extra_functions.extend(auth_functions)
 
         for api_route in api_routes:
             # Schedule each API route for processing
@@ -350,6 +358,12 @@ async def develop_route(
         "function_id": function.id,
         "available_functions": generated_func,
         "allow_stub": depth < RECURSION_DEPTH_LIMIT,
+        "access_level": compiled_route.ApiRouteSpec.AccessLevel
+        if compiled_route.ApiRouteSpec
+        else AccessLevel.PROTECTED,
+        "allowed_roles": compiled_route.ApiRouteSpec.AllowedAccessRoles
+        if compiled_route.ApiRouteSpec
+        else [],
     }
 
     if lang == "nicegui":

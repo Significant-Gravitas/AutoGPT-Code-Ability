@@ -228,11 +228,21 @@ async def define_api_spec(
 ):
     block = codex.requirements.blocks.ai_endpoint.EndpointSchemaRefinementBlock()
     model_names = [table.name for table in db_response.database_schema.tables]
+    model_names_with_prisma = [
+        f"prisma.models.{table.name}" for table in db_response.database_schema.tables
+    ]
 
     enum_names = [enum.name for enum in db_response.database_schema.enums]
+    enum_names_with_prisma = [
+        f"prisma.enums.{enum.name}" for enum in db_response.database_schema.enums
+    ]
 
     allowed_types = (
-        model_names + enum_names + codex.requirements.blocks.ai_endpoint.ALLOWED_TYPES
+        model_names
+        + model_names_with_prisma
+        + enum_names
+        + enum_names_with_prisma
+        + codex.requirements.blocks.ai_endpoint.ALLOWED_TYPES
     )
 
     endpoint: codex.requirements.model.EndpointSchemaRefinementResponse = await block.invoke(

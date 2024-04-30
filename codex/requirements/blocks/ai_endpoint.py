@@ -90,7 +90,8 @@ ALLOWED_TYPES = sorted(typing.__all__) + [
     "WindowsPath",
     "UploadFile",
     "Annotated",
-    "Depends"
+    "Depends",
+    "Depends(get_current_active_user)",
 ]
 
 
@@ -160,6 +161,7 @@ def replace_types(types: Set[str]) -> Set[str]:
         "supportsround": "SupportsRound",
         "reversible": "Reversible",
         "container": "Container",
+        "DateTime": "datetime.datetime",
     }
 
     return {type_replacements.get(type_name.lower(), type_name) for type_name in types}
@@ -238,6 +240,7 @@ def replace_field_type(field_type: str) -> str:
         "supportsround": "SupportsRound",
         "reversible": "Reversible",
         "container": "Container",
+        "DateTime": "datetime.datetime",
     }
 
     field_type = field_type.replace(" ", "")
@@ -521,7 +524,7 @@ class EndpointSchemaRefinementBlock(AIBlock):
                             name="current_user",
                             description="The commons object used to add the user_id, check dependencies, and validate roles",
                             # FastAPI commons object
-                            type="Annotated[User, Depends(get_current_active_user)]",
+                            type="Annotated[prisma.models.User, Depends(get_current_active_user)]",
                         )
                     )
             # Perform additional validation

@@ -12,6 +12,7 @@ import black
 import isort
 import nicegui
 import prisma
+from prisma.enums import AccessLevel
 from prisma.models import Function, ObjectType
 
 from codex.common.ai_block import (
@@ -51,6 +52,8 @@ class CodeValidator:
         available_objects: dict[str, ObjectType] | None = None,
         use_prisma: bool = True,
         use_nicegui: bool = False,
+        access_level: AccessLevel = AccessLevel.PUBLIC,
+        allowed_roles: list[str] = [],
     ):
         self.compiled_route_id: str = compiled_route_id
         self.db_schema: str = database_schema

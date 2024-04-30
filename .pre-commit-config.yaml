@@ -31,6 +31,6 @@ repos:
       - id: pytest
         name: pytest
         language: system
-        entry: poetry run pytest . --without-integration
-        pass_filenames: true
+        entry: poetry run pytest codex/tests --without-integration
+        pass_filenames: false
         files: '\.py$'
