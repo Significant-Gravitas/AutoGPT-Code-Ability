@@ -211,4 +211,4 @@ def apply_feature_updates(
         return new_feature_list
     except Exception as e:
         logger.exception(f"Error occured in apply_feature_updates: {e}")
-        raise AssertionError(f"Error occured in apply_feature_updates: {e}")
+        raise RuntimeError(f"Error occured in apply_feature_updates: {e}")
