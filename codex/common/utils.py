@@ -1,5 +1,5 @@
-import string
 import secrets
+import string
 
 
 def generate_db_credentials(username_prefix="user", password_length=16):

@@ -46,13 +46,12 @@ enum Role {
 }
 
 model Application {
-  id          String   @id @default(dbgenerated("gen_random_uuid()"))
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  name        String
-  description String?
-  deleted     Boolean  @default(false)
-
+  id              String           @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  name            String
+  description     String?
+  deleted         Boolean          @default(false)
   Specifications  Specification[]
   CompletedApps   CompletedApp[]
   Deployments     Deployment[]
@@ -61,7 +60,6 @@ model Application {
   userId          String?
   Interviews      Interview[]
   InterviewStep   InterviewStep[]
-  Modules         Module[]
 }
 
 // ------------------------- Interview Models ---------------------------- //
@@ -151,12 +149,28 @@ model Module {
   name            String
   description     String
   ApiRouteSpecs   APIRouteSpec[]
-  Application     Application?   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  applicationId   String?
+  Routes          Route[]
   User            User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId          String?
   Specification   Specification? @relation(fields: [specificationId], references: [id])
   specificationId String?
+}
+
+model Route {
+  id                   String       @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  deleted              Boolean      @default(false)
+  http_verb            HTTPVerb
+  functon_name         String
+  access_level         AccessLevel
+  allowed_access_roles String[]
+  path                 String
+  description          String
+  ApiRouteSpecs        APIRouteSpec @relation(fields: [apiRouteSpecId], references: [id], onDelete: Cascade)
+  apiRouteSpecId       String
+  Module               Module?      @relation(fields: [moduleId], references: [id])
+  moduleId             String?
 }
 
 enum AccessLevel {
@@ -193,6 +207,7 @@ model APIRouteSpec {
   responseObjectId String?
   RequestObject    ObjectType? @relation("RequestObjectForAPI", fields: [requestObjectId], references: [id], onDelete: Cascade)
   requestObjectId  String?
+  Route            Route[]
 }
 
 model ObjectType {

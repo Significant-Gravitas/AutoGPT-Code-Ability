@@ -1,13 +1,11 @@
-from google.auth import default
-from googleapiclient.discovery import build
 import logging
-
+import os
 
 import psycopg2
-from psycopg2 import sql
-
 from github import Github
-import os
+from google.auth import default
+from googleapiclient.discovery import build
+from psycopg2 import sql
 
 import codex.common.utils
 

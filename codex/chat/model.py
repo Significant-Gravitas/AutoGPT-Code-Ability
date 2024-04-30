@@ -1,6 +1,7 @@
 import enum
 
 import pydantic
+import prisma.models
 
 
 class ChatRequest(pydantic.BaseModel):
@@ -24,7 +25,7 @@ class AppStatus(pydantic.BaseModel):
     features: PhaseStates
     modules: PhaseStates
     module_routes: PhaseStates
-    api_routes: PhaseStates
+    api_endpoints: PhaseStates
     write_functions: PhaseStates
     compile_app: PhaseStates
     deploy_app: PhaseStates
@@ -50,8 +51,8 @@ class AppStatus(pydantic.BaseModel):
             else ""
         )
         status_string += (
-            f"- API Routes: {self.api_routes.name}\n"
-            if self.api_routes != PhaseStates.NotStarted
+            f"- API Routes: {self.api_endpoints.name}\n"
+            if self.api_endpoints != PhaseStates.NotStarted
             else ""
         )
         status_string += (
@@ -85,7 +86,7 @@ class AppStatus(pydantic.BaseModel):
             (self.features, "Features"),
             (self.modules, "Modules"),
             (self.module_routes, "Module Routes"),
-            (self.api_routes, "API Routes"),
+            (self.api_endpoints, "API Endpoints"),
             (self.write_functions, "Functions"),
             (self.compile_app, "Compile App"),
             (self.deploy_app, "Deploy App"),
@@ -101,3 +102,32 @@ class AppStatus(pydantic.BaseModel):
                 break
 
         return actions
+
+    @staticmethod
+    async def load_from_db(app_id: str):
+        
+        INCLUDE_MODULES = {
+            "include": {
+                "Routes": {
+                           "include": {
+                               "ApiRouteSpecs": True
+                           },
+            }
+        }
+        
+        INCLUDE_SPEC = {
+            "include": {
+                "Features": True,
+                "Modules": True,
+            }
+        }
+
+        app = await prisma.models.Application.prisma().find_first_or_raise(
+            where={"id": app_id},
+            include={
+                "Specifications": INCLUDE_SPEC,
+                "CompletedApps": True,
+                "Deployments": True,
+                "Interviews": True,
+            },
+        )

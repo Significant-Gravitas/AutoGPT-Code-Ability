@@ -1,7 +1,7 @@
 import prisma
 from prisma.enums import Role
 from prisma.models import Application, User
-from prisma.types import UserCreateWithoutRelationsInput
+from prisma.types import UserCreateWithoutRelationsInput, ApplicationWhereInput
 
 from codex.api_model import (
     ApplicationCreate,
@@ -128,6 +128,22 @@ async def get_app_by_id(user_id: str, app_id: str) -> prisma.models.Application:
             "deleted": False,
         },
         include={"User": True},
+    )
+
+    return app
+
+
+async def get_app_coresponding_resources(user_id: str, app_id: str):
+    app = await Application.prisma().find_first_or_raise(
+        where={
+            "id": app_id,
+            "userId": user_id,
+            "deleted": False,
+        },
+        include={
+            "User": True,
+            "Specifications": True,
+            },
     )
 
     return app

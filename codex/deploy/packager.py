@@ -16,7 +16,6 @@ from codex.common.constants import PRISMA_FILE_HEADER
 from codex.common.exec_external_tool import execute_command
 from codex.deploy.model import Application
 
-
 logger = logging.getLogger(__name__)
 
 PROJECT_AUTHOR = "AutoGPT <info@agpt.co>"
