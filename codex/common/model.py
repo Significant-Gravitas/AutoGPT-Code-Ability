@@ -101,13 +101,13 @@ class FunctionDef(BaseModel):
         template = f"""
 {def_str} {f.name}({args_str}){ret_type_str}:
     \"\"\"
-    {f.function_desc}
+    {f.function_desc.replace("\n", "\n    ")}
 
     Args:
     {arg_desc}
 
     Returns:
-    {f.return_type}: {f.return_desc}
+    {f.return_type}{': ' + f.return_desc if f.return_desc else ''}
     \"\"\"
     pass
 """
