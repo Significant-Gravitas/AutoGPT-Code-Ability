@@ -97,11 +97,12 @@ class FunctionDef(BaseModel):
 
         def_str = "async def" if "await " in f.function_code else "def"
         ret_type_str = f" -> {f.return_type}" if f.return_type else ""
+        func_desc = f.function_desc.replace("\n", "\n    ")
 
         template = f"""
 {def_str} {f.name}({args_str}){ret_type_str}:
     \"\"\"
-    {f.function_desc.replace("\n", "\n    ")}
+    {func_desc}
 
     Args:
     {arg_desc}
