@@ -232,16 +232,16 @@ async def develop_application(
         if any(isinstance(r, Exception) for r in results):
             exceptions = [r for r in results if isinstance(r, Exception)]
             # if the only exceptions are LLMFailures, we can continue
-            if eat_errors and all(isinstance(r, LLMFailure) for r in exceptions):
-                logger.warning(
-                    f"App Id: {ids.app_id} Eating Errors developing API routes: {exceptions}"
-                )
-                pass
-            else:
-                error_message = "".join(f"\n* {e}" for e in exceptions)
-                raise LLMFailure(
-                    f"App Id: {ids.app_id} Error developing API routes: \n{error_message}"
-                )
+            # if eat_errors and all(isinstance(r, LLMFailure) for r in exceptions):
+            #     logger.warning(
+            #         f"App Id: {ids.app_id} Eating Errors developing API routes: {exceptions}"
+            #     )
+            #     pass
+            # else:
+            error_message = "".join(f"\n* {e}" for e in exceptions)
+            raise LLMFailure(
+                f"App Id: {ids.app_id} Error developing API routes: \n{error_message}"
+            )
         else:
             logger.info("🚀 All API routes developed successfully")
 
