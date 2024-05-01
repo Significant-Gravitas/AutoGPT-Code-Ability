@@ -766,6 +766,14 @@ for t in collections.__all__:
     AUTO_IMPORT_TYPES[t] = f"from collections import {t}"
 for t in nicegui.ui.__all__:
     AUTO_IMPORT_TYPES[t] = f"from typing import {t}"
+for t in ["FastAPI", "Depends", "HTTPException", "status"]:
+    AUTO_IMPORT_TYPES[t] = f"from fastapi import {t}"
+for t in ["OAuth2PasswordBearer", "OAuth2PasswordRequestForm"]:
+    AUTO_IMPORT_TYPES[t] = f"from fastapi.security import {t}"
+for t in ["JWTError", "jwt"]:
+    AUTO_IMPORT_TYPES[t] = f"from jose import {t}"
+for t in ["CryptContext"]:
+    AUTO_IMPORT_TYPES[t] = f"from passlib.context import {t}"
 
 
 def __fix_missing_imports(
