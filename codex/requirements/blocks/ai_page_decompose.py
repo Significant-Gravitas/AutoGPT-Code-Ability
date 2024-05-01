@@ -125,14 +125,14 @@ class PageDecompositionBlock(AIBlock):
                             + "\n\nIt will utilize these functions:\n"
                             + "\n".join(
                                 [
-                                    f"'{name}': {desc}"
+                                    f"  * '{name}': {desc}"
                                     for name, desc in page.used_functions.items()
                                 ]
                             )
                             + "\n\nIt will connect to these pages:\n"
                             + "\n".join(
                                 [
-                                    f"`{conn.to}`: {conn.description}"
+                                    f"  * `{conn.to}`: {conn.description}"
                                     for conn in response.connections.get(page.route, [])
                                 ]
                             ),

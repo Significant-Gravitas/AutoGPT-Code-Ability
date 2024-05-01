@@ -99,19 +99,19 @@ class FunctionDef(BaseModel):
         ret_type_str = f" -> {f.return_type}" if f.return_type else ""
 
         template = f"""
-        {def_str} {f.name}({args_str}){ret_type_str}:
-            \"\"\"
-            {f.function_desc}
+{def_str} {f.name}({args_str}){ret_type_str}:
+    \"\"\"
+    {f.function_desc}
 
-            Args:
-            {arg_desc}
+    Args:
+    {arg_desc}
 
-            Returns:
-            {f.return_type}: {f.return_desc}
-            \"\"\"
-            pass
-        """
-        return "\n".join([line[8:] for line in template.split("\n")]).strip()
+    Returns:
+    {f.return_type}: {f.return_desc}
+    \"\"\"
+    pass
+"""
+        return "\n".join([line for line in template.split("\n")]).strip()
 
     def __init__(self, function_template: Optional[str] = None, **data):
         super().__init__(**data)

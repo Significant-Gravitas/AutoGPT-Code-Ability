@@ -813,7 +813,9 @@ async def __fix_missing_imports(
         elif missing in func.available_objects:
             object_type_id = func.available_objects[missing].id
             functions = await get_object_type_referred_functions(object_type_id)
-            service_name = any([f in func.available_functions for f in functions])
+            service_name = next(
+                iter([f for f in functions if f in func.available_functions]), None
+            )
             if service_name:
                 missing_imports.append(
                     f"from project.{service_name}_service import {missing}"
