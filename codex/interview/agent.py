@@ -176,10 +176,6 @@ def apply_feature_updates(
     """
 
     try:
-        # if update.features is None:
-        #     raise ValueError("No features found in the update")
-        # if not isinstance(update.features, list):
-        #     raise TypeError("Expected features to be a list")
         if not last_step.Features:
             raise ValueError("No features found in the last step")
 
