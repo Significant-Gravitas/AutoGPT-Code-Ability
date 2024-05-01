@@ -128,6 +128,8 @@ async def setup_if_required(
         return path
 
     if copy_from_parent and cwd != PROJECT_PARENT_DIR:
+        if (cwd / "venv").exists():
+            await execute_command(["rm", "-rf", str(cwd / "venv")], cwd, None)
         await execute_command(
             ["virtualenv-clone", str(PROJECT_PARENT_DIR / "venv"), str(cwd / "venv")],
             cwd,
