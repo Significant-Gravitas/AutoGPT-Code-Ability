@@ -176,12 +176,19 @@ def apply_feature_updates(
     """
 
     try:
-        if update.features is None:
-            raise ValueError("No features found in the update")
-        if not isinstance(update.features, list):
-            raise TypeError("Expected features to be a list")
         if not last_step.Features:
             raise ValueError("No features found in the last step")
+
+        # If features is None or an empty list, return the existing features
+        if not update.features:
+            return [
+                prisma.types.FeatureCreateWithoutRelationsInput(
+                    name=f.name,
+                    reasoning=f.reasoning,
+                    functionality=f.functionality,
+                )
+                for f in last_step.Features
+            ]
 
         update_map = {f.id: f for f in update.features if f.action == Action.UPDATE}
         remove_set = {f.id for f in update.features if f.action == Action.REMOVE}
