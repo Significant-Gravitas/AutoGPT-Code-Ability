@@ -32,7 +32,10 @@ from codex.common.exec_external_tool import (
 )
 from codex.common.model import FunctionDef
 from codex.develop.ai_extractor import DocumentationExtractor
-from codex.develop.database import get_ids_from_function_id_and_compiled_route
+from codex.develop.database import (
+    get_ids_from_function_id_and_compiled_route,
+    get_object_type_referred_functions,
+)
 from codex.develop.function import generate_object_code
 from codex.develop.function_visitor import FunctionVisitor
 from codex.develop.model import GeneratedFunctionResponse, Package
@@ -176,6 +179,11 @@ class CodeValidator:
                 key=lambda x: x[1],
             )
         ).strip()
+
+        # TODO(majdyz):
+        # Find Nicegui ui.link in `function_code` and verify that the targetted link references a valid function mentioned in the function docstring
+        # if self.use_nicegui and "ui.link" in function_code: validation.
+        # Challenge: ui.link can be used in multiple ways, e.g. ui.link('route_name') or ui.link('text', 'route_name'), ui.link(target='route_name', text='text')
 
         # No need to validate main function if it's not provided (compiling a server code)
         if self.func_name:
@@ -374,7 +382,9 @@ async def __execute_ruff(
             if re.match(r"Found \d+ errors?\.*", v) is None
         ]
 
-        added_imports, error_messages = __fix_missing_imports(error_messages, func)
+        added_imports, error_messages = await __fix_missing_imports(
+            error_messages, func
+        )
 
         # Append problematic line to the error message or add it as TODO line
         validation_errors: list[ValidationError] = []
@@ -765,7 +775,7 @@ for t in nicegui.ui.__all__:
     AUTO_IMPORT_TYPES[t] = f"from typing import {t}"
 
 
-def __fix_missing_imports(
+async def __fix_missing_imports(
     errors: list[str], func: GeneratedFunctionResponse
 ) -> tuple[set[str], list[str]]:
     """
@@ -793,13 +803,28 @@ def __fix_missing_imports(
             filtered_errors.append(error)
             continue
 
-        missing_type = match.group(1)
-        if missing_type in schema_imports:
-            missing_imports.append(schema_imports[missing_type])
-        elif missing_type in AUTO_IMPORT_TYPES:
-            missing_imports.append(AUTO_IMPORT_TYPES[missing_type])
-        elif missing_type in func.available_functions:
-            missing_imports.append(f"from project.{missing_type}_service import *")
+        missing = match.group(1)
+        if missing in schema_imports:
+            missing_imports.append(schema_imports[missing])
+        elif missing in AUTO_IMPORT_TYPES:
+            missing_imports.append(AUTO_IMPORT_TYPES[missing])
+        elif missing in func.available_functions:
+            missing_imports.append(f"from project.{missing}_service import {missing}")
+        elif missing in func.available_objects:
+            object_type_id = func.available_objects[missing].id
+            functions = await get_object_type_referred_functions(object_type_id)
+            service_name = any([f in func.available_functions for f in functions])
+            if service_name:
+                missing_imports.append(
+                    f"from project.{service_name}_service import {missing}"
+                )
+            else:
+                logger.error(
+                    "[AUTO-IMPORT] Unable to find function that uses object type `%s` ID #%s",
+                    missing,
+                    object_type_id,
+                )
+                filtered_errors.append(error)
         else:
             filtered_errors.append(error)
 

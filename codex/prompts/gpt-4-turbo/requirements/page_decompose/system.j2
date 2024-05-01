@@ -22,9 +22,9 @@ Example:
         "Table, it will contain the list of users, with columns like name, email, phone, etc.",
         "Button, it will contain the button to open the user detail page.",
       ],
-      "used_functions": [
-        "listUsers",
-      ]
+      "used_functions": {
+        "listUsers": "This function will be called when the user list page is opened."
+      }
     },
     {
       "main_function_name": "user_detail_page",
@@ -37,18 +37,33 @@ Example:
         "Button for delete, it will contain the button to delete the user.",
         "Button for cancel, it will contain the button to cancel the user detail page.",
       ],
-      "used_functions": [
-        "deleteUser",
-        "editUser",
-        "addUser",
-        "getUser",
-      ]
+      "used_functions": {
+        "deleteUser": "This function will be called when the delete button is clicked.",
+        "editUser": "This function will be called when the save button is clicked.",
+        "addUser": "This function will be called when the add button is clicked.",
+        "getUser": "This function will be called when the user detail page is opened."
+      }
     }
-  ]
+  ],
+  "connections": {
+    "/" : [
+      {
+        "to": "/users/{id}",
+        "description": "Open the user detail page for the selected user."
+      }
+    ],
+    "/users/{id}" : [
+      {
+        "to": "/",
+        "description": "Go back to the user list page."
+      }
+    ]
+  }
 }
 
 Note:
 * main_function_name should be started with `render_` and ended with `page`, e.g: `render_XXX_page`.
+* There should exist one `/` route page as the home page.
 * Function in `used_functions` has to be the ones that are provided by the user prompt.
+* `connections` to page has to be connecting only to the pages that are provided in the `pages` array.
 * Try to create as little pages as possible, but make sure that all the requirements are met.
-
