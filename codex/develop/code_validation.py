@@ -33,6 +33,7 @@ from codex.common.exec_external_tool import (
 )
 from codex.common.model import FunctionDef
 from codex.develop.ai_extractor import DocumentationExtractor
+from codex.develop.auth_deps import AUTH_CODE
 from codex.develop.database import get_ids_from_function_id_and_compiled_route
 from codex.develop.function import generate_object_code
 from codex.develop.function_visitor import FunctionVisitor
@@ -546,6 +547,8 @@ async def __execute_pyright(
     )
     (temp_dir / "requirements.txt").write_text(packages)
     (temp_dir / "code.py").write_text(code)
+    if True:
+        (temp_dir / "auth_deps.py").write_text(AUTH_CODE)
     (temp_dir / "schema.prisma").write_text(PRISMA_FILE_HEADER + "\n" + func.db_schema)
 
     return await __execute_pyright_commands(code)
@@ -774,6 +777,8 @@ for t in ["JWTError", "jwt"]:
     AUTO_IMPORT_TYPES[t] = f"from jose import {t}"
 for t in ["CryptContext"]:
     AUTO_IMPORT_TYPES[t] = f"from passlib.context import {t}"
+for t in ["get_current_active_user"]:
+    AUTO_IMPORT_TYPES[t] = f"from .auth_deps import {t}"
 
 
 def __fix_missing_imports(

@@ -219,9 +219,9 @@ async def develop_application(
             if module.ApiRouteSpecs:
                 api_routes.extend(module.ApiRouteSpecs)
         # if any route has AccessLevel.PROTECTED, inject the extra functions for auth
-        if any(route.AccessLevel == AccessLevel.PROTECTED for route in api_routes):
-            auth_functions = await create_auth_functions()
-            extra_functions.extend(auth_functions)
+        # if any(route.AccessLevel == AccessLevel.PROTECTED for route in api_routes):
+            # auth_functions = await create_auth_functions()
+            # extra_functions.extend(auth_functions)
 
         for api_route in api_routes:
             # Schedule each API route for processing

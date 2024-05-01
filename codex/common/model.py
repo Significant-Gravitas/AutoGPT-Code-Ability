@@ -119,7 +119,7 @@ class FunctionDef(BaseModel):
             function_template or self.__generate_function_template()
         )
 
-    def validate_matching_function(self, existing_func: Function):
+    async def validate_matching_function(self, existing_func: Function):
         expected_args = [(f.name, f.typeName) for f in existing_func.FunctionArgs or []]
         expected_rets = (
             existing_func.FunctionReturn.typeName
@@ -136,9 +136,40 @@ class FunctionDef(BaseModel):
                 for x, y in zip(sorted(expected_args), sorted(self.arg_types))
             ]
         ):
-            errors.append(
-                f"Function {func_name} has different arguments than expected, expected {expected_args} but got {self.arg_types}"
+            # check if adding `prisma.models.` or `prisma.enums.` to the arg name fixes the problem
+            # Get Database Schema from the function
+            existing_func = await Function.prisma().find_first_or_raise(
+                where={"id": existing_func.id},
+                include={"DatabaseSchema": {"include": {"DatabaseTables": True}}},
             )
+            if (
+                existing_func.DatabaseSchema
+                and existing_func.DatabaseSchema.DatabaseTables
+            ):
+                for table in existing_func.DatabaseSchema.DatabaseTables:
+                    if table.name in [arg_type for _, arg_type in self.arg_types]:
+                        replacement = f"prisma.{'enums' if table.isEnum else 'models'}.{table.name}"
+                        expected_args = [
+                            (name, replacement if arg_type == table.name else arg_type)
+                            for name, arg_type in expected_args
+                        ]
+                if any(
+                    [
+                        x[0] != y[0]
+                        or not is_type_equal(x[1], y[1])
+                        and x[1] != "object"
+                        for x, y in zip(sorted(expected_args), sorted(self.arg_types))
+                    ]
+                ):
+                    errors.append(
+                        f"Function {func_name} has different arguments than expected, expected {expected_args} but got {self.arg_types}"
+                    )
+                else:
+                    return
+            else:
+                errors.append(
+                    f"Function {func_name} has different arguments than expected, expected {expected_args} but got {self.arg_types}"
+                )
         if (
             not is_type_equal(expected_rets, self.return_type)
             and expected_rets != "object"

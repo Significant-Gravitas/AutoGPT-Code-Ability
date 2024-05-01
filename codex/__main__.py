@@ -212,7 +212,7 @@ def resume(base_url: str):
         valid_options.add("S")
     if selected_resume_point.completedAppId:
         # Running from a completed App
-        resume_options.append("Completed App (c)")
+        resume_options.append("Compiled App (c)")
         valid_options.add("c")
         valid_options.add("C")
     if selected_resume_point.deploymentId:

@@ -19,8 +19,10 @@ When creating the Auth roles this is the recommended way to do it:
 
 model User {
   id               Int               @id @default(autoincrement())
-  email            String            @unique
+  username            String            @unique
   role             Role
+  hashed_password   String
+  disabled          Boolean           @default(false)
   ...
 }
 

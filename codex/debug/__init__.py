@@ -55,7 +55,7 @@ async def get_resume_points(prisma_client) -> list[codex.common.model.ResumePoin
         "\033[92m Todays\033[0m and\033[93m yesterdays\033[0m days apps are colored:\n"
     )
     print(
-        f"{'':<3} | {'updatedAt':<20} | {'name':<30} | {'Interview':<10} | {'Specification':<15} | {'CompiledAApp':<12} | {'Deployment':<10}"
+        f"{'':<3} | {'updatedAt':<20} | {'name':<30} | {'Interview':<10} | {'Specification':<15} | {'CompiledApp':<12} | {'Deployment':<10}"
     )
     separation_row = f"{'-' * 3}-+-{'-' * 20}-+-{'-' * 30}-+-{'-' * 10}-+-{'-' * 15}-+-{'-' * 12}-+-{'-' * 10}"
     print(separation_row)
