@@ -1,3 +1,5 @@
+import re
+
 from prisma.enums import AccessLevel, HTTPVerb
 from pydantic import BaseModel
 
@@ -62,7 +64,7 @@ class PageDecompositionBlock(AIBlock):
                             f"Function {func_name} not found in available functions for page {page.route}"
                         )
                 funcname = page.main_function_name
-                if not funcname.startswith("render_") or not funcname.endswith("_page"):
+                if not re.fullmatch(r"render_.*_page", funcname):
                     validation_errors.append_message(
                         f"Main function name {page.main_function_name} should start with 'render_' and end with '_page'"
                     )
