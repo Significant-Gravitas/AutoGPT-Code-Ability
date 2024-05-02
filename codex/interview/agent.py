@@ -5,10 +5,11 @@ import prisma
 import prisma.enums
 import prisma.models
 
+import codex.interview.model
 from codex.common.ai_block import Identifiers
 from codex.interview.ai_interview import InterviewBlock
 from codex.interview.ai_interview_update import InterviewUpdateBlock
-from codex.interview.ai_module import ModuleGenerationBlock, ModuleResponse
+from codex.interview.ai_module import ModuleGenerationBlock
 from codex.interview.model import Action, InterviewResponse, UpdateUnderstanding
 
 logger = logging.getLogger(__name__)
@@ -227,23 +228,41 @@ async def continue_architect_phase(
 
         module_block = ModuleGenerationBlock()
 
-        module_response: ModuleResponse = await module_block.invoke(
-            ids=ids,
-            invoke_params={
-                "poduct_name": app.name,
-                "product_description": app.description,
-                "features": features_string,
-            },
+        invoke_params = {
+            "product_name": app.name,
+            "product_description": app.description,
+            "features": features_string,
+        }
+        if last_step.Modules:
+            invoke_params["modules"] = (
+                "\n".join(
+                    [
+                        f"- **{module.name}** - {module.description}"
+                        for module in last_step.Modules
+                    ]
+                ),
+            )
+        if user_message:
+            invoke_params["user_msg"] = user_message
+
+        module_response: codex.interview.model.ModuleResponse = (
+            await module_block.invoke(
+                ids=ids,
+                invoke_params=invoke_params,
+            )
         )
 
         say_to_user = "Here are the modules that I have generated based on the features you have provided:\n"
-        for module in module_response.modules:
-            say_to_user += f"- **{module.name}** - {module.functionality}\n"
+
+        latest_modules = apply_module_update(last_step, module_response)
+        if latest_modules:
+            for module in latest_modules:
+                say_to_user += f"- **{module['name']}** - {module['description']}\n"
 
         await prisma.models.InterviewStep.prisma().create(
             data=prisma.types.InterviewStepCreateInput(
                 phase=prisma.enums.InterviewPhase.ARCHITECT,
-                phase_complete=True,
+                phase_complete=module_response.phase_completed,
                 say=say_to_user,
                 thoughts=module_response.thoughts,
                 Interview={"connect": {"id": last_step.interviewId}},
@@ -259,22 +278,19 @@ async def continue_architect_phase(
                     ]
                 ),
                 Modules=prisma.types.ModuleCreateManyNestedWithoutRelationsInput(
-                    create=[
-                        prisma.types.ModuleCreateWithoutRelationsInput(
-                            name=module.name,
-                            description=module.functionality,
-                        )
-                        for module in module_response.modules
-                    ]
+                    create=latest_modules
                 ),
+                access_roles=module_response.access_roles
+                if module_response.access_roles
+                else [],
             )
         )
 
         return InterviewResponse(
             id=last_step.interviewId,
             say_to_user=say_to_user,
-            phase=prisma.enums.InterviewPhase.FEATURES.value,
-            phase_completed=True,
+            phase=prisma.enums.InterviewPhase.ARCHITECT.value,
+            phase_completed=module_response.phase_completed,
         )
     except Exception as e:
         logger.exception(f"Error occurred during interview modules continuation: {e}")
@@ -356,3 +372,68 @@ def apply_feature_updates(
     except Exception as e:
         logger.exception(f"Error occured in apply_feature_updates: {e}")
         raise RuntimeError(f"Error occured in apply_feature_updates: {e}")
+
+
+def apply_module_update(
+    last_step: prisma.models.InterviewStep, update: codex.interview.model.ModuleResponse
+) -> list[prisma.types.ModuleCreateWithoutRelationsInput]:
+    if not last_step.Modules and not update.modules:
+        raise ValueError("No modules found in the last step or the update")
+
+    if not update.modules and last_step.Modules:
+        return [
+            prisma.types.ModuleCreateWithoutRelationsInput(
+                name=module.name,
+                description=module.description,
+                interactions=module.interactions,
+            )
+            for module in last_step.Modules
+        ]
+
+    assert update.modules, "No modules found in the update"
+
+    update_map = {m.id: m for m in update.modules if m.action == Action.UPDATE}
+    remove_set = {m.id for m in update.modules if m.action == Action.REMOVE}
+
+    new_module_list = [
+        prisma.types.ModuleCreateWithoutRelationsInput(
+            name=m.name if m.name else "",
+            description=m.functionality if m.functionality else "",
+            interactions="\n".join(m.interaction_with_other_modules)
+            if m.interaction_with_other_modules
+            else "",
+        )
+        for m in update.modules
+        if m.action == Action.ADD
+    ]
+    if not last_step.Modules:
+        return new_module_list
+
+    for i, m in enumerate(last_step.Modules):
+        if i in remove_set:
+            continue
+        if i in update_map:
+            updated_module = update_map[i]
+            new_module_list.append(
+                prisma.types.ModuleCreateWithoutRelationsInput(
+                    name=updated_module.name if updated_module.name else m.name,
+                    description=updated_module.functionality
+                    if updated_module.functionality
+                    else m.description,
+                    interactions="\n".join(
+                        updated_module.interaction_with_other_modules
+                    )
+                    if updated_module.interaction_with_other_modules
+                    else m.interactions,
+                )
+            )
+        else:
+            new_module_list.append(
+                prisma.types.ModuleCreateWithoutRelationsInput(
+                    name=m.name,
+                    description=m.description,
+                    interactions=m.interactions,
+                )
+            )
+
+    return new_module_list

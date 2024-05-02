@@ -1,30 +1,7 @@
 import logging
 
-import pydantic
-
 import codex.common.ai_block
-
-
-class Module(pydantic.BaseModel):
-    """
-    A Software Module for the application
-    """
-
-    name: str
-    functionality: str
-    interaction_with_other_modules: list[str]
-
-
-class ModuleResponse(pydantic.BaseModel):
-    """
-    This is the response model for the ModuleGenerationBlock
-    """
-
-    thoughts: str
-    say: str
-    modules: list[Module]
-    access_roles: list[str]
-
+import codex.interview.model
 
 logger = logging.getLogger(__name__)
 
@@ -43,13 +20,15 @@ class ModuleGenerationBlock(codex.common.ai_block.AIBlock):
     # Should we force the LLM to reply in JSON
     is_json_response = True
     # If we are using is_json_response, what is the response model
-    pydantic_object = ModuleResponse
+    pydantic_object = codex.interview.model.ModuleResponse
 
     async def validate(
         self, invoke_params: dict, response: codex.common.ai_block.ValidatedResponse
     ) -> codex.common.ai_block.ValidatedResponse:
         try:
-            model = ModuleResponse.model_validate_json(response.response, strict=False)
+            model = codex.interview.model.ModuleResponse.model_validate_json(
+                response.response, strict=False
+            )
             response.response = model
         except Exception as e:
             raise codex.common.ai_block.ValidationError(

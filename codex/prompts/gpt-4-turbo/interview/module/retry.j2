@@ -1,15 +1,11 @@
-Extract verbatim the information necessary to fix this error: """{{full_error_message}}"""
+{% include 'interview/module/user.j2' %}
 
-{% if readme %}
-From this documentation: 
-"""
-{{readme}}
-"""
-{% endif %}
+The reply you provided is incorrect or has caused an error. Please review and correct your response.
 
-{% if context %}
-And this file has our best guess for the context of the error:
-"""
-{{context}}
-"""
-{% endif %}
+Your previous response:
+    
+{{ generation }}
+
+Error: 
+
+{{ error }}

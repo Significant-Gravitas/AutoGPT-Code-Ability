@@ -429,7 +429,7 @@ class AIBlock:
                         invoke_params["generation"] = presponse.message
                     else:
                         invoke_params["generation"] = "Error generating response"
-                    invoke_params["error"] = str(error_message)
+                    invoke_params["error"] = str(object=error_message)
 
                     # Collect the enhancements from all the errors
                     all_enhancements: list[ErrorEnhancements] = []

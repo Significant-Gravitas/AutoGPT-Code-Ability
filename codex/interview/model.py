@@ -47,3 +47,27 @@ class InterviewResponse(BaseModel):
     say_to_user: str
     phase: str
     phase_completed: bool
+
+
+class Module(BaseModel):
+    """
+    A Software Module for the application
+    """
+
+    action: Action
+    id: int
+    name: str | None = None
+    functionality: str | None = None
+    interaction_with_other_modules: list[str] | None = None
+
+
+class ModuleResponse(BaseModel):
+    """
+    This is the response model for the ModuleGenerationBlock
+    """
+
+    thoughts: str
+    say_to_user: str
+    modules: list[Module] | None = None
+    access_roles: list[str] | None = None
+    phase_completed: bool

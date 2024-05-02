@@ -103,6 +103,7 @@ model InterviewStep {
   thoughts       String
   Features       Feature[]
   Modules        Module[]
+  access_roles   String[]
   Interview      Interview        @relation(fields: [interviewId], references: [id])
   interviewId    String
   Application    Application      @relation(fields: [applicationId], references: [id], onDelete: Cascade)
@@ -157,6 +158,7 @@ model Module {
   deleted         Boolean        @default(false)
   name            String
   description     String
+  interactions    String
   ApiRouteSpecs   APIRouteSpec[]
   Application     Application?   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   applicationId   String?
