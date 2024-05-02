@@ -343,8 +343,8 @@ async def create_zip_file(application: Application, spec: Specification) -> byte
             server_file.write_text(application.server_code)
 
             # Make a chat script file
-            readme_file = package_dir / "backend_chat.sh"
-            readme_file.write_text(script)
+            chat_file = package_dir / "backend_chat.sh"
+            chat_file.write_text(script)
 
             # Make a app.py file
             if application.app_code:
@@ -507,8 +507,8 @@ async def create_remote_repo(
             server_file.write_text(application.server_code)
 
             # Make a chat script file
-            readme_file = package_dir / "backend_chat.sh"
-            readme_file.write_text(script)
+            chat_file = package_dir / "backend_chat.sh"
+            chat_file.write_text(script)
 
             # Make a app.py file
             if application.app_code:
