@@ -106,13 +106,13 @@ async def continue_interview(
                 },
                 include={
                     "Features": True,
+                    "Modules": True,
                 },
                 order={
                     "createdAt": "desc",
                 },
             )
         )
-        logger.info(f"Last step: {last_step}")
         # We update the phase based on the last step
         phase = last_step.phase
         if last_step.phase_complete:
@@ -234,14 +234,10 @@ async def continue_architect_phase(
             "features": features_string,
         }
         if last_step.Modules:
-            invoke_params["modules"] = (
-                "\n".join(
-                    [
-                        f"- **{module.name}** - {module.description}"
-                        for module in last_step.Modules
-                    ]
-                ),
+            invoke_params["modules"] = ModuleGenerationBlock.create_modules_list(
+                last_step.Modules
             )
+
         if user_message:
             invoke_params["user_msg"] = user_message
 
@@ -254,10 +250,24 @@ async def continue_architect_phase(
 
         say_to_user = module_response.say_to_user + "\n\n## Modules:\n"
 
+        logger.info(f"Say to user raw: {module_response.say_to_user}")
+
         latest_modules = apply_module_update(last_step, module_response)
+        last_step_num_modules = len(last_step.Modules) if last_step.Modules else 0
+        module_response_num_modules = (
+            len(module_response.modules) if module_response.modules else 0
+        )
+        latest_modules_num_modules = len(latest_modules) if latest_modules else 0
+        logger.info(
+            f"Number of modules in last step: {last_step_num_modules}, Number of modules in module response: {module_response_num_modules}, Number of latest modules: {latest_modules_num_modules}"
+        )
         if latest_modules:
             for module in latest_modules:
                 say_to_user += f"- **{module['name']}** - {module['description']}\n"
+
+        say_to_user += "\nAre there any changes you would like to make or are you ready for me to develop the app?"
+
+        logger.info(f"Say to user: {say_to_user}")
 
         await prisma.models.InterviewStep.prisma().create(
             data=prisma.types.InterviewStepCreateInput(
@@ -428,6 +438,7 @@ def apply_module_update(
                 )
             )
         else:
+            # Add in the modules that are not to be changed
             new_module_list.append(
                 prisma.types.ModuleCreateWithoutRelationsInput(
                     name=m.name,

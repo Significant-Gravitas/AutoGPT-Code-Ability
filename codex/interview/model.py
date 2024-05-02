@@ -69,5 +69,5 @@ class ModuleResponse(BaseModel):
     thoughts: str
     say_to_user: str
     modules: list[Module] | None = None
-    access_roles: list[str] | None = None
+    access_roles: list[str]
     phase_completed: bool

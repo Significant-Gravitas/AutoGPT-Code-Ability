@@ -17,6 +17,7 @@ async def get_last_interview_step(interview_id: str, app_id: str) -> InterviewSt
         include=prisma.types.InterviewStepInclude(
             Features=True,
             Interview=True,
+            Modules=True,
         ),
         order={
             "createdAt": "desc",

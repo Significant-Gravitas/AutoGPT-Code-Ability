@@ -44,6 +44,7 @@ class Module(pydantic.BaseModel):
 
     name: str
     description: str
+    interactions: str
     api_routes: list[APIRouteSpec]
 
 
@@ -105,10 +106,10 @@ async def generate_requirements(ids: Identifiers, app: Application) -> SpecHolde
         raise ValueError("Interview not found or no features defined")
     if not interview.Modules:
         raise ValueError("No Modules defined")
-    if not interview.access_roles:
-        raise ValueError("No Access Roles defined")
-
-    access_roles = ", ".join(a for a in interview.access_roles)
+    if interview.access_roles:
+        access_roles = ", ".join(a for a in interview.access_roles)
+    else:
+        access_roles = ""
 
     spec_holder.features = interview.Features
 
@@ -208,9 +209,8 @@ async def denfine_module_routes(
 
     module = Module(
         name=module_reqs.name,
-        description=module_reqs.description
-        + " Module Interactions: "
-        + module_reqs.interactions,
+        description=module_reqs.description,
+        interactions=module_reqs.interactions,
         api_routes=endpoints,
     )
 
