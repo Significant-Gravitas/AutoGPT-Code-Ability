@@ -31,12 +31,14 @@ from codex.develop.develop import DevelopAIBlock, NiceGUIDevelopAIBlock
 from codex.develop.function import construct_function, generate_object_template
 from codex.requirements.blocks.ai_page_decompose import PageDecompositionBlock
 from codex.requirements.database import get_specification
+from langsmith import traceable
 
 RECURSION_DEPTH_LIMIT = int(os.environ.get("RECURSION_DEPTH_LIMIT", 2))
 
 logger = logging.getLogger(__name__)
 
 
+@traceable
 async def process_api_route(
     api_route: prisma.models.APIRouteSpec,
     ids: Identifiers,
@@ -129,6 +131,7 @@ async def process_api_route(
     )
 
 
+@traceable
 async def develop_user_interface(ids: Identifiers) -> CompletedApp:
     if not ids.user_id or not ids.app_id or not ids.completed_app_id:
         raise ValueError("user_id, app_id, and completed_app_id are required")
@@ -175,6 +178,7 @@ async def develop_user_interface(ids: Identifiers) -> CompletedApp:
     return await develop_application(ids, frontend_spec, lang="nicegui")
 
 
+@traceable
 async def develop_application(
     ids: Identifiers,
     spec: Specification,
@@ -248,6 +252,7 @@ async def develop_application(
     return completed_app
 
 
+@traceable
 async def populate_available_functions_objects(
     functions: list[Function],
 ) -> tuple[dict[str, Function], dict[str, ObjectType]]:
@@ -271,6 +276,7 @@ async def populate_available_functions_objects(
     return generated_func, generated_objs
 
 
+@traceable
 async def develop_route(
     ids: Identifiers,
     goal_description: str,

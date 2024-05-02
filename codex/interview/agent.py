@@ -13,10 +13,12 @@ from codex.interview.model import (
     InterviewResponse,
     UpdateUnderstanding,
 )
+from langsmith import traceable
 
 logger = logging.getLogger(__name__)
 
 
+@traceable
 async def start_interview(
     ids: Identifiers, app: prisma.models.Application
 ) -> InterviewResponse:
@@ -75,6 +77,7 @@ async def start_interview(
     )
 
 
+@traceable
 async def continue_interview(
     ids: Identifiers, app: prisma.models.Application, user_message: str
 ) -> InterviewResponse:
