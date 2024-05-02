@@ -13,10 +13,12 @@ from codex.interview.model import (
     InterviewResponse,
     UpdateUnderstanding,
 )
+from langsmith.wrappers import wrap_openai
+from langsmith import traceable
 
 logger = logging.getLogger(__name__)
 
-
+@traceable
 async def start_interview(
     ids: Identifiers, app: prisma.models.Application
 ) -> InterviewResponse:
@@ -74,7 +76,7 @@ async def start_interview(
         phase_completed=ans.phase_completed,
     )
 
-
+@traceable
 async def continue_interview(
     ids: Identifiers, app: prisma.models.Application, user_message: str
 ) -> InterviewResponse:
