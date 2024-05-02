@@ -106,7 +106,7 @@ class {obj.name}({parent_class}):
     {method_body if method_body else ""}
     {"pass" if not fields and not method_body else ""}
 """
-    return "\n".join([line for line in template.split("\n")]).strip()
+    return "\n".join(line for line in template.split("\n")).strip()
 
 
 def generate_object_template(obj: ObjectType) -> str:
