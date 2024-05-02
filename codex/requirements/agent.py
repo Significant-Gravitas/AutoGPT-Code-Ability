@@ -58,6 +58,7 @@ class SpecHolder(pydantic.BaseModel):
     modules: list[Module] = []
     db_response: codex.requirements.model.DBResponse | None = None
 
+
 @traceable
 async def generate_requirements(ids: Identifiers, app: Application) -> SpecHolder:
     """
@@ -167,6 +168,7 @@ async def generate_requirements(ids: Identifiers, app: Application) -> SpecHolde
     logger.info("Specification Definition Complete, saving to database")
     return spec_holder
 
+
 @traceable
 async def denfine_module_routes(
     ids: Identifiers,
@@ -216,6 +218,7 @@ async def denfine_module_routes(
     )
 
     return module
+
 
 @traceable
 async def define_api_spec(

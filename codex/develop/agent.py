@@ -37,6 +37,7 @@ RECURSION_DEPTH_LIMIT = int(os.environ.get("RECURSION_DEPTH_LIMIT", 2))
 
 logger = logging.getLogger(__name__)
 
+
 @traceable
 async def process_api_route(
     api_route: prisma.models.APIRouteSpec,
@@ -129,6 +130,7 @@ async def process_api_route(
         compiled_route.id, route_root_func, spec, available_funcs, available_objs
     )
 
+
 @traceable
 async def develop_user_interface(ids: Identifiers) -> CompletedApp:
     if not ids.user_id or not ids.app_id or not ids.completed_app_id:
@@ -174,6 +176,7 @@ async def develop_user_interface(ids: Identifiers) -> CompletedApp:
         frontend_spec.DatabaseSchema = backend_spec.DatabaseSchema
 
     return await develop_application(ids, frontend_spec, lang="nicegui")
+
 
 @traceable
 async def develop_application(
@@ -248,6 +251,7 @@ async def develop_application(
 
     return completed_app
 
+
 @traceable
 async def populate_available_functions_objects(
     functions: list[Function],
@@ -270,6 +274,7 @@ async def populate_available_functions_objects(
                 generated_objs[type.name] = type
 
     return generated_func, generated_objs
+
 
 @traceable
 async def develop_route(

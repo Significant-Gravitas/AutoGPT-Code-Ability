@@ -14,6 +14,7 @@ from langsmith import traceable
 
 logger = logging.getLogger(__name__)
 
+
 @traceable
 async def create_deployment(
     ids: Identifiers,
@@ -27,6 +28,7 @@ async def create_deployment(
 
     deployment = await create_cloud_deployment(ids, completedApp, spec, settings)
     return deployment
+
 
 @traceable
 async def create_local_deployment(
@@ -65,6 +67,7 @@ async def create_local_deployment(
         logger.exception("Error creating deployment in database")
         raise ValueError(f"Error creating deployment in database: {e}")
     return deployment
+
 
 @traceable
 async def create_cloud_deployment(
