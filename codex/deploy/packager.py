@@ -15,9 +15,8 @@ import codex.common.utils
 from codex.common.constants import PRISMA_FILE_HEADER
 from codex.common.database import get_database_schema
 from codex.common.exec_external_tool import execute_command
+from codex.deploy.actions_workflows import auto_deploy, manual_deploy
 from codex.deploy.model import Application
-from codex.deploy.actions_workflows import manual_deploy, auto_deploy
-
 
 logger = logging.getLogger(__name__)
 
@@ -261,7 +260,7 @@ async def create_prisma_schema_file(spec: Specification) -> str:
     return prisma_file
 
 
-async def create_github_repo(application: Application) -> (str, str):
+async def create_github_repo(application: Application) -> tuple[str, str]:
     """
     Creates a new GitHub repository under agpt-coder.
 

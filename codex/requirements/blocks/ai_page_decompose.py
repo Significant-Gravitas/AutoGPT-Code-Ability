@@ -11,7 +11,11 @@ from codex.common.ai_block import (
 )
 from codex.database import get_app_by_id
 from codex.requirements.agent import APIRouteSpec, Module, SpecHolder
-from codex.requirements.database import create_specification
+from codex.requirements.database import (
+    connect_db_schema_to_specification,
+    create_specification,
+    get_specification,
+)
 
 
 class PageDecompositionEntry(BaseModel):
@@ -103,6 +107,8 @@ class PageDecompositionBlock(AIBlock):
             raise ValueError("app_id is required to create a new completed app")
         if not ids.user_id:
             raise ValueError("user_id is required to create a new completed app")
+        if not ids.spec_id:
+            raise ValueError("spec_id is required to create a new completed app")
 
         response: PageDecompositionResponse = validated_response.response
         app = await get_app_by_id(ids.user_id, ids.app_id)
@@ -148,4 +154,10 @@ class PageDecompositionBlock(AIBlock):
                 )
             ],
         )
-        return await create_specification(spec_holder)
+        spec = await create_specification(spec_holder)
+        parent_spec = await get_specification(ids.user_id, ids.app_id, ids.spec_id)
+        if parent_spec.databaseSchemaId:
+            spec.databaseSchemaId = await connect_db_schema_to_specification(
+                spec.id, parent_spec.databaseSchemaId
+            )
+        return spec
