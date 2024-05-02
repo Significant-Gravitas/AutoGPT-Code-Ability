@@ -252,7 +252,7 @@ async def continue_architect_phase(
             )
         )
 
-        say_to_user = "Here are the modules that I have generated based on the features you have provided:\n"
+        say_to_user = module_response.say_to_user + "\n\n## Modules:\n"
 
         latest_modules = apply_module_update(last_step, module_response)
         if latest_modules:
