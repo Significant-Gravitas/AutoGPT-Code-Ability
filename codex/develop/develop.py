@@ -177,7 +177,7 @@ class DevelopAIBlock(AIBlock):
                 available_functions = generated_response.available_functions
                 if function.name in available_functions:
                     same_func = available_functions[function.name]
-                    function.validate_matching_function(same_func)
+                    await function.validate_matching_function(same_func)
                     continue
 
                 model = await construct_function(

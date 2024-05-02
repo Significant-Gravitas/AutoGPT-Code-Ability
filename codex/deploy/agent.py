@@ -60,6 +60,7 @@ async def create_local_deployment(
                 repo=f"{unique_prefix}_repo",
             )
         )
+        logger.info(f"Deployment for {completedApp.id} created with ID {deployment.id}")
     except Exception as e:
         logger.exception("Error creating deployment in database")
         raise ValueError(f"Error creating deployment in database: {e}")

@@ -19,7 +19,7 @@ import codex.common.database
 from codex.api_model import Identifiers
 from codex.common.ai_block import LLMFailure
 from codex.common.database import INCLUDE_FUNC
-from codex.common.model import FunctionDef
+from codex.common.model import FunctionDef, create_auth_objects
 from codex.database import create_completed_app
 from codex.develop.compile import (
     compile_route,
@@ -47,6 +47,7 @@ async def process_api_route(
     spec: prisma.models.Specification,
     completed_app: prisma.models.CompletedApp,
     extra_functions: list[Function] = [],
+    extra_objects: list[ObjectType] = [],
     lang: str = "python",
 ):
     if not api_route.RequestObject:
@@ -123,6 +124,7 @@ async def process_api_route(
         spec=spec,
         lang=lang,
         extra_functions=extra_functions,
+        extra_objects=extra_objects,
     )
     logger.info(f"Route function id: {route_root_func.id}")
     available_funcs, available_objs = await populate_available_functions_objects(
@@ -213,15 +215,21 @@ async def develop_application(
 
     tasks = []
 
+    extra_objects: list[ObjectType] = []
+
     if spec.Modules:
         api_routes = []
         for module in spec.Modules:
             if module.ApiRouteSpecs:
                 api_routes.extend(module.ApiRouteSpecs)
         # if any route has AccessLevel.PROTECTED, inject the extra functions for auth
-        # if any(route.AccessLevel == AccessLevel.PROTECTED for route in api_routes):
-            # auth_functions = await create_auth_functions()
-            # extra_functions.extend(auth_functions)
+        if any(route.AccessLevel == AccessLevel.PROTECTED for route in api_routes):
+            auth_functions = await create_auth_functions()
+            extra_functions.extend(auth_functions)
+            auth_objects = await create_auth_objects()
+            extra_objects.extend(
+                auth_objects
+            )
 
         for api_route in api_routes:
             # Schedule each API route for processing
@@ -231,6 +239,7 @@ async def develop_application(
                 spec,
                 completed_app,
                 extra_functions,
+                extra_objects,
                 lang,
             )
             tasks.append(task)
@@ -286,6 +295,7 @@ async def develop_route(
     spec: Specification,
     lang: str,
     extra_functions: list[Function] = [],
+    extra_objects: list[ObjectType] = [],
     depth: int = 0,
 ) -> Function:
     """
@@ -323,9 +333,13 @@ async def develop_route(
     if extra_functions:
         functions += extra_functions
 
+
     generated_func, generated_objs = await populate_available_functions_objects(
         functions
     )
+
+    if extra_objects:
+        generated_objs.update({obj.name: obj for obj in extra_objects})
 
     provided_functions = [
         func.template
@@ -385,6 +399,7 @@ async def develop_route(
                 spec=spec,
                 lang=lang,
                 extra_functions=extra_functions,
+                extra_objects=extra_objects,
                 depth=depth + 1,
             )
             for child in route_function.ChildFunctions

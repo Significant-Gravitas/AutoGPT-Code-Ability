@@ -302,3 +302,38 @@ class ResumePoint(BaseModel):
 class ResumePointsList(BaseModel):
     resume_points: List[ResumePoint]
     pagination: Pagination
+
+
+async def create_auth_objects() -> list[ObjectType]:
+    """
+    Create the authentication objects in the database
+    """
+    # Create this object
+    # class TokenData(BaseModel):
+    # username: str | None = None
+
+    available_objects: dict[str, ObjectType] = await create_object_type(
+        ObjectTypeModel(
+            name="TokenData",
+            Fields=[
+                ObjectFieldModel(name="username", type="str | None", value="None"),
+            ],
+        ),
+        available_objects={},
+    )
+
+    # class Token(BaseModel):
+    # access_token: str
+    # token_type: str
+    available_objects = await create_object_type(
+        object=ObjectTypeModel(
+            name="Token",
+            Fields=[
+                ObjectFieldModel(name="access_token", type="str"),
+                ObjectFieldModel(name="token_type", type="str"),
+            ],
+        ),
+        available_objects=available_objects,
+    )
+    # return the dict converted to list of auth objects
+    return list(available_objects.values())

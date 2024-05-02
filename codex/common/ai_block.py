@@ -3,6 +3,7 @@ import hashlib
 import logging
 import os
 import pathlib
+import pprint
 import typing
 from typing import Any, Callable, Optional, Type
 
@@ -20,7 +21,6 @@ from codex.common.ai_model import OpenAIChatClient
 load_dotenv()
 logger = logging.getLogger(__name__)
 
-from openai import AsyncOpenAI  # noqa
 from openai.types import CompletionUsage  # noqa
 from openai.types.chat import ChatCompletion  # noqa
 
@@ -493,11 +493,11 @@ class AIBlock:
 
         if self.verbose:
             logger.info(
-                f"📤 Calling LLM {request_params['model']} with the following input:\n {request_params['messages']}"
+                f"📤 Calling LLM {request_params['model']} with the following input:\n {pprint.pformat(request_params['messages'])}"
             )
         response = await self.oai_client.chat(request_params)
         if self.verbose and response:
-            logger.info(f"📥 LLM response: {response}")
+            logger.info(f"📥 LLM response: {pprint.pformat(response)}")
         return self.parse(response)
 
     async def on_failed(self, ids: Identifiers, invoke_params: dict):

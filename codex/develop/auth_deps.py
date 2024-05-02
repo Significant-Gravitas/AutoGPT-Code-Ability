@@ -83,7 +83,7 @@ async def authenticate_user(username: str, password: str) -> prisma.models.User 
     user = await get_user(username)
     if not user:
         return None
-    if not verify_password(password, user.hashed_password):
+    if not verify_password(password, user.hashedPassword):
         return None
     return user
 
@@ -132,13 +132,17 @@ async def get_current_user(
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
+        username: str | None = payload.get("sub")
         if username is None:
             raise credentials_exception
         token_data = TokenData(username=username)
+        if token_data.username is None:
+            raise credentials_exception
     except JWTError:
         raise credentials_exception
     user = await get_user(username=token_data.username)
+    if token_data.username is None:
+            raise credentials_exception
     if user is None:
         raise credentials_exception
     return user

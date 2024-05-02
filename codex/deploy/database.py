@@ -54,8 +54,7 @@ async def list_deployments(
         DeploymentMetadata(
             id=deployment.id,
             created_at=deployment.createdAt,
-            file_name=deployment.fileName,
-            file_size=deployment.fileSize,
+            repo=deployment.repo or "No repo provided",
         )
         for deployment in deployments
     ]

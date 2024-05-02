@@ -233,7 +233,7 @@ async def get_user(username: str) -> prisma.models.User | None:
     #     user = await get_user(username)
     #     if not user:
     #         return False
-    #     if not verify_password(password, user.hashed_password):
+    #     if not verify_password(password, user.hashedPassword):
     #         return False
     #     return user
     authenticate_user = FunctionDef(
@@ -251,7 +251,7 @@ async def get_user(username: str) -> prisma.models.User | None:
             user = await get_user(username)
             if not user:
                 return None
-            if not verify_password(password, user.hashed_password):
+            if not verify_password(password, user.hashedPassword):
                 return None
             return user
         """,
@@ -270,7 +270,7 @@ async def authenticate_user(username: str, password: str) -> prisma.models.User 
     user = await get_user(username)
     if not user:
         return None
-    if not verify_password(password, user.hashed_password):
+    if not verify_password(password, user.hashedPassword):
         return None
     return user
         """,
@@ -347,10 +347,12 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     #     )
     #     try:
     #         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    #         username: str = payload.get("sub")
+    #         username: str | None = payload.get("sub")
     #         if username is None:
     #             raise credentials_exception
     #         token_data = TokenData(username=username)
+    #         if token_data.username is None:
+    #             raise credentials_exception
     #     except JWTError:
     #         raise credentials_exception
     #     user = await get_user(username=token_data.username)
@@ -377,10 +379,12 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
             )
             try:
                 payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-                username: str = payload.get("sub")
+                username: str | None = payload.get("sub")
                 if username is None:
                     raise credentials_exception
                 token_data = TokenData(username=username)
+                if token_data.username is None:
+                    raise credentials_exception
             except JWTError:
                 raise credentials_exception
             user = await get_user(username=token_data.username)
@@ -411,10 +415,12 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> pri
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
+        username: str | None = payload.get("sub")
         if username is None:
             raise credentials_exception
         token_data = TokenData(username=username)
+        if token_data.username is None:
+            raise credentials_exception
     except JWTError:
         raise credentials_exception
     user = await get_user(username=token_data.username)
