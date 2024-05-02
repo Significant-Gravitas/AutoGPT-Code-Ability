@@ -17,6 +17,7 @@ from codex.common.database import get_database_schema
 from codex.common.exec_external_tool import execute_command
 from codex.deploy.model import Application
 from codex.deploy.actions_workflows import manual_deploy, auto_deploy
+from codex.deploy.backend_chat_script import script
 
 
 logger = logging.getLogger(__name__)
@@ -341,6 +342,10 @@ async def create_zip_file(application: Application, spec: Specification) -> byte
             server_file = app_dir / "server.py"
             server_file.write_text(application.server_code)
 
+            # Make a chat script file
+            chat_file = package_dir / "backend_chat.sh"
+            chat_file.write_text(script)
+
             # Make a app.py file
             if application.app_code:
                 app_file = app_dir / "app.py"
@@ -500,6 +505,10 @@ async def create_remote_repo(
             # Make a server.py file
             server_file = app_dir / "server.py"
             server_file.write_text(application.server_code)
+
+            # Make a chat script file
+            chat_file = package_dir / "backend_chat.sh"
+            chat_file.write_text(script)
 
             # Make a app.py file
             if application.app_code:
