@@ -17,6 +17,7 @@ import codex.requirements.blocks.ai_endpoint
 import codex.requirements.blocks.ai_module_routes
 import codex.requirements.model
 from codex.api_model import Identifiers
+from langsmith import traceable
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +61,7 @@ class SpecHolder(pydantic.BaseModel):
     db_response: codex.requirements.model.DBResponse | None = None
 
 
+@traceable
 async def generate_requirements(ids: Identifiers, app: Application) -> SpecHolder:
     """
     Runs the Requirements Agent to generate the system requirements based
@@ -168,6 +170,7 @@ async def generate_requirements(ids: Identifiers, app: Application) -> SpecHolde
     return spec_holder
 
 
+@traceable
 async def denfine_module_routes(
     ids: Identifiers,
     app: Application,
@@ -217,6 +220,7 @@ async def denfine_module_routes(
     return module
 
 
+@traceable
 async def define_api_spec(
     ids: Identifiers,
     app: Application,
