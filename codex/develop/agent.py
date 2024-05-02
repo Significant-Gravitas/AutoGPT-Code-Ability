@@ -227,9 +227,7 @@ async def develop_application(
             auth_functions = await create_auth_functions()
             extra_functions.extend(auth_functions)
             auth_objects = await create_auth_objects()
-            extra_objects.extend(
-                auth_objects
-            )
+            extra_objects.extend(auth_objects)
 
         for api_route in api_routes:
             # Schedule each API route for processing
@@ -332,7 +330,6 @@ async def develop_route(
         functions.append(compiled_route.RootFunction)
     if extra_functions:
         functions += extra_functions
-
 
     generated_func, generated_objs = await populate_available_functions_objects(
         functions

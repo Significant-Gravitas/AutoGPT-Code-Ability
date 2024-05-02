@@ -126,14 +126,14 @@ class DatabaseGenerationBlock(AIBlock):
 
         # If we have a User model, check that it has the required fields for
         # authentication and authorization
-        if user:=parsed_prisma.models.get("User"):
-            if not user.fields.get('hashedPassword'):
+        if user := parsed_prisma.models.get("User"):
+            if not user.fields.get("hashedPassword"):
                 validation_errors.add("User model does not have a hashedPassword field")
-            if not user.fields.get('username'):
+            if not user.fields.get("username"):
                 validation_errors.add("User model does not have a username field")
-            if not user.fields.get('role'):
+            if not user.fields.get("role"):
                 validation_errors.add("User model does not have a role field")
-            if not user.fields.get('disabled'):
+            if not user.fields.get("disabled"):
                 validation_errors.add("User model does not have a disabled field")
 
         if validation_errors:

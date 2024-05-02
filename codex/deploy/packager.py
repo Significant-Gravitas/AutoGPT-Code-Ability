@@ -9,15 +9,16 @@ from pathlib import Path
 import aiohttp
 from git import Actor, GitCommandError
 from git.repo import Repo
+from prisma.enums import AccessLevel
 from prisma.models import Specification
 
 import codex.common.utils
 from codex.common.constants import PRISMA_FILE_HEADER
 from codex.common.database import get_database_schema
 from codex.common.exec_external_tool import execute_command
+from codex.deploy.actions_workflows import auto_deploy, manual_deploy
 from codex.deploy.model import Application
-from codex.deploy.actions_workflows import manual_deploy, auto_deploy
-
+from codex.develop.auth_deps import AUTH_CODE
 
 logger = logging.getLogger(__name__)
 
@@ -348,6 +349,17 @@ async def create_zip_file(application: Application, spec: Specification) -> byte
             for compiled_route in application.get_compiled_routes():
                 service_file = app_dir / compiled_route.fileName
                 service_file.write_text(compiled_route.compiledCode)
+
+            # If there are any protected routes, create an auth file
+            if any(
+                [
+                    compiled_route.ApiRouteSpec.AccessLevel == AccessLevel.PROTECTED
+                    for compiled_route in application.get_compiled_routes()
+                    if compiled_route.ApiRouteSpec
+                ]
+            ):
+                auth_file = app_dir / "auth_deps.py"
+                auth_file.write_text(AUTH_CODE)
 
             # Create pyproject.toml and poetry.lock
             logger.info("Creating pyproject.toml")

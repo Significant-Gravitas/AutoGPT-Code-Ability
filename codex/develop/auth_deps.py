@@ -53,7 +53,7 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 
-async def get_user(username: str) -> prisma.models.User | None:  # type: ignore
+async def get_user(username: str) -> prisma.models.User | None:
     """
     Find the user by username.
 
@@ -69,7 +69,7 @@ async def get_user(username: str) -> prisma.models.User | None:  # type: ignore
     return user
 
 
-async def authenticate_user(username: str, password: str) -> prisma.models.User | None:  # type: ignore
+async def authenticate_user(username: str, password: str) -> prisma.models.User | None:
     """
     Authenticate the user by username and password.
 
@@ -107,11 +107,6 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
-
-
-SECRET_KEY = "d17d93d33e83c4cbe21f649f920025707049a9a8b5b58b7b9a982136f1768ae2"  # type: ignore
-ALGORITHM = "HS256"
-
 
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
