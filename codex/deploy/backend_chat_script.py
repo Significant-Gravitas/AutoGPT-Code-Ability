@@ -2,8 +2,8 @@ script = """
 #!/bin/bash
 
 # Prompt user for necessary arguments
-read -p "What's your github repo name: " user_repo_url
-read -p "What's your github URL: " repo_name
+read -p "What's your github repo name: " repo_name
+read -p "What's your github URL: " user_repo_url
 
 
 # Check if tag is empty and set default
