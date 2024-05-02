@@ -1,4 +1,4 @@
-script="""
+script = """
 #!/bin/bash
 
 # Prompt user for necessary arguments
