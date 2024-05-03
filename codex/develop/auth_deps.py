@@ -23,7 +23,6 @@ SECRET_KEY = "d17d93d33e83c4cbe21f649f920025707049a9a8b5b58b7b9a982136f1768ae2"
 ALGORITHM = "HS256"
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -109,7 +108,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     return encoded_jwt
 
 async def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
+    token: Annotated[str, Depends(OAuth2PasswordBearer(tokenUrl='token'))],
 ) -> prisma.models.User | None:
     """
     Get the current user from the token.

@@ -10,6 +10,7 @@ from prisma.enums import FunctionState
 from prisma.models import Function, ObjectType
 from prisma.types import FunctionCreateInput, ObjectFieldCreateInput
 
+from codex.common.database import INCLUDE_FUNC
 from codex.common.model import (
     FunctionDef,
     ObjectFieldModel,
@@ -138,8 +139,7 @@ async def create_auth_functions() -> list[Function]:
         return_desc="True if the password matches, False otherwise",
         is_implemented=True,
         function_desc="Verify the plain text password against the hashed password",
-        function_code="return pwd_context.verify(plain_password, hashed_password)",
-        function_template="""
+        function_code="""
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -169,8 +169,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return_desc="The hashed password.",
         is_implemented=True,
         function_desc="Hash the provided password.",
-        function_code="return pwd_context.hash(password)",
-        function_template="""
+        function_code="""
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def get_password_hash(password: str) -> str:
@@ -204,12 +203,6 @@ def get_password_hash(password: str) -> str:
         is_implemented=True,
         function_desc="Find the user by username.",
         function_code="""
-            user = await prisma.models.User.prisma().find_unique(
-                where={"username": username},
-            )
-            return user
-        """,
-        function_template="""
 async def get_user(username: str) -> prisma.models.User | None:
     \"\"\"
     Find the user by username.
@@ -248,14 +241,6 @@ async def get_user(username: str) -> prisma.models.User | None:
         is_implemented=True,
         function_desc="Authenticate the user by username and password.",
         function_code="""
-            user = await get_user(username)
-            if not user:
-                return None
-            if not verify_password(password, user.hashedPassword):
-                return None
-            return user
-        """,
-        function_template="""
 async def authenticate_user(username: str, password: str) -> prisma.models.User | None:
     \"\"\"
     Authenticate the user by username and password.
@@ -299,19 +284,6 @@ async def authenticate_user(username: str, password: str) -> prisma.models.User 
         is_implemented=True,
         function_desc="Create an access token.",
         function_code=f"""
-            SECRET_KEY = "{secret_key_str}"
-            ALGORITHM = "HS256"
-
-            to_encode = data.copy()
-            if expires_delta:
-                expire = datetime.now(timezone.utc) + expires_delta
-            else:
-                expire = datetime.now(timezone.utc) + timedelta(minutes=15)
-            to_encode.update({{"exp": expire}})
-            encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-            return encoded_jwt
-        """,
-        function_template=f"""
 SECRET_KEY = "{secret_key_str}"
 ALGORITHM = "HS256"
 
@@ -338,67 +310,21 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     )
     function_defs.append(create_access_token)
 
-    # Get Current User
-    # async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
-    #     credentials_exception = HTTPException(
-    #         status_code=status.HTTP_401_UNAUTHORIZED,
-    #         detail="Could not validate credentials",
-    #         headers={"WWW-Authenticate": "Bearer"},
-    #     )
-    #     try:
-    #         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    #         username: str | None = payload.get("sub")
-    #         if username is None:
-    #             raise credentials_exception
-    #         token_data = TokenData(username=username)
-    #         if token_data.username is None:
-    #             raise credentials_exception
-    #     except JWTError:
-    #         raise credentials_exception
-    #     user = await get_user(username=token_data.username)
-    #     if user is None:
-    #         raise credentials_exception
-    #     return user
     get_current_user = FunctionDef(
         name="get_current_user",
-        arg_types=[("token", "Annotated[str, Depends(oauth2_scheme)]")],
+        arg_types=[
+            ("token", "Annotated[str, Depends(OAuth2PasswordBearer(tokenUrl='token'))]")
+        ],
         arg_descs={"token": "The token to validate."},
         return_type="prisma.models.User | None",
         return_desc="The current user if found, None otherwise.",
         is_implemented=True,
         function_desc="Get the current user from the token.",
         function_code=f"""
-            SECRET_KEY = "{secret_key_str}"
-            ALGORITHM = "HS256"
-
-            oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-            credentials_exception = HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials",
-                headers={{"WWW-Authenticate": "Bearer"}},
-            )
-            try:
-                payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-                username: str | None = payload.get("sub")
-                if username is None:
-                    raise credentials_exception
-                token_data = TokenData(username=username)
-                if token_data.username is None:
-                    raise credentials_exception
-            except JWTError:
-                raise credentials_exception
-            user = await get_user(username=token_data.username)
-            if user is None:
-                raise credentials_exception
-            return user
-        """,
-        function_template=f"""
 SECRET_KEY = "{secret_key_str}"
 ALGORITHM = "HS256"
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> prisma.models.User | None:
+async def get_current_user(token: Annotated[str, Depends(OAuth2PasswordBearer(tokenUrl='token'))]) -> prisma.models.User | None:
     \"\"\"
     Get the current user from the token.
 
@@ -449,11 +375,6 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> pri
         is_implemented=True,
         function_desc="Get the current active user.",
         function_code="""
-            if current_user.disabled:
-                raise HTTPException(status_code=400, detail="Inactive user")
-            return current_user
-        """,
-        function_template="""
 async def get_current_active_user(current_user: Annotated[prisma.models.User, Depends(get_current_user)]) -> User:
     \"\"\"
     Get the current active user.
@@ -497,22 +418,6 @@ async def get_current_active_user(current_user: Annotated[prisma.models.User, De
         is_implemented=True,
         function_desc="Login for an access token.",
         function_code="""
-            ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-            user = await authenticate_user(form_data.username, form_data.password)
-            if not user:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Incorrect username or password",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
-            access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-            access_token = create_access_token(
-                data={"sub": user.username}, expires_delta=access_token_expires
-            )
-            return Token(access_token=access_token, token_type="bearer")
-        """,
-        function_template="""
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Token:
@@ -605,7 +510,11 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
     # await all functions to be created
     create_params = await asyncio.gather(*create_ops)
     creations = [
-        Function.prisma().create(create_param) for create_param in create_params
+        Function.prisma().create(
+            data=create_param,
+            **INCLUDE_FUNC,  # type: ignore
+        )
+        for create_param in create_params
     ]
     created: list[Function] = await asyncio.gather(*creations)
     return created

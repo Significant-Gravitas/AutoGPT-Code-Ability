@@ -30,7 +30,11 @@ is_connected = False
 setup_logging()
 
 
-async def create_sample_app(user_id: str, cloud_id: str):
+async def create_sample_app(
+    user_id: str,
+    cloud_id: str,
+    access_level: AccessLevel = AccessLevel.PUBLIC,
+):
     app_id = (
         await create_app(
             user_id,
@@ -59,7 +63,7 @@ async def create_sample_app(user_id: str, cloud_id: str):
                         function_name="make_turn",
                         path="/make-turn",
                         description="Processes a player's move in the Tic-Tac-Toe game and returns the current state of the game.",
-                        access_level=AccessLevel.PUBLIC,
+                        access_level=access_level,
                         allowed_access_roles=[],
                         request_model=ObjectTypeModel(
                             name="MakeTurnRequest",
@@ -99,12 +103,18 @@ async def create_sample_app(user_id: str, cloud_id: str):
                         name="Game",
                         description="Game state and board",
                         definition="""
+                                model User {
+                                    id             Int     @id @default(autoincrement())
+                                    username       String  @unique
+                                    hashedPassword String
+                                    disabled       Boolean @default(false)
+                                }
                                 model Game {
-                                    id String @id @default(uuid())
+                                    id     String @id @default(uuid())
                                     gameId String
-                                    turn String
-                                    state String
-                                    board String
+                                    turn   String
+                                    state  String
+                                    board  String
                                 }
                                 """,
                     )
@@ -151,12 +161,13 @@ async def with_db_connection(func: Callable):
 async def generate_function(
     user_id=user_id_1,
     cloud_id="",
+    access_level=AccessLevel.PUBLIC,
 ) -> list[str] | None:
     if not OpenAIChatClient._configured:
         OpenAIChatClient.configure({})
 
     async def execute():
-        app_id, spec = await create_sample_app(user_id, cloud_id)  # type: ignore
+        app_id, spec = await create_sample_app(user_id, cloud_id, access_level)
         ids = Identifiers(user_id=user_id, app_id=app_id, cloud_services_id=cloud_id)
         func = await agent.develop_application(ids=ids, spec=spec, eat_errors=False)
         return await get_compiled_code(func.id) if func else None
@@ -255,6 +266,14 @@ async def test_with_undefined_entity():
     assert result is not None
     assert TODO_COMMENT in result[0]
     assert "Undefined name `UnknownEntity`" in result[0]
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration_test
+async def test_with_protected_access_level():
+    ai_block.MOCK_RESPONSE = COMPLEX_RESPONSE
+    func = await generate_function(access_level=AccessLevel.PROTECTED)
+    assert func is not None
 
 
 COMPLEX_RESPONSE = """
