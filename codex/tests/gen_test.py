@@ -267,6 +267,9 @@ from typing import Any, Dict, List
 from pydantic import BaseModel
     
 class Board(BaseModel):
+    \"\"\"
+    This is a docstring
+    \"\"\"
     size: int
     cells: List[str]
     

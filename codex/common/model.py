@@ -88,7 +88,7 @@ class FunctionDef(BaseModel):
 
     def __generate_function_template(f) -> str:
         args_str = ", ".join([f"{name}: {type}" for name, type in f.arg_types])
-        arg_desc = f"\n{' '*12}".join(
+        arg_desc = f"\n{' '*4}".join(
             [
                 f'{name} ({type}): {f.arg_descs.get(name, "-")}'
                 for name, type in f.arg_types
@@ -97,21 +97,22 @@ class FunctionDef(BaseModel):
 
         def_str = "async def" if "await " in f.function_code else "def"
         ret_type_str = f" -> {f.return_type}" if f.return_type else ""
+        func_desc = f.function_desc.replace("\n", "\n    ")
 
         template = f"""
-        {def_str} {f.name}({args_str}){ret_type_str}:
-            \"\"\"
-            {f.function_desc}
+{def_str} {f.name}({args_str}){ret_type_str}:
+    \"\"\"
+    {func_desc}
 
-            Args:
-            {arg_desc}
+    Args:
+    {arg_desc}
 
-            Returns:
-            {f.return_type}: {f.return_desc}
-            \"\"\"
-            pass
-        """
-        return "\n".join([line[8:] for line in template.split("\n")]).strip()
+    Returns:
+    {f.return_type}{': ' + f.return_desc if f.return_desc else ''}
+    \"\"\"
+    pass
+"""
+        return "\n".join([line for line in template.split("\n")]).strip()
 
     def __init__(self, function_template: Optional[str] = None, **data):
         super().__init__(**data)

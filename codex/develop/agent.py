@@ -142,6 +142,7 @@ async def develop_user_interface(ids: Identifiers) -> CompletedApp:
         for route in completed_app.CompiledRoutes or []
         if route.RootFunction
     ]
+    ids.spec_id = completed_app.specificationId
 
     functions_code = []
     for func in available_functions:
