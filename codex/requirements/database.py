@@ -190,6 +190,14 @@ async def get_latest_specification(user_id: str, app_id: str) -> Specification:
     return specification[0]
 
 
+async def connect_db_schema_to_specification(spec_id: str, db_schema_id: str) -> str:
+    await Specification.prisma().update(
+        where={"id": spec_id},
+        data={"DatabaseSchema": {"connect": {"id": db_schema_id}}},
+    )
+    return db_schema_id
+
+
 async def delete_specification(spec_id: str) -> None:
     await Specification.prisma().update(
         where={"id": spec_id},

@@ -244,7 +244,7 @@ class DevelopAIBlock(AIBlock):
         function_signature = invoke_params.get("function_signature", "Unknown")
         try:
             logger.error(
-                f"AI Failed to write the function {function_name}. Signiture of failed function:\n{function_signature}",
+                f"AI Failed to write the function {function_name}. Signature of failed function:\n{function_signature}",
                 extra=ids.model_dump(),
             )
             await Function.prisma().update(

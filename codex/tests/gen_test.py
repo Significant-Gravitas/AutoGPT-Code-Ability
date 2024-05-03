@@ -1,3 +1,4 @@
+import asyncio
 from typing import Callable
 
 import pytest
@@ -30,6 +31,16 @@ is_connected = False
 setup_logging()
 
 
+@pytest.fixture(scope="session")
+def event_loop():
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+    yield loop
+    loop.close()
+
+
 async def create_sample_app(user_id: str, cloud_id: str):
     app_id = (
         await create_app(
@@ -52,6 +63,7 @@ async def create_sample_app(user_id: str, cloud_id: str):
             Module(
                 name="TicTacToe Game",
                 description="Two Players TicTacToe Game communicate through an API.",
+                interactions="",
                 api_routes=[
                     APIRouteSpec(
                         module_name="Make Turn",
@@ -267,6 +279,9 @@ from typing import Any, Dict, List
 from pydantic import BaseModel
     
 class Board(BaseModel):
+    \"\"\"
+    This is a docstring
+    \"\"\"
     size: int
     cells: List[str]
     

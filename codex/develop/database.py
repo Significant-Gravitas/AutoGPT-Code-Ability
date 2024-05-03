@@ -1,6 +1,12 @@
 from typing import List, Tuple
 
-from prisma.models import CompiledRoute, CompletedApp, Function, Specification
+from prisma.models import (
+    CompiledRoute,
+    CompletedApp,
+    Function,
+    ObjectType,
+    Specification,
+)
 
 from codex.api_model import Identifiers, Pagination
 from codex.common.database import INCLUDE_API_ROUTE, INCLUDE_FUNC
@@ -133,3 +139,19 @@ async def get_ids_from_function_id_and_compiled_route(
         function_id=function.id,
         completed_app_id=compiled_route.completedAppId,
     )
+
+
+async def get_object_type_referred_functions(object_type_id: str) -> list[str]:
+    referred_object_fields = await ObjectType.prisma().find_first_or_raise(
+        where={"id": object_type_id},
+        include={
+            "ReferredRequestAPIRoutes": True,
+            "ReferredResponseAPIRoutes": True,
+        },
+    )
+    functions_on_request = referred_object_fields.ReferredRequestAPIRoutes or []
+    functions_on_response = referred_object_fields.ReferredResponseAPIRoutes or []
+    referred_functions = []
+    for route in functions_on_request + functions_on_response:
+        referred_functions.append(route.functionName)
+    return referred_functions

@@ -171,7 +171,9 @@ async def generate_user_interface(completed_app_id: str):
             ids.user_id, ids.app_id, completed_app.specificationId
         )
 
-        deployment = await deploy_agent.create_deployment(ids, completed_app, spec)
+        deployment = await deploy_agent.create_local_deployment(
+            ids, completed_app, spec
+        )
         assert deployment
         return deployment
 
