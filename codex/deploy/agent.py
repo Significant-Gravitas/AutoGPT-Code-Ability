@@ -10,10 +10,12 @@ from codex.deploy.packager import create_remote_repo, create_zip_file
 from codex.develop.compile import create_bundle_code
 from codex.deploy.infrastructure import create_cloud_db
 from codex.deploy.model import Settings
+from langsmith import traceable
 
 logger = logging.getLogger(__name__)
 
 
+@traceable
 async def create_deployment(
     ids: Identifiers,
     completedApp: CompletedApp,
@@ -28,6 +30,7 @@ async def create_deployment(
     return deployment
 
 
+@traceable
 async def create_local_deployment(
     ids: Identifiers, completedApp: CompletedApp, spec: Specification
 ) -> Deployment:
@@ -66,6 +69,7 @@ async def create_local_deployment(
     return deployment
 
 
+@traceable
 async def create_cloud_deployment(
     ids: Identifiers,
     completedApp: CompletedApp,
