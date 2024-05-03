@@ -45,5 +45,29 @@ class Feature(BaseModel):
 class InterviewResponse(BaseModel):
     id: str
     say_to_user: str
-    features: list[Feature] | None = None
+    phase: str
+    phase_completed: bool
+
+
+class Module(BaseModel):
+    """
+    A Software Module for the application
+    """
+
+    action: Action
+    id: int
+    name: str | None = None
+    functionality: str | None = None
+    interaction_with_other_modules: list[str] | None = None
+
+
+class ModuleResponse(BaseModel):
+    """
+    This is the response model for the ModuleGenerationBlock
+    """
+
+    thoughts: str
+    say_to_user: str
+    modules: list[Module] | None = None
+    access_roles: list[str]
     phase_completed: bool

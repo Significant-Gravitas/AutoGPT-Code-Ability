@@ -1,9 +1,9 @@
 import asyncio
 import logging
 from typing import Optional
-from dotenv import load_dotenv
 
 import tiktoken
+from dotenv import load_dotenv
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class OpenAIChatClient:
     openai: AsyncOpenAI
     chat_model: str | None = None
     max_tokens: int | None = None
-    max_concurrent_ops: int = 1_000
+    max_concurrent_ops: int = 100
     max_requests_per_min: int = 300
     max_tokens_per_min: int = 1_500_000
     _semaphore: asyncio.Semaphore
@@ -51,7 +51,7 @@ class OpenAIChatClient:
     def configure(
         cls,
         openai_config,
-        max_concurrent_ops=1_000,
+        max_concurrent_ops=100,
         max_requests_per_min=10_000,
         max_tokens_per_min=1_500_000,
     ):

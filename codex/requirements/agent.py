@@ -9,10 +9,11 @@ from prisma.models import Application
 
 import codex.common.model
 import codex.common.types
+import codex.interview.ai_module
 import codex.interview.database
+import codex.interview.model
 import codex.requirements.blocks.ai_database
 import codex.requirements.blocks.ai_endpoint
-import codex.requirements.blocks.ai_module
 import codex.requirements.blocks.ai_module_routes
 import codex.requirements.model
 from codex.api_model import Identifiers
@@ -44,6 +45,7 @@ class Module(pydantic.BaseModel):
 
     name: str
     description: str
+    interactions: str
     api_routes: list[APIRouteSpec]
 
 
@@ -104,6 +106,12 @@ async def generate_requirements(ids: Identifiers, app: Application) -> SpecHolde
 
     if not interview or not interview.Features:
         raise ValueError("Interview not found or no features defined")
+    if not interview.Modules:
+        raise ValueError("No Modules defined")
+    if interview.access_roles:
+        access_roles = ", ".join(a for a in interview.access_roles)
+    else:
+        access_roles = ""
 
     spec_holder.features = interview.Features
 
@@ -116,15 +124,11 @@ async def generate_requirements(ids: Identifiers, app: Application) -> SpecHolde
 
     logger.info("Defining Modules from features")
 
-    module_block = codex.requirements.blocks.ai_module.ModuleGenerationBlock()
-    module_response = await module_block.invoke(
-        ids=ids,
-        invoke_params={
-            "poduct_name": app.name,
-            "product_description": app.description,
-            "features": interview.Features,
-        },
-    )
+    modules_string = ""
+    for module in interview.Modules:
+        modules_string += "\nModule Name: " + str(module.name)
+        modules_string += "\nFunctionality: " + str(module.description)
+        modules_string += "\n"
 
     logger.info("Designing Database")
     # Database Design
@@ -134,11 +138,8 @@ async def generate_requirements(ids: Identifiers, app: Application) -> SpecHolde
 
     db_invoke_params = {
         "product_spec": product_spec_str,
-        "needed_auth_roles": ", ".join(a for a in module_response.access_roles),
-        "modules": ", ".join(
-            f"- {module.name} - Functionality: {module.functionality}"
-            for module in module_response.modules
-        ),
+        "needed_auth_roles": access_roles,
+        "modules": modules_string,
     }
 
     db_response: codex.requirements.model.DBResponse = await database_block.invoke(
@@ -156,10 +157,10 @@ async def generate_requirements(ids: Identifiers, app: Application) -> SpecHolde
                 ids=ids,
                 app=app,
                 module_reqs=m,
-                roles=", ".join(module_response.access_roles),
+                roles=access_roles,
                 db_response=db_response,
             )
-            for m in module_response.modules
+            for m in interview.Modules
         ]
     )
 
@@ -173,12 +174,12 @@ async def generate_requirements(ids: Identifiers, app: Application) -> SpecHolde
 async def denfine_module_routes(
     ids: Identifiers,
     app: Application,
-    module_reqs: codex.requirements.blocks.ai_module.Module,
+    module_reqs: prisma.models.Module,
     roles: str,
     db_response: codex.requirements.model.DBResponse,
 ) -> Module:
     logger.warning(
-        f"Defining API Routes for Module: {module_reqs.name} - {module_reqs.functionality}"
+        f"Defining API Routes for Module: {module_reqs.name} - {module_reqs.description}"
     )
 
     block = codex.requirements.blocks.ai_module_routes.ModuleGenerationBlock()
@@ -188,8 +189,8 @@ async def denfine_module_routes(
         invoke_params={
             "poduct_name": app.name,
             "product_description": app.description,
-            "module": f"{module_reqs.name} - {module_reqs.functionality}",
-            "interactions": "\n".join(module_reqs.interaction_with_other_modules),
+            "module": f"{module_reqs.name} - {module_reqs.description}",
+            "interactions": module_reqs.interactions,
             "roles": roles,
         },
     )
@@ -211,9 +212,8 @@ async def denfine_module_routes(
 
     module = Module(
         name=module_reqs.name,
-        description=module_reqs.functionality
-        + " Module Interactions: "
-        + " ".join(module_reqs.interaction_with_other_modules),
+        description=module_reqs.description,
+        interactions=module_reqs.interactions,
         api_routes=endpoints,
     )
 
@@ -224,7 +224,7 @@ async def denfine_module_routes(
 async def define_api_spec(
     ids: Identifiers,
     app: Application,
-    module_reqs: codex.requirements.blocks.ai_module.Module,
+    module_reqs: prisma.models.Module,
     api_route: codex.requirements.blocks.ai_module_routes.APIRoute,
     db_response: codex.requirements.model.DBResponse,
 ):
@@ -243,7 +243,7 @@ async def define_api_spec(
             "spec": f"{app.name} - {app.description}",
             "db_models": db_response.database_schema.tables,
             "db_enums": db_response.database_schema.enums,
-            "module_repr": f"{module_reqs.name} - {module_reqs.functionality}",
+            "module_repr": f"{module_reqs.name} - {module_reqs.description}",
             "endpoint_repr": f"{api_route.http_verb} - {api_route.path} - {api_route.description} \n Roles Allowed: {', '.join(api_route.allowed_access_roles)}",
             "allowed_types": allowed_types,
         },

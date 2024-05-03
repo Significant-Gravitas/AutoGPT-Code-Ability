@@ -94,6 +94,7 @@ async def create_specification(
             prisma.types.ModuleCreateInput(
                 name=module.name,
                 description=module.description,
+                interactions=module.interactions,
                 ApiRouteSpecs={"create": api_routes},
             )
         )
