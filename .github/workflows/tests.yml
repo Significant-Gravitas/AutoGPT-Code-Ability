@@ -12,8 +12,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v3
+
       - name: Set Environment and Install Dependencies
-        uses: ./setup-env
+        uses: ./.github/actions/setup-env
 
       - name: Test with pytest
         run: poetry run pytest --cov .
