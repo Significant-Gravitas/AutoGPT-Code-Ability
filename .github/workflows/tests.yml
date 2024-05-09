@@ -13,7 +13,7 @@ jobs:
 
     steps:
       - name: Set Environment and Install Dependencies
-        uses: .github/setup
+        uses: ./../setup-env
 
       - name: Test with pytest
         run: poetry run pytest --cov .
