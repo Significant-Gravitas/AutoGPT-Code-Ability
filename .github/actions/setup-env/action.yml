@@ -46,11 +46,3 @@ runs:
       run: |
         ./run populate-db
 
-    env:
-      DB_USER: ${{ secrets.DB_USER }}
-      DB_PASS: ${{ secrets.DB_PASS }}
-      DB_NAME: ${{ secrets.DB_NAME }}
-      DB_PORT: 5432
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      RUN_ENV: local
-      PORT: 8080
