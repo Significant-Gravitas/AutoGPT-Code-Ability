@@ -12,12 +12,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 1
-
       - name: Set Environment and Install Dependencies
-        uses: ./.github/setup-env
+        uses: setup-env
 
       - name: Test with pytest
         run: poetry run pytest --cov .
+    
+    env:
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASS: ${{ secrets.DB_PASS }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      DB_PORT: 5432
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      RUN_ENV: local
+      PORT: 8080
