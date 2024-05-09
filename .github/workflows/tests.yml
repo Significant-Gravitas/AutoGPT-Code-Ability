@@ -17,7 +17,7 @@ jobs:
           fetch-depth: 1
 
       - name: Set Environment and Install Dependencies
-        uses: ./github/actions/setup-env.yml
+        uses: ./github/setup-env
 
       - name: Test with pytest
         run: poetry run pytest --cov .
