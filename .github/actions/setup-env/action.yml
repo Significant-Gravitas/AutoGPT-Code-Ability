@@ -32,10 +32,6 @@ runs:
       shell: bash
       run: poetry run prisma generate
 
-    - name: Set DB URL
-      shell: bash
-      run: echo "DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@localhost:5432/${{ secrets.DB_NAME }}" >> $GITHUB_ENV
-
     - name: Run Database Migrations
       shell: bash
       run: |
@@ -45,4 +41,3 @@ runs:
       shell: bash
       run: |
         ./run populate-db
-
