@@ -3,8 +3,11 @@ import logging
 import os
 
 import prisma
+import prisma.enums
+from langsmith import traceable
 from prisma.enums import FunctionState
 from prisma.models import (
+    Application,
     CompiledRoute,
     CompletedApp,
     Function,
@@ -19,7 +22,7 @@ import codex.common.database
 from codex.api_model import Identifiers
 from codex.common.ai_block import LLMFailure
 from codex.common.database import INCLUDE_FUNC
-from codex.common.model import FunctionDef
+from codex.common.model import APIRouteSpec, FunctionDef
 from codex.database import create_completed_app
 from codex.develop.compile import (
     compile_route,
@@ -29,13 +32,48 @@ from codex.develop.compile import (
 from codex.develop.database import get_compiled_route, get_deliverable
 from codex.develop.develop import DevelopAIBlock, NiceGUIDevelopAIBlock
 from codex.develop.function import construct_function, generate_object_template
+from codex.develop.model import FunctionSpec
 from codex.requirements.blocks.ai_page_decompose import PageDecompositionBlock
-from codex.requirements.database import get_specification
-from langsmith import traceable
+from codex.requirements.database import create_single_function_spec, get_specification
 
 RECURSION_DEPTH_LIMIT = int(os.environ.get("RECURSION_DEPTH_LIMIT", 2))
 
 logger = logging.getLogger(__name__)
+
+
+@traceable
+async def write_function(
+    ids: Identifiers, app: Application, function_spec: FunctionSpec
+) -> CompiledRoute:
+    api_route_spec = APIRouteSpec(
+        module_name="Solo Function",
+        http_verb=prisma.enums.HTTPVerb.POST,
+        function_name=function_spec.name,
+        path="/",
+        description=function_spec.description,
+        access_level=prisma.enums.AccessLevel.PUBLIC,
+        allowed_access_roles=[],
+        request_model=function_spec.func_args,
+        response_model=function_spec.return_type,
+    )
+
+    spec: Specification = await create_single_function_spec(ids, app, api_route_spec)
+
+    completed_app = await create_completed_app(ids, spec)
+
+    if not spec.Modules:
+        raise ValueError("No modules found in the spec")
+
+    if not spec.Modules[0].ApiRouteSpecs:
+        raise ValueError("No API routes found in the spec")
+
+    return await process_api_route(
+        api_route=spec.Modules[0].ApiRouteSpecs[0],
+        ids=ids,
+        spec=spec,
+        completed_app=completed_app,
+        lang="python",
+    )
 
 
 @traceable
@@ -46,7 +84,7 @@ async def process_api_route(
     completed_app: prisma.models.CompletedApp,
     extra_functions: list[Function] = [],
     lang: str = "python",
-):
+) -> CompiledRoute:
     if not api_route.RequestObject:
         types = []
         descs = {}
@@ -126,7 +164,7 @@ async def process_api_route(
     available_funcs, available_objs = await populate_available_functions_objects(
         extra_functions
     )
-    await compile_route(
+    return await compile_route(
         compiled_route.id, route_root_func, spec, available_funcs, available_objs
     )
 

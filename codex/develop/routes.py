@@ -8,7 +8,13 @@ import codex.database
 import codex.develop.agent as architect_agent
 import codex.develop.database
 import codex.requirements.database
-from codex.api_model import DeliverableResponse, DeliverablesListResponse, Identifiers
+from codex.api_model import (
+    ApplicationCreate,
+    DeliverableResponse,
+    DeliverablesListResponse,
+    Identifiers,
+)
+from codex.develop.model import FunctionResponse, FunctionSpec
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +22,43 @@ delivery_router = APIRouter()
 
 
 # Deliverables endpoints
+@delivery_router.post(
+    "/function/",
+    tags=["deliverables"],
+    response_model=FunctionResponse,
+)
+async def write_function(function_spec: FunctionSpec):
+    # Create AutoGPT user
+    user = await codex.database.get_or_create_user_by_cloud_services_id_and_discord_id(
+        "AutoGPT", "AutoGPT"
+    )
+    # Create App for this function
+    app = await codex.database.create_app(
+        user.id,
+        ApplicationCreate(
+            name=function_spec.name, description=function_spec.description
+        ),
+    )
+
+    ids = Identifiers(user_id=user.id, app_id=app.id)
+    completed_function: codex.database.CompiledRoute = (
+        await architect_agent.write_function(ids, app, function_spec)
+    )
+    package_requirements = []
+    if completed_function.Packages:
+        for package in completed_function.Packages:
+            package_requirements.append(
+                f"{package.packageName}{f':^{package.version}' if package.version else '=*'}"
+            )
+
+    return FunctionResponse(
+        id=completed_function.id,
+        name=completed_function.mainFunctionName,
+        requirements=package_requirements,
+        code=completed_function.compiledCode,
+    )
+
+
 @delivery_router.post(
     "/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/",
     tags=["deliverables"],

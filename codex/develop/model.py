@@ -1,12 +1,27 @@
 from typing import List
 
-from prisma.models import Function, ObjectType
+from prisma.models import Function
 from prisma.models import Function as FunctionDBModel
+from prisma.models import ObjectType
 from pydantic import BaseModel
 
 from codex.common.model import FunctionDef
 from codex.common.model import ObjectTypeModel as ObjectDef
 from codex.develop.function import generate_object_code, generate_object_template
+
+
+class FunctionSpec(BaseModel):
+    name: str
+    description: str
+    func_args: ObjectDef
+    return_type: ObjectDef
+
+
+class FunctionResponse(BaseModel):
+    id: str
+    name: str
+    requirements: list[str]
+    code: str
 
 
 class Package(BaseModel):

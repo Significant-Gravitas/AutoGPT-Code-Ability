@@ -1,6 +1,7 @@
 import datetime
 from typing import List, Optional, __all__
 
+import prisma.enums
 from prisma.models import Function, ObjectField, ObjectType
 from pydantic import BaseModel, Field
 
@@ -272,3 +273,19 @@ class ResumePoint(BaseModel):
 class ResumePointsList(BaseModel):
     resume_points: List[ResumePoint]
     pagination: Pagination
+
+
+class APIRouteSpec(BaseModel):
+    """
+    A Software Module for the application
+    """
+
+    module_name: str
+    http_verb: prisma.enums.HTTPVerb
+    function_name: str
+    path: str
+    description: str
+    access_level: prisma.enums.AccessLevel
+    allowed_access_roles: list[str]
+    request_model: ObjectTypeModel
+    response_model: ObjectTypeModel
