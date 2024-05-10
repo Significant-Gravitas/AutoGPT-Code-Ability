@@ -25,7 +25,7 @@ delivery_router = APIRouter()
 # Deliverables endpoints
 @delivery_router.post(
     "/function/write/",
-    tags=["deliverables"],
+    tags=["function"],
 )
 async def write_function(function_spec: FunctionSpec):
     # Create AutoGPT user

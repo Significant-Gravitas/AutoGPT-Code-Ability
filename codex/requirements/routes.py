@@ -26,7 +26,7 @@ spec_router = APIRouter()
 # Specs endpoints
 @spec_router.post(
     "/function/spec/",
-    tags=["specs"],
+    tags=["function"],
     response_model=FunctionSpec,
 )
 async def write_function_sepec(
