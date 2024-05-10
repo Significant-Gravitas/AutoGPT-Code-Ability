@@ -24,7 +24,7 @@ delivery_router = APIRouter()
 
 # Deliverables endpoints
 @delivery_router.post(
-    "/function/",
+    "/function/write/",
     tags=["deliverables"],
 )
 async def write_function(function_spec: FunctionSpec):

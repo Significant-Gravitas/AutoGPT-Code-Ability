@@ -25,7 +25,7 @@ spec_router = APIRouter()
 
 # Specs endpoints
 @spec_router.post(
-    "/function/spec",
+    "/function/spec/",
     tags=["specs"],
     response_model=FunctionSpec,
 )
