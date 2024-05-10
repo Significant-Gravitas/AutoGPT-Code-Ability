@@ -90,7 +90,7 @@ async def create_cloud_deployment(
     db_name = f"{unique_prefix}_db"
     db_username = f"{unique_prefix}_user"
 
-    if settings.hosted:
+    if settings.hosted and os.getenv("HOSTED_DEPLOYMENT") == "google":
         db_name, db_username = await create_cloud_db(repo)
 
     try:
