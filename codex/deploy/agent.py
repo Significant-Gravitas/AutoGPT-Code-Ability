@@ -27,7 +27,6 @@ async def create_deployment(
         if (os.getenv("RUN_ENV", default="local") == "local" or settings.zipfile)
         else create_cloud_deployment
     )
-    print(deployment_type)
     deployment = await deployment_type(ids, completedApp, spec, settings)
 
     return deployment

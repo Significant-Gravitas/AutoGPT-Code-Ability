@@ -16,23 +16,23 @@ logger = logging.getLogger(__name__)
 def create_postgres_database(db_name):
     logger.info(f"Attempting to create database {db_name}")
 
-    DB_USER: str | None = os.getenv("USER_DB_ADMIN")
-    if not DB_USER:
+    USER_DB_ADMIN: str | None = os.getenv("USER_DB_ADMIN")
+    if not USER_DB_ADMIN:
         raise EnvironmentError("USER_DB_ADMIN not found in environment variables.")
 
-    DB_PASS = os.getenv("USER_DB_PASS")
-    if not DB_PASS:
+    USER_DB_PASS = os.getenv("USER_DB_PASS")
+    if not USER_DB_PASS:
         raise EnvironmentError("USER_DB_PASS not found in environment variables.")
 
-    DB_CONN = os.getenv("USER_CONN_NAME")
-    if not DB_CONN:
+    USER_CONN_NAME = os.getenv("USER_CONN_NAME")
+    if not USER_CONN_NAME:
         raise EnvironmentError("USER_CONN_NAME not found in environment variables.")
 
     conn = psycopg2.connect(
         dbname="postgres",
-        user=DB_USER,
-        password=DB_PASS,
-        host=DB_CONN,
+        user=USER_DB_ADMIN,
+        password=USER_DB_PASS,
+        host=USER_CONN_NAME,
     )
     conn.autocommit = True  # Necessary to execute a create database command
     cur = conn.cursor()
