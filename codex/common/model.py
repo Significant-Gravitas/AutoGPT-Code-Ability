@@ -289,3 +289,14 @@ class APIRouteSpec(BaseModel):
     allowed_access_roles: list[str]
     request_model: ObjectTypeModel
     response_model: ObjectTypeModel
+
+
+class FunctionSpec(BaseModel):
+    name: str
+    description: str
+    func_args: Optional[ObjectTypeModel] = Field(
+        description="The Function args", default=None
+    )
+    return_type: Optional[ObjectTypeModel] = Field(
+        description="The Function return tyep", default=None
+    )

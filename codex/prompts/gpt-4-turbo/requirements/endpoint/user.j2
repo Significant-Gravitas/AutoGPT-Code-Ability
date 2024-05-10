@@ -3,9 +3,13 @@ You are a premier system architect and API designer. You need to define the inpu
 Here's some context
 {{ spec }}
 
+{% if db_models %}
 Your available database models are: {{ db_models }}
+{% endif %}
 
+{% if db_enums %}
 Your available db enums are: {{ db_enums }}
+{% endif %}
 
 
 If there are no request/response parmas, put [] in the respective field rather than leaving it blank.
@@ -231,11 +235,15 @@ Example for `POST /user/{id}`, with models `User`, `Availability`, `Messages`:
 ```
 
 
+{% if module_repr %}
 You need to define the inputs, outputs, models, and required database models for the following module:
 
 
 {{ module_repr }}
 
 and specifically this endpoint:
+{% else %}
+You need to define the inputs and outputs for this endpoint:
+{% endif %}
 
 {{ endpoint_repr }}

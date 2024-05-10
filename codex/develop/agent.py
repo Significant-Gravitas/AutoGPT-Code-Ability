@@ -22,7 +22,7 @@ import codex.common.database
 from codex.api_model import Identifiers
 from codex.common.ai_block import LLMFailure
 from codex.common.database import INCLUDE_FUNC
-from codex.common.model import APIRouteSpec, FunctionDef
+from codex.common.model import APIRouteSpec, FunctionDef, FunctionSpec
 from codex.database import create_completed_app
 from codex.develop.compile import (
     compile_route,
@@ -32,7 +32,6 @@ from codex.develop.compile import (
 from codex.develop.database import get_compiled_route, get_deliverable
 from codex.develop.develop import DevelopAIBlock, NiceGUIDevelopAIBlock
 from codex.develop.function import construct_function, generate_object_template
-from codex.develop.model import FunctionSpec
 from codex.requirements.blocks.ai_page_decompose import PageDecompositionBlock
 from codex.requirements.database import create_single_function_spec, get_specification
 

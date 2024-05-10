@@ -14,7 +14,8 @@ from codex.api_model import (
     DeliverablesListResponse,
     Identifiers,
 )
-from codex.develop.model import FunctionResponse, FunctionSpec
+from codex.common.model import FunctionSpec
+from codex.develop.model import FunctionResponse
 
 logger = logging.getLogger(__name__)
 
