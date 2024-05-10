@@ -2,15 +2,15 @@ import base64
 import logging
 import os
 
+from langsmith import traceable
 from prisma.models import CompletedApp, Deployment, Specification
 from prisma.types import DeploymentCreateInput
 
 from codex.api_model import Identifiers
-from codex.deploy.packager import create_remote_repo, create_zip_file
-from codex.develop.compile import create_bundle_code
 from codex.deploy.infrastructure import create_cloud_db
 from codex.deploy.model import Settings
-from langsmith import traceable
+from codex.deploy.packager import create_remote_repo, create_zip_file
+from codex.develop.compile import create_bundle_code
 
 logger = logging.getLogger(__name__)
 
@@ -22,17 +22,23 @@ async def create_deployment(
     spec: Specification,
     settings: Settings,
 ) -> Deployment:
-    if os.getenv("RUN_ENV", default="local") == "local" or settings.zipfile:
-        deployment = await create_local_deployment(ids, completedApp, spec)
-        return deployment
+    deployment_type = (
+        create_local_deployment
+        if (os.getenv("RUN_ENV", default="local") == "local" or settings.zipfile)
+        else create_cloud_deployment
+    )
+    print(deployment_type)
+    deployment = await deployment_type(ids, completedApp, spec, settings)
 
-    deployment = await create_cloud_deployment(ids, completedApp, spec, settings)
     return deployment
 
 
 @traceable
 async def create_local_deployment(
-    ids: Identifiers, completedApp: CompletedApp, spec: Specification
+    ids: Identifiers,
+    completedApp: CompletedApp,
+    spec: Specification,
+    settings: Settings,
 ) -> Deployment:
     if not ids.user_id:
         raise ValueError("User ID is required to create a deployment")
