@@ -152,6 +152,121 @@ def example(base_url: str, requirements_only: bool):
 
 
 @cli.command()
+@click.option(
+    "-u",
+    "--base-url",
+    default="http://127.0.0.1:8080/api/v1",
+    help="Base URL of the Codex server",
+)
+def write_function(base_url):
+    import aiohttp
+    from pydantic import ValidationError
+
+    from codex.common.model import ObjectFieldModel, ObjectTypeModel
+    from codex.develop.model import FunctionResponse, FunctionSpec
+
+    data = b"""{
+    "name": "hello_world",
+    "description": "takes in the persons name and returns the string hello `name`",
+    "func_args": {
+        "name": "name",
+        "code": "None",
+        "description": "The name of the person",
+        "Fields": [
+            {
+                "name": "name",
+                "description": "The name of the person",
+                "type": "str",
+                "value": "None",
+                "related_types": []
+            }
+        ],
+        "is_pydantic": true,
+        "is_implemented": true,
+        "is_enum": false
+    },
+    "return_type": {
+        "name": "greeting",
+        "code": "None",
+        "description": "The greeting",
+        "Fields": [
+            {
+                "name": "greeting",
+                "description": "The greeting",
+                "type": "str",
+                "value": "None",
+                "related_types": []
+            }
+        ],
+        "is_pydantic": true,
+        "is_implemented": true,
+        "is_enum": false
+    }
+}"""
+    FunctionSpec.model_validate_json(data)
+
+    async def call_codex():
+        await prisma_client.connect()
+        headers: dict[str, str] = {"accept": "application/json"}
+
+        url = f"{base_url}/function/"
+
+        func_spec = FunctionSpec(
+            name="hello_world",
+            description="takes in the persons name and returns the string 'hello `name`'",
+            func_args=ObjectTypeModel(
+                name="name",
+                description="The name of the person",
+                Fields=[
+                    ObjectFieldModel(
+                        name="name",
+                        description="The name of the person",
+                        type="str",
+                    )
+                ],
+            ),
+            return_type=ObjectTypeModel(
+                name="greeting",
+                description="The greeting",
+                Fields=[
+                    ObjectFieldModel(
+                        name="greeting",
+                        description="The greeting",
+                        type="str",
+                    )
+                ],
+            ),
+        )
+        print(func_spec.model_dump())
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    url, headers=headers, json=func_spec.model_dump()
+                ) as response:
+                    response.raise_for_status()
+
+                    data = await response.json()
+                    print(data)
+                    func = FunctionResponse.model_validate(data)
+                    return func
+
+        except aiohttp.ClientError as e:
+            logger.exception(f"Error getting user: {e}")
+            raise e
+        except ValidationError as e:
+            logger.exception(f"Error parsing user: {e}")
+            raise e
+        except Exception as e:
+            logger.exception(f"Unknown Error when write function: {e}")
+            raise e
+
+    loop = asyncio.new_event_loop()
+    ans = loop.run_until_complete(call_codex())
+    loop.run_until_complete(prisma_client.disconnect())
+    print(ans.code)
+
+
+@cli.command()
 def analytics():
     """
     Run analytics to get template performance.

@@ -164,6 +164,22 @@ async def get_app_response_by_id(user_id: str, app_id: str) -> ApplicationRespon
     )
 
 
+async def create_app_db(user_id: str, app_data: ApplicationCreate) -> Application:
+    app = await Application.prisma().create(
+        data={
+            "name": app_data.name,
+            "description": app_data.description,
+            "userId": user_id,
+        },
+        include={"User": True},
+    )
+
+    if not app.userId:
+        raise AssertionError("Application not found")
+
+    return app
+
+
 async def create_app(user_id: str, app_data: ApplicationCreate) -> ApplicationResponse:
     app = await Application.prisma().create(
         data={

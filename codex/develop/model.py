@@ -1,9 +1,9 @@
-from typing import List
+from typing import List, Optional
 
 from prisma.models import Function
 from prisma.models import Function as FunctionDBModel
 from prisma.models import ObjectType
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from codex.common.model import FunctionDef
 from codex.common.model import ObjectTypeModel as ObjectDef
@@ -13,8 +13,13 @@ from codex.develop.function import generate_object_code, generate_object_templat
 class FunctionSpec(BaseModel):
     name: str
     description: str
-    func_args: ObjectDef
-    return_type: ObjectDef
+    func_args: ObjectDef | None = None
+    func_args: Optional[ObjectDef] = Field(
+        description="The Function args", default=None
+    )
+    return_type: Optional[ObjectDef] = Field(
+        description="The Function return tyep", default=None
+    )
 
 
 class FunctionResponse(BaseModel):

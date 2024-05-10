@@ -15,11 +15,11 @@ from codex.api_model import (
     SpecificationsListResponse,
 )
 from codex.common.database import INCLUDE_API_ROUTE
-from codex.common.model import create_object_type
+from codex.common.model import APIRouteSpec, create_object_type
 
 
 async def create_single_function_spec(
-    ids: Identifiers, app: Application, api_route_spec
+    ids: Identifiers, app: Application, api_route_spec: APIRouteSpec
 ):
     spec_holder = codex.requirements.agent.SpecHolder(
         ids=ids,

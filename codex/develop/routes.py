@@ -25,15 +25,15 @@ delivery_router = APIRouter()
 @delivery_router.post(
     "/function/",
     tags=["deliverables"],
-    response_model=FunctionResponse,
 )
 async def write_function(function_spec: FunctionSpec):
     # Create AutoGPT user
+
     user = await codex.database.get_or_create_user_by_cloud_services_id_and_discord_id(
         "AutoGPT", "AutoGPT"
     )
     # Create App for this function
-    app = await codex.database.create_app(
+    app = await codex.database.create_app_db(
         user.id,
         ApplicationCreate(
             name=function_spec.name, description=function_spec.description
