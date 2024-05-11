@@ -61,10 +61,9 @@ async def write_function(
     completed_app = await create_completed_app(ids, spec)
 
     if not spec.Modules:
-        raise ValueError("No modules found in the spec")
-
+        raise ValueError("No modules found in the specification.")
     if not spec.Modules[0].ApiRouteSpecs:
-        raise ValueError("No API routes found in the spec")
+        raise ValueError("No API routes found in the first module of the specification.")
 
     return await process_api_route(
         api_route=spec.Modules[0].ApiRouteSpecs[0],
