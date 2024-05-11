@@ -7,8 +7,17 @@ from fastapi.responses import JSONResponse
 import codex.database
 import codex.develop.agent as architect_agent
 import codex.develop.database
+import codex.requirements.blocks.ai_endpoint
 import codex.requirements.database
-from codex.api_model import DeliverableResponse, DeliverablesListResponse, Identifiers
+from codex.api_model import (
+    ApplicationCreate,
+    DeliverableResponse,
+    DeliverablesListResponse,
+    FunctionRequest,
+    Identifiers,
+)
+from codex.common.model import FunctionSpec
+from codex.develop.model import FunctionResponse
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +25,70 @@ delivery_router = APIRouter()
 
 
 # Deliverables endpoints
+@delivery_router.post(
+    "/function/",
+    tags=["function"],
+)
+async def write_function(func_req: FunctionRequest) -> FunctionResponse:
+    """
+    Writes a function based on the provided FunctionRequest.
+
+    Args:
+        func_req (FunctionRequest): The FunctionRequest object containing the details of the function.
+
+    Returns:
+        FunctionResponse: The FunctionResponse object containing the ID, name, requirements, and code of the completed function.
+    """
+
+    user = await codex.database.get_or_create_user_by_cloud_services_id_and_discord_id(
+        "AutoGPT", "AutoGPT"
+    )
+    # Create App for this function
+    app = await codex.database.create_app_db(
+        user.id,
+        ApplicationCreate(name=func_req.name, description=func_req.description),
+    )
+
+    ids = Identifiers(user_id=user.id, app_id=app.id)
+    try:
+        ai_block = codex.requirements.blocks.ai_endpoint.EndpointSchemaRefinementBlock()
+        endpoint_resp = await ai_block.invoke(
+            ids=Identifiers(user_id=user.id, app_id=app.id),
+            invoke_params={
+                "spec": f"{func_req.name} - {func_req.description}",
+                "endpoint_repr": f"{func_req.name} - {func_req.description}\n Inputs: {func_req.inputs}\n Outputs: {func_req.outputs}",
+                "allowed_types": codex.requirements.blocks.ai_endpoint.ALLOWED_TYPES,
+            },
+        )
+        endpoint = endpoint_resp.api_endpoint
+        function_spec = FunctionSpec(
+            name=func_req.name,
+            description=func_req.description,
+            func_args=endpoint.request_model,
+            return_type=endpoint.response_model,
+        )
+    except Exception as e:
+        logger.error(f"Error creating function spec: {e}")
+        raise RuntimeError("Error creating function spec")
+
+    completed_function: codex.database.CompiledRoute = (
+        await architect_agent.write_function(ids, app, function_spec)
+    )
+    package_requirements = []
+    if completed_function.Packages:
+        for package in completed_function.Packages:
+            package_requirements.append(
+                f"{package.packageName}{f':^{package.version}' if package.version else '=*'}"
+            )
+
+    return FunctionResponse(
+        id=completed_function.id,
+        name=completed_function.mainFunctionName,
+        requirements=package_requirements,
+        code=completed_function.compiledCode,
+    )
+
+
 @delivery_router.post(
     "/user/{user_id}/apps/{app_id}/specs/{spec_id}/deliverables/",
     tags=["deliverables"],

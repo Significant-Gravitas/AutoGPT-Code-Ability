@@ -152,6 +152,85 @@ def example(base_url: str, requirements_only: bool):
 
 
 @cli.command()
+@click.option(
+    "-u",
+    "--base-url",
+    default="http://127.0.0.1:8080/api/v1",
+    help="Base URL of the Codex server",
+)
+@click.option(
+    "-n",
+    "--name",
+    default="Greetings",
+    help="Name of the function",
+)
+@click.option(
+    "-d",
+    "--description",
+    default="Greets the user",
+    help="Description of the function",
+)
+@click.option(
+    "-i",
+    "--inputs",
+    default="Users name",
+    help="Inputs of the function",
+)
+@click.option(
+    "-o",
+    "--outputs",
+    default="The greeting",
+    help="Outputs of the function",
+)
+def write_function(base_url, name, description, inputs, outputs):
+    import aiohttp
+    from pydantic import ValidationError
+
+    from codex.api_model import FunctionRequest
+    from codex.develop.model import FunctionResponse
+
+    async def call_codex():
+        await prisma_client.connect()
+        headers: dict[str, str] = {"accept": "application/json"}
+
+        url = f"{base_url}/function/"
+
+        req = FunctionRequest(
+            name=name,
+            description=description,
+            inputs=inputs,
+            outputs=outputs,
+        )
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    url, headers=headers, json=req.model_dump()
+                ) as response:
+                    response.raise_for_status()
+
+                    data = await response.json()
+                    print(data)
+                    func = FunctionResponse.model_validate(data)
+                    return func
+
+        except aiohttp.ClientError as e:
+            logger.exception(f"Error getting user: {e}")
+            raise e
+        except ValidationError as e:
+            logger.exception(f"Error parsing user: {e}")
+            raise e
+        except Exception as e:
+            logger.exception(f"Unknown Error when write function: {e}")
+            raise e
+
+    loop = asyncio.new_event_loop()
+    ans = loop.run_until_complete(call_codex())
+    loop.run_until_complete(prisma_client.disconnect())
+    print(ans.code)
+
+
+@cli.command()
 def analytics():
     """
     Run analytics to get template performance.
