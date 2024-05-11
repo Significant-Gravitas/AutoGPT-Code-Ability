@@ -1,0 +1,43 @@
+name: Setup Environment and Dependencies
+description: Setup the environment and install dependencies for the project
+
+runs:
+    using: composite
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.11
+
+    - name: Set up Python dependency cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pypoetry
+        key: ${{ runner.os }}-poetry-${{ hashFiles('pyproject.toml') }}-${{ steps.get_date.outputs.date }}
+
+    - name: Install Python dependencies
+      shell: bash
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        poetry install
+
+    - name: Install Dependencies
+      shell: bash
+      run: poetry install
+      if: steps.cache.outputs.cache-hit != 'true'
+
+    - name: Generate Prisma Client
+      shell: bash
+      run: poetry run prisma generate
+
+    - name: Run Database Migrations
+      shell: bash
+      run: |
+        poetry run prisma migrate dev --name updates
+
+    - name: Populate Database
+      shell: bash
+      run: |
+        ./run populate-db

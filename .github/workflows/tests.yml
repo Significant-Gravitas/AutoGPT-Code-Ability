@@ -11,33 +11,38 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_USER: ${{ secrets.DB_USER }}
+          PGUSER: ${{ secrets.DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASS }}
+          POSTGRES_DB: ${{ secrets.DB_NAME }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
-      - uses: actions/checkout@v1
-        with:
-          fetch-depth: 1
+      - uses: actions/checkout@v3
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v1
-        with:
-          python-version: 3.11
-
-      - name: Set up Python dependency cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pypoetry
-          key: ${{ runner.os }}-poetry-${{ hashFiles('pyproject.toml') }}-${{ steps.get_date.outputs.date }}
-
-      - name: Install Python dependencies
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          poetry install
-
-      - name: Install Dependencies
-        run: poetry install
-        if: steps.cache.outputs.cache-hit != 'true'
-
-      - name: Generate Prisma Client
-        run: poetry run prisma generate
+      - name: Set Environment and Install Dependencies
+        uses: ./.github/actions/setup-env
 
       - name: Test with pytest
-        run: poetry run pytest --cov --without-integration .
+        run: poetry run pytest --cov .
+    
+    env:
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASS: ${{ secrets.DB_PASS }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      DB_PORT: 5432
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      RUN_ENV: local
+      PORT: 8080
+      DATABASE_URL: postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@localhost:5432/${{ secrets.DB_NAME }}

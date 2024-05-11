@@ -29,31 +29,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v1
-      with:
-        python-version: 3.11
-
-    - name: Set up Python dependency cache
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/pypoetry
-        key: ${{ runner.os }}-poetry-${{ hashFiles('pyproject.toml') }}-${{ steps.get_date.outputs.date }}
-
-    - name: Install Python dependencies
-      run: |
-        curl -sSL https://install.python-poetry.org | python3 -
-        poetry install
-
-    - name: Install Dependencies
-      run: poetry install
-      if: steps.cache.outputs.cache-hit != 'true'
-
-    - name: Generate Prisma Client
-      run: poetry run prisma generate
-
-    - name: Set DB URL
-      run: echo "DATABASE_URL=postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@localhost:5432/${{ secrets.DB_NAME }}" >> $GITHUB_ENV
+    - name: Set Environment and Install Dependencies
+      uses: ./.github/actions/setup-env
 
     - name: Run server
       run: |
@@ -70,14 +47,6 @@ jobs:
         DB_PORT: 5432
         RUN_ENV: local
         PORT: 8080
-
-    - name: Run Database Migrations
-      run: |
-        poetry run prisma migrate dev --name updates
-
-    - name: Populate Database
-      run: |
-        ./run populate-db
 
     - name: Run Tests
       run: |
@@ -96,3 +65,5 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       RUN_ENV: local
       PORT: 8080
+      DATABASE_URL: postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASS }}@localhost:5432/${{ secrets.DB_NAME }}
+
