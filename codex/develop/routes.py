@@ -27,7 +27,7 @@ delivery_router = APIRouter()
     "/function/write/",
     tags=["function"],
 )
-async def write_function(function_spec: FunctionSpec):
+async def write_function(function_spec: FunctionSpec) -> FunctionResponse:
     # Create AutoGPT user
 
     user = await codex.database.get_or_create_user_by_cloud_services_id_and_discord_id(
