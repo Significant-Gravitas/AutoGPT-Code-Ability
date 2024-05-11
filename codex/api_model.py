@@ -67,7 +67,7 @@ class UsersListResponse(BaseModel):
 
 
 ####### APPS #######
-class FunctionSpecRequest(BaseModel):
+class FunctionRequest(BaseModel):
     """
     A request to generate a correctly formated function spec
     """

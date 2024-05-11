@@ -158,52 +158,36 @@ def example(base_url: str, requirements_only: bool):
     default="http://127.0.0.1:8080/api/v1",
     help="Base URL of the Codex server",
 )
-def write_function(base_url):
+@click.option(
+    "-n",
+    "--name",
+    default="Greetings",
+    help="Name of the function",
+)
+@click.option(
+    "-d",
+    "--description",
+    default="Greets the user",
+    help="Description of the function",
+)
+@click.option(
+    "-i",
+    "--inputs",
+    default="Users name",
+    help="Inputs of the function",
+)
+@click.option(
+    "-o",
+    "--outputs",
+    default="The greeting",
+    help="Outputs of the function",
+)
+def write_function(base_url, name, description, inputs, outputs):
     import aiohttp
     from pydantic import ValidationError
 
-    from codex.common.model import ObjectFieldModel, ObjectTypeModel
-    from codex.develop.model import FunctionResponse, FunctionSpec
-
-    data = b"""{
-    "name": "hello_world",
-    "description": "takes in the persons name and returns the string hello `name`",
-    "func_args": {
-        "name": "name",
-        "code": "None",
-        "description": "The name of the person",
-        "Fields": [
-            {
-                "name": "name",
-                "description": "The name of the person",
-                "type": "str",
-                "value": "None",
-                "related_types": []
-            }
-        ],
-        "is_pydantic": true,
-        "is_implemented": true,
-        "is_enum": false
-    },
-    "return_type": {
-        "name": "greeting",
-        "code": "None",
-        "description": "The greeting",
-        "Fields": [
-            {
-                "name": "greeting",
-                "description": "The greeting",
-                "type": "str",
-                "value": "None",
-                "related_types": []
-            }
-        ],
-        "is_pydantic": true,
-        "is_implemented": true,
-        "is_enum": false
-    }
-}"""
-    FunctionSpec.model_validate_json(data)
+    from codex.api_model import FunctionRequest
+    from codex.develop.model import FunctionResponse
 
     async def call_codex():
         await prisma_client.connect()
@@ -211,37 +195,17 @@ def write_function(base_url):
 
         url = f"{base_url}/function/"
 
-        func_spec = FunctionSpec(
-            name="hello_world",
-            description="takes in the persons name and returns the string 'hello `name`'",
-            func_args=ObjectTypeModel(
-                name="name",
-                description="The name of the person",
-                Fields=[
-                    ObjectFieldModel(
-                        name="name",
-                        description="The name of the person",
-                        type="str",
-                    )
-                ],
-            ),
-            return_type=ObjectTypeModel(
-                name="greeting",
-                description="The greeting",
-                Fields=[
-                    ObjectFieldModel(
-                        name="greeting",
-                        description="The greeting",
-                        type="str",
-                    )
-                ],
-            ),
+        req = FunctionRequest(
+            name=name,
+            description=description,
+            inputs=inputs,
+            outputs=outputs,
         )
-        print(func_spec.model_dump())
+
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.post(
-                    url, headers=headers, json=func_spec.model_dump()
+                    url, headers=headers, json=req.model_dump()
                 ) as response:
                     response.raise_for_status()
 

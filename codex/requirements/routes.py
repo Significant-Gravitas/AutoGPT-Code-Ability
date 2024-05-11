@@ -9,14 +9,10 @@ import codex.requirements.agent
 import codex.requirements.blocks.ai_endpoint
 import codex.requirements.database
 from codex.api_model import (
-    ApplicationCreate,
-    FunctionSpecRequest,
     Identifiers,
     SpecificationResponse,
     SpecificationsListResponse,
 )
-from codex.common.model import FunctionSpec
-from codex.requirements.model import EndpointSchemaRefinementResponse
 
 logger = logging.getLogger(__name__)
 
@@ -24,44 +20,6 @@ spec_router = APIRouter()
 
 
 # Specs endpoints
-@spec_router.post(
-    "/function/spec/",
-    tags=["function"],
-    response_model=FunctionSpec,
-)
-async def write_function_sepec(
-    request: FunctionSpecRequest,
-) -> Response | FunctionSpec:
-    """
-    Create a new specification for a given application and user.
-    """
-    user = await codex.database.get_or_create_user_by_cloud_services_id_and_discord_id(
-        "AutoGPT", "AutoGPT"
-    )
-    app = await codex.database.create_app_db(
-        user.id,
-        ApplicationCreate(name=request.name, description=request.description),
-    )
-    ai_block = codex.requirements.blocks.ai_endpoint.EndpointSchemaRefinementBlock()
-    endpoint_resp: EndpointSchemaRefinementResponse = await ai_block.invoke(
-        ids=Identifiers(user_id=user.id, app_id=app.id),
-        invoke_params={
-            "spec": f"{request.name} - {request.description}",
-            "endpoint_repr": f"{request.name} - {request.description}\n Inputs: {request.inputs}\n Outputs: {request.outputs}",
-            "allowed_types": codex.requirements.blocks.ai_endpoint.ALLOWED_TYPES,
-        },
-    )
-    endpoint = endpoint_resp.api_endpoint
-    spec_response = FunctionSpec(
-        name=request.name,
-        description=request.description,
-        func_args=endpoint.request_model,
-        return_type=endpoint.response_model,
-    )
-    print("Yay spec created")
-    return spec_response
-
-
 @spec_router.post(
     "/user/{user_id}/apps/{app_id}/specs/",
     tags=["specs"],
