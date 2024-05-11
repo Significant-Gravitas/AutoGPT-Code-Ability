@@ -109,6 +109,8 @@ user = await prisma.models.User.prisma().create(
 )
 ```
 
+{% if database_schema %}
+
 ### Query examples
 
 For a more complete list of queries you can perform with Prisma Client Python see the documentation.
@@ -184,3 +186,5 @@ post = await prisma.models.Post.prisma().update(
     },
 )
 ```
+
+{% endif %}

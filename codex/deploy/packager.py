@@ -657,19 +657,34 @@ async def create_pyproject(application: Application, package_dir: Path) -> None:
         f"--dependency={p.packageName}{f':^{p.version}' if p.version else '=*'}"
         for p in sorted(application.packages, key=lambda p: p.packageName)
     ]
-    await execute_command(
-        command=[
-            "poetry",
-            "init",
-            f"--name={app_name_slug}",
-            f"--description={app_description}",
-            f"--author={PROJECT_AUTHOR}",
-            "--python=>=3.11,<4.0",
-            *dependency_args,
-            "--no-interaction",
-        ],
-        cwd=package_dir,
-    )
+    try:
+        await execute_command(
+            command=[
+                "poetry",
+                "init",
+                f"--name={app_name_slug}",
+                f"--description={app_description}",
+                f"--author={PROJECT_AUTHOR}",
+                "--python=>=3.11,<4.0",
+                *dependency_args,
+                "--no-interaction",
+            ],
+            cwd=package_dir,
+        )
+    except Exception as e:
+        logger.exception(f"Error creating pyproject.toml: {e}")
+        await execute_command(
+            command=[
+                "poetry",
+                "init",
+                f"--name={app_name_slug}",
+                f"--description={app_description}",
+                f"--author={PROJECT_AUTHOR}",
+                "--python=>=3.11,<4.0",
+                "--no-interaction",
+            ],
+            cwd=package_dir,
+        )
 
 
 async def poetry_lock(package_dir: Path) -> None:

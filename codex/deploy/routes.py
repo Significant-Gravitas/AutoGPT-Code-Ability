@@ -2,8 +2,8 @@ import base64
 import io
 import json
 import logging
-
 from typing import Optional
+
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse, StreamingResponse
 from prisma.models import CompletedApp
@@ -18,10 +18,10 @@ import codex.deploy.agent as deploy_agent
 import codex.deploy.database
 import codex.requirements.database
 from codex.api_model import (
+    DeploymentRequest,
     DeploymentResponse,
     DeploymentsListResponse,
     Identifiers,
-    DeploymentRequest,
 )
 from codex.common.database import INCLUDE_API_ROUTE, INCLUDE_FUNC
 from codex.deploy.model import Settings
@@ -79,6 +79,8 @@ async def create_deployment(
         user_id=user_id, app_id=app_id, spec_id=spec_id
     )
 
+    deployment_settings: Settings | None = None
+
     if deployment_details is None:
         logger.info(f"No deployment settings provided for app {app_id}")
         deployment_settings = Settings(
@@ -95,6 +97,13 @@ async def create_deployment(
             )
         except Exception as e:
             logger.error("error in deployment settings: %s", e)
+
+    if deployment_settings is None:
+        deployment_settings = Settings(
+            zipfile=False,
+            githubRepo=True,
+            hosted=False,
+        )
 
     deployment = await deploy_agent.create_deployment(
         ids, completedApp, spec, deployment_settings

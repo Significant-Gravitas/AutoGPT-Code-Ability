@@ -4,6 +4,7 @@ import logging
 import prisma
 import prisma.enums
 import prisma.models
+from langsmith import traceable
 
 import codex.interview.model
 from codex.common.ai_block import Identifiers
@@ -11,7 +12,6 @@ from codex.interview.ai_interview import InterviewBlock
 from codex.interview.ai_interview_update import InterviewUpdateBlock
 from codex.interview.ai_module import ModuleGenerationBlock
 from codex.interview.model import Action, InterviewResponse, UpdateUnderstanding
-from langsmith import traceable
 
 logger = logging.getLogger(__name__)
 

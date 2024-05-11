@@ -1,10 +1,10 @@
 import asyncio
 import logging
-from typing import Optional
 
 import prisma
 import prisma.enums
 import pydantic
+from langsmith import traceable
 from prisma.models import Application
 
 import codex.common.model
@@ -17,25 +17,9 @@ import codex.requirements.blocks.ai_endpoint
 import codex.requirements.blocks.ai_module_routes
 import codex.requirements.model
 from codex.api_model import Identifiers
-from langsmith import traceable
+from codex.common.model import APIRouteSpec
 
 logger = logging.getLogger(__name__)
-
-
-class APIRouteSpec(pydantic.BaseModel):
-    """
-    A Software Module for the application
-    """
-
-    module_name: str
-    http_verb: prisma.enums.HTTPVerb
-    function_name: str
-    path: str
-    description: str
-    access_level: prisma.enums.AccessLevel
-    allowed_access_roles: list[str]
-    request_model: Optional[codex.common.model.ObjectTypeModel]
-    response_model: Optional[codex.common.model.ObjectTypeModel]
 
 
 class Module(pydantic.BaseModel):

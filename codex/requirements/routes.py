@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 
 import codex.database
 import codex.requirements.agent
+import codex.requirements.blocks.ai_endpoint
 import codex.requirements.database
 from codex.api_model import (
     Identifiers,
@@ -19,8 +20,6 @@ spec_router = APIRouter()
 
 
 # Specs endpoints
-
-
 @spec_router.post(
     "/user/{user_id}/apps/{app_id}/specs/",
     tags=["specs"],

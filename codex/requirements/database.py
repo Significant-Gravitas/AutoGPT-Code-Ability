@@ -3,17 +3,39 @@ import os
 import pickle
 
 import prisma
-from prisma.models import Specification
+from prisma.models import Application, Specification
 from prisma.types import SpecificationCreateInput
 
+import codex.common
 import codex.requirements.agent
 from codex.api_model import (
+    Identifiers,
     Pagination,
     SpecificationResponse,
     SpecificationsListResponse,
 )
 from codex.common.database import INCLUDE_API_ROUTE
-from codex.common.model import create_object_type
+from codex.common.model import APIRouteSpec, create_object_type
+
+
+async def create_single_function_spec(
+    ids: Identifiers, app: Application, api_route_spec: APIRouteSpec
+):
+    spec_holder = codex.requirements.agent.SpecHolder(
+        ids=ids,
+        app=app,
+        features=[],
+        modules=[
+            codex.requirements.agent.Module(
+                name="Single Function Module",
+                description=api_route_spec.description,
+                interactions="No Interactions",
+                api_routes=[api_route_spec],
+            )
+        ],
+        db_response=None,
+    )
+    return await create_specification(spec_holder)
 
 
 async def create_specification(
