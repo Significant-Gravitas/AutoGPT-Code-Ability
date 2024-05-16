@@ -147,6 +147,10 @@ class SpecificationCreate(BaseModel):
     description: str
 
 
+class SpecificationUpdate(prisma.models.Specification, BaseModel):
+    apiRouteSpecs: List[APIRouteSpecModel] = []
+
+
 class SpecificationResponse(BaseModel):
     id: str
     createdAt: datetime

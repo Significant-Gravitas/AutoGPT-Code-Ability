@@ -1,10 +1,12 @@
 import asyncio
 import os
 import pickle
+from typing import Literal
 
 import prisma
+import prisma.enums
 from prisma.models import Application, Specification
-from prisma.types import SpecificationCreateInput
+from prisma.types import APIRouteSpecCreateInput, SpecificationCreateInput
 
 import codex.common
 import codex.requirements.agent
@@ -15,7 +17,12 @@ from codex.api_model import (
     SpecificationsListResponse,
 )
 from codex.common.database import INCLUDE_API_ROUTE
-from codex.common.model import APIRouteSpec, create_object_type
+from codex.common.model import (
+    APIRouteSpec,
+    ObjectFieldModel,
+    create_object_type,
+    get_object_types_for_spec,
+)
 
 
 async def create_single_function_spec(
@@ -272,6 +279,92 @@ async def list_specifications(
                 total_items=0, total_pages=0, current_page=0, page_size=0
             ),
         )
+    
+async def add_module_to_specification(spec_id: str, module_name: str, module_description: str, module_interactions: str)-> prisma.models.Module:
+    module = await prisma.models.Module.prisma().create(
+        data={
+            "name": module_name,
+            "description": module_description,
+            "interactions": module_interactions,
+            "Specification": {"connect": {"id": spec_id}}
+        }
+    )
+    return module
+
+async def get_modules(spec_id: str) -> list[prisma.models.Module]:
+    modules = await prisma.models.Module.prisma().find_many(where={"specificationId": spec_id})
+    return modules
+
+
+async def add_route_to_module(
+    module_id: str,
+    api_route_spec: APIRouteSpec,
+):
+    
+    created_objects = {}
+    for model in [api_route_spec.request_model, api_route_spec.response_model]:
+        created_objects = await create_object_type(model, created_objects)
+
+
+    create_route = APIRouteSpecCreateInput(**{
+            "method": api_route_spec.http_verb,
+            "functionName": api_route_spec.function_name,
+            "path": api_route_spec.path,
+            "description": api_route_spec.description,
+            "AccessLevel": api_route_spec.access_level,
+            "AllowedAccessRoles": api_route_spec.allowed_access_roles,
+            "Module": {"connect": {"id": module_id}},
+        })
+    if api_route_spec.request_model:
+        create_route["RequestObject"] = {
+            "connect": {"id": created_objects[api_route_spec.request_model.name].id}
+        }
+    if api_route_spec.response_model:
+        create_route["ResponseObject"] = {
+            "connect": {"id": created_objects[api_route_spec.response_model.name].id}
+        }
+    
+    route = await prisma.models.APIRouteSpec.prisma().create(
+        data=create_route
+    )
+    return route
+
+async def add_parameter_to_route(
+        user_id: str,
+        app_id: str,
+        spec_id: str,
+        route_id: str,
+        param: ObjectFieldModel,
+        io: Literal["request","response"]
+    ):
+    # Get created objects
+    available_objects = {}
+    available_objects = await get_object_types_for_spec(user_id=user_id, app_id=app_id, spec_id=spec_id, available_objects=available_objects)
+
+    for type in param.related_types or []:
+        if type.name not in available_objects:
+            available_objects = await create_object_type(type, available_objects)
+
+    
+    # get teh existing param, or make one if not found
+    route = await prisma.models.APIRouteSpec.prisma().find_first_or_raise(where={"id": route_id})
+
+    if not route.RequestObject and io == "request":
+        raise AssertionError("Route does not have a request object")
+    if not route.ResponseObject and io == "response":
+        raise AssertionError("Route does not have a response object")
+
+    # Insert the Field
+    field = await prisma.models.ObjectField.prisma().create(
+        data={
+            "name": param.name,
+            "description": param.description,
+            "typeName": param.type,
+            "ReferredObjectType": {"connect": {"id": route.RequestObject.id if io == "request" else route.ResponseObject.id}},
+        }
+    )
+
+    return field
 
 
 async def main():
