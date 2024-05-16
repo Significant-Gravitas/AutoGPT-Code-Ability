@@ -179,13 +179,12 @@ async def create_single_deliverable_route(
 
         else:
             extra_functions = []
-        
+
         compiled_route = await architect_agent.process_api_route(
             api_route, ids, specification, completed_app, extra_functions
         )
 
         # TODO: Do somethig with the compiled route
-
 
         return DeliverableResponse(
             id=completed_app.id,

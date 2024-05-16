@@ -1,6 +1,5 @@
 import json
 import logging
-from re import L
 from typing import Literal
 
 from fastapi import APIRouter, Query, Response
