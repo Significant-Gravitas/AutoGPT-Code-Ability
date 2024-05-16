@@ -83,7 +83,6 @@ async def get_spec(user_id: str, app_id: str, spec_id: str):
 @spec_router.post(
     "/user/{user_id}/apps/{app_id}/specs/{spec_id}/modules",
     tags=["specs"],
-    response_model=JSONResponse,
 )
 async def add_module(
     user_id: str,
@@ -123,7 +122,6 @@ async def add_module(
 @spec_router.delete(
     "/user/{user_id}/apps/{app_id}/specs/{spec_id}/modules/{module_id}",
     tags=["specs"],
-    response_model=JSONResponse,
 )
 async def delete_module(
     user_id: str,
@@ -154,7 +152,6 @@ async def delete_module(
 @spec_router.post(
     "/user/{user_id}/apps/{app_id}/specs/{spec_id}/modules/{module_id}/routes",
     tags=["specs"],
-    response_model=JSONResponse,
 )
 async def add_route(
     user_id: str,
@@ -190,7 +187,6 @@ async def add_route(
 @spec_router.delete(
     "/user/{user_id}/apps/{app_id}/specs/{spec_id}/routes/{route_id}",
     tags=["specs"],
-    response_model=JSONResponse,
 )
 async def delete_route(
     user_id: str,
@@ -221,7 +217,6 @@ async def delete_route(
 @spec_router.post(
     "/user/{user_id}/apps/{app_id}/specs/{spec_id}/routes/{route_id}/params",
     tags=["specs"],
-    response_model=JSONResponse,
 )
 async def add_param_to_route(
     user_id: str,
@@ -261,7 +256,6 @@ async def add_param_to_route(
 @spec_router.delete(
     "/user/{user_id}/apps/{app_id}/specs/{spec_id}/routes/{route_id}/params/{param_id}",
     tags=["specs"],
-    response_model=JSONResponse,
 )
 async def delete_param_from_route(
     user_id: str,

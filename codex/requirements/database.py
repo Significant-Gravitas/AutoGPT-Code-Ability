@@ -24,8 +24,8 @@ from codex.common.database import INCLUDE_API_ROUTE
 from codex.common.model import (
     APIRouteSpec,
     ObjectFieldModel,
+    ObjectType,
     create_object_type,
-    get_object_types_for_spec,
 )
 
 
@@ -238,6 +238,44 @@ async def delete_specification(spec_id: str) -> None:
     )
 
 
+async def get_object_types_for_spec(
+    user_id: str, app_id: str, spec_id: str, available_objects: dict[str, ObjectType]
+) -> dict[str, ObjectType]:
+    spec = await get_specification(user_id=user_id, app_id=app_id, spec_id=spec_id)
+    if not spec:
+        raise Exception("Specification not found")
+
+    # recursively look up all object types in the spec and return the ObjectType objects
+    # by looking at the fields of the request and response objects of the API routes
+    # and then looking at the related types of those fields.
+    # first, create an inline function to recursively look up all object types in the spec
+    async def get_related_objects(
+        obj: ObjectType, available_objects: dict[str, ObjectType]
+    ) -> dict[str, ObjectType]:
+        for field in obj.Fields or []:
+            for related_type in field.RelatedTypes or []:
+                # query the database for the related type
+                if related_type.name not in available_objects:
+                    available_objects = await get_related_objects(
+                        related_type, available_objects
+                    )
+        return available_objects
+
+    # then, iterate over all modules in the spec and look at the API routes
+    for module in spec.Modules or []:
+        for route in module.ApiRouteSpecs or []:
+            if route.RequestObject:
+                available_objects = await get_related_objects(
+                    route.RequestObject, available_objects
+                )
+            if route.ResponseObject:
+                available_objects = await get_related_objects(
+                    route.ResponseObject, available_objects
+                )
+
+    return available_objects
+
+
 async def list_specifications(
     user_id: str, app_id: str, page: int, page_size: int
 ) -> SpecificationsListResponse:
@@ -369,24 +407,20 @@ async def add_parameter_to_route(
     if not route.ResponseObject and io == "response":
         raise AssertionError("Route does not have a response object")
 
-    data = ObjectFieldCreateInput(**{
+    data = ObjectFieldCreateInput(
+        **{
             "name": param.name,
             "description": param.description,
             "typeName": param.type,
-        })
+        }
+    )
 
     if io == "request" and route.RequestObject:
-        data["ReferredObjectType"] = {
-            "connect": {"id": route.RequestObject.id}
-        }
+        data["ReferredObjectType"] = {"connect": {"id": route.RequestObject.id}}
     elif io == "response" and route.ResponseObject:
-        data["ReferredObjectType"] = {
-            "connect": {"id": route.ResponseObject.id}
-        }
+        data["ReferredObjectType"] = {"connect": {"id": route.ResponseObject.id}}
     # Insert the Field
-    field = await prisma.models.ObjectField.prisma().create(
-        data=data
-    )
+    field = await prisma.models.ObjectField.prisma().create(data=data)
 
     return field
 

@@ -5,7 +5,6 @@ import prisma.enums
 from prisma.models import Function, ObjectField, ObjectType
 from pydantic import BaseModel, Field
 
-import codex.requirements.database
 from codex.api_model import Pagination
 from codex.common.database import INCLUDE_FIELD, INCLUDE_TYPE
 from codex.common.types import (
@@ -255,46 +254,6 @@ async def create_object_type(
             )
             if updated_object_field:
                 field.RelatedTypes = updated_object_field.RelatedTypes
-
-    return available_objects
-
-
-async def get_object_types_for_spec(
-    user_id: str, app_id: str, spec_id: str, available_objects: dict[str, ObjectType]
-) -> dict[str, ObjectType]:
-    spec = await codex.requirements.database.get_specification(
-        user_id=user_id, app_id=app_id, spec_id=spec_id
-    )
-    if not spec:
-        raise Exception("Specification not found")
-
-    # recursively look up all object types in the spec and return the ObjectType objects
-    # by looking at the fields of the request and response objects of the API routes
-    # and then looking at the related types of those fields.
-    # first, create an inline function to recursively look up all object types in the spec
-    async def get_related_objects(
-        obj: ObjectType, available_objects: dict[str, ObjectType]
-    ) -> dict[str, ObjectType]:
-        for field in obj.Fields or []:
-            for related_type in field.RelatedTypes or []:
-                # query the database for the related type
-                if related_type.name not in available_objects:
-                    available_objects = await get_related_objects(
-                        related_type, available_objects
-                    )
-        return available_objects
-
-    # then, iterate over all modules in the spec and look at the API routes
-    for module in spec.Modules or []:
-        for route in module.ApiRouteSpecs or []:
-            if route.RequestObject:
-                available_objects = await get_related_objects(
-                    route.RequestObject, available_objects
-                )
-            if route.ResponseObject:
-                available_objects = await get_related_objects(
-                    route.ResponseObject, available_objects
-                )
 
     return available_objects
 
