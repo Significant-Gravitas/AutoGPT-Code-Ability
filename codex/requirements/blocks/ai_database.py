@@ -66,7 +66,7 @@ class DatabaseGenerationBlock(AIBlock):
     # The name of the prompt template folder in codex/prompts/{model}
     prompt_template_name = "requirements/database"
     # Model to use for the LLM
-    model = "gpt-4-turbo"
+    model = "gpt-4o"
     # Should we force the LLM to reply in JSON
     is_json_response = False
     # If we are using is_json_response, what is the response model

@@ -1,0 +1,15 @@
+Extract verbatim the information necessary to fix this error: """{{full_error_message}}"""
+
+{% if readme %}
+From this documentation: 
+"""
+{{readme}}
+"""
+{% endif %}
+
+{% if context %}
+And this file has our best guess for the context of the error:
+"""
+{{context}}
+"""
+{% endif %}

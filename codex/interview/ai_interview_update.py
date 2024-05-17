@@ -30,7 +30,7 @@ class InterviewUpdateBlock(AIBlock):
     """
 
     prompt_template_name = "interview/update"
-    model = "gpt-4-turbo"
+    model = "gpt-4o"
     is_json_response = True
     pydantic_object = UpdateUnderstanding
 

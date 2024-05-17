@@ -14,7 +14,7 @@ from openai import AsyncOpenAI  # noqa
 def num_tokens_from_messages(messages):
     """Just a rough estimate here."""
     try:
-        encoding = tiktoken.encoding_for_model("gpt-4-turbo")
+        encoding = tiktoken.encoding_for_model("gpt-4o")
     except KeyError:
         print("Warning: model not found. Using cl100k_base encoding.")
         encoding = tiktoken.get_encoding("cl100k_base")
