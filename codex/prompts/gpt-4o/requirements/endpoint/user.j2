@@ -1,0 +1,249 @@
+You are a premier system architect and API designer. You need to define the inputs and outputs of an API endpoint
+
+Here's some context
+{{ spec }}
+
+{% if db_models %}
+Your available database models are: {{ db_models }}
+{% endif %}
+
+{% if db_enums %}
+Your available db enums are: {{ db_enums }}
+{% endif %}
+
+
+If there are no request/response parmas, put [] in the respective field rather than leaving it blank.
+Ensure all path, query, and body params are included in the request model as separate fields as needed.
+For path params, the object name should be the name of the path param, the Field Type should be the type of the path param, and the description should be a description of the path param. It should not go into any wrapping object.
+
+For example, if an endpoint is /r/{id}/s/{name},
+ the request model should have two Fields, one for id and one for name.  
+ The name of the first Field should be "id", the name of the second Field should be "name", and each should have the type str for their Field.type parameter.
+ The description should be a description of the path param.
+
+If there is also a body, that should be included in the request model params as well.
+
+An example would be something like POST /update/{id}/name/{name} with a body of the update. 
+ The request model should have three Fields, one for id, one for name, and one for the body.  
+ The name of the first Field should be "id", the name of the second Field should be "name", and the name of the third Field should be "body".
+ The Field.type should be the type of the path param for the first two (str). 
+ For the third Field, the body, there should be a well named model for the body and Field.related_types should have one item that defines the ObjectType
+ If there's a list of that object, the type should be list[<ObjectTypeName>]
+ If there's a db_model that's being used, don't put it in the related fields
+
+
+Ensure all response params are included in the response model params.
+
+
+```json
+{
+  "think": "general thoughts about the task",
+  "db_models_needed": ["a", "list", "of", "db", "models", "used", "only", "from", "the", "available", "models", "use", "empty", "list", "if", "none"],
+  "api_endpoint": {
+    "request_model": 
+      {
+        // The name of the model, will be used to name the Pydantic model
+        "name": "RequestModelName",
+        // A description that will be the doc string for the named pydantic model
+        "description": "the description of the request model, including any additional context that's important/relevant/weird/cool/useful. This will be used as the doc string for the named pydantic model",
+        "Fields": [
+          {
+            // A python variable name for the field
+            "name": "simple_field",
+            // A solid description of the field
+            "description": "The description of the simple field. This will be the doc string for the field",
+            // The type of the field, as would be used in a python type hint
+            "type": "str"
+          },
+          {
+            // A python variable name for the field
+            "name": "complex_field",
+            // A solid description of the field
+            "description": "An example of a complex field with sub-types.",
+            // The type of the field, as would be used in a python type hint
+            "type": "ComplexType",
+            // A list of related types, if any, that are used in the `type` field above. This doesn't include db models used.
+            "related_types": [
+              {
+                // The name of the related type, will be used to name the Pydantic model
+                "name": "ComplexType",
+                "description": "This is a complex type with its own fields.",
+                "Fields": [
+                  {
+                    // A python variable name for the sub-field
+                    "name": "sub_field_1",
+                    "description": "A sub-field of the complex type, primitive.",
+                    "type": "int"
+                  },
+                  {
+                    // A python variable name for the sub-field
+                    "name": "sub_field_2",
+                    "description": "Another sub-field, this time a list of strings.",
+                    // The type of the field, as would be used in a python type hint
+                    "type": "list[str]"
+                  },
+                  {
+                    // A python variable name for the sub-field
+                    "name": "sub_field_3",
+                    "description": "Another sub-field, this time a an optional response.",
+                    // The type of the field, as would be used in a python type hint
+                    "type": "Optional[str]"
+                  },
+                  {
+                    // A python variable name for the sub-field
+                    "name": "sub_field_4",
+                    "description": "Another sub-field, this time a list of strings.",
+                    // The type of the field, as would be used in a python type hint. Especially for more vague types like dict, we should define the types of the keys and values
+                    "type": "dict[str, str]"
+                  },
+                  ... repeat for all sub-fields needed, using empty list if none. You can also nest complex types within complex types
+                ]
+              }
+            ]
+          }
+          ... repeat for all fields needed, using empty list if none
+        ]
+      },
+    ,
+    "response_model": 
+      {
+        "name": "ResponseModelName, will be used to name the Pydantic model",
+        "description": "A description used to describe the response model, including any additional context that's important/relevant/weird/cool/useful. This will be the doc string for the named pydantic model",
+        "Fields": [
+          {
+            "name": "response_field",
+            "description": "A description for the response field",
+            "type": "str"
+          }
+          ... repeat for all fields needed, using empty list if none
+        ]
+      },
+  },
+}
+```
+
+
+
+Example for `POST /user/{id}`, with models `User`, `Availability`, `Messages`:
+```json
+{
+  "think": "I'll need to leverage the context provided to ensure the input object makes sense. I'll also provide any models needed for my return types if they aren't based on the db model from prisma.",
+  "db_models_needed": [
+    "User"
+  ],
+  "api_endpoint": {
+    "request_model": {
+      "name": "PostUserInputObject",
+      "description": "This request only requires the user's new details to update the user object as defined in the Users table. If there's anything else, it's an error.",
+      "Fields": [
+        {
+          "name": "id",
+          "description": "The discord user id to look the user up by.",
+          "type": "str"
+        },
+        {
+          "name": "username",
+          "description": "The new username for the user.",
+          "type": "str"
+        },
+        {
+          "name": "address",
+          "description": "The new phone number for the user.",
+          "type": "Address"
+          "related_types": [
+            {
+              "name": "Address",
+              "description": "The address object for the user.",
+              "Fields": [
+                {
+                  "name": "street_line_1",
+                  "description": "The street address for the user.",
+                  "type": "str"
+                },
+                {
+                  "name": "street_line_2",
+                  "description": "The street address for the user.",
+                  "type": "str"
+                },
+                {
+                  "name": "city",
+                  "description": "The city for the user.",
+                  "type": "str"
+                },
+                {
+                  "name": "state",
+                  "description": "The state for the user.",
+                  "type": "str"
+                },
+                {
+                  "name": "country",
+                  "description": "The country for the user.",
+                  "type": "Optional[str]"
+                },
+                {
+                  "name": "zip",
+                  "description": "The zip code for the user.",
+                  "type": "str"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "avatar",
+          "description": "The new avatar for the user.",
+          "type": "Avatar",
+          "related_types": [
+            {
+              "name": "Avatar",
+              "description": "The avatar object for the user.",
+              "Fields": [
+                {
+                  "name": "url",
+                  "description": "The url for the avatar.",
+                  "type": "str"
+                },
+                {
+                  "name": "type",
+                  "description": "The type of the avatar.",
+                  "type": "str"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "status",
+          "description": "The new status for the user.",
+          "type": "str"
+        }
+      ]
+    },
+    "response_model": {
+      "name": "UserOutputObject",
+      "description": "Will output the full user object.",
+      "Fields": [
+        {
+          "name": "user",
+          "description": "The user object that matches the discord id provided.",
+          "type": "User"
+        }
+      ]
+    }
+  },
+}
+```
+
+
+{% if module_repr %}
+You need to define the inputs, outputs, models, and required database models for the following module:
+
+
+{{ module_repr }}
+
+and specifically this endpoint:
+{% else %}
+You need to define the inputs and outputs for this endpoint:
+{% endif %}
+
+{{ endpoint_repr }}
