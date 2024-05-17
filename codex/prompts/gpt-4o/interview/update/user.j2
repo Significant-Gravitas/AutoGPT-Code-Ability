@@ -1,0 +1,26 @@
+The user needs help defining there product.
+
+**Product Name:** {{ poduct_name }}
+**Product Description:** {{ product_description }}
+
+{% if features %}
+# Proposed Application features
+
+{{ features }}
+
+{% endif %}
+{% if user_msg %}
+
+# Last message by the user:
+
+assistant: Are there any changes you would like to make or are you ready for me to architect the app?
+user: {{ user_msg }}
+
+DO NOT MODIFY ANY FEATURES NAME OR FUNCTIONALITY UNLESS ASKED TO BY THE USER
+{% endif %}
+
+Articulate the feature updates the user has requested.
+
+Adding, Updating or Deleting features based on what the user has requested. 
+When adding or updating make sure to include your reasoning for the change.
+If you are deleting a feature there is no need to add anything other than the id of the feautre to be deleted.

@@ -1,0 +1,190 @@
+
+Here is an example output for a function that takes in a list of urls and outputs the webpage as either a markdown or html file.
+
+```
+async def check_urls(urls: list[str]) -> list[str]:
+    """
+    Verifies the validity and accessibility of a list of URLs.
+
+    This function checks if the provided URLs are formatted correctly and are accessible.
+
+    Args:
+        urls (list[str]): A list of URLs to be verified.
+
+    Returns:
+        list[str]: A list of URLs that are verified to be valid and accessible.
+
+    Example:
+        urls = ['https://www.google.com', 'https://www.facebook.com', 'https://invalidurl.com']
+        check_urls(urls)
+        > ['https://www.google.com', 'https://www.facebook.com']
+    """
+    pass
+
+async def download_page(url: str) -> str:
+    """
+    Downloads the HTML content of a given webpage.
+
+    This function takes a URL and downloads the HTML content of the webpage at that URL.
+
+    Args:
+        url (str): The URL of the webpage to download.
+
+    Returns:
+        str: The HTML content of the webpage.
+
+    Example:
+        url = 'https://www.google.com'
+        download_page(url)
+        > '<!doctype html><html itemscope="" itemtype="http://schema.org/WebPage" lang="en"><head>...'
+    """
+    pass
+
+async def convert_to_markdown(html: str) -> str:
+    """
+    Converts HTML content to Markdown format.
+
+    This function takes HTML content as input and converts it into Markdown format. 
+    It's useful for transforming webpages into a more readable and simpler text format.
+
+    Args:
+        html (str): The HTML content to be converted.
+
+    Returns:
+        str: The content converted into Markdown format.
+
+    Example:
+        html = '<!doctype html><html itemscope="" itemtype="http://schema.org/WebPage" lang="en"><head>...'
+        convert_to_markdown(html)
+        > '# Title This is a paragraph of text. ## Subtitle This is another paragraph of text.'
+    """
+   pass
+
+async def convert_webpages(urls: List[str], format: str) -> List[str]:
+    """
+    ~ THIS IS THE REQUESTED FUNCTION, SO YOU HAVE TO FULLY IMPLEMENT THIS FUNCTION ~
+
+    Converts a list of webpages to a specified format.
+
+    This function takes a list of URLs and downloads the HTML content of each webpage.
+    It then converts the HTML content into the specified format (either 'markdown' or 'html').
+    The resulting content is returned as a list of strings.
+
+    Args:
+        urls (List[str]): A list of URLs to be converted.
+        format (str): The desired format for the output. It can be either 'markdown' or 'html'.
+
+    Returns:
+        List[str]: A list of webpages converted to the specified format.
+
+    Example:
+        convert_webpages(['https://www.google.com'], 'markdown')
+        > ['# Title This is a paragraph of text. ## Subtitle This is another paragraph of text.']
+        convert_webpages(['https://www.google.com'], 'html')
+        > ['<!doctype html><html itemscope="" itemtype="http://schema.org/WebPage" lang="en"><head>...']
+    """
+    verified_urls: List[str] = await check_urls(urls)
+
+    output: List[str] = []
+    for vurl in verified_urls:
+        html: str = await download_page(vurl)
+        if format == 'markdown':
+            md: str = await convert_to_markdown(html)
+            output.apppend(md)
+        else:
+            output.append(html)
+    return output
+```
+
+## Example of using a datbase with prisma:
+
+```
+import prisma.models
+
+user = await prisma.models.User.prisma().create(
+    data={
+        'name': 'Robert',
+        'email': 'robert@craigie.dev'
+    },
+)
+```
+
+{% if database_schema %}
+
+### Query examples
+
+For a more complete list of queries you can perform with Prisma Client Python see the documentation.
+
+All query methods return pydantic models.
+
+Retrieve all User records from the database
+
+```python
+import prisma.models
+
+users = await prisma.models.User.prisma().find_many()
+```
+
+
+Include the posts relation on each returned User object
+
+```python
+import prisma.models
+
+users = await prisma.models.User.prisma().find_many(
+    include={
+        'posts': True,
+    },
+)
+Retrieve all Post records that contain "prisma"
+
+```python
+import prisma.models
+
+posts = await prisma.models.Post.prisma().find_many(
+    where={
+        'OR': [
+            {'title': {'contains': 'prisma'}},
+            {'content': {'contains': 'prisma'}},
+        ]
+    }
+)
+```
+
+
+Create a new User and a new Post record in the same query
+
+```python
+import prisma.models
+
+user = await prisma.models.User.prisma().create(
+    data={
+        'name': 'Robert',
+        'email': 'robert@craigie.dev',
+        'posts': {
+            'create': {
+                'title': 'My first post from Prisma!',
+            },
+        },
+    },
+)
+```
+
+Update an existing Post record
+
+```python
+import prisma.models
+
+post = await prisma.models.Post.prisma().update(
+    where={
+        'id': 42,
+    },
+    data={
+        'views': {
+            'increment': 1,
+        },
+    },
+)
+```
+
+{% endif %}
