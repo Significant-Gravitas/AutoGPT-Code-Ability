@@ -7,6 +7,8 @@ from prisma.enums import Role
 from prisma.models import Specification
 from pydantic import BaseModel, Field
 
+from codex.common.parse_prisma import parse_prisma_schema
+
 logger = logging.getLogger(__name__)
 
 
@@ -151,17 +153,57 @@ class SpecificationUpdate(prisma.models.Specification, BaseModel):
     apiRouteSpecs: List[APIRouteSpecModel] = []
 
 
+class DatabaseEnums(BaseModel):
+    name: str
+    description: str
+    values: list[str]
+    definition: str
+
+    def __str__(self):
+        return f"**Enum: {self.name}**\n\n**Values**:\n{', '.join(self.values)}\n"
+
+
+class DatabaseTable(BaseModel):
+    name: str | None = None
+    description: str
+    definition: str  # prisma model for a table
+
+    def __str__(self):
+        return f"**Table: {self.name}**\n\n\n\n**Definition**:\n```\n{self.definition}\n```\n"
+
+
+class DatabaseSchema(BaseModel):
+    name: str  # name of the database schema
+    description: str  # context on what the database schema is
+    tables: List[DatabaseTable]  # list of tables in the database schema
+    enums: List[DatabaseEnums]
+
+    def __str__(self):
+        tables_str = "\n".join(str(table) for table in self.tables)
+        enum_str = "\n".join(str(enum) for enum in self.enums)
+        return f"## {self.name}\n**Description**: {self.description}\n**Tables**:\n{tables_str}\n**Enums**:\n{enum_str}\n"
+
+
+class ModuleWrapper(BaseModel):
+    id: str
+    name: str
+    description: str
+    interactions: str
+    apiRouteSpecs: List[APIRouteSpecModel] = []
+
+
 class SpecificationResponse(BaseModel):
     id: str
     createdAt: datetime
     name: str
     context: str
-    apiRouteSpecs: List[APIRouteSpecModel] = []
+    modules: List[ModuleWrapper] = []
+    databaseSchema: Optional[DatabaseSchema] = None
 
     @staticmethod
     def from_specification(specification: Specification) -> "SpecificationResponse":
         logger.debug(specification.model_dump_json())
-        routes = []
+        module_out = []
         modules: list[prisma.models.Module] | None = (
             specification.Modules if specification.Modules else None
         )
@@ -169,6 +211,7 @@ class SpecificationResponse(BaseModel):
             raise ValueError("No routes found for the specification")
         for module in modules:
             if module.ApiRouteSpecs:
+                routes = []
                 for route in module.ApiRouteSpecs:
                     routes.append(
                         APIRouteSpecModel(
@@ -215,13 +258,65 @@ class SpecificationResponse(BaseModel):
                             else None,
                         )
                     )
+                module_out.append(
+                    ModuleWrapper(
+                        id=module.id,
+                        apiRouteSpecs=routes,
+                        name=module.name,
+                        description=module.description,
+                        interactions=module.interactions,
+                    )
+                )
+            else:
+                module_out.append(
+                    ModuleWrapper(
+                        id=module.id,
+                        name=module.name,
+                        description=module.description,
+                        interactions=module.interactions,
+                    )
+                )
+        db_schema = None
+        if specification.DatabaseSchema:
 
+            def convert_to_table(table: prisma.models.DatabaseTable) -> DatabaseTable:
+                return DatabaseTable(
+                    name=table.name or "ERROR: Unknown Table Name",
+                    description=table.description,
+                    definition=table.definition,
+                )
+
+            def convert_to_enum(table: prisma.models.DatabaseTable) -> DatabaseEnums:
+                return DatabaseEnums(
+                    name=table.name or "ERROR: Unknown ENUM Name",
+                    description=table.description,
+                    values=parse_prisma_schema(table.definition)
+                    .enums[table.name or "ERROR: Unknown ENUM Name"]
+                    .values,
+                    definition=table.definition,
+                )
+
+            db_schema = DatabaseSchema(
+                name=specification.DatabaseSchema.name or "Database Schema",
+                tables=[
+                    convert_to_table(table)
+                    for table in specification.DatabaseSchema.DatabaseTables or []
+                    if not table.isEnum
+                ],
+                enums=[
+                    convert_to_enum(table)
+                    for table in specification.DatabaseSchema.DatabaseTables or []
+                    if table.isEnum
+                ],
+                description=specification.DatabaseSchema.description,
+            )
         ret_obj = SpecificationResponse(
             id=specification.id,
             createdAt=specification.createdAt,
             name="",
             context="",
-            apiRouteSpecs=routes,
+            modules=module_out,
+            databaseSchema=db_schema,
         )
 
         return ret_obj

@@ -5,7 +5,12 @@ import pytest
 from prisma.enums import AccessLevel, HTTPVerb
 
 from codex.api import create_app
-from codex.api_model import ApplicationCreate
+from codex.api_model import (
+    ApplicationCreate,
+    DatabaseEnums,
+    DatabaseSchema,
+    DatabaseTable,
+)
 from codex.app import db_client
 from codex.common import ai_block
 from codex.common.ai_block import LLMFailure
@@ -19,13 +24,7 @@ from codex.develop import agent
 from codex.develop.database import get_compiled_code
 from codex.requirements.agent import APIRouteSpec, Module, SpecHolder
 from codex.requirements.database import create_specification
-from codex.requirements.model import (
-    DatabaseEnums,
-    DatabaseSchema,
-    DatabaseTable,
-    DBResponse,
-    PreAnswer,
-)
+from codex.requirements.model import DBResponse, PreAnswer
 
 is_connected = False
 setup_logging()

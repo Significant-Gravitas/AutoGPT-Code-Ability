@@ -1,5 +1,6 @@
 import logging
 
+from codex.api_model import DatabaseEnums, DatabaseSchema, DatabaseTable
 from codex.common.ai_block import (
     AIBlock,
     Identifiers,
@@ -10,13 +11,7 @@ from codex.common.ai_model import OpenAIChatClient
 from codex.common.exec_external_tool import OutputType, exec_external_on_contents
 from codex.common.logging_config import setup_logging
 from codex.common.parse_prisma import parse_prisma_schema
-from codex.requirements.model import (
-    DatabaseEnums,
-    DatabaseSchema,
-    DatabaseTable,
-    DBResponse,
-    PreAnswer,
-)
+from codex.requirements.model import DBResponse, PreAnswer
 
 logger = logging.getLogger(__name__)
 
