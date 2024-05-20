@@ -1,4 +1,3 @@
-import json
 import logging
 
 from fastapi import APIRouter, Response
@@ -74,6 +73,6 @@ async def delete_interview(user_id: str, app_id: str, interview_id: str):
     """
     await codex.interview.database.delete_interview(interview_id)
     return JSONResponse(
-        content=json.dumps({"message": "Interview deleted successfully"}),
+        content={"message": "Interview deleted successfully"},
         status_code=200,
     )

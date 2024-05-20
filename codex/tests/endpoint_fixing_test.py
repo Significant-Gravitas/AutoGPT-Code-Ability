@@ -1,5 +1,5 @@
 import codex.requirements.blocks.ai_endpoint
-from codex.common.model import ObjectFieldModel, ObjectTypeModel
+from codex.api_model import ObjectFieldModel, ObjectTypeModel
 from codex.requirements.blocks.ai_endpoint import parse_object_model
 
 

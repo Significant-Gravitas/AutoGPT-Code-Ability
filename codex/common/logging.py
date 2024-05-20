@@ -1,4 +1,3 @@
-import json
 import logging
 import traceback
 from typing import Callable
@@ -52,7 +51,7 @@ async def execute_and_log(
         )
 
         return JSONResponse(
-            content=json.dumps({"error": str(e)}),
+            content={"error": str(e)},
             status_code=status_code,
         )
 

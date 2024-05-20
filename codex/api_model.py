@@ -3,8 +3,8 @@ from datetime import datetime
 from typing import List, Optional
 
 import prisma
-from prisma.enums import Role
-from prisma.models import Specification
+from prisma.enums import AccessLevel, Role
+from prisma.models import ObjectField, ObjectType, Specification
 from pydantic import BaseModel, Field
 
 from codex.common.parse_prisma import parse_prisma_schema
@@ -151,6 +151,29 @@ class SpecificationCreate(BaseModel):
 
 class SpecificationUpdate(prisma.models.Specification, BaseModel):
     apiRouteSpecs: List[APIRouteSpecModel] = []
+
+
+class InputParamModel(BaseModel):
+    name: str
+    description: str
+    param_type: str
+
+
+class InputRequestResponseModel(BaseModel):
+    name: str
+    description: str
+    params: List[InputParamModel] = []
+
+
+class SpecificationAddRouteToModule(BaseModel):
+    function_name: str
+    access_level: AccessLevel
+    allowed_access_roles: List[str]
+    method: str
+    path: str
+    description: str
+    requestObject: Optional["ObjectTypeModel"] = None
+    responseObject: Optional["ObjectTypeModel"] = None
 
 
 class DatabaseEnums(BaseModel):
@@ -371,3 +394,64 @@ class DeploymentResponse(DeploymentMetadata):
 class DeploymentsListResponse(BaseModel):
     deployments: List[DeploymentMetadata]
     pagination: Optional[Pagination] = None
+
+
+class ObjectTypeModel(BaseModel):
+    name: str = Field(description="The name of the object")
+    code: Optional[str] = Field(description="The code of the object", default=None)
+    description: Optional[str] = Field(
+        description="The description of the object", default=None
+    )
+    Fields: List["ObjectFieldModel"] = Field(description="The fields of the object")
+    is_pydantic: bool = Field(
+        description="Whether the object is a pydantic model", default=True
+    )
+    is_implemented: bool = Field(
+        description="Whether the object is implemented", default=True
+    )
+    is_enum: bool = Field(description="Whether the object is an enum", default=False)
+
+    def __init__(self, db_obj: ObjectType | None = None, **data):
+        if not db_obj:
+            super().__init__(**data)
+            return
+
+        super().__init__(
+            name=db_obj.name,
+            code=db_obj.code,
+            description=db_obj.description,
+            is_pydantic=db_obj.isPydantic,
+            is_enum=db_obj.isEnum,
+            Fields=[ObjectFieldModel(db_obj=f) for f in db_obj.Fields or []],
+            **data,
+        )
+
+
+class ObjectFieldModel(BaseModel):
+    name: str = Field(description="The name of the field")
+    description: Optional[str] = Field(
+        description="The description of the field", default=None
+    )
+    type: str = Field(
+        description="The type of the field. Can be a string like List[str] or an use any of they related types like list[User]",
+    )
+    value: Optional[str] = Field(description="The value of the field", default=None)
+    related_types: Optional[List[ObjectTypeModel]] = Field(
+        description="The related types of the field", default=[]
+    )
+
+    def __init__(self, db_obj: ObjectField | None = None, **data):
+        if not db_obj:
+            super().__init__(**data)
+            return
+
+        super().__init__(
+            name=db_obj.name,
+            description=db_obj.description,
+            type=db_obj.typeName,
+            value=db_obj.value,
+            related_types=[
+                ObjectTypeModel(db_obj=t) for t in db_obj.RelatedTypes or []
+            ],
+            **data,
+        )

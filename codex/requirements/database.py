@@ -16,17 +16,14 @@ import codex.common
 import codex.requirements.agent
 from codex.api_model import (
     Identifiers,
+    ObjectFieldModel,
     Pagination,
+    SpecificationAddRouteToModule,
     SpecificationResponse,
     SpecificationsListResponse,
 )
 from codex.common.database import INCLUDE_API_ROUTE
-from codex.common.model import (
-    APIRouteSpec,
-    ObjectFieldModel,
-    ObjectType,
-    create_object_type,
-)
+from codex.common.model import APIRouteSpec, ObjectType, create_object_type
 
 
 async def create_single_function_spec(
@@ -346,15 +343,16 @@ async def get_modules(spec_id: str) -> list[prisma.models.Module]:
 
 async def add_route_to_module(
     module_id: str,
-    api_route_spec: APIRouteSpec,
+    api_route_spec: SpecificationAddRouteToModule,
 ):
     created_objects = {}
-    for model in [api_route_spec.request_model, api_route_spec.response_model]:
-        created_objects = await create_object_type(model, created_objects)
+    for model in [api_route_spec.requestObject, api_route_spec.responseObject]:
+        if model:
+            created_objects = await create_object_type(model, created_objects)
 
     create_route = APIRouteSpecCreateInput(
         **{
-            "method": api_route_spec.http_verb,
+            "method": api_route_spec.method,
             "functionName": api_route_spec.function_name,
             "path": api_route_spec.path,
             "description": api_route_spec.description,
@@ -363,13 +361,13 @@ async def add_route_to_module(
             "Module": {"connect": {"id": module_id}},
         }
     )
-    if api_route_spec.request_model:
+    if api_route_spec.requestObject:
         create_route["RequestObject"] = {
-            "connect": {"id": created_objects[api_route_spec.request_model.name].id}
+            "connect": {"id": created_objects[api_route_spec.requestObject.name].id}
         }
-    if api_route_spec.response_model:
+    if api_route_spec.responseObject:
         create_route["ResponseObject"] = {
-            "connect": {"id": created_objects[api_route_spec.response_model.name].id}
+            "connect": {"id": created_objects[api_route_spec.responseObject.name].id}
         }
 
     route = await prisma.models.APIRouteSpec.prisma().create(data=create_route)

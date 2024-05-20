@@ -1,4 +1,3 @@
-import json
 import logging
 
 from fastapi import APIRouter, Path, Query
@@ -82,7 +81,7 @@ async def get_app(
         return app_response
     else:
         return JSONResponse(
-            content=json.dumps({"error": "Application not found"}),
+            content={"error": "Application not found"},
             status_code=404,
         )
 
@@ -105,7 +104,7 @@ async def delete_app(user_id: str, app_id: str):
     """
     await codex.database.delete_app(user_id, app_id)
     return JSONResponse(
-        content=json.dumps({"message": "Application deleted successfully"}),
+        content={"message": "Application deleted successfully"},
         status_code=200,
     )
 

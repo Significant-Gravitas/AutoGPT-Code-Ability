@@ -2,13 +2,13 @@ import logging
 import typing
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+from codex.api_model import ObjectFieldModel, ObjectTypeModel
 from codex.common.ai_block import (
     AIBlock,
     Identifiers,
     ValidatedResponse,
     ValidationError,
 )
-from codex.common.model import ObjectFieldModel, ObjectTypeModel
 from codex.requirements.model import EndpointSchemaRefinementResponse
 
 logger = logging.getLogger(__name__)

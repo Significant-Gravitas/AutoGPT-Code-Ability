@@ -1,5 +1,5 @@
-import json
 import logging
+import pprint
 from typing import Literal
 
 from fastapi import APIRouter, Query, Response
@@ -11,10 +11,11 @@ import codex.requirements.blocks.ai_endpoint
 import codex.requirements.database
 from codex.api_model import (
     Identifiers,
+    ObjectFieldModel,
+    SpecificationAddRouteToModule,
     SpecificationResponse,
     SpecificationsListResponse,
 )
-from codex.common.model import APIRouteSpec, ObjectFieldModel
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +76,7 @@ async def get_spec(user_id: str, app_id: str, spec_id: str):
         return SpecificationResponse.from_specification(specification)
     else:
         return JSONResponse(
-            content=json.dumps({"error": "Specification not found"}),
+            content={"error": "Specification not found"},
             status_code=404,
         )
 
@@ -99,7 +100,7 @@ async def add_module(
     spec = await codex.requirements.database.get_specification(user_id, app_id, spec_id)
     if not spec:
         return JSONResponse(
-            content=json.dumps({"error": "Specification not found"}),
+            content={"error": "Specification not found"},
             status_code=404,
         )
 
@@ -112,9 +113,7 @@ async def add_module(
     )
 
     return JSONResponse(
-        content=json.dumps(
-            {"message": "Module added successfully", "module_id": module.id}
-        ),
+        content={"message": "Module added successfully", "module_id": module.id},
         status_code=200,
     )
 
@@ -136,7 +135,7 @@ async def delete_module(
     spec = await codex.requirements.database.get_specification(user_id, app_id, spec_id)
     if not spec:
         return JSONResponse(
-            content=json.dumps({"error": "Specification not found"}),
+            content={"error": "Specification not found"},
             status_code=404,
         )
 
@@ -144,7 +143,7 @@ async def delete_module(
     # TODO: Delete module from spec
 
     return JSONResponse(
-        content=json.dumps({"message": "Module deleted successfully"}),
+        content={"message": "Module deleted successfully"},
         status_code=200,
     )
 
@@ -158,7 +157,7 @@ async def add_route(
     app_id: str,
     spec_id: str,
     module_id: str,
-    route: APIRouteSpec,
+    route: SpecificationAddRouteToModule,
 ):
     """
     Add a new route to a specific specification by its ID for a given application and user.
@@ -167,9 +166,11 @@ async def add_route(
     spec = await codex.requirements.database.get_specification(user_id, app_id, spec_id)
     if not spec:
         return JSONResponse(
-            content=json.dumps({"error": "Specification not found"}),
+            content={"error": "Specification not found"},
             status_code=404,
         )
+
+    logger.info(pprint.pformat(route))
 
     # Add the route to the spec
     added_route = await codex.requirements.database.add_route_to_module(
@@ -177,9 +178,7 @@ async def add_route(
     )
 
     return JSONResponse(
-        content=json.dumps(
-            {"message": "Route added successfully with ID: " + added_route.id}
-        ),
+        content={"message": "Route added successfully with ID: " + added_route.id},
         status_code=200,
     )
 
@@ -201,7 +200,7 @@ async def delete_route(
     spec = await codex.requirements.database.get_specification(user_id, app_id, spec_id)
     if not spec:
         return JSONResponse(
-            content=json.dumps({"error": "Specification not found"}),
+            content={"error": "Specification not found"},
             status_code=404,
         )
 
@@ -209,7 +208,7 @@ async def delete_route(
     # TODO: Delete route from spec
 
     return JSONResponse(
-        content=json.dumps({"message": "Route deleted successfully"}),
+        content={"message": "Route deleted successfully"},
         status_code=200,
     )
 
@@ -233,7 +232,7 @@ async def add_param_to_route(
     spec = await codex.requirements.database.get_specification(user_id, app_id, spec_id)
     if not spec:
         return JSONResponse(
-            content=json.dumps({"error": "Specification not found"}),
+            content={"error": "Specification not found"},
             status_code=404,
         )
 
@@ -248,7 +247,7 @@ async def add_param_to_route(
     )
 
     return JSONResponse(
-        content=json.dumps({"message": "Param added successfully", "param_id": new.id}),
+        content={"message": "Param added successfully", "param_id": new.id},
         status_code=200,
     )
 
@@ -271,7 +270,7 @@ async def delete_param_from_route(
     spec = await codex.requirements.database.get_specification(user_id, app_id, spec_id)
     if not spec:
         return JSONResponse(
-            content=json.dumps({"error": "Specification not found"}),
+            content={"error": "Specification not found"},
             status_code=404,
         )
 
@@ -279,7 +278,7 @@ async def delete_param_from_route(
     # TODO: Delete param from route
 
     return JSONResponse(
-        content=json.dumps({"message": "Param deleted successfully"}),
+        content={"message": "Param deleted successfully"},
         status_code=200,
     )
 
@@ -291,7 +290,7 @@ async def delete_spec(user_id: str, app_id: str, spec_id: str):
     """
     await codex.requirements.database.delete_specification(spec_id)
     return JSONResponse(
-        content=json.dumps({"message": "Specification deleted successfully"}),
+        content={"message": "Specification deleted successfully"},
         status_code=200,
     )
 

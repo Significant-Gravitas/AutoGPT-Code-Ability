@@ -10,6 +10,8 @@ from codex.api_model import (
     DatabaseEnums,
     DatabaseSchema,
     DatabaseTable,
+    ObjectFieldModel,
+    ObjectTypeModel,
 )
 from codex.app import db_client
 from codex.common import ai_block
@@ -17,7 +19,6 @@ from codex.common.ai_block import LLMFailure
 from codex.common.ai_model import OpenAIChatClient
 from codex.common.constants import TODO_COMMENT
 from codex.common.logging_config import setup_logging
-from codex.common.model import ObjectFieldModel, ObjectTypeModel
 from codex.common.test_const import Identifiers, user_id_1
 from codex.database import get_app_by_id
 from codex.develop import agent

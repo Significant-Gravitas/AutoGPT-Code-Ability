@@ -1,4 +1,3 @@
-import json
 import logging
 
 from fastapi import APIRouter, Query
@@ -122,7 +121,7 @@ async def create_deliverable(user_id: str, app_id: str, spec_id: str):
         )
     else:
         return JSONResponse(
-            content=json.dumps({"error": "Specification not found"}),
+            content={"error": "Specification not found"},
             status_code=404,
             media_type="application/json",
         )
@@ -180,7 +179,7 @@ async def create_single_deliverable_route(
         else:
             extra_functions = []
 
-        compiled_route = await architect_agent.process_api_route(
+        await architect_agent.process_api_route(
             api_route, ids, specification, completed_app, extra_functions
         )
 
@@ -194,7 +193,7 @@ async def create_single_deliverable_route(
         )
     else:
         return JSONResponse(
-            content=json.dumps({"error": "Specification not found"}),
+            content={"error": "Specification not found"},
             status_code=404,
             media_type="application/json",
         )
@@ -253,7 +252,7 @@ async def delete_deliverable(
         user_id, app_id, spec_id, deliverable_id
     )
     return JSONResponse(
-        content=json.dumps({"message": "Deliverable deleted successfully"}),
+        content={"message": "Deliverable deleted successfully"},
         status_code=200,
     )
 

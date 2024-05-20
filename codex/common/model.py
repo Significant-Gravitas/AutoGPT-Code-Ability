@@ -5,7 +5,7 @@ import prisma.enums
 from prisma.models import Function, ObjectField, ObjectType
 from pydantic import BaseModel, Field
 
-from codex.api_model import Pagination
+from codex.api_model import ObjectTypeModel, Pagination
 from codex.common.database import INCLUDE_FIELD, INCLUDE_TYPE
 from codex.common.types import (
     extract_field_type,
@@ -13,67 +13,6 @@ from codex.common.types import (
     is_type_equal,
     normalize_type,
 )
-
-
-class ObjectTypeModel(BaseModel):
-    name: str = Field(description="The name of the object")
-    code: Optional[str] = Field(description="The code of the object", default=None)
-    description: Optional[str] = Field(
-        description="The description of the object", default=None
-    )
-    Fields: List["ObjectFieldModel"] = Field(description="The fields of the object")
-    is_pydantic: bool = Field(
-        description="Whether the object is a pydantic model", default=True
-    )
-    is_implemented: bool = Field(
-        description="Whether the object is implemented", default=True
-    )
-    is_enum: bool = Field(description="Whether the object is an enum", default=False)
-
-    def __init__(self, db_obj: ObjectType | None = None, **data):
-        if not db_obj:
-            super().__init__(**data)
-            return
-
-        super().__init__(
-            name=db_obj.name,
-            code=db_obj.code,
-            description=db_obj.description,
-            is_pydantic=db_obj.isPydantic,
-            is_enum=db_obj.isEnum,
-            Fields=[ObjectFieldModel(db_obj=f) for f in db_obj.Fields or []],
-            **data,
-        )
-
-
-class ObjectFieldModel(BaseModel):
-    name: str = Field(description="The name of the field")
-    description: Optional[str] = Field(
-        description="The description of the field", default=None
-    )
-    type: str = Field(
-        description="The type of the field. Can be a string like List[str] or an use any of they related types like list[User]",
-    )
-    value: Optional[str] = Field(description="The value of the field", default=None)
-    related_types: Optional[List[ObjectTypeModel]] = Field(
-        description="The related types of the field", default=[]
-    )
-
-    def __init__(self, db_obj: ObjectField | None = None, **data):
-        if not db_obj:
-            super().__init__(**data)
-            return
-
-        super().__init__(
-            name=db_obj.name,
-            description=db_obj.description,
-            type=db_obj.typeName,
-            value=db_obj.value,
-            related_types=[
-                ObjectTypeModel(db_obj=t) for t in db_obj.RelatedTypes or []
-            ],
-            **data,
-        )
 
 
 class FunctionDef(BaseModel):
