@@ -140,7 +140,12 @@ async def delete_module(
         )
 
     # Delete the module from the spec
-    # TODO: Delete module from spec
+    await codex.requirements.database.delete_module_from_specification(
+        user_id=user_id,
+        app_id=app_id,
+        spec_id=spec_id,
+        module_id=module_id,
+    )
 
     return JSONResponse(
         content={"message": "Module deleted successfully"},
@@ -205,7 +210,12 @@ async def delete_route(
         )
 
     # Delete the route from the spec
-    # TODO: Delete route from spec
+    await codex.requirements.database.delete_route_from_module(
+        user_id=user_id,
+        app_id=app_id,
+        spec_id=spec_id,
+        route_id=route_id,
+    )
 
     return JSONResponse(
         content={"message": "Route deleted successfully"},
@@ -275,7 +285,13 @@ async def delete_param_from_route(
         )
 
     # Delete the param from the route
-    # TODO: Delete param from route
+    await codex.requirements.database.delete_parameter_from_route(
+        user_id=user_id,
+        app_id=app_id,
+        spec_id=spec_id,
+        route_id=route_id,
+        param_id=param_id,
+    )
 
     return JSONResponse(
         content={"message": "Param deleted successfully"},
