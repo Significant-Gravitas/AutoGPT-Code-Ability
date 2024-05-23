@@ -72,7 +72,7 @@ def parse_requirements(requirements_str: str) -> List[Package]:
 class DevelopAIBlock(AIBlock):
     developement_phase: DevelopmentPhase = DevelopmentPhase.DEVELOPMENT
     prompt_template_name = "develop"
-    model = "gpt-4-turbo"
+    model = "gpt-4o"
     language = "python"
 
     async def validate(

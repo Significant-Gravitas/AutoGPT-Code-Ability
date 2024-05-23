@@ -1,0 +1,36 @@
+Create the working code implementation of function called: {{ function_name }}
+{% if function_signature %}
+With this function signature:
+```python
+{{ function_signature }}
+```
+The created function has to match exactly as this signature!
+{% endif %}
+For additional context, this function that you need to implement will be used as part of a larger program for this goal:
+"{{ goal }}".
+
+NOTE: IMPLEMENT THE REQUIRED FUNCTION WITH A REAL CODE IMPLEMENTATION, NOT JUST A STUB, PLACEHOLDER, OR PSEUDOCODE!
+{% if provided_functions %}
+----
+You can re-use these already written functions & classes without introducing a new stub:
+```python
+{% for function in provided_functions %}
+{{ function }}
+{% endfor %}
+```
+
+NOTE:
+DO NOT RE-WRITE THESE FUNCTIONS & CLASSES. JUST CALL IT IN THE FUNCTION THAT YOU WRITE (IF NEEDED).
+YOU SHOULD ONLY PRODUCE THE REQUIRED FUNCTION AND THE NEW STUBS (IF THERE IS ANY).
+----
+{% endif %}
+
+{% if database_schema %}
+This is the database schema used by the application, you can perform any actions on these tables to achieve the functions requirements:
+
+```
+{{ database_schema }}
+```
+Only use these tables, you can not create new tables!
+
+{% endif %}

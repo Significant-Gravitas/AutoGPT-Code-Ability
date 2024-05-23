@@ -1,0 +1,17 @@
+You need to decompose the product requirement into UI pages.
+
+The goal of the project is deliver the user interface for {{ goal }}.
+
+{% if functions_code %}
+----
+You can re-use these already written functions & classes without introducing a new ones:
+```python
+{% for code in functions_code %}
+{{ code }}
+{% endfor %}
+```
+
+NOTE:
+While decomposing the pages, try to utilize all of them, if there are still some of the functions being unused, try to introduce another page for that in the most reasonable way.
+----
+{% endif %}
