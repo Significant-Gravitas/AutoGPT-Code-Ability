@@ -1,12 +1,8 @@
 import ast
 import re
 
-from codex.common.model import (
-    PYTHON_TYPES,
-    FunctionDef,
-    ObjectFieldModel,
-    ObjectTypeModel,
-)
+from codex.api_model import ObjectFieldModel, ObjectTypeModel
+from codex.common.model import PYTHON_TYPES, FunctionDef
 from codex.develop.function import normalize_type
 
 

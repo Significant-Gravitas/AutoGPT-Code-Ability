@@ -1,4 +1,3 @@
-import json
 import logging
 
 from fastapi import APIRouter, Query
@@ -122,7 +121,79 @@ async def create_deliverable(user_id: str, app_id: str, spec_id: str):
         )
     else:
         return JSONResponse(
-            content=json.dumps({"error": "Specification not found"}),
+            content={"error": "Specification not found"},
+            status_code=404,
+            media_type="application/json",
+        )
+
+
+# Deliverables endpoints
+@delivery_router.post(
+    "/user/{user_id}/apps/{app_id}/specs/{spec_id}/route/",
+    tags=["deliverables"],
+    response_model=DeliverableResponse,
+)
+async def create_single_deliverable_route(
+    user_id: str, app_id: str, spec_id: str, api_route_spec_id: str
+):
+    """
+    Create a new deliverable (completed app) for a specific specification.
+    """
+    ids = Identifiers(
+        user_id=user_id,
+        app_id=app_id,
+        spec_id=spec_id,
+    )
+    specification = await codex.requirements.database.get_specification(
+        user_id, app_id, spec_id
+    )
+    user = await codex.database.get_user(user_id)
+    app = await codex.database.get_app_by_id(user_id, app_id)
+    api_route = await codex.database.get_api_route_by_id(
+        ids=ids, api_route_id=api_route_spec_id
+    )
+    logger.info(f"Creating route deliverable for {app.name}")
+    if specification:
+        ids = Identifiers(
+            user_id=user_id,
+            cloud_services_id=user.cloudServicesId if user else "",
+            app_id=app_id,
+            spec_id=spec_id,
+        )
+        # Check the route_id exists in the specification
+
+        completed_app = await codex.database.create_completed_app(ids, specification)
+
+        # If the completed app is defined, use the functions from the provided completed app as already implemented functions.
+        # This flow is used for developing the user interface.
+        if ids.completed_app_id:
+            existing_completed_app = await codex.develop.database.get_deliverable(
+                deliverable_id=ids.completed_app_id,
+            )
+            extra_functions = [
+                route.RootFunction
+                for route in existing_completed_app.CompiledRoutes or []
+                if route.RootFunction
+            ]
+
+        else:
+            extra_functions = []
+
+        await architect_agent.process_api_route(
+            api_route, ids, specification, completed_app, extra_functions
+        )
+
+        # TODO: Do somethig with the compiled route
+
+        return DeliverableResponse(
+            id=completed_app.id,
+            created_at=completed_app.createdAt,
+            name=completed_app.name,
+            description=completed_app.description,
+        )
+    else:
+        return JSONResponse(
+            content={"error": "Specification not found"},
             status_code=404,
             media_type="application/json",
         )
@@ -181,7 +252,7 @@ async def delete_deliverable(
         user_id, app_id, spec_id, deliverable_id
     )
     return JSONResponse(
-        content=json.dumps({"message": "Deliverable deleted successfully"}),
+        content={"message": "Deliverable deleted successfully"},
         status_code=200,
     )
 

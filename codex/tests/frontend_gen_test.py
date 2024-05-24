@@ -4,11 +4,10 @@ from typing import Callable
 import pytest
 from prisma.enums import AccessLevel, HTTPVerb
 
-from codex.api_model import ApplicationCreate
+from codex.api_model import ApplicationCreate, ObjectFieldModel, ObjectTypeModel
 from codex.app import db_client
 from codex.common.ai_model import OpenAIChatClient
 from codex.common.logging_config import setup_logging
-from codex.common.model import ObjectFieldModel, ObjectTypeModel
 from codex.common.test_const import Identifiers, user_id_1
 from codex.database import create_app, get_app_by_id
 from codex.deploy import agent as deploy_agent
@@ -60,8 +59,9 @@ async def create_sample_app(user_id: str, cloud_id: str, title: str, description
                             ],
                         ),
                         response_model=None,
-                    )
+                    ),
                 ],
+                interactions="",
             )
         ],
     )

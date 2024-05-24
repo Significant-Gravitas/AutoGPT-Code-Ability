@@ -1,5 +1,13 @@
 from prisma.enums import Role
-from prisma.models import Application, CompiledRoute, CompletedApp, Specification, User
+from prisma.models import (
+    APIRouteSpec,
+    Application,
+    CompiledRoute,
+    CompletedApp,
+    Module,
+    Specification,
+    User,
+)
 from prisma.types import CompletedAppCreateInput, UserCreateWithoutRelationsInput
 
 from codex.api_model import (
@@ -301,3 +309,17 @@ async def create_completed_app(
     )
     app = await CompletedApp.prisma().create(data)
     return app
+
+
+async def get_api_route_by_id(ids: Identifiers, api_route_id: str):
+    api_route = await APIRouteSpec.prisma().find_unique_or_raise(
+        where={"id": api_route_id, "Application": {"id": ids.app_id}}
+    )
+    return api_route
+
+
+async def get_module_by_id(ids: Identifiers, module_id: str):
+    module = await Module.prisma().find_unique_or_raise(
+        where={"id": module_id, "Application": {"id": ids.app_id}}
+    )
+    return module

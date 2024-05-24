@@ -1,9 +1,9 @@
 import logging
 from enum import Enum
-from typing import List
 
 from pydantic import BaseModel
 
+from codex.api_model import DatabaseSchema
 from codex.common.model import ObjectTypeModel as ObjectTypeE
 
 logger = logging.getLogger(__name__)
@@ -97,37 +97,6 @@ class ExampleTask(Enum):
                 return "An AI-powered chat assistant integrated with emails, Discord/Slack, capable of taking notes and managing a Kanban board."
             case _:
                 raise NotImplementedError(f"Example Task {task.value} not implemented")
-
-
-class DatabaseEnums(BaseModel):
-    name: str
-    description: str
-    values: list[str]
-    definition: str
-
-    def __str__(self):
-        return f"**Enum: {self.name}**\n\n**Values**:\n{', '.join(self.values)}\n"
-
-
-class DatabaseTable(BaseModel):
-    name: str | None = None
-    description: str
-    definition: str  # prisma model for a table
-
-    def __str__(self):
-        return f"**Table: {self.name}**\n\n\n\n**Definition**:\n```\n{self.definition}\n```\n"
-
-
-class DatabaseSchema(BaseModel):
-    name: str  # name of the database schema
-    description: str  # context on what the database schema is
-    tables: List[DatabaseTable]  # list of tables in the database schema
-    enums: List[DatabaseEnums]
-
-    def __str__(self):
-        tables_str = "\n".join(str(table) for table in self.tables)
-        enum_str = "\n".join(str(enum) for enum in self.enums)
-        return f"## {self.name}\n**Description**: {self.description}\n**Tables**:\n{tables_str}\n**Enums**:\n{enum_str}\n"
 
 
 class APIEndpointWrapper(BaseModel):

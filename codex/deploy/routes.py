@@ -1,6 +1,5 @@
 import base64
 import io
-import json
 import logging
 from typing import Optional
 
@@ -147,7 +146,7 @@ async def delete_deployment(
     """
     await codex.deploy.database.delete_deployment(deployment_id=deployment_id)
     return JSONResponse(
-        content=json.dumps({"message": "Deployment deleted successfully"}),
+        content={"message": "Deployment deleted successfully"},
         status_code=200,
     )
 

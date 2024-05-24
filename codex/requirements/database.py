@@ -1,21 +1,29 @@
 import asyncio
 import os
 import pickle
+from typing import Literal
 
 import prisma
+import prisma.enums
 from prisma.models import Application, Specification
-from prisma.types import SpecificationCreateInput
+from prisma.types import (
+    APIRouteSpecCreateInput,
+    ObjectFieldCreateInput,
+    SpecificationCreateInput,
+)
 
 import codex.common
 import codex.requirements.agent
 from codex.api_model import (
     Identifiers,
+    ObjectFieldModel,
     Pagination,
+    SpecificationAddRouteToModule,
     SpecificationResponse,
     SpecificationsListResponse,
 )
 from codex.common.database import INCLUDE_API_ROUTE
-from codex.common.model import APIRouteSpec, create_object_type
+from codex.common.model import APIRouteSpec, ObjectType, create_object_type
 
 
 async def create_single_function_spec(
@@ -227,6 +235,44 @@ async def delete_specification(spec_id: str) -> None:
     )
 
 
+async def get_object_types_for_spec(
+    user_id: str, app_id: str, spec_id: str, available_objects: dict[str, ObjectType]
+) -> dict[str, ObjectType]:
+    spec = await get_specification(user_id=user_id, app_id=app_id, spec_id=spec_id)
+    if not spec:
+        raise Exception("Specification not found")
+
+    # recursively look up all object types in the spec and return the ObjectType objects
+    # by looking at the fields of the request and response objects of the API routes
+    # and then looking at the related types of those fields.
+    # first, create an inline function to recursively look up all object types in the spec
+    async def get_related_objects(
+        obj: ObjectType, available_objects: dict[str, ObjectType]
+    ) -> dict[str, ObjectType]:
+        for field in obj.Fields or []:
+            for related_type in field.RelatedTypes or []:
+                # query the database for the related type
+                if related_type.name not in available_objects:
+                    available_objects = await get_related_objects(
+                        related_type, available_objects
+                    )
+        return available_objects
+
+    # then, iterate over all modules in the spec and look at the API routes
+    for module in spec.Modules or []:
+        for route in module.ApiRouteSpecs or []:
+            if route.RequestObject:
+                available_objects = await get_related_objects(
+                    route.RequestObject, available_objects
+                )
+            if route.ResponseObject:
+                available_objects = await get_related_objects(
+                    route.ResponseObject, available_objects
+                )
+
+    return available_objects
+
+
 async def list_specifications(
     user_id: str, app_id: str, page: int, page_size: int
 ) -> SpecificationsListResponse:
@@ -272,6 +318,188 @@ async def list_specifications(
                 total_items=0, total_pages=0, current_page=0, page_size=0
             ),
         )
+
+
+async def add_module_to_specification(
+    spec_id: str, module_name: str, module_description: str, module_interactions: str
+) -> prisma.models.Module:
+    module = await prisma.models.Module.prisma().create(
+        data={
+            "name": module_name,
+            "description": module_description,
+            "interactions": module_interactions,
+            "Specification": {"connect": {"id": spec_id}},
+        }
+    )
+    return module
+
+
+async def delete_module_from_specification(
+    user_id: str,
+    app_id: str,
+    spec_id: str,
+    module_id: str,
+):
+    # # Get created objects
+    available_objects = {}
+    available_objects = await get_object_types_for_spec(
+        user_id=user_id,
+        app_id=app_id,
+        spec_id=spec_id,
+        available_objects=available_objects,
+    )
+
+    # Get all the routes in the module
+    module = await prisma.models.Module.prisma().find_first_or_raise(
+        where={"id": module_id}
+    )
+    for route in module.ApiRouteSpecs or []:
+        await delete_route_from_module(
+            user_id=user_id,
+            app_id=app_id,
+            spec_id=spec_id,
+            route_id=route.id,
+        )
+    # Delete the Module
+    await prisma.models.Module.prisma().delete(where={"id": module_id})
+
+
+async def get_modules(spec_id: str) -> list[prisma.models.Module]:
+    modules = await prisma.models.Module.prisma().find_many(
+        where={"specificationId": spec_id}
+    )
+    return modules
+
+
+async def add_route_to_module(
+    module_id: str,
+    api_route_spec: SpecificationAddRouteToModule,
+):
+    created_objects = {}
+    for model in [api_route_spec.requestObject, api_route_spec.responseObject]:
+        if model:
+            created_objects = await create_object_type(model, created_objects)
+
+    create_route = APIRouteSpecCreateInput(
+        **{
+            "method": api_route_spec.method,
+            "functionName": api_route_spec.function_name,
+            "path": api_route_spec.path,
+            "description": api_route_spec.description,
+            "AccessLevel": api_route_spec.access_level,
+            "AllowedAccessRoles": api_route_spec.allowed_access_roles,
+            "Module": {"connect": {"id": module_id}},
+        }
+    )
+    if api_route_spec.requestObject:
+        create_route["RequestObject"] = {
+            "connect": {"id": created_objects[api_route_spec.requestObject.name].id}
+        }
+    if api_route_spec.responseObject:
+        create_route["ResponseObject"] = {
+            "connect": {"id": created_objects[api_route_spec.responseObject.name].id}
+        }
+
+    route = await prisma.models.APIRouteSpec.prisma().create(data=create_route)
+    return route
+
+
+async def delete_route_from_module(
+    user_id: str,
+    app_id: str,
+    spec_id: str,
+    route_id: str,
+):
+    # Get created objects
+    available_objects = {}
+    available_objects = await get_object_types_for_spec(
+        user_id=user_id,
+        app_id=app_id,
+        spec_id=spec_id,
+        available_objects=available_objects,
+    )
+
+    # Delete the Route
+    await prisma.models.APIRouteSpec.prisma().delete(where={"id": route_id})
+
+
+async def add_parameter_to_route(
+    user_id: str,
+    app_id: str,
+    spec_id: str,
+    route_id: str,
+    param: ObjectFieldModel,
+    io: Literal["request", "response"],
+):
+    # Get created objects
+    available_objects = {}
+    available_objects = await get_object_types_for_spec(
+        user_id=user_id,
+        app_id=app_id,
+        spec_id=spec_id,
+        available_objects=available_objects,
+    )
+
+    for type in param.related_types or []:
+        if type.name not in available_objects:
+            available_objects = await create_object_type(type, available_objects)
+
+    # get teh existing param, or make one if not found
+    route = await prisma.models.APIRouteSpec.prisma().find_first_or_raise(
+        where={"id": route_id}
+    )
+
+    if not route.RequestObject and io == "request":
+        raise AssertionError("Route does not have a request object")
+    if not route.ResponseObject and io == "response":
+        raise AssertionError("Route does not have a response object")
+
+    data = ObjectFieldCreateInput(
+        **{
+            "name": param.name,
+            "description": param.description,
+            "typeName": param.type,
+        }
+    )
+
+    if io == "request" and route.RequestObject:
+        data["ReferredObjectType"] = {"connect": {"id": route.RequestObject.id}}
+    elif io == "response" and route.ResponseObject:
+        data["ReferredObjectType"] = {"connect": {"id": route.ResponseObject.id}}
+    # Insert the Field
+    field = await prisma.models.ObjectField.prisma().create(data=data)
+
+    return field
+
+
+async def delete_parameter_from_route(
+    user_id: str,
+    app_id: str,
+    spec_id: str,
+    route_id: str,
+    param_id: str,
+):
+    # Get created objects
+    available_objects = {}
+    available_objects = await get_object_types_for_spec(
+        user_id=user_id,
+        app_id=app_id,
+        spec_id=spec_id,
+        available_objects=available_objects,
+    )
+
+    # get the existing param, or make one if not found
+    route = await prisma.models.APIRouteSpec.prisma().find_first_or_raise(
+        where={"id": route_id}
+    )
+
+    if not route.RequestObject:
+        raise AssertionError("Route does not have a request object")
+    if not route.ResponseObject:
+        raise AssertionError("Route does not have a response object")
+
+    # Delete the Field
+    await prisma.models.ObjectField.prisma().delete(where={"id": param_id})
 
 
 async def main():
