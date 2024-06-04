@@ -152,10 +152,10 @@ async def setup_if_required(
 
 
 async def execute_command(
-        command: list[str],
-        cwd: str | Path | None,
-        python_path: str | Path | None = None,
-        raise_on_error: bool = True,
+    command: list[str],
+    cwd: str | Path | None,
+    python_path: str | Path | None = None,
+    raise_on_error: bool = True,
 ) -> str:
     """
     Execute a command in the shell
@@ -173,7 +173,6 @@ async def execute_command(
         # Ensure python_path is a string
         python_path = str(python_path)
         venv["PATH"] = f"{python_path}:{venv['PATH']}"
-
 
     try:
         r = await asyncio.create_subprocess_exec(
