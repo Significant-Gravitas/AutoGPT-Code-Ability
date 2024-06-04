@@ -64,5 +64,6 @@ ENV USER_CONN_NAME=""
 ENV LANGCHAIN_PROJECT=""
 ENV LANGCHAIN_TRACING_V2=""
 ENV LANGCHAIN_API_KEY=""
+ENV HOSTED_DEPLOYMENT=""
 # This will be the command to run the FastAPI server using uvicorn
 CMD ./run serve

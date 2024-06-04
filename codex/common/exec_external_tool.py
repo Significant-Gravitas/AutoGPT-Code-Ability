@@ -195,4 +195,4 @@ async def execute_command(
             return stderr or stdout
     except Exception as e:
         logger.error(f"Exception during command execution: {e}")
-        raise
+        # raise
