@@ -170,20 +170,29 @@ async def execute_command(
     # Set the python path by replacing the env 'PATH' with the provided python path
     venv = os.environ.copy()
     if python_path:
-        # PATH prioritize first occurrence of python_path, so we need to prepend.
+        # Ensure python_path is a string
+        python_path = str(python_path)
         venv["PATH"] = f"{python_path}:{venv['PATH']}"
-    r = await asyncio.create_subprocess_exec(
-        *command,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        cwd=str(cwd),
-        env=venv,
-    )
-    stdout, stderr = await r.communicate()
-    if r.returncode == 0:
-        return (stdout or stderr).decode("utf-8")
 
-    if raise_on_error:
-        raise ValidationError((stderr or stdout).decode("utf-8"))
-    else:
-        return (stderr or stdout).decode("utf-8")
+    try:
+        r = await asyncio.create_subprocess_exec(
+            *command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=str(cwd),
+            env=venv,
+        )
+        stdout, stderr = await r.communicate()
+        stdout, stderr = stdout.decode("utf-8"), stderr.decode("utf-8")
+
+        if r.returncode == 0:
+            return stdout or stderr
+
+        logger.error(f"Command failed with stderr: {stderr}")
+        if raise_on_error:
+            raise ValidationError(stderr or stdout)
+        else:
+            return stderr or stdout
+    except Exception as e:
+        logger.error(f"Exception during command execution: {e}")
+        raise
