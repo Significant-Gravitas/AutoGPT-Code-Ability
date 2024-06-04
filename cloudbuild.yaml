@@ -1,21 +1,21 @@
 logsBucket: "gs://agpt-cloud-build-logs-$PROJECT_ID"
 steps:
   - name: "gcr.io/cloud-builders/docker"
-    args: ["pull", "us-central1-docker.pkg.dev/$PROJECT_ID/codex/codex_base:latest"]
+    args: ["pull", "us-central1-docker.pkg.dev/$PROJECT_ID/codex-base:latest"]
     id: "pull-image-codex-base"
     volumes:
       - name: "autogpt-docker-layers"
         path: "/var/lib/docker"
 
   - name: "gcr.io/cloud-builders/docker"
-    args: ["pull", "us-central1-docker.pkg.dev/$PROJECT_ID/codex/codex_db:latest"]
+    args: ["pull", "us-central1-docker.pkg.dev/$PROJECT_ID/codex-db:latest"]
     id: "pull-image-codex-db"
     volumes:
       - name: "autogpt-docker-layers"
         path: "/var/lib/docker"
 
   - name: "gcr.io/cloud-builders/docker"
-    args: ["pull", "us-central1-docker.pkg.dev/$PROJECT_ID/codex/codex:latest"]
+    args: ["pull", "us-central1-docker.pkg.dev/$PROJECT_ID/codex:latest"]
     id: "pull-image-codex"
     volumes:
       - name: "autogpt-docker-layers"
@@ -27,11 +27,11 @@ steps:
       [
         "build",
         "-t",
-        "us-central1-docker.pkg.dev/$PROJECT_ID/codex/codex_base:latest",
+        "us-central1-docker.pkg.dev/$PROJECT_ID/codex-base:latest",
         "--target",
         "codex_base",
         "--cache-from",
-        "us-central1-docker.pkg.dev/$PROJECT_ID/codex/codex_base:latest",
+        "us-central1-docker.pkg.dev/$PROJECT_ID/codex-base:latest",
         ".",
       ]
     id: "build-codex-base"
@@ -41,7 +41,7 @@ steps:
 
   # Push Latest Base Image
   - name: "gcr.io/cloud-builders/docker"
-    args: ["push", "us-central1-docker.pkg.dev/$PROJECT_ID/codex/codex_base:latest"]
+    args: ["push", "us-central1-docker.pkg.dev/$PROJECT_ID/codex-base:latest"]
     id: "push-latest-codex-base"
     volumes:
       - name: "autogpt-docker-layers"
@@ -53,11 +53,11 @@ steps:
       [
         "build",
         "-t",
-        "us-central1-docker.pkg.dev/$PROJECT_ID/codex/codex_db:latest",
+        "us-central1-docker.pkg.dev/$PROJECT_ID/codex-db:latest",
         "--target",
         "codex_db",
         "--cache-from",
-        "us-central1-docker.pkg.dev/$PROJECT_ID/codex/codex_db:latest",
+        "us-central1-docker.pkg.dev/$PROJECT_ID/codex-db:latest",
         ".",
       ]
     id: "build-codex-db"
@@ -67,7 +67,7 @@ steps:
 
   # Push Latest Database Client Image
   - name: "gcr.io/cloud-builders/docker"
-    args: ["push", "us-central1-docker.pkg.dev/$PROJECT_ID/codex/codex_db:latest"]
+    args: ["push", "us-central1-docker.pkg.dev/$PROJECT_ID/codex-db:latest"]
     id: "push-latest-codex-db"
     volumes:
       - name: "autogpt-docker-layers"
@@ -85,7 +85,7 @@ steps:
         "--target",
         "codex",
         "--cache-from",
-        "us-central1-docker.pkg.dev/$PROJECT_ID/codex/codex:latest",
+        "us-central1-docker.pkg.dev/$PROJECT_ID/codex:latest",
         ".",
       ]
     id: "build-codex"
@@ -95,7 +95,7 @@ steps:
 
   # Push Codex Image
   - name: "gcr.io/cloud-builders/docker"
-    args: ["push", "--all-tags", "us-central1-docker.pkg.dev/$PROJECT_ID/codex/codex"]
+    args: ["push", "--all-tags", "us-central1-docker.pkg.dev/$PROJECT_ID/codex"]
     id: "push-codex"
     volumes:
       - name: "autogpt-docker-layers"
@@ -111,7 +111,7 @@ steps:
         "deploy",
         "database-migration-codex",
         "--image",
-        "us-central1-docker.pkg.dev/$PROJECT_ID/codex/codex_db:latest",
+        "us-central1-docker.pkg.dev/$PROJECT_ID/codex-db:latest",
         "--region",
         "us-central1",
         "--wait",
@@ -130,7 +130,7 @@ steps:
         "deploy",
         "codegen",
         "--image",
-        "us-central1-docker.pkg.dev/$PROJECT_ID/codex/codex:$COMMIT_SHA",
+        "us-central1-docker.pkg.dev/$PROJECT_ID/codex:$COMMIT_SHA",
         "--region",
         "us-central1",
         "--platform",
