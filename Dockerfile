@@ -48,8 +48,11 @@ RUN prisma generate
 FROM codex_db as codex
 # Fast build of codex - only needs to update the python code
 COPY . /app
+
+EXPOSE 8080
+
 # Set a default value (this can be overridden)
-ENV PORT=8000
+ENV PORT=8080
 
 # Just declare the variable, the value will be set when running the container
 ENV OPENAI_API_KEY=""
