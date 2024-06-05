@@ -41,6 +41,7 @@ google-auth-httplib2 = "^0.2.0"
 google-auth-oauthlib = "^1.2.0"
 nicegui = "^1.4.22"
 langsmith = "^0.1.52"
+python-levenshtein = "^0.25.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.3"
