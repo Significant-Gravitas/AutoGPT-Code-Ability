@@ -1,26 +1,5 @@
 logsBucket: "gs://agpt-cloud-build-logs-$PROJECT_ID"
 steps:
-  - name: "gcr.io/cloud-builders/docker"
-    args: ["pull", "gcr.io/$PROJECT_ID/mvp/codex_base:latest"]
-    id: "pull-image-codex-base"
-    volumes:
-      - name: "autogpt-docker-layers"
-        path: "/var/lib/docker"
-
-  - name: "gcr.io/cloud-builders/docker"
-    args: ["pull", "gcr.io/$PROJECT_ID/mvp/codex_db:latest"]
-    id: "pull-image-codex-db"
-    volumes:
-      - name: "autogpt-docker-layers"
-        path: "/var/lib/docker"
-
-  - name: "gcr.io/cloud-builders/docker"
-    args: ["pull", "gcr.io/$PROJECT_ID/mvp/codex:latest"]
-    id: "pull-image-codex"
-    volumes:
-      - name: "autogpt-docker-layers"
-        path: "/var/lib/docker"
-
   # Build Base Image
   - name: "gcr.io/cloud-builders/docker"
     args:
