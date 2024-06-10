@@ -44,12 +44,24 @@ services:
           "CMD",
           "curl",
           "-f",
-          "http://localhost:${PORT:-8000}/docs"
+          "http://localhost:8080/docs"
         ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "8501:8501"
+    networks:
+      - codex_network
+    depends_on:
+      - app
+    environment:
+      BACKEND_URL: "http://app:8080"
 
 networks:
   codex_network:
