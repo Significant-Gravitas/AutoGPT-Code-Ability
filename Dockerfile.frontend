@@ -1,0 +1,37 @@
+# Use an official Python runtime as a parent image
+FROM python:3.11-slim as frontend
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# Set work directory in the container
+WORKDIR /app
+
+
+# Install Poetry
+ENV POETRY_VERSION=1.1.8 \
+    POETRY_HOME="/opt/poetry" \
+    POETRY_NO_INTERACTION=1 \
+    POETRY_VIRTUALENVS_CREATE=false \
+    PATH="$POETRY_HOME/bin:$PATH"
+
+RUN pip3 install --no-cache-dir python-dotenv poetry
+
+COPY pyproject.toml poetry.lock* /app/
+
+RUN mkdir /app/frontend
+RUN touch /app/frontend/__init__.py
+RUN touch /app/README.md
+
+# Install dependencies
+RUN poetry install --no-interaction --no-ansi
+
+# Copy the rest of the application code
+COPY frontend/ /app
+
+# Expose the application port
+EXPOSE 8501
+
+# Command to run the application
+ENTRYPOINT ["streamlit", "run", "chat.py", "--server.port=8501", "--server.address=0.0.0.0"]
