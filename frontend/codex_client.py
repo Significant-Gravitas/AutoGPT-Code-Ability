@@ -1,9 +1,17 @@
 from typing import Tuple
-
+import logging
 import aiohttp
 from pydantic import ValidationError
-
-from codex_model import *
+from typing import Optional
+from codex_model import (
+    ApplicationResponse,
+    ApplicationCreate,
+    InterviewResponse,
+    InterviewNextRequest,
+    SpecificationResponse,
+    DeliverableResponse,
+    DeploymentResponse,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -11,6 +19,7 @@ logger = logging.getLogger(__name__)
 HARDCODED_USER_ID = "7b3a9e01-4ede-4a56-919b-d7063ba3c6e3"
 HARDCODED_CODEX_ID = "7b3a9e01-4ede-4a56-919b-d7063ba3c6e3"
 HARDCODED_DISCORD_ID = "hardcoded_discord_id"
+
 
 class CodexClient:
     def __init__(
@@ -177,9 +186,7 @@ class CodexClient:
             logger.exception(f"Error parsing interview: {e}")
             raise e
         except Exception as e:
-            logger.exception(
-                f"Unknown Error when trying to start the interview: {e}"
-            )
+            logger.exception(f"Unknown Error when trying to start the interview: {e}")
             raise e
 
     async def interview_next(self, user_message: str) -> InterviewResponse:
@@ -274,9 +281,7 @@ class CodexClient:
                     url, headers=self.headers, timeout=3000
                 ) as response:
                     response.raise_for_status()
-                    deliverable_response = DeliverableResponse(
-                        **await response.json()
-                    )
+                    deliverable_response = DeliverableResponse(**await response.json())
                     self.deliverable_id = deliverable_response.id
                     return deliverable_response
 
@@ -310,14 +315,10 @@ class CodexClient:
             async with aiohttp.ClientSession() as session:
                 async with session.post(url, headers=self.headers) as response:
                     if response.status != 200:
-                        logger.error(
-                            f"Error creating deployment: {response.status}"
-                        )
+                        logger.error(f"Error creating deployment: {response.status}")
                         logger.error(await response.text())
                     response.raise_for_status()
-                    deployment_response = DeploymentResponse(
-                        **await response.json()
-                    )
+                    deployment_response = DeploymentResponse(**await response.json())
                     self.deployment_id = deployment_response.id
                     return deployment_response
         except aiohttp.ClientError as e:
@@ -327,9 +328,7 @@ class CodexClient:
             logger.exception(f"Error parsing app deployment: {e}")
             raise e
         except Exception as e:
-            logger.exception(
-                f"Unknown Error when trying to create the deployment: {e}"
-            )
+            logger.exception(f"Unknown Error when trying to create the deployment: {e}")
             raise e
 
     async def download_zip(self) -> Tuple[bytes, str]:
@@ -342,18 +341,16 @@ class CodexClient:
             Tuple[bytes, str]: The bytes of the zip file and the name of the file.
         """
         if not self.deployment_id:
-            raise ValueError(
-                "You must create a deployment before downloading a zip"
-            )
+            raise ValueError("You must create a deployment before downloading a zip")
         url = f"{self.base_url}/deployments/{self.deployment_id}/download"
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(url, headers=self.headers) as response:
                     response.raise_for_status()
                     content = await response.read()
-                    filename = response.headers.get(
-                        "Content-Disposition", ""
-                    ).split("filename=")[1]
+                    filename = response.headers.get("Content-Disposition", "").split(
+                        "filename="
+                    )[1]
                     return content, filename
         except aiohttp.ClientError as e:
             logger.exception(f"HTTP error occurred: {e}")
