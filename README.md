@@ -49,6 +49,8 @@ If you want both the db and app running:
 docker compose -f docker-compose.full.yml up
 ```
 
+The visit localhost:8501 to use the frontend to chat and build your codebase.
+
 ### Step 3: Configure and Migrate Database
 
 In a new terminal, copy the .env file template:
