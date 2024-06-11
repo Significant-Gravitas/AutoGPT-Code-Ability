@@ -72,9 +72,12 @@ class CodexClient:
         """
         async with aiohttp.ClientSession() as session:
             async with session.post(
-                    'http://localhost:8080/api/v1/user',
-                    params={'cloud_services_id': CLOUD_SERVICES_ID, 'discord_id': DISCORD_ID},
-                    headers={'accept': 'application/json'}
+                "http://localhost:8080/api/v1/user",
+                params={
+                    "cloud_services_id": CLOUD_SERVICES_ID,
+                    "discord_id": DISCORD_ID,
+                },
+                headers={"accept": "application/json"},
             ) as response:
                 if response.status == 200:
                     data = await response.json()
