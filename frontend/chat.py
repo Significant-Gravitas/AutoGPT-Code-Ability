@@ -77,13 +77,13 @@ if not st.session_state.process_complete:
                     future_time = datetime.now(timezone.utc) + timedelta(minutes=15)
                     future_timestamp = int(future_time.timestamp())
                     st.session_state.messages.append(
-                        f"Okay starting developing app... Expected completion time: {future_timestamp}"
-                    )
+                        f"{interview_response.say_to_user}. Expected completion time: {future_timestamp}")
                     st.session_state.progress = 2
                 elif interview_response.phase == "FEATURES":
                     st.session_state.messages.append(interview_response.say_to_user)
-                    interview_response = await codex_client.interview_next("")
                     st.session_state.interview_response = interview_response
+                    interview_response = await codex_client.interview_next("")
+                    st.session_state.messages.append(interview_response.say_to_user)
         except Exception as e:
             logger.error(f"Failed to handle interview: {e}")
             st.error(f"Failed to handle interview: {e}")
