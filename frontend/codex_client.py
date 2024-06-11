@@ -11,14 +11,13 @@ from codex_model import (
     SpecificationResponse,
     DeliverableResponse,
     DeploymentResponse,
+    UserResponse,
 )
 
 logger = logging.getLogger(__name__)
 
-# Hardcoded user data
-HARDCODED_USER_ID = "7b3a9e01-4ede-4a56-919b-d7063ba3c6e3"
-HARDCODED_CODEX_ID = "7b3a9e01-4ede-4a56-919b-d7063ba3c6e3"
-HARDCODED_DISCORD_ID = "hardcoded_discord_id"
+CLOUD_SERVICES_ID = "7b3a9e01-4ede-4a56-919b-d7063ba3c6e3"
+DISCORD_ID = "6984891672811274234"
 
 
 class CodexClient:
@@ -35,8 +34,9 @@ class CodexClient:
             auth_key (str, optional): the authorization key for the codex service. Defaults to None.
         """
         # Set the base url for codex
+        self.user = None
         if not base_url:
-            self.base_url = "https://codegen-xca4qjgx4a-uc.a.run.app/api/v1"
+            self.base_url = "http://localhost:8080/api/v1"
         else:
             self.base_url = base_url
 
@@ -70,14 +70,23 @@ class CodexClient:
             cloud_services_user_id (str): the id of the user in the cloud services
             codex_user_id (str): the id of the user in the codex service
         """
-        # Using hardcoded values
-        self.codex_user_id = HARDCODED_CODEX_ID
-        self.user_id = HARDCODED_USER_ID
-        self.user = {
-            "id": HARDCODED_USER_ID,
-            "codexId": HARDCODED_CODEX_ID,
-            "discordId": HARDCODED_DISCORD_ID,
-        }
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                "http://localhost:8080/api/v1/user",
+                params={
+                    "cloud_services_id": CLOUD_SERVICES_ID,
+                    "discord_id": DISCORD_ID,
+                },
+                headers={"accept": "application/json"},
+            ) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    user_response = UserResponse(**data)
+                    self.user = user_response
+                    self.codex_user_id = self.user.id
+                else:
+                    # Handle error case
+                    raise Exception(f"Failed to fetch/create user: {response.status}")
 
         if app_id:
             self.app_id = app_id
