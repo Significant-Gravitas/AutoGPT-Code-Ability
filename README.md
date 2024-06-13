@@ -4,7 +4,25 @@
 
 ## Introduction
 
-The Codex System is an innovative coding agent designed to streamline the software development process. It consists of four key sub-agents, each specialized in a different aspect of software development. These sub-agents work in harmony to ensure efficient and effective delivery of software applications. This README provides an overview of the Codex System and its components.
+AutoGPT Unleashes Coding Power for All: Open Source AI Lowers Barriers to Software Creation! 
+
+AutoGPT's coding ability is an open-source coding assistant powered by AI. 
+The goal is to make software development more accessible to everyone, regardless of skill level or resources. 
+By generating code in Python, a popular and very accessible language, AutoGPT acts as a virtual co-pilot to help users build projects like backends for existing frontends or command-line tools. 
+
+This README provides an overview of this system and its components.
+
+## Target Audience
+
+**Beginners and those new to coding/programming:** This includes students, hobbyists, or anyone interested in learning to code but facing barriers to entry. The product aims to make coding accessible and affordable for beginners.
+
+**Underrepresented groups in tech/coding:** By fostering an inclusive open-source community, the product seems targeted at engaging underrepresented groups and empowering them to get involved. 
+
+**Experienced developers/engineers:** While lowering barriers for beginners, the product also offers value for experienced developers by providing an AI coding assistant to boost productivity.
+
+**Open source contributors:** Contributors are encouraged to join in contributing code, knowledge, and driving innovation collaboratively.
+
+**Cost-conscious organizations/individuals:** By making software development more affordable, it could appeal to small businesses, startups, or individuals looking to build applications inexpensively.
 
 ## Setup Guide 
 
@@ -35,6 +53,7 @@ Then input:
 ```
 And select the Poetry Python Interpreter.
 
+
 ### Step 2: Initialize Docker Containers
 There are two ways you can run the containers: 
 
@@ -43,6 +62,17 @@ If you want only the DB running:
 docker compose -f docker-compose.yml up
 ```
 > Take note of the **port** printed in the output. e.g: `listening on IPv4 address "0.0.0.0", port 5432`.
+
+Then run the server:
+```
+./run serve
+```
+
+Run the frontend
+
+```
+poetry run streamlit run chat.py
+```
 
 If you want both the db and app running:
 ```
@@ -63,7 +93,7 @@ To set up your database, we'll begin by configuring the `DATABASE_URL` through a
 
 Simply set the database `port` you took note of above (e.g. 5432).
 
-Then, take this oppertunity to update the .env with your OpenAI key.
+Then, take this opportunity to update the .env with your OpenAI key and your Github token.
 
 Once you've updated the .env file with this info, launch a Poetry Shell:
 ```
@@ -122,9 +152,9 @@ Here, you'll find detailed guides and references on interacting with the applica
 
 With your environment set up, head over to the **Interaction Flow** section for insights on how interactions within the application work, further exploring its functionality and features.
 
-## Components of Codex
+## Components
 
-The Codex System is an advanced software development framework comprised of various specialized sub-agents and components. Each component plays a critical role in the software development lifecycle, from conception to deployment. In addition to the primary sub-agents, the Codex System includes essential supportive components: the Common Module, Chains Module, and Prompts Module.
+This system is an advanced software development framework comprised of various specialized sub-agents and components. Each component plays a critical role in the software development lifecycle, from conception to deployment. In addition to the primary sub-agents, this system includes essential supportive components: the Common Module, and Prompts Module.
 
 1. **Requirements (Product Owner)**: This component is pivotal in understanding and defining the product requirements. It acts as a bridge between the client's needs and the technical team, ensuring that the developed software aligns perfectly with the client's vision.
 
@@ -138,7 +168,7 @@ The Codex System is an advanced software development framework comprised of vari
 
 6. **Prompts**: This component works closely with the Chains Module to generate and manage prompts for LLM interactions. It holds all the prompt templates allowing us to easily itterate prompt design without needing to modify the code.
 
-Below is a diagram illustrating the structure of the Codex System and the interaction between its components:
+Below is a diagram illustrating the structure of AutoGPT's coding ability and the interaction between its components:
 
 ```mermaid
 erDiagram
@@ -203,7 +233,7 @@ sequenceDiagram
 
     Codex->>-User: Returns Developed App ID
 
-    User->>API: Requests Deveoped App ID is deployed
+    User->>API: Requests Developed App ID is deployed
     Note right of API: When we have added deployment flow
 
     API->>+Codex: Runs Deployment Flow
@@ -215,7 +245,7 @@ sequenceDiagram
 
     API->>+Codex: Runs Package flow
 
-    Codex-->>-User: Returns Zipfile
+    Codex-->>-User: Returns link to Github repo (or if running locally, you can switch to zipfile)
 
 ```
 
@@ -475,31 +505,3 @@ prisma migrate resolve --applied "<migration-name>"
 
 This cheat sheet covers the basics of setting up Prisma in a Python project and performing essential database operations. Remember that using Prisma with Python is less straightforward than with JavaScript/TypeScript, and it may require additional setup and handling. For more detailed information, refer to the [Prisma Documentation](https://www.prisma.io/docs/).
 
-## Deploying a new Environment
-
-So you want to deploy Codex to a new environment? Here's a quick guide to get you started.
-
-1. make a trigger in Google Cloud build
-    1. make a new cloudbuild.\<env>.yaml file
-    1. link it to a trigger in your environment
-        1. you may need to add a link to GitHub
-1. Make a bucket for your service
-1. Login to gcloud via cli on your machine `gcloud auth login`
-1. push a docker container for codex base. Tag it latest `docker buildx build --platform linux/amd64 -t gcr.io/agpt-prod/mvp/codex_base:latest . --target=codex_base --push`
-1. push a docker container for codex db. Tag it latest `docker buildx build --platform linux/amd64 -t gcr.io/agpt-prod/mvp/codex_db:latest . --target=codex_db --push`
-1. Push a docker container for codex as a whole. Tag it latest `docker buildx build --platform linux/amd64 -t gcr.io/agpt-prod/mvp/codex:latest . --target=codex --push`
-
-> the reason we push these is we have a caching mechnism in the dockerfile that will make the build faster. If the tags and images aren't accessible, the cache will fail and the build will crash.
-
-7. Push the cloudbuild.\<env>.yaml file to the repo
-1. Let cloudbuild run the trigger. It'll fail because the cloud run service doesn't exist yet.
-1. Setup the DB if it doesn't exist
-    1. You'll want to make a new cloud sql instance, postgres flavor
-1. Setup the cloud run service
-    1. You'll need to do this one on your own kid.
-    1. Call it `codegen` or rename the service in the cloudbuild.\<env>.yaml file
-    1. attach your sql instance to the service
-    1. set your environment variables, you need to find the ones the system uses.
-        1. Stuff like DATABASE_URL
-        1. stuff like RUN_ENV to prod
-1. setup the migration job to run against the db
