@@ -1,6 +1,8 @@
+
 <p align="center">
-    <img src="docs/codex.png" alt="Image Description" width="300">
+  <img src="https://github.com/Significant-Gravitas/AutoGPT-Code-Ability/assets/50577581/4fefdc1d-4fba-476a-8456-646428cc05ec" alt="Robot Coding"/>
 </p>
+
 
 ## Introduction
 
