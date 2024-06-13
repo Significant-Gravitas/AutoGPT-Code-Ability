@@ -146,6 +146,14 @@ Access the running application's interactive documentation at:
 http://127.0.0.1:8000/docs
 ```
 
+
+## Demo
+
+
+https://github.com/Significant-Gravitas/AutoGPT-Code-Ability/assets/50577581/264838a3-6f24-4758-974e-f9cba64a4166
+
+
+
 Here, you'll find detailed guides and references on interacting with the application.
 
 ### What's Next?
