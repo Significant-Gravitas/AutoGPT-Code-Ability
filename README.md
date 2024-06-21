@@ -55,8 +55,26 @@ Then input:
 ```
 And select the Poetry Python Interpreter.
 
+### Step 2: Configure environment variables
 
-### Step 2: Initialize Docker Containers
+cp .env.example .env
+
+Fill out the variables with your own keys and settings
+
+GIT_TOKEN=<your-github-token>
+
+VERBOSE_LOGGING=true
+
+The langchain variables only work if you have access to Langsmith! 
+Turn LANGCHAIN_TRACING_V2 to false if not
+
+```
+LANGCHAIN_PROJECT
+LANGCHAIN_TRACING_V2
+LANGCHAIN_API_KEY
+```
+
+### Step 3: Initialize Docker Containers
 There are two ways you can run the containers: 
 
 If you want only the DB running: 
@@ -72,6 +90,8 @@ Then run the server:
 
 Run the frontend
 
+reminder: run from the frontend/ folder
+
 ```
 poetry run streamlit run chat.py
 ```
@@ -83,7 +103,7 @@ docker compose -f docker-compose.full.yml up
 
 The visit localhost:8501 to use the frontend to chat and build your codebase.
 
-### Step 3: Configure and Migrate Database
+### Step 4: Configure and Migrate Database
 
 In a new terminal, copy the .env file template:
 
@@ -110,7 +130,7 @@ prisma migrate dev --name init
 
 This initializes your database with the required schema.
 
-### Step 4: Generate Prisma Client
+### Step 5: Generate Prisma Client
 
 After migrating your database, generate the Prisma client to interact with your database in your application:
 
@@ -120,7 +140,7 @@ prisma generate
 
 This command generates or updates the Prisma client, ensuring your application can communicate effectively with the database.
 
-### Step 5: Populate the Database
+### Step 6: Populate the Database
 
 Ensure your database is populated with initial data by adjusting the database URL for the specific port and running the population script:
 
@@ -130,7 +150,7 @@ Ensure your database is populated with initial data by adjusting the database UR
 
 This populates your database with the initial data set required for your application.
 
-### Step 6: Launch the Application
+### Step 7: Launch the Application
 
 Set your environment to local and start the server:
 
@@ -140,7 +160,7 @@ Set your environment to local and start the server:
 
 This starts the application's server, making it available for development use.
 
-### Step 7: Access the Documentation
+### Step 8: Access the Documentation
 
 Access the running application's interactive documentation at:
 
