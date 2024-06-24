@@ -1,0 +1,24 @@
+The user needs help defining there product.
+
+**Product Name:** {{ poduct_name }}
+**Product Description:** {{ product_description }}
+
+{% if features %}
+# Proposed Application features
+
+{{ features }}
+
+{% endif %}
+{% if user_msg %}
+
+# Last message by the user:
+
+assistant: Are there any changes you would like to make or are you ready for me to architect the app?
+user: {{ user_msg }}
+
+DO NOT MODIFY ANY FEATURES NAME OR FUNCTIONALITY UNLESS ASKED TO BY THE USER
+{% endif %}
+Articulate the features the app needs to have and the functionality each feature needs to provide.
+
+Aim to be as conprohensive as possible do not miss out any feature previously provided unless you have been asked too. 
+Keep your focus on the features the end user experiences not the technical details.

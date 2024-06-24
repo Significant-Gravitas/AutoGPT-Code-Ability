@@ -1,0 +1,47 @@
+Define the backend software modules needed to be able to deliver the desired features.
+Also define the access_roles we need to implement to be able to deliver the desired features.
+
+**Product Name:** {{ poduct_name }}
+**Product Description:** {{ product_description }}
+
+# Application features
+
+{{ features }}
+
+{% if modules %}
+# Proposed Application Architecture
+
+Add, Delete or Update these proposed modules for the application:
+
+{{ modules }}
+
+{% else %}
+
+Add all the modules that are needed to deliver this system.
+
+{% endif %}
+
+{% if user_msg %}
+
+# Last message by the user:
+
+assistant: Are there any changes you would like to make or are you ready for me to develop the app?
+user: {{ user_msg }}
+
+{% endif %}
+
+**interaction_with_other_modules** field needs to describe exactly how the module interacts with other modules.
+Each entry in the list is to describe a different interaction and should clearly state which module it is interacting with and how.
+
+The software modules should not be exposed to the user or api directly.
+ALWAYS add a user managment module unless the application is stateless and does not require authentication.
+
+# IMPORTANT
+**Don't duplicate functionality between modules. Make sure each modules has a clear and distinct purpose.**
+{% if modules %}
+Adding, Updating or Deleting modules based on what the user has requested. 
+When adding or updating make sure to include your reasoning for the change.
+If you are deleting a modules there is no need to add anything other than the id of the modules to be deleted.
+
+WHEN THE USER HAS CONFIRMED THE MODULES, RETURN JUST thoughts, say_to_user and phase_completed
+{% endif %}

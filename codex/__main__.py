@@ -1,12 +1,15 @@
 import asyncio
+import json
 import logging
 import os
+from typing import Dict, Any
 
 import click
 
 import codex.debug
 from codex.app import db_client as prisma_client
 from codex.common.logging_config import setup_logging
+from codex.common.utils import get_config_from_env
 from codex.tests.frontend_gen_test import generate_user_interface
 
 logger = logging.getLogger(__name__)
@@ -337,29 +340,40 @@ def resume(base_url: str):
 
 
 @cli.command()
-@click.option("-g", "--groq", is_flag=True, default=False, help="Run a GROQ query")
-@click.option("-m", "--model", default=None, help="Override LLM to use")
-def serve(groq: bool, model: str) -> None:
+@click.option("-p", "--provider", default=None, help="Override AI provider to use (openai, groq, anthropic)")
+@click.option("-m", "--model", default=None, help="Override LLM model to use")
+def serve(provider: str, model: str) -> None:
     import uvicorn
 
     from codex.common.ai_model import OpenAIChatClient
     from codex.common.exec_external_tool import setup_if_required
 
-    config = {}
+    provider_config = get_config_from_env()
+    if provider:
+        provider_config['name'] = provider.lower()
+
+        # Override model if specified in command line
     if model:
-        config["model"] = model
-    if groq:
-        print("Setting up GROQ API client...")
-        if not model:
-            config["model"] = "llama3-70b-8192"
-        config["api_key"] = os.getenv("GROQ_API_KEY")
-        config["base_url"] = "https://api.groq.com/openai/v1"
-        # Current limits for llama3-70b-8192 on groq
-        OpenAIChatClient.configure(
-            config, max_requests_per_min=1_000, max_tokens_per_min=30_000
-        )
-    else:
-        OpenAIChatClient.configure(config)
+        provider_config['model'] = model
+
+        # Ensure we have an API key
+    if not provider_config['client_config'].get('api_key'):
+        provider_config['client_config']['api_key'] = os.getenv(f"{provider_config['name'].upper()}_API_KEY")
+
+        # Set default model if not provided
+    if not provider_config.get('model'):
+        if provider_config['name'] == 'openai':
+            provider_config['model'] = "gpt-4o"
+        elif provider_config['name'] == 'groq':
+            provider_config['model'] = "llama3-70b-8192"
+        elif provider_config['name'] == 'anthropic':
+            provider_config['model'] = "claude-3-5-sonnet-20240620"
+
+    OpenAIChatClient.configure(
+        provider_config=provider_config,
+        max_requests_per_min=1000,
+        max_tokens_per_min=1_500_000
+    )
 
     logger.info("Setting up code analysis tools...")
     initial_setup = setup_if_required()
@@ -392,6 +406,7 @@ def frontend(deliverableid: str):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.run_until_complete(run_tasks())
+
 
 
 if __name__ == "__main__":

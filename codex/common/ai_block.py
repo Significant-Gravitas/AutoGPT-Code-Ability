@@ -168,7 +168,7 @@ class AIBlock:
         self.template_base_path_with_model = pathlib.Path(
             os.path.join(
                 os.path.dirname(__file__),
-                f"../{self.template_base_path}/{self.model}",
+                f"../{self.template_base_path}/{self.oai_client.model}",
             )
         ).resolve(strict=True)
         self.templates_dir = self.template_base_path_with_model

@@ -1,0 +1,2224 @@
+# *Text Elements*
+
+Elements like `ui.label`, `ui.markdown`, `ui.restructured_text` and `ui.html` can be used to display text and other content.
+
+## Label
+
+Displays some text.
+
+:param text: the content of the label
+Example:
+```
+ui.label('some label')
+```
+
+## Link
+
+Create a hyperlink.
+
+To jump to a specific location within a page you can place linkable anchors with `ui.link_target("name")`
+and link to it with `ui.link(target="#name")`.
+
+:param text: display text
+:param target: page function, NiceGUI element on the same page or string that is a an absolute URL or relative path from base URL
+:param new_tab: open link in new tab (default: False)
+Example:
+```
+ui.link('NiceGUI on GitHub', 'https://github.com/zauberzeug/nicegui')
+```
+
+## Chat Message
+
+Based on Quasar's `Chat Message <https://quasar.dev/vue-components/chat/>`_ component.
+
+:param text: the message body (can be a list of strings for multiple message parts)
+:param name: the name of the message author
+:param label: renders a label header/section only
+:param stamp: timestamp of the message
+:param avatar: URL to an avatar
+:param sent: render as a sent message (so from current user) (default: False)
+:param text_html: render text as HTML (default: False)
+Example:
+```
+ui.chat_message('Hello NiceGUI!',
+                name='Robot',
+                stamp='now',
+                avatar='https://robohash.org/ui')
+```
+
+## Generic Element
+
+This class is the base class for all other UI elements.
+But you can use it to create elements with arbitrary HTML tags.
+
+:param tag: HTML tag of the element
+:param _client: client for this element (for internal use only)
+Example:
+```
+with ui.element('div').classes('p-2 bg-blue-100'):
+    ui.label('inside a colored div')
+```
+
+## Markdown Element
+
+Renders Markdown onto the page.
+
+:param content: the Markdown content to be displayed
+:param extras: list of `markdown2 extensions <https://github.com/trentm/python-markdown2/wiki/Extras#implemented-extras>`_ (default: `['fenced-code-blocks', 'tables']`)
+Example:
+```
+ui.markdown('This is **Markdown**.')
+```
+
+## ReStructuredText
+
+Renders ReStructuredText onto the page.
+
+:param content: the ReStructuredText content to be displayed
+Example:
+```
+ui.restructured_text('This is **reStructuredText**.')
+```
+
+## Mermaid Diagrams
+
+Renders diagrams and charts written in the Markdown-inspired `Mermaid <https://mermaid.js.org/>`_ language.
+The mermaid syntax can also be used inside Markdown elements by providing the extension string 'mermaid' to the ``ui.markdown`` element.
+
+:param content: the Mermaid content to be displayed
+Example:
+```
+ui.mermaid('''
+graph LR;
+    A --> B;
+    A --> C;
+''')
+```
+
+## HTML Element
+
+Renders arbitrary HTML onto the page, wrapped in the specified tag.
+`Tailwind <https://tailwindcss.com/>`_ can be used for styling.
+You can also use `ui.add_head_html` to add html code into the head of the document and `ui.add_body_html`
+to add it into the body.
+
+:param content: the HTML code to be displayed
+:param tag: the HTML tag to wrap the content in (default: "div")
+Example:
+```
+ui.html('This is <strong>HTML</strong>.')
+```
+
+# *Controls*
+
+NiceGUI provides a variety of elements for user interaction, e.g. `ui.button`, `ui.slider`, `ui.inputs`, etc.
+
+## Button
+
+This element is based on Quasar's `QBtn <https://quasar.dev/vue-components/button>`_ component.
+
+The ``color`` parameter accepts a Quasar color, a Tailwind color, or a CSS color.
+If a Quasar color is used, the button will be styled according to the Quasar theme including the color of the text.
+Note that there are colors like "red" being both a Quasar color and a CSS color.
+In such cases the Quasar color will be used.
+
+:param text: the label of the button
+:param on_click: callback which is invoked when button is pressed
+:param color: the color of the button (either a Quasar, Tailwind, or CSS color or `None`, default: 'primary')
+:param icon: the name of an icon to be displayed on the button (default: `None`)
+Example:
+```
+ui.button('Click me!', on_click=lambda: ui.notify('You clicked me!'))
+```
+
+## Button Group
+
+This element is based on Quasar's `QBtnGroup <https://quasar.dev/vue-components/button-group>`_ component.
+You must use the same design props on both the parent button group and the children buttons.
+Example:
+```
+with ui.button_group():
+    ui.button('One', on_click=lambda: ui.notify('You clicked Button 1!'))
+    ui.button('Two', on_click=lambda: ui.notify('You clicked Button 2!'))
+    ui.button('Three', on_click=lambda: ui.notify('You clicked Button 3!'))
+```
+
+## Dropdown Button
+
+This element is based on Quasar's `QBtnDropDown <https://quasar.dev/vue-components/button-dropdown>`_ component.
+
+The ``color`` parameter accepts a Quasar color, a Tailwind color, or a CSS color.
+If a Quasar color is used, the button will be styled according to the Quasar theme including the color of the text.
+Note that there are colors like "red" being both a Quasar color and a CSS color.
+In such cases the Quasar color will be used.
+
+:param text: the label of the button
+:param value: if the dropdown is open or not (default: `False`)
+:param on_value_change: callback which is invoked when the dropdown is opened or closed
+:param on_click: callback which is invoked when button is pressed
+:param color: the color of the button (either a Quasar, Tailwind, or CSS color or `None`, default: 'primary')
+:param icon: the name of an icon to be displayed on the button (default: `None`)
+:param auto_close: whether the dropdown should close automatically when an item is clicked (default: `False`)
+:param split: whether to split the dropdown icon into a separate button (default: `False`)
+Example:
+```
+with ui.dropdown_button('Open me!', auto_close=True):
+    ui.item('Item 1', on_click=lambda: ui.notify('You clicked item 1'))
+    ui.item('Item 2', on_click=lambda: ui.notify('You clicked item 2'))
+```
+
+## Badge
+
+A badge element wrapping Quasar's
+`QBadge <https://quasar.dev/vue-components/badge>`_ component.
+
+:param text: the initial value of the text field
+:param color: the color name for component (either a Quasar, Tailwind, or CSS color or `None`, default: "primary")
+:param text_color: text color (either a Quasar, Tailwind, or CSS color or `None`, default: `None`)
+:param outline: use 'outline' design (colored text and borders only) (default: False)
+Example:
+```
+with ui.button('Click me!', on_click=lambda: badge.set_text(int(badge.text) + 1)):
+    badge = ui.badge('0', color='red').props('floating')
+```
+
+## Toggle
+
+This element is based on Quasar's `QBtnToggle <https://quasar.dev/vue-components/button-toggle>`_ component.
+
+The options can be specified as a list of values, or as a dictionary mapping values to labels.
+After manipulating the options, call `update()` to update the options in the UI.
+
+:param options: a list ['value1', ...] or dictionary `{'value1':'label1', ...}` specifying the options
+:param value: the initial value
+:param on_change: callback to execute when selection changes
+:param clearable: whether the toggle can be cleared by clicking the selected option
+Example:
+```
+toggle1 = ui.toggle([1, 2, 3], value=1)
+toggle2 = ui.toggle({1: 'A', 2: 'B', 3: 'C'}).bind_value(toggle1, 'value')
+```
+
+## Radio Selection
+
+This element is based on Quasar's `QRadio <https://quasar.dev/vue-components/radio>`_ component.
+
+The options can be specified as a list of values, or as a dictionary mapping values to labels.
+After manipulating the options, call `update()` to update the options in the UI.
+
+:param options: a list ['value1', ...] or dictionary `{'value1':'label1', ...}` specifying the options
+:param value: the initial value
+:param on_change: callback to execute when selection changes
+Example:
+```
+radio1 = ui.radio([1, 2, 3], value=1).props('inline')
+radio2 = ui.radio({1: 'A', 2: 'B', 3: 'C'}).props('inline').bind_value(radio1, 'value')
+```
+
+## Dropdown Selection
+
+This element is based on Quasar's `QSelect <https://quasar.dev/vue-components/select>`_ component.
+
+The options can be specified as a list of values, or as a dictionary mapping values to labels.
+After manipulating the options, call `update()` to update the options in the UI.
+
+If `with_input` is True, an input field is shown to filter the options.
+
+If `new_value_mode` is not None, it implies `with_input=True` and the user can enter new values in the input field.
+See `Quasar's documentation <https://quasar.dev/vue-components/select#the-new-value-mode-prop>`_ for details.
+Note that this mode is ineffective when setting the `value` property programmatically.
+
+You can use the `validation` parameter to define a dictionary of validation rules,
+e.g. ``{'Too long!': lambda value: len(value) < 3}``.
+The key of the first rule that fails will be displayed as an error message.
+Alternatively, you can pass a callable that returns an optional error message.
+To disable the automatic validation on every value change, you can use the `without_auto_validation` method.
+
+:param options: a list ['value1', ...] or dictionary `{'value1':'label1', ...}` specifying the options
+:param label: the label to display above the selection
+:param value: the initial value
+:param on_change: callback to execute when selection changes
+:param with_input: whether to show an input field to filter the options
+:param new_value_mode: handle new values from user input (default: None, i.e. no new values)
+:param multiple: whether to allow multiple selections
+:param clearable: whether to add a button to clear the selection
+:param validation: dictionary of validation rules or a callable that returns an optional error message
+:param key_generator: a callback or iterator to generate a dictionary key for new values
+Example:
+```
+select1 = ui.select([1, 2, 3], value=1)
+select2 = ui.select({1: 'One', 2: 'Two', 3: 'Three'}).bind_value(select1, 'value')
+```
+
+## Checkbox
+
+This element is based on Quasar's `QCheckbox <https://quasar.dev/vue-components/checkbox>`_ component.
+
+:param text: the label to display next to the checkbox
+:param value: whether it should be checked initially (default: `False`)
+:param on_change: callback to execute when value changes
+Example:
+```
+checkbox = ui.checkbox('check me')
+ui.label('Check!').bind_visibility_from(checkbox, 'value')
+```
+
+## Switch
+
+This element is based on Quasar's `QToggle <https://quasar.dev/vue-components/toggle>`_ component.
+
+:param text: the label to display next to the switch
+:param value: whether it should be active initially (default: `False`)
+:param on_change: callback which is invoked when state is changed by the user
+Example:
+```
+switch = ui.switch('switch me')
+ui.label('Switch!').bind_visibility_from(switch, 'value')
+```
+
+## Slider
+
+This element is based on Quasar's `QSlider <https://quasar.dev/vue-components/slider>`_ component.
+
+:param min: lower bound of the slider
+:param max: upper bound of the slider
+:param step: step size
+:param value: initial value to set position of the slider
+:param on_change: callback which is invoked when the user releases the slider
+Example:
+```
+slider = ui.slider(min=0, max=100, value=50)
+ui.label().bind_text_from(slider, 'value')
+```
+
+## Range
+
+This element is based on Quasar's `QRange <https://quasar.dev/vue-components/range>`_ component.
+
+:param min: lower bound of the range
+:param max: upper bound of the range
+:param step: step size
+:param value: initial value to set min and max position of the range
+:param on_change: callback which is invoked when the user releases the range
+Example:
+```
+min_max_range = ui.range(min=0, max=100, value={'min': 20, 'max': 80})
+ui.label().bind_text_from(min_max_range, 'value',
+                          backward=lambda v: f'min: {v["min"]}, max: {v["max"]}')
+```
+
+## Joystick
+
+Create a joystick based on `nipple.js <https://yoannmoi.net/nipplejs/>`_.
+
+:param on_start: callback for when the user touches the joystick
+:param on_move: callback for when the user moves the joystick
+:param on_end: callback for when the user releases the joystick
+:param throttle: throttle interval in seconds for the move event (default: 0.05)
+:param options: arguments like `color` which should be passed to the `underlying nipple.js library <https://github.com/yoannmoinet/nipplejs#options>`_
+Example:
+```
+ui.joystick(color='blue', size=50,
+            on_move=lambda e: coordinates.set_text(f'{e.x:.3f}, {e.y:.3f}'),
+            on_end=lambda _: coordinates.set_text('0, 0'))
+coordinates = ui.label('0, 0')
+```
+
+## Text Input
+
+This element is based on Quasar's `QInput <https://quasar.dev/vue-components/input>`_ component.
+
+The `on_change` event is called on every keystroke and the value updates accordingly.
+If you want to wait until the user confirms the input, you can register a custom event callback, e.g.
+`ui.input(...).on('keydown.enter', ...)` or `ui.input(...).on('blur', ...)`.
+
+You can use the `validation` parameter to define a dictionary of validation rules,
+e.g. ``{'Too long!': lambda value: len(value) < 3}``.
+The key of the first rule that fails will be displayed as an error message.
+Alternatively, you can pass a callable that returns an optional error message.
+To disable the automatic validation on every value change, you can use the `without_auto_validation` method.
+
+Note about styling the input:
+Quasar's `QInput` component is a wrapper around a native `input` element.
+This means that you cannot style the input directly,
+but you can use the `input-class` and `input-style` props to style the native input element.
+See the "Style" props section on the `QInput <https://quasar.dev/vue-components/input>`_ documentation for more details.
+
+:param label: displayed label for the text input
+:param placeholder: text to show if no value is entered
+:param value: the current value of the text input
+:param password: whether to hide the input (default: False)
+:param password_toggle_button: whether to show a button to toggle the password visibility (default: False)
+:param on_change: callback to execute when the value changes
+:param autocomplete: optional list of strings for autocompletion
+:param validation: dictionary of validation rules or a callable that returns an optional error message
+Example:
+```
+ui.input(label='Text', placeholder='start typing',
+         on_change=lambda e: result.set_text('you typed: ' + e.value),
+         validation={'Input too long': lambda value: len(value) < 20})
+result = ui.label()
+```
+
+## Textarea
+
+This element is based on Quasar's `QInput <https://quasar.dev/vue-components/input>`_ component.
+The ``type`` is set to ``textarea`` to create a multi-line text input.
+
+You can use the `validation` parameter to define a dictionary of validation rules,
+e.g. ``{'Too long!': lambda value: len(value) < 3}``.
+The key of the first rule that fails will be displayed as an error message.
+Alternatively, you can pass a callable that returns an optional error message.
+To disable the automatic validation on every value change, you can use the `without_auto_validation` method.
+
+:param label: displayed name for the textarea
+:param placeholder: text to show if no value is entered
+:param value: the initial value of the field
+:param on_change: callback to execute when the value changes
+:param validation: dictionary of validation rules or a callable that returns an optional error message
+Example:
+```
+ui.textarea(label='Text', placeholder='start typing',
+            on_change=lambda e: result.set_text('you typed: ' + e.value))
+result = ui.label()
+```
+
+## Number Input
+
+This element is based on Quasar's `QInput <https://quasar.dev/vue-components/input>`_ component.
+
+You can use the `validation` parameter to define a dictionary of validation rules,
+e.g. ``{'Too small!': lambda value: value < 3}``.
+The key of the first rule that fails will be displayed as an error message.
+Alternatively, you can pass a callable that returns an optional error message.
+To disable the automatic validation on every value change, you can use the `without_auto_validation` method.
+
+:param label: displayed name for the number input
+:param placeholder: text to show if no value is entered
+:param value: the initial value of the field
+:param min: the minimum value allowed
+:param max: the maximum value allowed
+:param precision: the number of decimal places allowed (default: no limit, negative: decimal places before the dot)
+:param step: the step size for the stepper buttons
+:param prefix: a prefix to prepend to the displayed value
+:param suffix: a suffix to append to the displayed value
+:param format: a string like "%.2f" to format the displayed value
+:param on_change: callback to execute when the value changes
+:param validation: dictionary of validation rules or a callable that returns an optional error message
+Example:
+```
+ui.number(label='Number', value=3.1415927, format='%.2f',
+          on_change=lambda e: result.set_text(f'you entered: {e.value}'))
+result = ui.label()
+```
+
+## Knob
+
+This element is based on Quasar's `QKnob <https://quasar.dev/vue-components/knob>`_ component.
+The element is used to take a number input from the user through mouse/touch panning.
+
+:param value: the initial value (default: 0.0)
+:param min: the minimum value (default: 0.0)
+:param max: the maximum value (default: 1.0)
+:param step: the step size (default: 0.01)
+:param color: knob color (either a Quasar, Tailwind, or CSS color or `None`, default: "primary")
+:param center_color: color name for the center part of the component, examples: primary, teal-10
+:param track_color: color name for the track of the component, examples: primary, teal-10
+:param size: size in CSS units, including unit name or standard size name (xs|sm|md|lg|xl), examples: 16px, 2rem
+:param show_value: whether to show the value as text
+:param on_change: callback to execute when the value changes
+Example:
+```
+knob = ui.knob(0.3, show_value=True)
+
+with ui.knob(color='orange', track_color='grey-2').bind_value(knob, 'value'):
+    ui.icon('volume_up')
+```
+
+## Color Input
+
+This element extends Quasar's `QInput <https://quasar.dev/vue-components/input>`_ component with a color picker.
+
+:param label: displayed label for the color input
+:param placeholder: text to show if no color is selected
+:param value: the current color value
+:param on_change: callback to execute when the value changes
+:param preview: change button background to selected color (default: False)
+Example:
+```
+label = ui.label('Change my color!')
+ui.color_input(label='Color', value='#000000',
+               on_change=lambda e: label.style(f'color:{e.value}'))
+```
+
+## Color Picker
+
+This element is based on Quasar's `QMenu <https://quasar.dev/vue-components/menu>`_ and
+`QColor <https://quasar.dev/vue-components/color>`_ components.
+
+:param on_pick: callback to execute when a color is picked
+:param value: whether the menu is already opened (default: `False`)
+Example:
+```
+with ui.button(icon='colorize') as button:
+    ui.color_picker(on_pick=lambda e: button.style(f'background-color:{e.color}!important'))
+```
+
+## Date Input
+
+This element is based on Quasar's `QDate <https://quasar.dev/vue-components/date>`_ component.
+The date is a string in the format defined by the `mask` parameter.
+
+You can also use the `range` or `multiple` props to select a range of dates or multiple dates::
+
+    ui.date({'from': '2023-01-01', 'to': '2023-01-05'}).props('range')
+    ui.date(['2023-01-01', '2023-01-02', '2023-01-03']).props('multiple')
+    ui.date([{'from': '2023-01-01', 'to': '2023-01-05'}, '2023-01-07']).props('multiple range')
+
+:param value: the initial date
+:param mask: the format of the date string (default: 'YYYY-MM-DD')
+:param on_change: callback to execute when changing the date
+Example:
+```
+ui.date(value='2023-01-01', on_change=lambda e: result.set_text(e.value))
+result = ui.label()
+```
+
+## Time Input
+
+This element is based on Quasar's `QTime <https://quasar.dev/vue-components/date>`_ component.
+The time is a string in the format defined by the `mask` parameter.
+
+:param value: the initial time
+:param mask: the format of the time string (default: 'HH:mm')
+:param on_change: callback to execute when changing the time
+Example:
+```
+ui.time(value='12:00', on_change=lambda e: result.set_text(e.value))
+result = ui.label()
+```
+
+## File Upload
+
+Based on Quasar's `QUploader <https://quasar.dev/vue-components/uploader>`_ component.
+
+:param multiple: allow uploading multiple files at once (default: `False`)
+:param max_file_size: maximum file size in bytes (default: `0`)
+:param max_total_size: maximum total size of all files in bytes (default: `0`)
+:param max_files: maximum number of files (default: `0`)
+:param on_upload: callback to execute for each uploaded file
+:param on_multi_upload: callback to execute after multiple files have been uploaded
+:param on_rejected: callback to execute for each rejected file
+:param label: label for the uploader (default: `''`)
+:param auto_upload: automatically upload files when they are selected (default: `False`)
+Example:
+```
+ui.upload(on_upload=lambda e: ui.notify(f'Uploaded {e.name}')).classes('max-w-full')
+```
+
+# *Audiovisual Elements*
+
+You can use elements like `ui.image`, `ui.audio`, `ui.video`, etc. to display audiovisual content.
+
+## Image
+
+Displays an image.
+This element is based on Quasar's `QImg <https://quasar.dev/vue-components/img>`_ component.
+
+:param source: the source of the image; can be a URL, local file path, a base64 string or a PIL image
+Example:
+```
+ui.image('https://picsum.photos/id/377/640/360')
+```
+
+## Captions and Overlays
+
+By nesting elements inside a `ui.image` you can create augmentations.
+
+Use [Quasar classes](https://quasar.dev/vue-components/img) for positioning and styling captions.
+To overlay an SVG, make the `viewBox` exactly the size of the image and provide `100%` width/height to match the actual rendered size.
+Example:
+```
+with ui.image('https://picsum.photos/id/29/640/360'):
+    ui.label('Nice!').classes('absolute-bottom text-subtitle2 text-center')
+
+with ui.image('https://cdn.stocksnap.io/img-thumbs/960w/airplane-sky_DYPWDEEILG.jpg'):
+    ui.html('''
+        <svg viewBox="0 0 960 638" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="445" cy="300" r="100" fill="none" stroke="red" stroke-width="10" />
+        </svg>
+    ''').classes('w-full bg-transparent')
+```
+
+## Interactive Image
+
+Create an image with an SVG overlay that handles mouse events and yields image coordinates.
+It is also the best choice for non-flickering image updates.
+If the source URL changes faster than images can be loaded by the browser, some images are simply skipped.
+Thereby repeatedly updating the image source will automatically adapt to the available bandwidth.
+See `OpenCV Webcam <https://github.com/zauberzeug/nicegui/tree/main/examples/opencv_webcam/main.py>`_ for an example.
+
+The mouse event handler is called with mouse event arguments containing
+
+- `type` (the name of the JavaScript event),
+- `image_x` and `image_y` (image coordinates in pixels),
+- `button` and `buttons` (mouse button numbers from the JavaScript event), as well as
+- `alt`, `ctrl`, `meta`, and `shift` (modifier keys from the JavaScript event).
+
+You can also pass a tuple of width and height instead of an image source.
+This will create an empty image with the given size.
+
+:param source: the source of the image; can be an URL, local file path, a base64 string or just an image size
+:param content: SVG content which should be overlaid; viewport has the same dimensions as the image
+:param size: size of the image (width, height) in pixels; only used if `source` is not set
+:param on_mouse: callback for mouse events (contains image coordinates `image_x` and `image_y` in pixels)
+:param events: list of JavaScript events to subscribe to (default: `['click']`)
+:param cross: whether to show crosshairs or a color string (default: `False`)
+:param on_pointer: callback for pointer events (contains image coordinates `image_x` and `image_y` in pixels, and `type` of the event)
+Example:
+```
+from nicegui import events
+
+def mouse_handler(e: events.MouseEventArguments):
+    color = 'SkyBlue' if e.type == 'mousedown' else 'SteelBlue'
+    ii.content += f'<circle cx="{e.image_x}" cy="{e.image_y}" r="15" fill="none" stroke="{color}" stroke-width="4" />'
+    ui.notify(f'{e.type} at ({e.image_x:.1f}, {e.image_y:.1f})')
+
+src = 'https://picsum.photos/id/565/640/360'
+ii = ui.interactive_image(src, on_mouse=mouse_handler, events=['mousedown', 'mouseup'], cross=True)
+```
+
+## Audio
+
+Displays an audio player.
+
+:param src: URL or local file path of the audio source
+:param controls: whether to show the audio controls, like play, pause, and volume (default: `True`)
+:param autoplay: whether to start playing the audio automatically (default: `False`)
+:param muted: whether the audio should be initially muted (default: `False`)
+:param loop: whether the audio should loop (default: `False`)
+
+See `here <https://developer.mozilla.org/en-US/docs/Web/HTML/Element/audio#events>`_
+for a list of events you can subscribe to using the generic event subscription `on()`.
+Example:
+```
+a = ui.audio('https://cdn.pixabay.com/download/audio/2022/02/22/audio_d1718ab41b.mp3')
+a.on('ended', lambda _: ui.notify('Audio playback completed'))
+
+ui.button(on_click=lambda: a.props('muted'), icon='volume_off').props('outline')
+ui.button(on_click=lambda: a.props(remove='muted'), icon='volume_up').props('outline')
+```
+
+## Video
+
+Displays a video.
+
+:param src: URL or local file path of the video source
+:param controls: whether to show the video controls, like play, pause, and volume (default: `True`)
+:param autoplay: whether to start playing the video automatically (default: `False`)
+:param muted: whether the video should be initially muted (default: `False`)
+:param loop: whether the video should loop (default: `False`)
+
+See `here <https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video#events>`_
+for a list of events you can subscribe to using the generic event subscription `on()`.
+Example:
+```
+v = ui.video('https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4')
+v.on('ended', lambda _: ui.notify('Video playback completed'))
+```
+
+## Icon
+
+This element is based on Quasar's `QIcon <https://quasar.dev/vue-components/icon>`_ component.
+
+`Here <https://fonts.google.com/icons?icon.set=Material+Icons>`_ is a reference of possible names.
+
+:param name: name of the icon (snake case, e.g. `add_circle`)
+:param size: size in CSS units, including unit name or standard size name (xs|sm|md|lg|xl), examples: 16px, 2rem
+:param color: icon color (either a Quasar, Tailwind, or CSS color or `None`, default: `None`)
+Example:
+```
+ui.icon('thumb_up', color='primary').classes('text-5xl')
+```
+
+## Avatar
+
+A avatar element wrapping Quasar's
+`QAvatar <https://quasar.dev/vue-components/avatar>`_ component.
+
+:param icon: name of the icon or image path with "img:" prefix (e.g. "map", "img:path/to/image.png")
+:param color: background color (either a Quasar, Tailwind, or CSS color or `None`, default: "primary")
+:param text_color: color name from the Quasar Color Palette (e.g. "primary", "teal-10")
+:param size: size in CSS units, including unit name or standard size name (xs|sm|md|lg|xl) (e.g. "16px", "2rem")
+:param font_size: size in CSS units, including unit name, of the content (icon, text) (e.g. "18px", "2rem")
+:param square: removes border-radius so borders are squared (default: False)
+:param rounded: applies a small standard border-radius for a squared shape of the component (default: False)
+Example:
+```
+ui.avatar('favorite_border', text_color='grey-11', square=True)
+ui.avatar('img:https://nicegui.io/logo_square.png', color='blue-2')
+```
+
+## SVG
+
+You can add Scalable Vector Graphics using the `ui.html` element.
+Example:
+```
+content = '''
+    <svg viewBox="0 0 200 200" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="100" cy="100" r="78" fill="#ffde34" stroke="black" stroke-width="3" />
+    <circle cx="80" cy="85" r="8" />
+    <circle cx="120" cy="85" r="8" />
+    <path d="m60,120 C75,150 125,150 140,120" style="fill:none; stroke:black; stroke-width:8; stroke-linecap:round" />
+    </svg>'''
+ui.html(content)
+```
+
+# *Data Elements*
+
+There are several elements for displaying data, e.g. `ui.table`, `ui.aggrid`, `ui.highchart`, `ui.echart`, etc.
+
+## Table
+
+A table based on Quasar's `QTable <https://quasar.dev/vue-components/table>`_ component.
+
+:param columns: list of column objects
+:param rows: list of row objects
+:param row_key: name of the column containing unique data identifying the row (default: "id")
+:param title: title of the table
+:param selection: selection type ("single" or "multiple"; default: `None`)
+:param pagination: a dictionary correlating to a pagination object or number of rows per page (`None` hides the pagination, 0 means "infinite"; default: `None`).
+:param on_select: callback which is invoked when the selection changes
+:param on_pagination_change: callback which is invoked when the pagination changes
+
+If selection is 'single' or 'multiple', then a `selected` property is accessible containing the selected rows.
+Example:
+```
+columns = [
+    {'name': 'name', 'label': 'Name', 'field': 'name', 'required': True, 'align': 'left'},
+    {'name': 'age', 'label': 'Age', 'field': 'age', 'sortable': True},
+]
+rows = [
+    {'name': 'Alice', 'age': 18},
+    {'name': 'Bob', 'age': 21},
+    {'name': 'Carol'},
+]
+ui.table(columns=columns, rows=rows, row_key='name')
+```
+
+## AG Grid
+
+An element to create a grid using `AG Grid <https://www.ag-grid.com/>`_.
+
+The methods `run_grid_method` and `run_column_method` can be used to interact with the AG Grid instance on the client.
+
+:param options: dictionary of AG Grid options
+:param html_columns: list of columns that should be rendered as HTML (default: `[]`)
+:param theme: AG Grid theme (default: 'balham')
+:param auto_size_columns: whether to automatically resize columns to fit the grid width (default: `True`)
+Example:
+```
+grid = ui.aggrid({
+    'defaultColDef': {'flex': 1},
+    'columnDefs': [
+        {'headerName': 'Name', 'field': 'name'},
+        {'headerName': 'Age', 'field': 'age'},
+        {'headerName': 'Parent', 'field': 'parent', 'hide': True},
+    ],
+    'rowData': [
+        {'name': 'Alice', 'age': 18, 'parent': 'David'},
+        {'name': 'Bob', 'age': 21, 'parent': 'Eve'},
+        {'name': 'Carol', 'age': 42, 'parent': 'Frank'},
+    ],
+    'rowSelection': 'multiple',
+}).classes('max-h-40')
+
+def update():
+    grid.options['rowData'][0]['age'] += 1
+    grid.update()
+
+ui.button('Update', on_click=update)
+ui.button('Select all', on_click=lambda: grid.run_grid_method('selectAll'))
+ui.button('Show parent', on_click=lambda: grid.run_column_method('setColumnVisible', 'parent', True))
+```
+
+## Apache EChart
+
+An element to create a chart using `ECharts <https://echarts.apache.org/>`_.
+Updates can be pushed to the chart by changing the `options` property.
+After data has changed, call the `update` method to refresh the chart.
+
+:param options: dictionary of EChart options
+:param on_click_point: callback that is invoked when a point is clicked
+Example:
+```
+from random import random
+
+echart = ui.echart({
+    'xAxis': {'type': 'value'},
+    'yAxis': {'type': 'category', 'data': ['A', 'B'], 'inverse': True},
+    'legend': {'textStyle': {'color': 'gray'}},
+    'series': [
+        {'type': 'bar', 'name': 'Alpha', 'data': [0.1, 0.2]},
+        {'type': 'bar', 'name': 'Beta', 'data': [0.3, 0.4]},
+    ],
+})
+
+def update():
+    echart.options['series'][0]['data'][0] = random()
+    echart.update()
+
+ui.button('Update', on_click=update)
+```
+
+## Linear Progress
+
+A linear progress bar wrapping Quasar's
+`QLinearProgress <https://quasar.dev/vue-components/linear-progress>`_ component.
+
+:param value: the initial value of the field (from 0.0 to 1.0)
+:param size: the height of the progress bar (default: "20px" with value label and "4px" without)
+:param show_value: whether to show a value label in the center (default: `True`)
+:param color: color (either a Quasar, Tailwind, or CSS color or `None`, default: "primary")
+Example:
+```
+slider = ui.slider(min=0, max=1, step=0.01, value=0.5)
+ui.linear_progress().bind_value_from(slider, 'value')
+```
+
+## Circular Progress
+
+A circular progress bar wrapping Quasar's
+`QCircularProgress <https://quasar.dev/vue-components/circular-progress>`_.
+
+:param value: the initial value of the field
+:param min: the minimum value (default: 0.0)
+:param max: the maximum value (default: 1.0)
+:param size: the size of the progress circle (default: "xl")
+:param show_value: whether to show a value label in the center (default: `True`)
+:param color: color (either a Quasar, Tailwind, or CSS color or `None`, default: "primary")
+Example:
+```
+slider = ui.slider(min=0, max=1, step=0.01, value=0.5)
+ui.circular_progress().bind_value_from(slider, 'value')
+```
+
+## Spinner
+
+This element is based on Quasar's `QSpinner <https://quasar.dev/vue-components/spinners>`_ component.
+
+:param type: type of spinner (e.g. "audio", "ball", "bars", ..., default: "default")
+:param size: size of the spinner (e.g. "3em", "10px", "xl", ..., default: "1em")
+:param color: color of the spinner (either a Quasar, Tailwind, or CSS color or `None`, default: "primary")
+:param thickness: thickness of the spinner (applies to the "default" spinner only, default: 5.0)
+Example:
+```
+with ui.row():
+    ui.spinner(size='lg')
+    ui.spinner('audio', size='lg', color='green')
+    ui.spinner('dots', size='lg', color='red')
+```
+
+## 3D Scene
+
+Display a 3D scene using `three.js <https://threejs.org/>`_.
+Currently NiceGUI supports boxes, spheres, cylinders/cones, extrusions, straight lines, curves and textured meshes.
+Objects can be translated, rotated and displayed with different color, opacity or as wireframes.
+They can also be grouped to apply joint movements.
+
+:param width: width of the canvas
+:param height: height of the canvas
+:param grid: whether to display a grid
+:param camera_type: type of camera to use (``'perspective'`` or ``'orthographic'``)
+:param on_click: callback to execute when a 3D object is clicked
+:param on_drag_start: callback to execute when a 3D object is dragged
+:param on_drag_end: callback to execute when a 3D object is dropped
+:param drag_constraints: comma-separated JavaScript expression for constraining positions of dragged objects (e.g. ``'x = 0, z = y / 2'``)
+Example:
+```
+with ui.scene().classes('w-full h-64') as scene:
+    scene.sphere().material('#4488ff')
+    scene.cylinder(1, 0.5, 2, 20).material('#ff8800', opacity=0.5).move(-2, 1)
+    scene.extrusion([[0, 0], [0, 1], [1, 0.5]], 0.1).material('#ff8888').move(2, -1)
+
+    with scene.group().move(z=2):
+        scene.box().move(x=2)
+        scene.box().move(y=2).rotate(0.25, 0.5, 0.75)
+        scene.box(wireframe=True).material('#888888').move(x=2, y=2)
+
+    scene.line([-4, 0, 0], [-4, 2, 0]).material('#ff0000')
+    scene.curve([-4, 0, 0], [-4, -1, 0], [-3, -1, 0], [-3, 0, 0]).material('#008800')
+
+    logo = 'https://avatars.githubusercontent.com/u/2843826'
+    scene.texture(logo, [[[0.5, 2, 0], [2.5, 2, 0]],
+                         [[0.5, 0, 0], [2.5, 0, 0]]]).move(1, -3)
+
+    teapot = 'https://upload.wikimedia.org/wikipedia/commons/9/93/Utah_teapot_(solid).stl'
+    scene.stl(teapot).scale(0.2).move(-3, 4)
+
+    avocado = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/Avocado/glTF-Binary/Avocado.glb'
+    scene.gltf(avocado).scale(40).move(-2, -3, 0.5)
+
+    scene.text('2D', 'background: rgba(0, 0, 0, 0.2); border-radius: 5px; padding: 5px').move(z=2)
+    scene.text3d('3D', 'background: rgba(0, 0, 0, 0.2); border-radius: 5px; padding: 5px').move(y=-2).scale(.05)
+```
+
+## Leaflet map
+
+This element is a wrapper around the `Leaflet <https://leafletjs.com/>`_ JavaScript library.
+
+:param center: initial center location of the map (latitude/longitude, default: (0.0, 0.0))
+:param zoom: initial zoom level of the map (default: 13)
+:param draw_control: whether to show the draw toolbar (default: False)
+:param options: additional options passed to the Leaflet map (default: {})
+Example:
+```
+m = ui.leaflet(center=(51.505, -0.09))
+ui.label().bind_text_from(m, 'center', lambda center: f'Center: {center[0]:.3f}, {center[1]:.3f}')
+ui.label().bind_text_from(m, 'zoom', lambda zoom: f'Zoom: {zoom}')
+
+with ui.grid(columns=2):
+    ui.button('London', on_click=lambda: m.set_center((51.505, -0.090)))
+    ui.button('Berlin', on_click=lambda: m.set_center((52.520, 13.405)))
+    ui.button(icon='zoom_in', on_click=lambda: m.set_zoom(m.zoom + 1))
+    ui.button(icon='zoom_out', on_click=lambda: m.set_zoom(m.zoom - 1))
+```
+
+## Tree
+
+Display hierarchical data using Quasar's `QTree <https://quasar.dev/vue-components/tree>`_ component.
+
+If using IDs, make sure they are unique within the whole tree.
+
+To use checkboxes and ``on_tick``, set the ``tick_strategy`` parameter to "leaf", "leaf-filtered" or "strict".
+
+:param nodes: hierarchical list of node objects
+:param node_key: property name of each node object that holds its unique id (default: "id")
+:param label_key: property name of each node object that holds its label (default: "label")
+:param children_key: property name of each node object that holds its list of children (default: "children")
+:param on_select: callback which is invoked when the node selection changes
+:param on_expand: callback which is invoked when the node expansion changes
+:param on_tick: callback which is invoked when a node is ticked or unticked
+:param tick_strategy: whether and how to use checkboxes ("leaf", "leaf-filtered" or "strict"; default: ``None``)
+Example:
+```
+ui.tree([
+    {'id': 'numbers', 'children': [{'id': '1'}, {'id': '2'}]},
+    {'id': 'letters', 'children': [{'id': 'A'}, {'id': 'B'}]},
+], label_key='id', on_select=lambda e: ui.notify(e.value))
+```
+
+## Log View
+
+Create a log view that allows to add new lines without re-transmitting the whole history to the client.
+
+:param max_lines: maximum number of lines before dropping oldest ones (default: `None`)
+Example:
+```
+from datetime import datetime
+
+log = ui.log(max_lines=10).classes('w-full h-20')
+ui.button('Log time', on_click=lambda: log.push(datetime.now().strftime('%X.%f')[:-5]))
+```
+
+## Editor
+
+A WYSIWYG editor based on `Quasar's QEditor <https://quasar.dev/vue-components/editor>`_.
+The value is a string containing the formatted text as HTML code.
+
+:param value: initial value
+:param on_change: callback to be invoked when the value changes
+Example:
+```
+editor = ui.editor(placeholder='Type something here')
+ui.markdown().bind_content_from(editor, 'value',
+                                backward=lambda v: f'HTML code:\n```\n{v}\n```')
+```
+
+## Code
+
+This element displays a code block with syntax highlighting.
+
+:param content: code to display
+:param language: language of the code (default: "python")
+Example:
+```
+ui.code('''
+    from nicegui import ui
+
+    ui.label('Code inception!')
+
+    ui.run()
+''').classes('w-full')
+```
+
+## JSONEditor
+
+An element to create a JSON editor using `JSONEditor <https://github.com/josdejong/svelte-jsoneditor>`_.
+Updates can be pushed to the editor by changing the `properties` property.
+After data has changed, call the `update` method to refresh the editor.
+
+:param properties: dictionary of JSONEditor properties
+:param on_select: callback which is invoked when some of the content has been selected
+:param on_change: callback which is invoked when the content has changed
+Example:
+```
+json = {
+    'array': [1, 2, 3],
+    'boolean': True,
+    'color': '#82b92c',
+    None: None,
+    'number': 123,
+    'object': {
+        'a': 'b',
+        'c': 'd',
+    },
+    'time': 1575599819000,
+    'string': 'Hello World',
+}
+ui.json_editor({'content': {'json': json}},
+               on_select=lambda e: ui.notify(f'Select: {e}'),
+               on_change=lambda e: ui.notify(f'Change: {e}'))
+```
+
+# *Binding Properties*
+
+To update UI elements automatically, you can bind them to each other or to your data model.
+
+## Bindings
+
+NiceGUI is able to directly bind UI elements to models.
+Binding is possible for UI element properties like text, value or visibility and for model properties that are (nested) class attributes.
+Each element provides methods like `bind_value` and `bind_visibility` to create a two-way binding with the corresponding property.
+To define a one-way binding use the `_from` and `_to` variants of these methods.
+Just pass a property of the model as parameter to these methods to create the binding.
+The values will be updated immediately and whenever one of them changes.
+Example:
+```
+class Demo:
+    def __init__(self):
+        self.number = 1
+
+demo = Demo()
+v = ui.checkbox('visible', value=True)
+with ui.column().bind_visibility_from(v, 'value'):
+    ui.slider(min=1, max=3).bind_value(demo, 'number')
+    ui.toggle({1: 'A', 2: 'B', 3: 'C'}).bind_value(demo, 'number')
+    ui.number().bind_value(demo, 'number')
+```
+
+## Bind to dictionary
+
+Here we are binding the text of labels to a dictionary.
+Example:
+```
+data = {'name': 'Bob', 'age': 17}
+
+ui.label().bind_text_from(data, 'name', backward=lambda n: f'Name: {n}')
+ui.label().bind_text_from(data, 'age', backward=lambda a: f'Age: {a}')
+
+ui.button('Turn 18', on_click=lambda: data.update(age=18))
+```
+
+## Bind to variable
+
+Here we are binding the value from the datepicker to a bare variable.
+Therefore we use the dictionary `globals()` which contains all global variables.
+This demo is based on the [official datepicker example](/documentation/date#input_element_with_date_picker).
+Example:
+```
+date = '2023-01-01'
+
+with ui.input('Date').bind_value(globals(), 'date') as date_input:
+    with ui.menu() as menu:
+        ui.date(on_change=lambda: ui.notify(f'Date: {date}')).bind_value(date_input)
+    with date_input.add_slot('append'):
+        ui.icon('edit_calendar').on('click', menu.open).classes('cursor-pointer')
+```
+
+## Bind to storage
+
+Bindings also work with [`app.storage`](/documentation/storage).
+Here we are storing the value of a textarea between visits.
+The note is also shared between all tabs of the same user.
+Example:
+```
+from nicegui import app
+
+@ui.page('/')
+def index():
+    ui.textarea('This note is kept between visits')
+        .classes('w-full').bind_value(app.storage.user, 'note')
+```
+
+# *Page Layout*
+
+This section covers fundamental techniques as well as several elements to structure your UI.
+
+## Auto-context
+
+In order to allow writing intuitive UI descriptions, NiceGUI automatically tracks the context in which elements are created.
+This means that there is no explicit `parent` parameter.
+Instead the parent context is defined using a `with` statement.
+It is also passed to event handlers and timers.
+
+In the demo, the label "Card content" is added to the card.
+And because the `ui.button` is also added to the card, the label "Click!" will also be created in this context.
+The label "Tick!", which is added once after one second, is also added to the card.
+
+This design decision allows for easily creating modular components that keep working after moving them around in the UI.
+For example, you can move label and button somewhere else, maybe wrap them in another container, and the code will still work.
+Example:
+```
+with ui.card():
+    ui.label('Card content')
+    ui.button('Add label', on_click=lambda: ui.label('Click!'))
+    ui.timer(1.0, lambda: ui.label('Tick!'), once=True)
+```
+
+## Card
+
+This element is based on Quasar's `QCard <https://quasar.dev/vue-components/card>`_ component.
+It provides a container with a dropped shadow.
+
+Note:
+There are subtle differences between the Quasar component and this element.
+In contrast to this element, the original QCard has no padding by default and hides outer borders of nested elements.
+If you want the original behavior, use the `tight` method.
+If you want the padding and borders for nested children, move the children into another container.
+Example:
+```
+with ui.card().tight():
+    ui.image('https://picsum.photos/id/684/640/360')
+    with ui.card_section():
+        ui.label('Lorem ipsum dolor sit amet, consectetur adipiscing elit, ...')
+```
+
+## Column Element
+
+Provides a container which arranges its child in a column.
+
+:param wrap: whether to wrap the content (default: `False`)
+Example:
+```
+with ui.column():
+    ui.label('label 1')
+    ui.label('label 2')
+    ui.label('label 3')
+```
+
+## Row Element
+
+Provides a container which arranges its child in a row.
+
+:param wrap: whether to wrap the content (default: `True`)
+Example:
+```
+with ui.row():
+    ui.label('label 1')
+    ui.label('label 2')
+    ui.label('label 3')
+```
+
+## Grid Element
+
+Provides a container which arranges its child in a grid.
+
+:param rows: number of rows in the grid or a string with the grid-template-rows CSS property (e.g. 'auto 1fr')
+:param columns: number of columns in the grid or a string with the grid-template-columns CSS property (e.g. 'auto 1fr')
+Example:
+```
+with ui.grid(columns=2):
+    ui.label('Name:')
+    ui.label('Tom')
+
+    ui.label('Age:')
+    ui.label('42')
+
+    ui.label('Height:')
+    ui.label('1.80m')
+```
+
+## List
+
+A list element based on Quasar's `QList <https://quasar.dev/vue-components/list-and-list-items#qlist-api>`_ component.
+It provides a container for ``ui.item`` elements.
+Example:
+```
+with ui.list().props('dense separator'):
+    ui.item('3 Apples')
+    ui.item('5 Bananas')
+    ui.item('8 Strawberries')
+    ui.item('13 Walnuts')
+```
+
+## Clear Containers
+
+To remove all elements from a row, column or card container, use can call
+```py
+container.clear()
+```
+
+Alternatively, you can remove individual elements by calling
+
+- `container.remove(element: Element)`,
+- `container.remove(index: int)`, or
+- `element.delete()`.
+Example:
+```
+container = ui.row()
+
+def add_face():
+    with container:
+        ui.icon('face')
+add_face()
+
+ui.button('Add', on_click=add_face)
+ui.button('Remove', on_click=lambda: container.remove(0) if list(container) else None)
+ui.button('Clear', on_click=container.clear)
+```
+
+## Expansion Element
+
+Provides an expandable container based on Quasar's `QExpansionItem <https://quasar.dev/vue-components/expansion-item>`_ component.
+
+:param text: title text
+:param caption: optional caption (or sub-label) text
+:param icon: optional icon (default: None)
+:param group: optional group name for coordinated open/close state within the group a.k.a. "accordion mode"
+:param value: whether the expansion should be opened on creation (default: `False`)
+:param on_value_change: callback to execute when value changes
+Example:
+```
+with ui.expansion('Expand!', icon='work').classes('w-full'):
+    ui.label('inside the expansion')
+```
+
+## Scroll Area
+
+A way of customizing the scrollbars by encapsulating your content.
+This element exposes the Quasar `ScrollArea <https://quasar.dev/vue-components/scroll-area/>`_ component.
+
+:param on_scroll: function to be called when the scroll position changes
+Example:
+```
+with ui.row():
+    with ui.scroll_area().classes('w-32 h-32 border'):
+        ui.label('I scroll. ' * 20)
+    with ui.column().classes('p-4 w-32 h-32 border'):
+        ui.label('I will not scroll. ' * 10)
+```
+
+## Separator
+
+This element is based on Quasar's `QSeparator <https://quasar.dev/vue-components/separator>`_ component.
+
+It serves as a separator for cards, menus and other component containers and is similar to HTML's <hr> tag.
+Example:
+```
+ui.label('text above')
+ui.separator()
+ui.label('text below')
+```
+
+## Space
+
+This element is based on Quasar's `QSpace <https://quasar.dev/vue-components/space>`_ component.
+
+Its purpose is to simply fill all available space inside of a flexbox element.
+Example:
+```
+with ui.row().classes('w-full border'):
+    ui.label('Left')
+    ui.space()
+    ui.label('Right')
+```
+
+## Splitter
+
+The `ui.splitter` element divides the screen space into resizable sections,
+allowing for flexible and responsive layouts in your application.
+
+Based on Quasar's Splitter component:
+`Splitter <https://quasar.dev/vue-components/splitter>`_
+
+It provides three customizable slots, ``before``, ``after``, and ``separator``,
+which can be used to embed other elements within the splitter.
+
+:param horizontal: Whether to split horizontally instead of vertically
+:param limits: Two numbers representing the minimum and maximum split size of the two panels
+:param value: Size of the first panel (or second if using reverse)
+:param reverse: Whether to apply the model size to the second panel instead of the first
+:param on_change: callback which is invoked when the user releases the splitter
+Example:
+```
+with ui.splitter() as splitter:
+    with splitter.before:
+        ui.label('This is some content on the left hand side.').classes('mr-2')
+    with splitter.after:
+        ui.label('This is some content on the right hand side.').classes('ml-2')
+```
+
+## Tabs
+
+The elements `ui.tabs`, `ui.tab`, `ui.tab_panels`, and `ui.tab_panel` resemble
+[Quasar's tabs](https://quasar.dev/vue-components/tabs) and
+[tab panels](https://quasar.dev/vue-components/tab-panels>) API.
+
+`ui.tabs` creates a container for the tabs. This could be placed in a `ui.header` for example.
+`ui.tab_panels` creates a container for the tab panels with the actual content.
+Each `ui.tab_panel` is associated with a `ui.tab` element.
+Example:
+```
+with ui.tabs().classes('w-full') as tabs:
+    one = ui.tab('One')
+    two = ui.tab('Two')
+with ui.tab_panels(tabs, value=two).classes('w-full'):
+    with ui.tab_panel(one):
+        ui.label('First tab')
+    with ui.tab_panel(two):
+        ui.label('Second tab')
+```
+
+## Stepper
+
+This element represents `Quasar's QStepper <https://quasar.dev/vue-components/stepper#qstepper-api>`_ component.
+It contains individual steps.
+
+To avoid issues with dynamic elements when switching steps,
+this element uses Vue's `keep-alive <https://vuejs.org/guide/built-ins/keep-alive.html>`_ component.
+If client-side performance is an issue, you can disable this feature.
+
+:param value: `ui.step` or name of the step to be initially selected (default: `None` meaning the first step)
+:param on_value_change: callback to be executed when the selected step changes
+:param keep_alive: whether to use Vue's keep-alive component on the content (default: `True`)
+Example:
+```
+with ui.stepper().props('vertical').classes('w-full') as stepper:
+    with ui.step('Preheat'):
+        ui.label('Preheat the oven to 350 degrees')
+        with ui.stepper_navigation():
+            ui.button('Next', on_click=stepper.next)
+    with ui.step('Ingredients'):
+        ui.label('Mix the ingredients')
+        with ui.stepper_navigation():
+            ui.button('Next', on_click=stepper.next)
+            ui.button('Back', on_click=stepper.previous).props('flat')
+    with ui.step('Bake'):
+        ui.label('Bake for 20 minutes')
+        with ui.stepper_navigation():
+            ui.button('Done', on_click=lambda: ui.notify('Yay!', type='positive'))
+            ui.button('Back', on_click=stepper.previous).props('flat')
+```
+
+## Timeline
+
+This element represents `Quasar's QTimeline <https://quasar.dev/vue-components/timeline#qtimeline-api>`_ component.
+
+:param side: Side ("left" or "right"; default: "left").
+:param layout: Layout ("dense", "comfortable" or "loose"; default: "dense").
+:param color: Color of the icons.
+Example:
+```
+with ui.timeline(side='right'):
+    ui.timeline_entry('Rodja and Falko start working on NiceGUI.',
+                      title='Initial commit',
+                      subtitle='May 07, 2021')
+    ui.timeline_entry('The first PyPI package is released.',
+                      title='Release of 0.1',
+                      subtitle='May 14, 2021')
+    ui.timeline_entry('Large parts are rewritten to remove JustPy '
+                      'and to upgrade to Vue 3 and Quasar 2.',
+                      title='Release of 1.0',
+                      subtitle='December 15, 2022',
+                      icon='rocket')
+```
+
+## Carousel
+
+This element represents `Quasar's QCarousel <https://quasar.dev/vue-components/carousel#qcarousel-api>`_ component.
+It contains individual carousel slides.
+
+:param value: `ui.carousel_slide` or name of the slide to be initially selected (default: `None` meaning the first slide)
+:param on_value_change: callback to be executed when the selected slide changes
+:param animated: whether to animate slide transitions (default: `False`)
+:param arrows: whether to show arrows for manual slide navigation (default: `False`)
+:param navigation: whether to show navigation dots for manual slide navigation (default: `False`)
+Example:
+```
+with ui.carousel(animated=True, arrows=True, navigation=True).props('height=180px'):
+    with ui.carousel_slide().classes('p-0'):
+        ui.image('https://picsum.photos/id/30/270/180').classes('w-[270px]')
+    with ui.carousel_slide().classes('p-0'):
+        ui.image('https://picsum.photos/id/31/270/180').classes('w-[270px]')
+    with ui.carousel_slide().classes('p-0'):
+        ui.image('https://picsum.photos/id/32/270/180').classes('w-[270px]')
+```
+
+## Pagination
+
+A pagination element wrapping Quasar's `QPagination <https://quasar.dev/vue-components/pagination>`_ component.
+
+:param min: minimum page number
+:param max: maximum page number
+:param direction_links: whether to show first/last page links
+:param value: initial page (defaults to `min` if no value is provided)
+:param on_change: callback to be invoked when the value changes
+Example:
+```
+p = ui.pagination(1, 5, direction_links=True)
+ui.label().bind_text_from(p, 'value', lambda v: f'Page {v}')
+```
+
+## Menu
+
+Creates a menu based on Quasar's `QMenu <https://quasar.dev/vue-components/menu>`_ component.
+The menu should be placed inside the element where it should be shown.
+
+:param value: whether the menu is already opened (default: `False`)
+Example:
+```
+with ui.row().classes('w-full items-center'):
+    result = ui.label().classes('mr-auto')
+    with ui.button(icon='menu'):
+        with ui.menu() as menu:
+            ui.menu_item('Menu item 1', lambda: result.set_text('Selected item 1'))
+            ui.menu_item('Menu item 2', lambda: result.set_text('Selected item 2'))
+            ui.menu_item('Menu item 3 (keep open)',
+                         lambda: result.set_text('Selected item 3'), auto_close=False)
+            ui.separator()
+            ui.menu_item('Close', menu.close)
+```
+
+## Context Menu
+
+Creates a context menu based on Quasar's `QMenu <https://quasar.dev/vue-components/menu>`_ component.
+The context menu should be placed inside the element where it should be shown.
+It is automatically opened when the user right-clicks on the element and appears at the mouse position.
+Example:
+```
+with ui.image('https://picsum.photos/id/377/640/360'):
+    with ui.context_menu():
+        ui.menu_item('Flip horizontally')
+        ui.menu_item('Flip vertically')
+        ui.separator()
+        ui.menu_item('Reset', auto_close=False)
+```
+
+## Tooltip
+
+This element is based on Quasar's `QTooltip <https://quasar.dev/vue-components/tooltip>`_ component.
+It can be placed in another element to show additional information on hover.
+
+Instead of passing a string as the first argument, you can also nest other elements inside the tooltip.
+
+:param text: the content of the tooltip (default: '')
+Example:
+```
+with ui.button(icon='thumb_up'):
+    ui.tooltip('I like this').classes('bg-green')
+```
+
+## Notification
+
+Displays a notification on the screen.
+
+:param message: content of the notification
+:param position: position on the screen ("top-left", "top-right", "bottom-left", "bottom-right", "top", "bottom", "left", "right" or "center", default: "bottom")
+:param close_button: optional label of a button to dismiss the notification (default: `False`)
+:param type: optional type ("positive", "negative", "warning", "info" or "ongoing")
+:param color: optional color name
+:param multi_line: enable multi-line notifications
+
+Note: You can pass additional keyword arguments according to `Quasar's Notify API <https://quasar.dev/quasar-plugins/notify#notify-api>`_.
+Example:
+```
+ui.button('Say hi!', on_click=lambda: ui.notify('Hi!', close_button='OK'))
+```
+
+## Notification element
+
+Displays a notification on the screen.
+In contrast to `ui.notify`, this element allows to update the notification message and other properties once the notification is displayed.
+The notification can be removed with `dismiss()`.
+
+:param message: content of the notification
+:param position: position on the screen ("top-left", "top-right", "bottom-left", "bottom-right", "top", "bottom", "left", "right" or "center", default: "bottom")
+:param close_button: optional label of a button to dismiss the notification (default: `False`)
+:param type: optional type ("positive", "negative", "warning", "info" or "ongoing")
+:param color: optional color name
+:param multi_line: enable multi-line notifications
+:param icon: optional name of an icon to be displayed in the notification (default: `None`)
+:param spinner: display a spinner in the notification (default: False)
+:param timeout: optional timeout in seconds after which the notification is dismissed (default: 5.0)
+
+Note: You can pass additional keyword arguments according to `Quasar's Notify API <https://quasar.dev/quasar-plugins/notify#notify-api>`_.
+Example:
+```
+import asyncio
+
+async def compute():
+    n = ui.notification(timeout=None)
+    for i in range(10):
+        n.message = f'Computing {i/10:.0%}'
+        n.spinner = True
+        await asyncio.sleep(0.2)
+    n.message = 'Done!'
+    n.spinner = False
+    await asyncio.sleep(1)
+    n.dismiss()
+
+ui.button('Compute', on_click=compute)
+```
+
+## Dialog
+
+Creates a dialog based on Quasar's `QDialog <https://quasar.dev/vue-components/dialog>`_ component.
+By default it is dismissible by clicking or pressing ESC.
+To make it persistent, set `.props('persistent')` on the dialog element.
+
+NOTE: The dialog is an element.
+That means it is not removed when closed, but only hidden.
+You should either create it only once and then reuse it, or remove it with `.clear()` after dismissal.
+
+:param value: whether the dialog should be opened on creation (default: `False`)
+Example:
+```
+with ui.dialog() as dialog, ui.card():
+    ui.label('Hello world!')
+    ui.button('Close', on_click=dialog.close)
+
+ui.button('Open a dialog', on_click=dialog.open)
+```
+
+# *Styling Appearance*
+
+NiceGUI allows to customize the appearance of UI elements in various ways, including CSS, Tailwind CSS and Quasar properties.
+
+## Styling
+
+NiceGUI uses the [Quasar Framework](https://quasar.dev/) version 1.0 and hence has its full design power.
+Each NiceGUI element provides a `props` method whose content is passed [to the Quasar component](https://justpy.io/quasar_tutorial/introduction/#props-of-quasar-components):
+Have a look at [the Quasar documentation](https://quasar.dev/vue-components/button#design) for all styling props.
+Props with a leading `:` can contain JavaScript expressions that are evaluated on the client.
+You can also apply [Tailwind CSS](https://tailwindcss.com/) utility classes with the `classes` method.
+
+If you really need to apply CSS, you can use the `style` method. Here the delimiter is `;` instead of a blank space.
+
+All three functions also provide `remove` and `replace` parameters in case the predefined look is not wanted in a particular styling.
+Example:
+```
+ui.radio(['x', 'y', 'z'], value='x').props('inline color=green')
+ui.button(icon='touch_app').props('outline round').classes('shadow-lg')
+ui.label('Stylish!').style('color: #6E93D6; font-size: 200%; font-weight: 300')
+```
+
+## Tailwind CSS
+
+[Tailwind CSS](https://tailwindcss.com/) is a CSS framework for rapidly building custom user interfaces.
+NiceGUI provides a fluent, auto-complete friendly interface for adding Tailwind classes to UI elements.
+
+You can discover available classes by navigating the methods of the `tailwind` property.
+The builder pattern allows you to chain multiple classes together (as shown with "Label A").
+You can also call the `tailwind` property with a list of classes (as shown with "Label B").
+
+Although this is very similar to using the `classes` method, it is more convenient for Tailwind classes due to auto-completion.
+
+Last but not least, you can also predefine a style and apply it to multiple elements (labels C and D).
+
+Note that sometimes Tailwind is overruled by Quasar styles, e.g. when using `ui.button('Button').tailwind('bg-red-500')`.
+This is a known limitation and not fully in our control.
+But we try to provide solutions like the `color` parameter: `ui.button('Button', color='red-500')`.
+Example:
+```
+from nicegui import Tailwind
+
+ui.label('Label A').tailwind.font_weight('extrabold').text_color('blue-600').background_color('orange-200')
+ui.label('Label B').tailwind('drop-shadow', 'font-bold', 'text-green-600')
+
+red_style = Tailwind().text_color('red-600').font_weight('bold')
+label_c = ui.label('Label C')
+red_style.apply(label_c)
+ui.label('Label D').tailwind(red_style)
+```
+
+## Tailwind CSS Layers
+
+Tailwind CSS' `@layer` directive allows you to define custom classes that can be used in your HTML.
+NiceGUI supports this feature by allowing you to add custom classes to the `components` layer.
+This way, you can define your own classes and use them in your UI elements.
+In the example below, we define a custom class `blue-box` and apply it to two labels.
+Note that the style tag is of type `text/tailwindcss` and not `text/css`.
+Example:
+```
+ui.add_head_html('''
+    <style type="text/tailwindcss">
+        @layer components {
+            .blue-box {
+                @apply bg-blue-500 p-12 text-center shadow-lg rounded-lg text-white;
+            }
+        }
+    </style>
+''')
+
+with ui.row():
+    ui.label('Hello').classes('blue-box')
+    ui.label('world').classes('blue-box')
+```
+
+## Query Selector
+
+To manipulate elements like the document body, you can use the `ui.query` function.
+With the query result you can add classes, styles, and attributes like with every other UI element.
+This can be useful for example to change the background color of the page (e.g. `ui.query('body').classes('bg-green')`).
+
+:param selector: the CSS selector (e.g. "body", "#my-id", ".my-class", "div > p")
+Example:
+```
+def set_background(color: str) -> None:
+    ui.query('body').style(f'background-color: {color}')
+
+ui.button('Blue', on_click=lambda: set_background('#ddeeff'))
+ui.button('Orange', on_click=lambda: set_background('#ffeedd'))
+```
+
+## Color Theming
+
+Sets the main colors (primary, secondary, accent, ...) used by `Quasar <https://quasar.dev/>`_.
+Example:
+```
+ui.button('Default', on_click=lambda: ui.colors())
+ui.button('Gray', on_click=lambda: ui.colors(primary='#555'))
+```
+
+## CSS Variables
+
+You can customize the appearance of NiceGUI by setting CSS variables.
+Currently, the following variables with their default values are available:
+
+- `--nicegui-default-padding: 1rem`
+- `--nicegui-default-gap: 1rem`
+Example:
+```
+ui.add_css('''
+    :root {
+        --nicegui-default-padding: 0.5rem;
+        --nicegui-default-gap: 3rem;
+    }
+''')
+with ui.card():
+    ui.label('small padding')
+    ui.label('large gap')
+```
+
+## Overwrite Tailwind's Default Style
+
+Tailwind resets the default style of HTML elements, like the font size of `h2` elements in this example.
+You can overwrite these defaults by adding a style tag with type `text/tailwindcss`.
+Without this type, the style will be evaluated too early and will be overwritten by Tailwind.
+Example:
+```
+ui.add_head_html('''
+    <style type="text/tailwindcss">
+        h2 {
+            font-size: 150%;
+        }
+    </style>
+''')
+ui.html('<h2>Hello world!</h2>')
+```
+
+## Dark mode
+
+You can use this element to enable, disable or toggle dark mode on the page.
+The value `None` represents auto mode, which uses the client's system preference.
+
+Note that this element overrides the `dark` parameter of the `ui.run` function and page decorators.
+
+:param value: Whether dark mode is enabled. If None, dark mode is set to auto.
+:param on_change: Callback that is invoked when the value changes.
+Example:
+```
+dark = ui.dark_mode()
+ui.label('Switch mode:')
+ui.button('Dark', on_click=dark.enable)
+ui.button('Light', on_click=dark.disable)
+```
+
+## Add CSS style definitions to the page
+
+This function can be used to add CSS style definitions to the head of the HTML page.
+
+:param content: CSS content (string or file path)
+Example:
+```
+ui.add_css('''
+    .red {
+        color: red;
+    }
+''')
+ui.label('This is red with CSS.').classes('red')
+```
+
+# *Action Events*
+
+This section covers timers, UI events, and the lifecycle of NiceGUI apps.
+
+## Timer
+
+One major drive behind the creation of NiceGUI was the necessity to have a simple approach to update the interface in regular intervals,
+for example to show a graph with incoming measurements.
+A timer will execute a callback repeatedly with a given interval.
+
+:param interval: the interval in which the timer is called (can be changed during runtime)
+:param callback: function or coroutine to execute when interval elapses
+:param active: whether the callback should be executed or not (can be changed during runtime)
+:param once: whether the callback is only executed once after a delay specified by `interval` (default: `False`)
+Example:
+```
+from datetime import datetime
+
+label = ui.label()
+ui.timer(1.0, lambda: label.set_text(f'{datetime.now():%X}'))
+```
+
+## Keyboard
+
+Adds global keyboard event tracking.
+
+:param on_key: callback to be executed when keyboard events occur.
+:param active: boolean flag indicating whether the callback should be executed or not (default: `True`)
+:param repeating: boolean flag indicating whether held keys should be sent repeatedly (default: `True`)
+:param ignore: ignore keys when one of these element types is focussed (default: `['input', 'select', 'button', 'textarea']`)
+Example:
+```
+from nicegui.events import KeyEventArguments
+
+def handle_key(e: KeyEventArguments):
+    if e.key == 'f' and not e.action.repeat:
+        if e.action.keyup:
+            ui.notify('f was just released')
+        elif e.action.keydown:
+            ui.notify('f was just pressed')
+    if e.modifiers.shift and e.action.keydown:
+        if e.key.arrow_left:
+            ui.notify('going left')
+        elif e.key.arrow_right:
+            ui.notify('going right')
+        elif e.key.arrow_up:
+            ui.notify('going up')
+        elif e.key.arrow_down:
+            ui.notify('going down')
+
+keyboard = ui.keyboard(on_key=handle_key)
+ui.label('Key events can be caught globally by using the keyboard element.')
+ui.checkbox('Track key events').bind_value_to(keyboard, 'active')
+```
+
+## UI Updates
+
+NiceGUI tries to automatically synchronize the state of UI elements with the client,
+e.g. when a label text, an input value or style/classes/props of an element have changed.
+In other cases, you can explicitly call `element.update()` or `ui.update(*elements)` to update.
+The demo code shows both methods for a `ui.echart`, where it is difficult to automatically detect changes in the `options` dictionary.
+Example:
+```
+from random import random
+
+chart = ui.echart({
+    'xAxis': {'type': 'value'},
+    'yAxis': {'type': 'value'},
+    'series': [{'type': 'line', 'data': [[0, 0], [1, 1]]}],
+})
+
+def add():
+    chart.options['series'][0]['data'].append([random(), random()])
+    chart.update()
+
+def clear():
+    chart.options['series'][0]['data'].clear()
+    ui.update(chart)
+
+with ui.row():
+    ui.button('Add', on_click=add)
+    ui.button('Clear', on_click=clear)
+```
+
+## Refreshable UI functions
+
+The `@ui.refreshable` decorator allows you to create functions that have a `refresh` method.
+This method will automatically delete all elements created by the function and recreate them.
+Example:
+```
+import random
+
+numbers = []
+
+@ui.refreshable
+def number_ui() -> None:
+    ui.label(', '.join(str(n) for n in sorted(numbers)))
+
+def add_number() -> None:
+    numbers.append(random.randint(0, 100))
+    number_ui.refresh()
+
+number_ui()
+ui.button('Add random number', on_click=add_number)
+```
+
+## Async event handlers
+
+Most elements also support asynchronous event handlers.
+
+Note: You can also pass a `functools.partial` into the `on_click` property to wrap async functions with parameters.
+Example:
+```
+import asyncio
+
+async def async_task():
+    ui.notify('Asynchronous task started')
+    await asyncio.sleep(5)
+    ui.notify('Asynchronous task finished')
+
+ui.button('start async task', on_click=async_task)
+```
+
+## Generic Events
+
+Most UI elements come with predefined events.
+For example, a `ui.button` like "A" in the demo has an `on_click` parameter that expects a coroutine or function.
+But you can also use the `on` method to register a generic event handler like for "B".
+This allows you to register handlers for any event that is supported by JavaScript and Quasar.
+
+For example, you can register a handler for the `mousemove` event like for "C", even though there is no `on_mousemove` parameter for `ui.button`.
+Some events, like `mousemove`, are fired very often.
+To avoid performance issues, you can use the `throttle` parameter to only call the handler every `throttle` seconds ("D").
+
+The generic event handler can be synchronous or asynchronous and optionally takes `GenericEventArguments` as argument ("E").
+You can also specify which attributes of the JavaScript or Quasar event should be passed to the handler ("F").
+This can reduce the amount of data that needs to be transferred between the server and the client.
+
+Here you can find more information about the events that are supported:
+
+- https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement#events for HTML elements
+- https://quasar.dev/vue-components for Quasar-based elements (see the "Events" tab on the individual component page)
+Example:
+```
+with ui.row():
+    ui.button('A', on_click=lambda: ui.notify('You clicked the button A.'))
+    ui.button('B').on('click', lambda: ui.notify('You clicked the button B.'))
+with ui.row():
+    ui.button('C').on('mousemove', lambda: ui.notify('You moved on button C.'))
+    ui.button('D').on('mousemove', lambda: ui.notify('You moved on button D.'), throttle=0.5)
+with ui.row():
+    ui.button('E').on('mousedown', lambda e: ui.notify(e))
+    ui.button('F').on('mousedown', lambda e: ui.notify(e), ['ctrlKey', 'shiftKey'])
+```
+
+## Running CPU-bound tasks
+
+NiceGUI provides a `cpu_bound` function for running CPU-bound tasks in a separate process.
+This is useful for long-running computations that would otherwise block the event loop and make the UI unresponsive.
+The function returns a future that can be awaited.
+Example:
+```
+import time
+from nicegui import run
+
+def compute_sum(a: float, b: float) -> float:
+    time.sleep(1)  # simulate a long-running computation
+    return a + b
+
+async def handle_click():
+    result = await run.cpu_bound(compute_sum, 1, 2)
+    ui.notify(f'Sum is {result}')
+
+ui.button('Compute', on_click=handle_click)
+```
+
+## Running I/O-bound tasks
+
+NiceGUI provides an `io_bound` function for running I/O-bound tasks in a separate thread.
+This is useful for long-running I/O operations that would otherwise block the event loop and make the UI unresponsive.
+The function returns a future that can be awaited.
+Example:
+```
+import requests
+from nicegui import run
+
+async def handle_click():
+    URL = 'https://httpbin.org/delay/1'
+    response = await run.io_bound(requests.get, URL, timeout=3)
+    ui.notify(f'Downloaded {len(response.content)} bytes')
+
+ui.button('Download', on_click=handle_click)
+```
+
+## Run JavaScript
+
+This function runs arbitrary JavaScript code on a page that is executed in the browser.
+The client must be connected before this function is called.
+To access a client-side object by ID, use the JavaScript function `getElement()`.
+
+If the function is awaited, the result of the JavaScript code is returned.
+Otherwise, the JavaScript code is executed without waiting for a response.
+
+:param code: JavaScript code to run
+:param timeout: timeout in seconds (default: `1.0`)
+
+:return: AwaitableResponse that can be awaited to get the result of the JavaScript code
+Example:
+```
+def alert():
+    ui.run_javascript('alert("Hello!")')
+
+async def get_date():
+    time = await ui.run_javascript('Date()')
+    ui.notify(f'Browser time: {time}')
+
+def access_elements():
+    ui.run_javascript(f'getElement({label.id}).innerText += " Hello!"')
+
+ui.button('fire and forget', on_click=alert)
+ui.button('receive result', on_click=get_date)
+ui.button('access elements', on_click=access_elements)
+label = ui.label()
+```
+
+## Read and write to the clipboard
+
+The following demo shows how to use `ui.clipboard.read()` and `ui.clipboard.write()` to interact with the clipboard.
+Note that your browser may ask for permission to access the clipboard or may not support this feature at all.
+Example:
+```
+ui.button('Write', on_click=lambda: ui.clipboard.write('Hi!'))
+
+async def read() -> None:
+    ui.notify(await ui.clipboard.read())
+ui.button('Read', on_click=read)
+```
+
+## Events
+
+You can register coroutines or functions to be called for the following events:
+
+- `app.on_startup`: called when NiceGUI is started or restarted
+- `app.on_shutdown`: called when NiceGUI is shut down or restarted
+- `app.on_connect`: called for each client which connects (optional argument: nicegui.Client)
+- `app.on_disconnect`: called for each client which disconnects (optional argument: nicegui.Client)
+- `app.on_exception`: called when an exception occurs (optional argument: exception)
+
+When NiceGUI is shut down or restarted, all tasks still in execution will be automatically canceled.
+Example:
+```
+from datetime import datetime
+from nicegui import app
+
+dt = datetime.now()
+
+def handle_connection():
+    global dt
+    dt = datetime.now()
+app.on_connect(handle_connection)
+
+label = ui.label()
+ui.timer(1, lambda: label.set_text(f'Last new connection: {dt:%H:%M:%S}'))
+```
+
+## Shut down NiceGUI
+
+This will programmatically stop the server.
+Only possible when auto-reload is disabled.
+Example:
+```
+from nicegui import app
+
+ui.button('shutdown', on_click=app.shutdown)
+
+ui.run(reload=False)
+```
+
+## Storage
+
+NiceGUI offers a straightforward mechanism for data persistence within your application.
+It features five built-in storage types:
+
+- `app.storage.tab`:
+    Stored server-side in memory, this dictionary is unique to each tab session and can hold arbitrary objects.
+    Data will be lost when restarting the server until <https://github.com/zauberzeug/nicegui/discussions/2841> is implemented.
+    This storage is only available within [page builder functions](/documentation/page)
+    and requires an established connection, obtainable via [`await client.connected()`](/documentation/page#wait_for_client_connection).
+- `app.storage.client`:
+    Also stored server-side in memory, this dictionary is unique to each client connection and can hold arbitrary objects.
+    Data will be discarded when the page is reloaded or the user navigates to another page.
+    Unlike data stored in `app.storage.tab` which can be persisted on the server even for days,
+    `app.storage.client` helps caching resource-hungry objects such as a streaming or database connection you need to keep alive
+    for dynamic site updates but would like to discard as soon as the user leaves the page or closes the browser.
+    This storage is only available within [page builder functions](/documentation/page).
+- `app.storage.user`:
+    Stored server-side, each dictionary is associated with a unique identifier held in a browser session cookie.
+    Unique to each user, this storage is accessible across all their browser tabs.
+    `app.storage.browser['id']` is used to identify the user.
+- `app.storage.general`:
+    Also stored server-side, this dictionary provides a shared storage space accessible to all users.
+- `app.storage.browser`:
+    Unlike the previous types, this dictionary is stored directly as the browser session cookie, shared among all browser tabs for the same user.
+    However, `app.storage.user` is generally preferred due to its advantages in reducing data payload, enhancing security, and offering larger storage capacity.
+    By default, NiceGUI holds a unique identifier for the browser session in `app.storage.browser['id']`.
+
+The user storage and browser storage are only available within `page builder functions </documentation/page>`_
+because they are accessing the underlying `Request` object from FastAPI.
+Additionally these two types require the `storage_secret` parameter in`ui.run()` to encrypt the browser session cookie.
+
+| Storage type                | `tab`  | `client` | `user` | `general` | `browser` |
+|-----------------------------|--------|----------|--------|-----------|-----------|
+| Location                    | Server | Server   | Server | Server    | Browser   |
+| Across tabs                 | No     | No       | Yes    | Yes       | Yes       |
+| Across browsers             | No     | No       | No     | Yes       | No        |
+| Across page reloads         | Yes    | No       | Yes    | Yes       | Yes       |
+| Needs page builder function | Yes    | Yes      | Yes    | No        | Yes       |
+| Needs client connection     | Yes    | No       | No     | No        | No        |
+| Write only before response  | No     | No       | No     | No        | Yes       |
+Example:
+```
+from nicegui import app
+
+@ui.page('/')
+def index():
+    app.storage.user['count'] = app.storage.user.get('count', 0) + 1
+    with ui.row():
+       ui.label('your own page visits:')
+       ui.label().bind_text_from(app.storage.user, 'count')
+
+ui.run(storage_secret='private key to secure the browser session cookie')
+```
+
+# *Pages Routing*
+
+A NiceGUI app can consist of multiple pages and other FastAPI endpoints.
+
+## Page
+
+This decorator marks a function to be a page builder.
+Each user accessing the given route will see a new instance of the page.
+This means it is private to the user and not shared with others
+(as it is done `when placing elements outside of a page decorator <https://nicegui.io/documentation/section_pages_routing#auto-index_page>`_).
+
+:param path: route of the new page (path must start with '/')
+:param title: optional page title
+:param viewport: optional viewport meta tag content
+:param favicon: optional relative filepath or absolute URL to a favicon (default: `None`, NiceGUI icon will be used)
+:param dark: whether to use Quasar's dark mode (defaults to `dark` argument of `run` command)
+:param language: language of the page (defaults to `language` argument of `run` command)
+:param response_timeout: maximum time for the decorated function to build the page (default: 3.0 seconds)
+:param reconnect_timeout: maximum time the server waits for the browser to reconnect (default: 0.0 seconds)
+:param api_router: APIRouter instance to use, can be left `None` to use the default
+:param kwargs: additional keyword arguments passed to FastAPI's @app.get method
+Example:
+```
+@ui.page('/other_page')
+def other_page():
+    ui.label('Welcome to the other side')
+
+@ui.page('/dark_page', dark=True)
+def dark_page():
+    ui.label('Welcome to the dark side')
+
+ui.link('Visit other page', other_page)
+ui.link('Visit dark page', dark_page)
+```
+
+## Auto-index page
+
+Pages created with the `@ui.page` decorator are "private".
+Their content is re-created for each client.
+Thus, in the demo to the right, the displayed ID on the private page changes when the browser reloads the page.
+
+UI elements that are not wrapped in a decorated page function are placed on an automatically generated index page at route "/".
+This auto-index page is created once on startup and *shared* across all clients that might connect.
+Thus, each connected client will see the *same* elements.
+In the demo to the right, the displayed ID on the auto-index page remains constant when the browser reloads the page.
+Example:
+```
+from uuid import uuid4
+
+@ui.page('/private_page')
+async def private_page():
+    ui.label(f'private page with ID {uuid4()}')
+
+ui.label(f'shared auto-index page with ID {uuid4()}')
+ui.link('private page', private_page)
+```
+
+## Page Layout
+
+With `ui.header`, `ui.footer`, `ui.left_drawer` and `ui.right_drawer` you can add additional layout elements to a page.
+The `fixed` argument controls whether the element should scroll or stay fixed on the screen.
+The `top_corner` and `bottom_corner` arguments indicate whether a drawer should expand to the top or bottom of the page.
+See <https://quasar.dev/layout/header-and-footer> and <https://quasar.dev/layout/drawer> for more information about possible props.
+With `ui.page_sticky` you can place an element "sticky" on the screen.
+See <https://quasar.dev/layout/page-sticky> for more information.
+Example:
+```
+@ui.page('/page_layout')
+def page_layout():
+    ui.label('CONTENT')
+    [ui.label(f'Line {i}') for i in range(100)]
+    with ui.header(elevated=True).style('background-color: #3874c8').classes('items-center justify-between'):
+        ui.label('HEADER')
+        ui.button(on_click=lambda: right_drawer.toggle(), icon='menu').props('flat color=white')
+    with ui.left_drawer(top_corner=True, bottom_corner=True).style('background-color: #d7e3f4'):
+        ui.label('LEFT DRAWER')
+    with ui.right_drawer(fixed=False).style('background-color: #ebf1fa').props('bordered') as right_drawer:
+        ui.label('RIGHT DRAWER')
+    with ui.footer().style('background-color: #3874c8'):
+        ui.label('FOOTER')
+
+ui.link('show page with fancy layout', page_layout)
+```
+
+## Parameter injection
+
+Thanks to FastAPI, a page function accepts optional parameters to provide
+[path parameters](https://fastapi.tiangolo.com/tutorial/path-params/),
+[query parameters](https://fastapi.tiangolo.com/tutorial/query-params/) or the whole incoming
+[request](https://fastapi.tiangolo.com/advanced/using-request-directly/) for accessing
+the body payload, headers, cookies and more.
+Example:
+```
+@ui.page('/icon/{icon}')
+def icons(icon: str, amount: int = 1):
+    ui.label(icon).classes('text-h3')
+    with ui.row():
+        [ui.icon(icon).classes('text-h3') for _ in range(amount)]
+ui.link('Star', '/icon/star?amount=5')
+ui.link('Home', '/icon/home')
+ui.link('Water', '/icon/water_drop?amount=3')
+```
+
+## Page title
+
+Set the page title for the current client.
+
+:param title: page title
+Example:
+```
+ui.button('Change page title', on_click=lambda: ui.page_title('New Title'))
+```
+
+## Navigation functions
+
+These functions allow you to navigate within the browser history and to external URLs.
+Example:
+```
+with ui.row():
+    ui.button('Back', on_click=ui.navigate.back)
+    ui.button('Forward', on_click=ui.navigate.forward)
+    ui.button(icon='savings',
+              on_click=lambda: ui.navigate.to('https://github.com/sponsors/zauberzeug'))
+```
+
+## Download
+
+Function to trigger the download of a file, URL or bytes.
+
+:param src: target URL, local path of a file or raw data which should be downloaded
+:param filename: name of the file to download (default: name of the file on the server)
+:param media_type: media type of the file to download (default: "")
+Example:
+```
+ui.button('Logo', on_click=lambda: ui.download('https://nicegui.io/logo.png'))
+```
+
+## Add a directory of static files
+
+`add_static_files()` makes a local directory available at the specified endpoint, e.g. `'/static'`.
+This is useful for providing local data like images to the frontend.
+Otherwise the browser would not be able to access the files.
+Do only put non-security-critical files in there, as they are accessible to everyone.
+
+To make a single file accessible, you can use `add_static_file()`.
+For media files which should be streamed, you can use `add_media_files()` or `add_media_file()` instead.
+
+:param url_path: string that starts with a slash "/" and identifies the path at which the files should be served
+:param local_directory: local folder with files to serve as static content
+:param follow_symlink: whether to follow symlinks (default: False)
+Example:
+```
+from nicegui import app
+
+app.add_static_files('/examples', 'examples')
+ui.label('Some NiceGUI Examples').classes('text-h5')
+ui.link('AI interface', '/examples/ai_interface/main.py')
+ui.link('Custom FastAPI app', '/examples/fastapi/main.py')
+ui.link('Authentication', '/examples/authentication/main.py')
+```
+
+## Add directory of media files
+
+`add_media_files()` allows a local files to be streamed from a specified endpoint, e.g. `'/media'`.
+This should be used for media files to support proper streaming.
+Otherwise the browser would not be able to access and load the the files incrementally or jump to different positions in the stream.
+Do only put non-security-critical files in there, as they are accessible to everyone.
+
+To make a single file accessible via streaming, you can use `add_media_file()`.
+For small static files, you can use `add_static_files()` or `add_static_file()` instead.
+
+:param url_path: string that starts with a slash "/" and identifies the path at which the files should be served
+:param local_directory: local folder with files to serve as media content
+Example:
+```
+import requests
+from nicegui import app
+from pathlib import Path
+
+media = Path('media')
+media.mkdir(exist_ok=True)
+r = requests.get('https://cdn.coverr.co/videos/coverr-cloudy-sky-2765/1080p.mp4')
+(media  / 'clouds.mp4').write_bytes(r.content)
+app.add_media_files('/my_videos', media)
+ui.video('/my_videos/clouds.mp4')
+```
+
+## Add HTML to the page
+
+You can add HTML to the page by calling `ui.add_head_html` or `ui.add_body_html`.
+This is useful for adding custom CSS styles or JavaScript code.
+Example:
+```
+ui.add_head_html('''
+    <style>
+        .my-red-label {
+            color: Crimson;
+            font-weight: bold;
+        }
+    </style>
+''')
+ui.label('RED').classes('my-red-label')
+```
+
+## API Responses
+
+NiceGUI is based on [FastAPI](https://fastapi.tiangolo.com/).
+This means you can use all of FastAPI's features.
+For example, you can implement a RESTful API in addition to your graphical user interface.
+You simply import the `app` object from `nicegui`.
+Or you can run NiceGUI on top of your own FastAPI app by using `ui.run_with(app)` instead of starting a server automatically with `ui.run()`.
+
+You can also return any other FastAPI response object inside a page function.
+For example, you can return a `RedirectResponse` to redirect the user to another page if certain conditions are met.
+This is used in our [authentication demo](https://github.com/zauberzeug/nicegui/tree/main/examples/authentication/main.py).
+Example:
+```
+import random
+from nicegui import app
+
+@app.get('/random/{max}')
+def generate_random_number(max: int):
+    return {'min': 0, 'max': max, 'value': random.randint(0, max)}
+
+max = ui.number('max', value=100)
+ui.button('generate random number',
+          on_click=lambda: ui.navigate.to(f'/random/{max.value:.0f}'))
+```
+
