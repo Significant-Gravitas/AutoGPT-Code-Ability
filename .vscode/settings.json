@@ -1,16 +1,4 @@
 {
-  "editor.renderWhitespace": "all",
-  "editor.inlineSuggest.enabled": true,
-  "editor.occurrencesHighlight": "multiFile",
-
-  "files.autoSave": "afterDelay",
-
-  "git.autofetch": true,
-
-  "liveshare.accessibility.soundsEnabled": false,
-
-  "notebook.output.textLineLimit": 100,
-
   "[python]": {
     "editor.rulers": [90],
     "editor.formatOnSave": true,
@@ -21,28 +9,19 @@
     "editor.formatOnType": true,
     "editor.defaultFormatter": "charliermarsh.ruff"
   },
-  "python.analysis.diagnosticSeverityOverrides": {},
-  "python.analysis.typeCheckingMode": "standard",
+  "python.analysis.typeCheckingMode": "basic",
   "python.analysis.autoSearchPaths": true,
   "python.analysis.useLibraryCodeForTypes": true,
   "python.analysis.autoImportCompletions": true,
-  "python.analysis.completeFunctionParens": true,
-  "python.analysis.inlayHints.functionReturnTypes": true,
-  "python.analysis.inlayHints.variableTypes": true,
-  "python.analysis.autoFormatStrings": true,
-  "python.analysis.inlayHints.callArgumentNames": "partial",
   "python.analysis.fixAll": [
-    "source.convertImportFormat",
-    "source.unusedImports"
+    "source.convertImportFormat"
   ],
   "python.languageServer": "Pylance",
   "python.missingPackage.severity": "Error",
 
-  "ruff.showNotifications": "always",
-  "remote.autoForwardPortsSource": "hybrid",
-  "terminal.integrated.scrollback": 100000,
-  "vsintellicode.modify.editor.suggestSelection": "automaticallyOverrodeDefaultValue",
   "python.testing.pytestArgs": ["codex/tests"],
   "python.testing.unittestEnabled": false,
-  "python.testing.pytestEnabled": true
+  "python.testing.pytestEnabled": true,
+
+  "ruff.showNotifications": "always",
 }
