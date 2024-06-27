@@ -39,7 +39,9 @@ async def create_benchmark_user(prisma_client: Prisma, base_url: str):
         await prisma_client.connect()
     try:
         codex_client = CodexClient(client=prisma_client, base_url=base_url)
-        timestamp = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d %H:%M:%S")
+        timestamp = datetime.datetime.now(datetime.timezone.utc).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
         user = await codex_client.create_or_get_codex_user(
             f"BM {timestamp}", f"BM {timestamp}"
         )

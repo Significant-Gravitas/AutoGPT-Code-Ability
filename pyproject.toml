@@ -6,7 +6,7 @@ authors = ["SwiftyOS <craigswift13@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.11,<3.13"
+python = "^3.10"
 openai = "^1.6.0"
 pgvector = "^0.2.4"
 matplotlib = "^3.8.2"
