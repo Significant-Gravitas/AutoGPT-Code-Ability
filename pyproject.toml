@@ -2,7 +2,7 @@
 name = "codex"
 version = "0.1.0"
 description = "Computational Oracle for Data Encoding and eXploratio"
-authors = ["SwiftyOS <craigswift13@gmail.com>"]
+authors = ["AutoGPT Team <info@agpt.co>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
